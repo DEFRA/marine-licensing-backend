@@ -65,7 +65,7 @@ services:
   #   networks:
   #     - cdp-tenant
 
-  cdp-node-backend-template:
+  marine-licensing-backend:
     build:
       context: .
       target: development
