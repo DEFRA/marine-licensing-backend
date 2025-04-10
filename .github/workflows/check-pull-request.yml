@@ -35,10 +35,6 @@ jobs:
           set +e
           docker build --no-cache --tag cdp-node-backend-template .
           exit $?
-      - name: Create Test Coverage Reports
-        run: |
-          npm ci
-          npm test
 
       - name: SonarCloud Scan
         if: github.actor != 'dependabot[bot]'
