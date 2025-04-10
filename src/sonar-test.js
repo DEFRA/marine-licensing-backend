@@ -1,40 +1,21 @@
-//Two functions doing the same operation.
-function calculateSumA(arr) {
-  let total = 0
-  for (let i = 0; i < arr.length; i++) {
-    total += arr[i]
-  }
-  return total
+function calculateSum(arr) {
+  return arr.reduce((total, value) => total + value, 0);
 }
-
-function calculateSumB(arr) {
-  let sum = 0
-  for (let i = 0; i < arr.length; i++) {
-    sum += arr[i]
-  }
-  return sum
-}
-
-// intentionally contains nested logic to trigger warnings
 
 function computeValue(n) {
-  let result = 0
   if (n > 10) {
-    for (let i = 0; i < n; i++) {
+
+    const numbers = Array.from({ length: n }, (_, i) => {
       if (i % 2 === 0) {
-        result += i
+        return i;
       } else if (i % 3 === 0) {
-        // Nested condition inside a loop increases complexity.
-        result -= i
-      } else {
-        result += i / 2
+        return -i;
       }
-    }
-  } else {
-    // Minimal logic for lower values
-    result = n * 2
+      return i / 2;
+    });
+    return calculateSum(numbers);
   }
-  return result
+  return n * 2;
 }
 
-export { calculateSumA, calculateSumB, computeValue }
+export { calculateSum, computeValue }
