@@ -10,4 +10,55 @@ describe('#fail-action', () => {
       'Something terrible has happened!'
     )
   })
+
+  test('Should return expected error details if present', () => {
+    const mockRequest = {}
+    const mockToolkit = {
+      response: jest.fn().mockReturnThis(),
+      code: jest.fn().mockReturnThis(),
+      takeover: jest.fn().mockReturnThis()
+    }
+    const mockError = {
+      message: 'Validation failed',
+      details: [
+        {
+          message: 'ERROR_MESSAGE',
+          path: ['field'],
+          type: 'string.empty',
+          context: {
+            label: 'field',
+            value: '',
+            key: 'field'
+          }
+        }
+      ],
+      output: {
+        payload: {
+          validation: {
+            source: 'payload',
+            keys: ['field']
+          }
+        }
+      }
+    }
+
+    failAction(mockRequest, mockToolkit, mockError)
+
+    expect(mockToolkit.response).toHaveBeenCalledWith({
+      statusCode: 400,
+      error: 'Bad Request',
+      message: 'Validation failed',
+      validation: {
+        source: 'payload',
+        keys: ['field'],
+        details: [
+          {
+            field: 'field',
+            message: 'ERROR_MESSAGE',
+            type: 'string.empty'
+          }
+        ]
+      }
+    })
+  })
 })
