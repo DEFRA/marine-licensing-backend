@@ -17,7 +17,7 @@ export const createProjectNameController = {
         .collection('exemptions')
         .insertOne({ projectName })
 
-      return h.response({ message: 'success', value: result }).code(200)
+      return h.response({ message: 'success', value: result }).code(201)
     } catch (error) {
       return h.response({ error: 'Error creating project name' }).code(500)
     }
