@@ -99,5 +99,6 @@ volumes:
 
 networks:
   cdp-tenant:
+    external: true
     driver: bridge
     name: cdp-tenant
