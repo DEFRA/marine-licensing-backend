@@ -20,6 +20,7 @@ describe('#fail-action', () => {
     }
     const mockError = {
       message: 'Validation failed',
+      name: 'ValidationError',
       details: [
         {
           message: 'ERROR_MESSAGE',

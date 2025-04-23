@@ -31,4 +31,24 @@ describe('POST /exemptions/project-name', () => {
       })
     )
   })
+
+  it('should return an error message if the database operation fails', async () => {
+    const { mockMongo, mockHandler } = global
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        insertOne: jest.fn().mockRejectedValueOnce(new Error('Database failed'))
+      }
+    })
+
+    await createProjectNameController.handler(
+      { db: mockMongo, payload: { projectName: 'Project' } },
+      mockHandler
+    )
+    expect(mockHandler.response).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: 'Error creating project name'
+      })
+    )
+  })
 })
