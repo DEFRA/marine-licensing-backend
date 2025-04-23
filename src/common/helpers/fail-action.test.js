@@ -42,9 +42,7 @@ describe('#fail-action', () => {
       }
     }
 
-    failAction(mockRequest, mockToolkit, mockError)
-
-    expect(mockToolkit.response).toHaveBeenCalledWith({
+    expect(() => failAction(mockRequest, mockToolkit, mockError)).toThrow({
       statusCode: 400,
       error: 'Bad Request',
       message: 'Validation failed',
