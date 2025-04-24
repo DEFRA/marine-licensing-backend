@@ -6,7 +6,7 @@ const isValidationError = (error) => {
   return error.name === 'ValidationError' && !!error.output?.payload?.validation
 }
 
-export function failAction(_request, h, error) {
+export function failAction(_request, _h, error) {
   logger.warn(error, error?.message)
 
   if (isValidationError(error)) {

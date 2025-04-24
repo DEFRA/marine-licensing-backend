@@ -1,4 +1,6 @@
+import Boom from '@hapi/boom'
 import { projectName } from '../../../../models/project-name.js'
+import { StatusCodes } from 'http-status-codes'
 
 export const createProjectNameController = {
   options: {
@@ -17,9 +19,11 @@ export const createProjectNameController = {
         .collection('exemptions')
         .insertOne({ projectName })
 
-      return h.response({ message: 'success', value: result }).code(201)
+      return h
+        .response({ message: 'success', value: result })
+        .code(StatusCodes.CREATED)
     } catch (error) {
-      return h.response({ error: 'Error creating project name' }).code(500)
+      throw Boom.internal(`Error creating project name: ${error.message}`)
     }
   }
 }
