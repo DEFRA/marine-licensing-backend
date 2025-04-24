@@ -13,11 +13,9 @@ export const createProjectNameController = {
     try {
       const { payload, db } = request
 
-      const { projectName } = payload
-
       const result = await db
         .collection('exemptions')
-        .insertOne({ projectName })
+        .insertOne({ projectName: payload.projectName })
 
       return h
         .response({ message: 'success', value: result })
