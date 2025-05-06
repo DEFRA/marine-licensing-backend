@@ -1,10 +1,19 @@
 export const COMPLETED = 'COMPLETED'
 
 export const createTaskList = (exemption) => {
-  const taskList = {
-    ...(exemption.publicRegister && { publicRegister: COMPLETED }),
-    ...(exemption.projectName && { projectName: COMPLETED })
+  const tasks = {
+    publicRegister: (value) => (value ? COMPLETED : null),
+    projectName: (value) => (value ? COMPLETED : null)
   }
+
+  const taskList = {}
+
+  Object.entries(tasks).forEach(([taskName, decideStatus]) => {
+    const status = decideStatus(exemption[taskName])
+    if (status) {
+      taskList[taskName] = status
+    }
+  })
 
   return taskList
 }
