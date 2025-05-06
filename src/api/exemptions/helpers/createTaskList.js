@@ -1,10 +1,9 @@
 export const COMPLETED = 'COMPLETED'
-export const NOT_STARTED = false
 
 export const createTaskList = (exemption) => {
   const taskList = {
-    publicRegister: exemption.publicRegister ? COMPLETED : NOT_STARTED,
-    projectName: exemption.projectName ? COMPLETED : NOT_STARTED
+    ...(exemption.publicRegister && { publicRegister: COMPLETED }),
+    ...(exemption.projectName && { projectName: COMPLETED })
   }
 
   return taskList

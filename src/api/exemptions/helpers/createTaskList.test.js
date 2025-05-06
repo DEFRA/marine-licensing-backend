@@ -1,4 +1,4 @@
-import { createTaskList, COMPLETED, NOT_STARTED } from './createTaskList'
+import { createTaskList, COMPLETED } from './createTaskList'
 
 describe('createTaskList', () => {
   it('should mark tasks as COMPLETED when corresponding exemption properties exist', () => {
@@ -15,7 +15,7 @@ describe('createTaskList', () => {
     })
   })
 
-  it('should mark tasks as NOT_STARTED when corresponding exemption properties do not exist', () => {
+  it('should not return tasks when corresponding exemption properties do not exist', () => {
     const exemption = {
       publicRegister: '',
       projectName: null
@@ -23,20 +23,14 @@ describe('createTaskList', () => {
 
     const result = createTaskList(exemption)
 
-    expect(result).toEqual({
-      publicRegister: NOT_STARTED,
-      projectName: NOT_STARTED
-    })
+    expect(result).toEqual({})
   })
 
-  it('should mark tasks as NOT_STARTED when corresponding exemption properties are missing', () => {
+  it('should not return tasks when corresponding exemption properties are missing', () => {
     const exemption = {}
 
     const result = createTaskList(exemption)
 
-    expect(result).toEqual({
-      publicRegister: NOT_STARTED,
-      projectName: NOT_STARTED
-    })
+    expect(result).toEqual({})
   })
 })

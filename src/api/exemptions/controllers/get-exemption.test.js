@@ -29,7 +29,9 @@ describe('GET /exemption', () => {
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue({ _id: mockId })
+        findOne: jest
+          .fn()
+          .mockResolvedValue({ _id: mockId, projectName: 'Test project' })
       }
     })
 
@@ -43,7 +45,10 @@ describe('GET /exemption', () => {
         message: 'success',
         value: {
           id: mockId,
-          taskList: { projectName: false, publicRegister: false }
+          projectName: 'Test project',
+          taskList: {
+            projectName: 'COMPLETED'
+          }
         }
       })
     )
