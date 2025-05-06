@@ -1,4 +1,13 @@
 services:
+  defra-id-stub:
+    image: defradigital/cdp-defra-id-stub
+    ports:
+      - '8088:8088'
+    environment:
+      - PORT=8088
+    networks:
+      - cdp-tenant
+
   localstack:
     image: localstack/localstack:3.0.2
     ports:
@@ -86,6 +95,7 @@ services:
       NODE_ENV: development
       LOCALSTACK_ENDPOINT: http://localstack:4566
       MONGO_URI: mongodb://mongodb:27017/
+      DEFRA_ID_BASE_URL: http://defra-id-stub:8088
     networks:
       - cdp-tenant
     volumes:
