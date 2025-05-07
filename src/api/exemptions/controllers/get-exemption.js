@@ -19,7 +19,7 @@ export const getExemptionController = {
         .findOne({ _id: ObjectId.createFromHexString(params.id) })
 
       if (!result) {
-        return Boom.notFound('Exemption not found')
+        throw Boom.notFound('Exemption not found')
       }
 
       const { _id, ...rest } = result
@@ -32,6 +32,9 @@ export const getExemptionController = {
         .response({ message: 'success', value: response })
         .code(StatusCodes.OK)
     } catch (error) {
+      if (error.isBoom) {
+        throw error
+      }
       throw Boom.internal(`Error retrieving exemption: ${error.message}`)
     }
   }

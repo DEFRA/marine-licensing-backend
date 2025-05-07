@@ -1,5 +1,4 @@
 import { getExemptionController } from './get-exemption'
-import Boom from '@hapi/boom'
 
 describe('GET /exemption', () => {
   const paramsValidator = getExemptionController.options.validate.params
@@ -63,12 +62,12 @@ describe('GET /exemption', () => {
       }
     })
 
-    const result = await getExemptionController.handler(
-      { db: mockMongo, params: { id: mockId } },
-      mockHandler
-    )
-
-    expect(result).toEqual(Boom.notFound('Exemption not found'))
+    await expect(
+      getExemptionController.handler(
+        { db: mockMongo, params: { id: mockId } },
+        mockHandler
+      )
+    ).rejects.toThrow('Exemption not found')
   })
 
   it('should return an error message if the database operation fails', async () => {
