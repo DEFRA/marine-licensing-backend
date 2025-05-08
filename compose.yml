@@ -1,113 +1,148 @@
+version: '3.8'
+
+networks:
+  cdp-tenant:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+
 services:
+  # ────────────────────────────────────────────────────────────────
+  # Defra-ID stub (OpenID Connect discovery + token endpoints)
+  # ────────────────────────────────────────────────────────────────
   defra-id-stub:
-    image: defradigital/cdp-defra-id-stub
+    image: defradigital/cdp-defra-id-stub:latest
+    platform: linux/amd64
+    container_name: defra-id-stub
     ports:
-      - '8088:8088'
+      - '3200:3200'
     environment:
-      - PORT=8088
+      PORT: 3200
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'curl',
+          '-f',
+          'http://localhost:3200/cdp-defra-id-stub/.well-known/openid-configuration'
+        ]
+      interval: 10s
+      start_period: 5s
+      retries: 5
     networks:
       - cdp-tenant
 
+  # ────────────────────────────────────────────────────────────────
+  # LocalStack (AWS mocks)
+  # ────────────────────────────────────────────────────────────────
   localstack:
     image: localstack/localstack:3.0.2
+    container_name: localstack
     ports:
-      - '4566:4566' # LocalStack Gateway
-      - '4510-4559:4510-4559' # external services port range
+      - '4566:4566' # gateway
+      - '4510-4559:4510-4559'
     env_file:
-      - 'compose/aws.env'
+      - compose/aws.env
     environment:
-      DEBUG: ${DEBUG:-1}
-      LS_LOG: WARN # Localstack DEBUG Level
+      DEBUG: '${DEBUG:-1}'
+      LS_LOG: WARN
       SERVICES: s3,sqs,sns,firehose
-      LOCALSTACK_HOST: 127.0.0.1
+      LOCALSTACK_HOST: localstack
     volumes:
       - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
-      - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+      - './compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh'
     healthcheck:
-      test: ['CMD', 'curl', 'localhost:4566']
+      test: ['CMD', 'curl', '-f', 'http://localhost:4566']
       interval: 5s
       start_period: 5s
       retries: 3
     networks:
       - cdp-tenant
 
+  # ────────────────────────────────────────────────────────────────
+  # Redis (session cache)
+  # ────────────────────────────────────────────────────────────────
   redis:
     image: redis:7.2.3-alpine3.18
+    container_name: redis
     ports:
       - '6379:6379'
     restart: always
     networks:
       - cdp-tenant
 
+  # ────────────────────────────────────────────────────────────────
+  # MongoDB (persistence)
+  # ────────────────────────────────────────────────────────────────
   mongodb:
     image: mongo:6.0.13
-    networks:
-      - cdp-tenant
+    container_name: mongodb
     ports:
       - '27017:27017'
     volumes:
-      - mongodb-data:/data
+      - mongodb-data:/data/db
     restart: always
+    networks:
+      - cdp-tenant
 
-  ################################################################################
-
-  # frontend:
-  #   image: defradigital/frontend:${FRONTEND_VERSION:-latest}
-  #   ports:
-  #     - '3000:3000'
-  #   links:
-  #     - 'localstack:localstack'
-  #     - 'redis:redis'
-  #   depends_on:
-  #     localstack:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_started
-  #   env_file:
-  #     - 'compose/aws.env'
-  #   environment:
-  #     PORT: 3000
-  #     NODE_ENV: development
-  #     REDIS_HOST: redis
-  #     LOCALSTACK_ENDPOINT: http://localstack:4566
-  #     USE_SINGLE_INSTANCE_CACHE: true
-  #   networks:
-  #     - cdp-tenant
-
+  # ────────────────────────────────────────────────────────────────
+  # Marine Licensing Backend
+  # ────────────────────────────────────────────────────────────────
   marine-licensing-backend:
     build:
       context: .
       target: development
+    container_name: marine-licensing-backend
     ports:
       - '3001:3001'
-    links:
-      - 'localstack:localstack'
-      - 'mongodb:mongodb'
     depends_on:
+      defra-id-stub:
+        condition: service_healthy
       localstack:
         condition: service_healthy
       mongodb:
         condition: service_started
     env_file:
-      - 'compose/aws.env'
+      - compose/aws.env
     environment:
       PORT: 3001
       NODE_ENV: development
       LOCALSTACK_ENDPOINT: http://localstack:4566
       MONGO_URI: mongodb://mongodb:27017/
-      DEFRA_ID_BASE_URL: http://defra-id-stub:8088
+      # Point at our stub container on this network:
+      DEFRA_ID_OIDC_CONFIGURATION_URL: http://defra-id-stub:3200/cdp-defra-id-stub/.well-known/openid-configuration
+      DEFRA_ID_SERVICE_ID: cdp-defra-id-stub
+      DEFRA_ID_CLIENT_ID: cdp-defra-id-stub
+      DEFRA_ID_CLIENT_SECRET: test_value
+      SESSION_COOKIE_PASSWORD: beepBoopBeepDevelopmentOnlyBeepBoop
+    restart: on-failure
     networks:
       - cdp-tenant
     volumes:
       - ./src:/home/node/src
       - ./package.json:/home/node/package.json
-
-################################################################################
-
-volumes:
-  mongodb-data:
-
-networks:
-  cdp-tenant:
-    driver: bridge
-    name: cdp-tenant
+# (Optional) Uncomment & update this when you need your frontend in Compose
+#
+#  marine-licensing-frontend:
+#    build:
+#      context: ../marine-licensing-frontend
+#      target: development
+#    container_name: marine-licensing-frontend
+#    ports:
+#      - "3000:3000"
+#    depends_on:
+#      localstack:
+#        condition: service_healthy
+#      redis:
+#        condition: service_started
+#    env_file:
+#      - compose/aws.env
+#    environment:
+#      PORT:                     3000
+#      NODE_ENV:                 development
+#      REDIS_HOST:               redis
+#      LOCALSTACK_ENDPOINT:      http://localstack:4566
+#      USE_SINGLE_INSTANCE_CACHE:true
+#    networks:
+#      - cdp-tenant
