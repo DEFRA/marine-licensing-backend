@@ -69,4 +69,24 @@ describe('PATCH /exemptions/public-register', () => {
       )
     ).rejects.toThrow(`Error updating project name: ${mockError}`)
   })
+
+  it('should return an 404 if id is not correct', async () => {
+    const { mockMongo, mockHandler } = global
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        updateOne: jest.fn().mockResolvedValueOnce({ matchedCount: 0 })
+      }
+    })
+
+    expect(() =>
+      updateProjectNameController.handler(
+        {
+          db: mockMongo,
+          payload: { id: new ObjectId().toHexString(), consent: false }
+        },
+        mockHandler
+      )
+    ).rejects.toThrow(`Exemption not found`)
+  })
 })

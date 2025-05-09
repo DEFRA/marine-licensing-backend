@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { updatePublicRegisterController } from './update-public-register.js'
+import Boom from '@hapi/boom'
 
 describe('PATCH /exemptions/public-register', () => {
   const payloadValidator =
@@ -71,5 +72,27 @@ describe('PATCH /exemptions/public-register', () => {
         mockHandler
       )
     ).rejects.toThrow(`Error updating public register: ${mockError}`)
+  })
+
+  it('should return an 404 if id is not correct', async () => {
+    const { mockMongo, mockHandler } = global
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        updateOne: jest.fn().mockResolvedValueOnce({ matchedCount: 0 })
+      }
+    })
+
+    jest.spyOn(Boom, 'notFound')
+
+    expect(() =>
+      updatePublicRegisterController.handler(
+        {
+          db: mockMongo,
+          payload: { id: new ObjectId().toHexString(), consent: false }
+        },
+        mockHandler
+      )
+    ).rejects.toThrow(`Exemption not found`)
   })
 })
