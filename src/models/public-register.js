@@ -5,12 +5,13 @@ const PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH = 1000
 
 export const publicRegister = joi
   .object({
-    consent: joi.boolean().required().messages({
-      'boolean.base': 'PUBLIC_REGISTER_CONSENT_REQUIRED',
+    consent: joi.string().valid('yes', 'no').required().messages({
+      'string.required': 'PUBLIC_REGISTER_CONSENT_REQUIRED',
+      'any.only': 'PUBLIC_REGISTER_CONSENT_REQUIRED',
       'any.required': 'PUBLIC_REGISTER_CONSENT_REQUIRED'
     }),
     reason: joi.when('consent', {
-      is: true,
+      is: 'yes',
       then: joi
         .string()
         .required()

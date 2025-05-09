@@ -11,6 +11,14 @@ describe('PATCH /exemptions/public-register', () => {
     expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
   })
 
+  it('should fail if consent is present but not a correct value', () => {
+    const result = payloadValidator.validate({
+      consent: 'incorrect value'
+    })
+
+    expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
+  })
+
   it('should fail if consent is empty string', () => {
     const result = payloadValidator.validate({
       consent: ''
