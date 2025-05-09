@@ -136,9 +136,52 @@ describe('defra-id plugin', () => {
     expect(credentials.profile.roles).to.deep.equal(['r1', 'r2'])
     expect(credentials.profile.relationships).to.deep.equal(['org-x'])
   })
-
   it('sets "defra-id" as the default auth strategy', async () => {
     await defraId.plugin.register(server)
     expect(server.auth.default).to.have.been.calledWith('defra-id')
+  })
+
+  it('location() returns the correct callback URL using host+port', async () => {
+    await defraId.plugin.register(server)
+
+    const opts = server.auth.strategy.mock.calls[0][2]
+    expect(opts.location()).toBe(
+      `http://${config.get('host')}:${config.get('port')}/auth/callback`
+    )
+  })
+
+  it('provider.profile() calls Jwt.token.decode and maps the payload', async () => {
+    Jwt.token.decode.mockReturnValue({
+      decoded: {
+        payload: {
+          sub: 'my-user',
+          firstName: 'Dimitri',
+          lastName: 'Alpha',
+          email: 'dimitri@alpha.com',
+          roles: ['r1', 'r2'],
+          relationships: ['org-x']
+        }
+      }
+    })
+
+    await defraId.plugin.register(server)
+    const provider = server.auth.strategy.mock.calls[0][2].provider
+
+    const credentials = { token: 'JWT-TOKEN' }
+    const params = { id_token: 'ID-TOKEN' }
+    provider.profile(credentials, params)
+
+    expect(Jwt.token.decode).toHaveBeenCalledWith('JWT-TOKEN')
+
+    expect(credentials.profile).toEqual({
+      id: 'my-user',
+      firstName: 'Dimitri',
+      lastName: 'Alpha',
+      email: 'dimitri@alpha.com',
+      roles: ['r1', 'r2'],
+      relationships: ['org-x'],
+      rawIdToken: 'ID-TOKEN',
+      logoutUrl: expect.any(String)
+    })
   })
 })
