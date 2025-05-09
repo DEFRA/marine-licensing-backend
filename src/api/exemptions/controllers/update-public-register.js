@@ -1,0 +1,43 @@
+import Boom from '@hapi/boom'
+import { publicRegister } from '../../../models/public-register.js'
+import { StatusCodes } from 'http-status-codes'
+import { ObjectId } from 'mongodb'
+
+export const updatePublicRegisterController = {
+  options: {
+    validate: {
+      query: false,
+      payload: publicRegister
+    }
+  },
+  handler: async (request, h) => {
+    try {
+      const { payload, db } = request
+
+      const { reason, consent, id } = payload
+
+      const result = await db
+        .collection('exemptions')
+        .updateOne(
+          { _id: ObjectId.createFromHexString(id) },
+          { $set: { publicRegister: { reason, consent } } }
+        )
+
+      if (result.matchedCount === 0) {
+        throw Boom.notFound('Exemption not found')
+      }
+
+      return h
+        .response({
+          message: 'success'
+        })
+        .code(StatusCodes.CREATED)
+    } catch (error) {
+      if (error.isBoom) {
+        throw error
+      }
+
+      throw Boom.internal(`Error updating public register: ${error.message}`)
+    }
+  }
+}

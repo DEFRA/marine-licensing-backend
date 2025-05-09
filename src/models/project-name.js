@@ -1,4 +1,5 @@
 import joi from 'joi'
+import { exemptionId } from './shared-models.js'
 
 const PROJECT_NAME_MAX_LENGTH = 250
 
@@ -14,3 +15,5 @@ export const projectName = joi.object({
       'any.required': 'PROJECT_NAME_REQUIRED'
     })
 })
+
+export const updateProjectName = projectName.append(exemptionId)
