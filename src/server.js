@@ -1,6 +1,7 @@
 import Hapi from '@hapi/hapi'
 
 import { config } from './config.js'
+import { defraId } from './common/helpers/auth/defra-id.js'
 import { router } from './plugins/router.js'
 import { requestLogger } from './common/helpers/logging/request-logger.js'
 import { mongoDb } from './common/helpers/mongodb.js'
@@ -51,6 +52,7 @@ async function createServer() {
     secureContext,
     pulse,
     mongoDb,
+    defraId,
     router
   ])
 

@@ -1,20 +1,35 @@
-import { createServer } from '../server'
+import Hapi from '@hapi/hapi'
+import { health } from '../../src/routes/health.js'
 
-describe('Health Endpoint', () => {
+jest.mock('node-fetch', () => ({
+  __esModule: true,
+  default: jest.fn().mockResolvedValue({
+    json: async () => ({
+      authorization_endpoint: 'https://auth/',
+      token_endpoint: 'https://token/',
+      end_session_endpoint: 'https://logout/'
+    })
+  })
+}))
+jest.mock('@hapi/jwt', () => ({
+  __esModule: true,
+  token: {
+    decode: () => ({ decoded: { payload: {} } })
+  }
+}))
+
+describe('health route', () => {
   let server
+
   beforeAll(async () => {
-    server = await createServer()
+    server = Hapi.server()
+    server.route(health)
     await server.initialize()
   })
 
-  afterAll(async () => {
-    await server.stop({ timeout: 0 })
-  })
-
-  test('GET /health returns success message', async () => {
-    const response = await server.inject({ method: 'GET', url: '/health' })
-    expect(response.statusCode).toBe(200)
-    const payload = JSON.parse(response.payload)
-    expect(payload).toEqual({ message: 'success' })
+  it('returns 200 OK', async () => {
+    const res = await server.inject({ method: 'GET', url: '/health' })
+    expect(res.statusCode).toBe(200)
+    expect(res.result).toEqual({ message: 'success' })
   })
 })
