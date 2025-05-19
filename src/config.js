@@ -122,7 +122,7 @@ const config = convict({
     format: String,
     env: 'DEFRA_ID_OIDC_CONFIGURATION_URL',
     default:
-      'http://localhost:3200/cdp-defra-id-stub/.well-known/openid-configuration'
+      'https://cdp-defra-id-stub.dev.cdp-int.defra.cloud/cdp-defra-id-stub/.well-known/openid-configuration'
   },
   defraIdServiceId: {
     doc: 'DEFRA ID service GUID',
