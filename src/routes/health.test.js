@@ -27,6 +27,12 @@ describe('health route', () => {
     await server.initialize()
   })
 
+  afterAll(async () => {
+    if (server && typeof server.stop === 'function') {
+      await server.stop({ timeout: 0 })
+    }
+  })
+
   it('returns 200 OK', async () => {
     const res = await server.inject({ method: 'GET', url: '/health' })
     expect(res.statusCode).toBe(200)

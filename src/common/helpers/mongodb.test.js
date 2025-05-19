@@ -65,9 +65,7 @@ describe('#mongoDb', () => {
     })
 
     afterAll(async () => {
-      if (server && typeof server.stop === 'function') {
-        await server.stop({ timeout: 0 })
-      }
+      await server.stop({ timeout: 0 })
     })
 
     test('Server should have expected MongoDb decorators', () => {
@@ -90,6 +88,10 @@ describe('#mongoDb', () => {
       process.env.NODE_ENV = 'test'
       server = await createServer()
       await server.initialize()
+    })
+
+    afterAll(async () => {
+      await server.stop({ timeout: 0 })
     })
 
     test('Should close Mongo client on server stop', async () => {
