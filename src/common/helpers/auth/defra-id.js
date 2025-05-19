@@ -7,15 +7,22 @@ export const defraId = {
   plugin: {
     name: 'defra-id',
     register: async (server) => {
-      const oidcConf = await fetch(
-        config.get('defraIdOidcConfigurationUrl')
-      ).then((res) => res.json())
+      const oidcConfigurationUrl = config.get('defraIdOidcConfigurationUrl')
+      const authCallbackUrl = config.get('appBaseUrl') + '/auth/callback'
 
       await server.register(Bell)
 
+      const oidcConf = await fetch(oidcConfigurationUrl).then((res) =>
+        res.json()
+      )
+
       server.auth.strategy('defra-id', 'bell', {
-        location: () =>
-          `http://${config.get('host')}:${config.get('port')}/auth/callback`,
+        location: (request) => {
+          if (request.info.referrer) {
+            request.yar.flash('referrer', request.info.referrer)
+          }
+          return authCallbackUrl
+        },
         provider: {
           name: 'defra-id',
           protocol: 'oauth2',

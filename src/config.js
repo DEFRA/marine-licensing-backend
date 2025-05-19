@@ -117,6 +117,12 @@ const config = convict({
       env: 'TRACING_HEADER'
     }
   },
+  appBaseUrl: {
+    doc: 'Application base URL for after we login',
+    format: String,
+    default: 'http://localhost:3000',
+    env: 'APP_BASE_URL'
+  },
   defraIdOidcConfigurationUrl: {
     doc: 'DEFRA ID discovery URL',
     format: String,

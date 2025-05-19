@@ -1,17 +1,17 @@
+import Bell from '@hapi/bell'
 import fetch from 'node-fetch'
 import Jwt from '@hapi/jwt'
-import Bell from '@hapi/bell'
 import { config } from '../../../config.js'
 import { defraId } from './defra-id.js'
 
-jest.mock('node-fetch', () => ({
-  __esModule: true,
-  default: jest.fn()
-}))
-
+jest.mock('node-fetch')
 jest.mock('@hapi/jwt', () => ({
   __esModule: true,
-  default: { token: { decode: jest.fn() } }
+  default: {
+    token: {
+      decode: jest.fn()
+    }
+  }
 }))
 
 describe('defraId plugin', () => {
@@ -19,8 +19,7 @@ describe('defraId plugin', () => {
   let fakeOidc
 
   beforeEach(() => {
-    jest.resetAllMocks()
-
+    jest.clearAllMocks()
     jest.spyOn(config, 'get').mockImplementation(
       (key) =>
         ({
@@ -28,9 +27,8 @@ describe('defraId plugin', () => {
             'http://stub/.well-known/openid-configuration',
           defraIdServiceId: 'svc-id',
           defraIdClientId: 'client-id',
-          defraIdClientSecret: 'test_value',
-          host: 'api.local',
-          port: 4000,
+          defraIdClientSecret: 'secret-val',
+          appBaseUrl: 'http://api.local:4000',
           defraIdCookiePassword: 'cookie-pass'
         })[key]
     )
@@ -42,13 +40,13 @@ describe('defraId plugin', () => {
     }
     fetch.mockResolvedValue({ json: async () => fakeOidc })
 
-    Jwt.token.decode = jest.fn().mockReturnValue({
+    Jwt.token.decode.mockReturnValue({
       decoded: {
         payload: {
-          sub: 'user-123',
+          sub: 'my-user',
           firstName: 'Dimitri',
           lastName: 'Alpha',
-          email: 'dimitri@alpha.com',
+          email: 'dimi@alpha.com',
           roles: ['r1', 'r2'],
           relationships: ['org-x']
         }
@@ -64,8 +62,6 @@ describe('defraId plugin', () => {
     }
   })
 
-  afterEach(() => jest.restoreAllMocks())
-
   it('fetches discovery and registers Bell', async () => {
     await defraId.plugin.register(server)
     expect(fetch).toHaveBeenCalledWith(
@@ -74,26 +70,27 @@ describe('defraId plugin', () => {
     expect(server.register).toHaveBeenCalledWith(Bell)
   })
 
-  it('defines defra-id strategy options', async () => {
+  it('defines the defra-id strategy correctly', async () => {
     await defraId.plugin.register(server)
     const [name, scheme, opts] = server.auth.strategy.mock.calls[0]
     expect(name).toBe('defra-id')
     expect(scheme).toBe('bell')
     expect(opts.clientId).toBe('client-id')
-    expect(opts.clientSecret).toBe('test_value')
+    expect(opts.clientSecret).toBe('secret-val')
     expect(opts.cookie).toBe('bell-defra-id')
     expect(opts.password).toBe('cookie-pass')
     expect(opts.isSecure).toBe(false)
     expect(opts.providerParams).toEqual({ serviceId: 'svc-id' })
   })
 
-  it('location() returns correct callback URL', async () => {
+  it('builds the correct callback URL in location()', async () => {
     await defraId.plugin.register(server)
     const opts = server.auth.strategy.mock.calls[0][2]
-    expect(opts.location()).toBe('http://api.local:4000/auth/callback')
+    const fakeReq = { info: {}, yar: { flash: jest.fn() } }
+    expect(opts.location(fakeReq)).toBe('http://api.local:4000/auth/callback')
   })
 
-  it('uses OIDC doc values', async () => {
+  it('uses the OIDC discovery endpoints', async () => {
     await defraId.plugin.register(server)
     const provider = server.auth.strategy.mock.calls[0][2].provider
     expect(provider.auth).toBe(fakeOidc.authorization_endpoint)
@@ -101,30 +98,18 @@ describe('defraId plugin', () => {
     expect(provider.scope).toEqual(['openid', 'offline_access'])
   })
 
-  it('profile() maps payload for Dimitri', async () => {
-    Jwt.token.decode.mockReturnValue({
-      decoded: {
-        payload: {
-          sub: 'my-user',
-          firstName: 'Dimitri',
-          lastName: 'Alpha',
-          email: 'dimitri@alpha.com',
-          roles: ['r1', 'r2'],
-          relationships: ['org-x']
-        }
-      }
-    })
+  it('maps the JWT payload into credentials.profile', async () => {
     await defraId.plugin.register(server)
     const provider = server.auth.strategy.mock.calls[0][2].provider
-    const credentials = { token: 'JWT-TOKEN' }
+    const creds = { token: 'ABC' }
     const params = { id_token: 'ID-TOKEN' }
-    provider.profile(credentials, params)
-    expect(Jwt.token.decode).toHaveBeenCalledWith('JWT-TOKEN')
-    expect(credentials.profile).toEqual({
+    provider.profile(creds, params)
+    expect(Jwt.token.decode).toHaveBeenCalledWith('ABC')
+    expect(creds.profile).toEqual({
       id: 'my-user',
       firstName: 'Dimitri',
       lastName: 'Alpha',
-      email: 'dimitri@alpha.com',
+      email: 'dimi@alpha.com',
       roles: ['r1', 'r2'],
       relationships: ['org-x'],
       rawIdToken: 'ID-TOKEN',
@@ -132,17 +117,17 @@ describe('defraId plugin', () => {
     })
   })
 
-  it('sets default strategy', async () => {
+  it('sets the default auth strategy to defra-id', async () => {
     await defraId.plugin.register(server)
     expect(server.auth.default).toHaveBeenCalledWith('defra-id')
   })
 
-  it('throws on discovery fetch failure', async () => {
+  it('propagates fetch errors', async () => {
     fetch.mockRejectedValue(new Error('fetch-bang'))
     await expect(defraId.plugin.register(server)).rejects.toThrow('fetch-bang')
   })
 
-  it('throws on Bell registration failure', async () => {
+  it('propagates Bell registration errors', async () => {
     server.register.mockRejectedValue(new Error('bell-bang'))
     await expect(defraId.plugin.register(server)).rejects.toThrow('bell-bang')
   })
