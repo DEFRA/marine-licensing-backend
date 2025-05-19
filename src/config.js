@@ -121,20 +121,19 @@ const config = convict({
     doc: 'DEFRA ID discovery URL',
     format: String,
     env: 'DEFRA_ID_OIDC_CONFIGURATION_URL',
-    default:
-      'https://cdp-defra-id-stub.dev.cdp-int.defra.cloud/cdp-defra-id-stub/.well-known/openid-configuration'
+    default: ''
   },
   defraIdServiceId: {
     doc: 'DEFRA ID service GUID',
     format: String,
     env: 'DEFRA_ID_SERVICE_ID',
-    default: '<demo-service-id>'
+    default: ''
   },
   defraIdClientId: {
     doc: 'DEFRA ID client ID',
     format: String,
     env: 'DEFRA_ID_CLIENT_ID',
-    default: '<demo-client-id>'
+    default: ''
   },
   defraIdClientSecret: {
     doc: 'DEFRA ID client secret',
