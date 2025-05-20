@@ -55,7 +55,7 @@
     "postcss": "8.5.3",
     "source-map-js": "1.2.1",
     "typescript": "5.8.3",
-    "undici": "7.4.0"
+    "undici": "7.5.0"
   },
   "devDependencies": {
     "@babel/core": "7.26.9",
