@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb'
-import { mongoDb } from './mongoDb'
+import { mongoDb } from './mongodb.js'
 
 jest.mock('mongodb')
 jest.mock('../../config', () => ({
