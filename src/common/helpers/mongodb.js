@@ -12,8 +12,7 @@ const mongoDb = {
       ...(server.secureContext && { secureContext: server.secureContext })
     }
 
-    const mongoUrl = config.get('mongoUri')
-    const databaseName = config.get('mongoDatabase')
+    const { uri: mongoUrl, databaseName } = config.get('mongo')
 
     server.logger.info('Setting up mongodb')
 

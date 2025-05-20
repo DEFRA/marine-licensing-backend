@@ -1,25 +1,31 @@
 import { MongoClient } from 'mongodb'
 import { mongoDb } from './mongodb.js'
 
-jest.mock('mongodb')
-jest.mock('../../config', () => ({
+jest.mock('mongodb', () => ({
+  MongoClient: {
+    connect: jest.fn()
+  }
+}))
+
+jest.mock('../../config.js', () => ({
   config: {
     get: jest.fn((key) => {
-      if (key === 'mongoUri') {
-        return 'mongodb://localhost:27017'
-      } else if (key === 'mongoDatabase') {
-        return 'test-db'
+      if (key === 'mongo') {
+        return {
+          uri: 'mongodb://localhost:27017',
+          databaseName: 'test-db'
+        }
       }
-      return null
+      return undefined
     })
   }
 }))
 
 describe('MongoDB Plugin', () => {
   let server
+  let mockClient
   let mockDb
   let mockCollection
-  let mockClient
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -36,25 +42,20 @@ describe('MongoDB Plugin', () => {
       db: jest.fn().mockReturnValue(mockDb)
     }
 
-    MongoClient.connect = jest.fn().mockResolvedValue(mockClient)
+    MongoClient.connect.mockResolvedValue(mockClient)
 
     server = {
-      logger: {
-        info: jest.fn()
-      },
+      logger: { info: jest.fn() },
       decorate: jest.fn()
     }
   })
 
-  it('should register the plugin successfully', async () => {
+  it('registers and decorates correctly', async () => {
     await mongoDb.register(server)
 
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://localhost:27017',
-      {
-        retryWrites: false,
-        readPreference: 'secondary'
-      }
+      { retryWrites: false, readPreference: 'secondary' }
     )
 
     expect(server.logger.info).toHaveBeenCalledWith('Setting up mongodb')
@@ -71,30 +72,26 @@ describe('MongoDB Plugin', () => {
     expect(server.decorate).toHaveBeenCalledWith('request', 'db', mockDb)
   })
 
-  it('should create indexes', async () => {
+  it('creates the sites index', async () => {
     await mongoDb.register(server)
 
     expect(mockDb.collection).toHaveBeenCalledWith('sites')
     expect(mockCollection.createIndex).toHaveBeenCalledWith({ id: 1 })
   })
 
-  it('should pass secureContext if server has it', async () => {
-    const secureContext = { some: 'secureContextObject' }
+  it('passes secureContext through to the driver options', async () => {
+    const secureContext = { foo: 'bar' }
     server.secureContext = secureContext
 
     await mongoDb.register(server)
 
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://localhost:27017',
-      {
-        retryWrites: false,
-        readPreference: 'secondary',
-        secureContext
-      }
+      { retryWrites: false, readPreference: 'secondary', secureContext }
     )
   })
 
-  it('should validate plugin metadata', () => {
+  it('exposes name and version metadata', () => {
     expect(mongoDb.name).toBe('mongodb')
     expect(mongoDb.version).toBe('1.0.0')
   })
