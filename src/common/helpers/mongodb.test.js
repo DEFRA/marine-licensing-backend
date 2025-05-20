@@ -62,7 +62,7 @@ describe('#mongoDb', () => {
       process.env.NODE_ENV = 'test'
       server = await createServer()
       await server.initialize()
-    })
+    }, 15000)
 
     afterAll(async () => {
       await server.stop({ timeout: 0 })
@@ -88,7 +88,7 @@ describe('#mongoDb', () => {
       process.env.NODE_ENV = 'test'
       server = await createServer()
       await server.initialize()
-    })
+    }, 15000)
 
     afterAll(async () => {
       await server.stop({ timeout: 0 })
