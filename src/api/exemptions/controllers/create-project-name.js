@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom'
-import { projectName } from '../../../../models/project-name.js'
+import { projectName } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 
 export const createProjectNameController = {
@@ -18,7 +18,10 @@ export const createProjectNameController = {
         .insertOne({ projectName: payload.projectName })
 
       return h
-        .response({ message: 'success', value: result })
+        .response({
+          message: 'success',
+          value: { id: result.insertedId.toString() }
+        })
         .code(StatusCodes.CREATED)
     } catch (error) {
       throw Boom.internal(`Error creating project name: ${error.message}`)
