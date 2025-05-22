@@ -17,8 +17,12 @@ jest.mock('@hapi/jwt', () => ({
 describe('defraId plugin', () => {
   let server
   let fakeOidc
+  let originalNodeEnv
 
   beforeEach(() => {
+    originalNodeEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'development'
+
     jest.clearAllMocks()
     jest.spyOn(config, 'get').mockImplementation(
       (key) =>
@@ -29,7 +33,8 @@ describe('defraId plugin', () => {
           defraIdClientId: 'client-id',
           defraIdClientSecret: 'secret-val',
           appBaseUrl: 'http://api.local:4000',
-          defraIdCookiePassword: 'cookie-pass'
+          defraIdCookiePassword: 'cookie-pass',
+          redirectUri: 'http://api.local:4000/auth/callback'
         })[key]
     )
 
@@ -60,6 +65,10 @@ describe('defraId plugin', () => {
         default: jest.fn()
       }
     }
+  })
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv
   })
 
   it('fetches discovery and registers Bell', async () => {
@@ -130,5 +139,12 @@ describe('defraId plugin', () => {
   it('propagates Bell registration errors', async () => {
     server.register.mockRejectedValue(new Error('bell-bang'))
     await expect(defraId.plugin.register(server)).rejects.toThrow('bell-bang')
+  })
+
+  it('sets dummy auth strategy in test environment', async () => {
+    process.env.NODE_ENV = 'test'
+    await defraId.plugin.register(server)
+    expect(server.auth.default).toHaveBeenCalledWith('dummy')
+    expect(server.register).not.toHaveBeenCalled()
   })
 })

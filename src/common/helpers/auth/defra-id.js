@@ -8,7 +8,12 @@ export const defraId = {
     name: 'defra-id',
     register: async (server) => {
       const oidcConfigurationUrl = config.get('defraIdOidcConfigurationUrl')
-      const authCallbackUrl = config.get('appBaseUrl') + '/auth/callback'
+
+      if (process.env.NODE_ENV === 'test' || !oidcConfigurationUrl) {
+        server.auth.default('dummy')
+        return
+      }
+      const authCallbackUrl = config.get('redirectUri')
 
       await server.register(Bell)
 
