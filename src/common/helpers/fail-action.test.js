@@ -1,6 +1,17 @@
 import { failAction } from './fail-action.js'
+import { createLogger } from './logging/logger.js'
+
+jest.mock('./logging/logger.js')
 
 describe('#fail-action', () => {
+  beforeEach(() => {
+    createLogger.mockReturnValue({
+      warn: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn()
+    })
+  })
+
   test('Should throw expected error', () => {
     const mockRequest = {}
     const mockToolkit = {}

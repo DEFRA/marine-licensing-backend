@@ -9,6 +9,8 @@ convict.addFormats(convictFormatWithValidator)
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const isDevelopment = process.env.NODE_ENV === 'development'
+const cdpEnv = process.env.ENVIRONMENT || 'local'
+const enableSecureContext = isProduction || cdpEnv === 'test'
 
 const config = convict({
   serviceVersion: {
@@ -62,7 +64,7 @@ const config = convict({
       'ext-test',
       'prod'
     ],
-    default: 'local',
+    default: cdpEnv,
     env: 'ENVIRONMENT'
   },
   log: {
@@ -116,7 +118,7 @@ const config = convict({
   isSecureContextEnabled: {
     doc: 'Enable Secure Context',
     format: Boolean,
-    default: isProduction,
+    default: enableSecureContext,
     env: 'ENABLE_SECURE_CONTEXT'
   },
   isMetricsEnabled: {

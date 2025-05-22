@@ -4,16 +4,14 @@ import Jwt from '@hapi/jwt'
 import { config } from '../../../config.js'
 import { defraId } from './defra-id.js'
 
-jest.mock('node-fetch')
-jest.mock('@hapi/jwt', () => ({
-  __esModule: true,
-  default: {
-    token: {
-      decode: jest.fn()
-    }
-  }
-}))
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn()
+}
 
+jest.mock('../logging/logger.js', () => ({
+  createLogger: jest.fn(() => mockLogger)
+}))
 describe('defraId plugin', () => {
   let server
   let fakeOidc
@@ -24,6 +22,35 @@ describe('defraId plugin', () => {
     process.env.NODE_ENV = 'development'
 
     jest.clearAllMocks()
+
+    if (global.PROXY_AGENT) {
+      delete global.PROXY_AGENT
+    }
+
+    fakeOidc = {
+      authorization_endpoint: 'https://auth/',
+      token_endpoint: 'https://token/',
+      end_session_endpoint: 'https://logout/'
+    }
+
+    fetch.mockResolvedValue({
+      ok: true,
+      json: async () => fakeOidc
+    })
+
+    Jwt.token.decode = jest.fn().mockReturnValue({
+      decoded: {
+        payload: {
+          sub: 'mock-user',
+          firstName: 'Mock',
+          lastName: 'User',
+          email: 'mock@example.com',
+          roles: ['role1', 'role2'],
+          relationships: ['org1']
+        }
+      }
+    })
+
     jest.spyOn(config, 'get').mockImplementation(
       (key) =>
         ({
@@ -37,26 +64,6 @@ describe('defraId plugin', () => {
           redirectUri: 'http://api.local:4000/auth/callback'
         })[key]
     )
-
-    fakeOidc = {
-      authorization_endpoint: 'https://auth/',
-      token_endpoint: 'https://token/',
-      end_session_endpoint: 'https://logout/'
-    }
-    fetch.mockResolvedValue({ json: async () => fakeOidc })
-
-    Jwt.token.decode.mockReturnValue({
-      decoded: {
-        payload: {
-          sub: 'my-user',
-          firstName: 'Dimitri',
-          lastName: 'Alpha',
-          email: 'dimi@alpha.com',
-          roles: ['r1', 'r2'],
-          relationships: ['org-x']
-        }
-      }
-    })
 
     server = {
       register: jest.fn().mockResolvedValue(),
@@ -74,7 +81,8 @@ describe('defraId plugin', () => {
   it('fetches discovery and registers Bell', async () => {
     await defraId.plugin.register(server)
     expect(fetch).toHaveBeenCalledWith(
-      'http://stub/.well-known/openid-configuration'
+      'http://stub/.well-known/openid-configuration',
+      {}
     )
     expect(server.register).toHaveBeenCalledWith(Bell)
   })
@@ -115,12 +123,12 @@ describe('defraId plugin', () => {
     provider.profile(creds, params)
     expect(Jwt.token.decode).toHaveBeenCalledWith('ABC')
     expect(creds.profile).toEqual({
-      id: 'my-user',
-      firstName: 'Dimitri',
-      lastName: 'Alpha',
-      email: 'dimi@alpha.com',
-      roles: ['r1', 'r2'],
-      relationships: ['org-x'],
+      id: 'mock-user',
+      firstName: 'Mock',
+      lastName: 'User',
+      email: 'mock@example.com',
+      roles: ['role1', 'role2'],
+      relationships: ['org1'],
       rawIdToken: 'ID-TOKEN',
       logoutUrl: fakeOidc.end_session_endpoint
     })
@@ -146,5 +154,31 @@ describe('defraId plugin', () => {
     await defraId.plugin.register(server)
     expect(server.auth.default).toHaveBeenCalledWith('dummy')
     expect(server.register).not.toHaveBeenCalled()
+  })
+
+  it('uses proxy agent when available', async () => {
+    global.PROXY_AGENT = { proxy: 'agent' }
+
+    await defraId.plugin.register(server)
+
+    expect(fetch).toHaveBeenCalledWith(
+      'http://stub/.well-known/openid-configuration',
+      { agent: global.PROXY_AGENT }
+    )
+  })
+
+  it('throws error for bad HTTP response', async () => {
+    fetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      json: async () => {
+        throw new Error('Should not be called')
+      }
+    })
+
+    await expect(defraId.plugin.register(server)).rejects.toThrow(
+      'Failed to fetch OIDC config: 404 Not Found'
+    )
   })
 })

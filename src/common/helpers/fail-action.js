@@ -2,12 +2,30 @@ import { createLogger } from './logging/logger.js'
 
 const logger = createLogger()
 
+const safeLog = {
+  warn: (error, message) => {
+    if (logger && typeof logger.warn === 'function') {
+      logger.warn(error, message)
+    }
+  },
+  info: (message) => {
+    if (logger && typeof logger.info === 'function') {
+      logger.info(message)
+    }
+  },
+  error: (message) => {
+    if (logger && typeof logger.error === 'function') {
+      logger.error(message)
+    }
+  }
+}
+
 const isValidationError = (error) => {
   return error.name === 'ValidationError' && !!error.output?.payload?.validation
 }
 
 export function failAction(_request, _h, error) {
-  logger.warn(error, error?.message)
+  safeLog.warn(error, error?.message)
 
   if (isValidationError(error)) {
     error.output.payload.validation = {
