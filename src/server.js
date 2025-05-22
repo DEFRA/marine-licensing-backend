@@ -39,7 +39,7 @@ async function createServer() {
     }
   })
 
-  const isTest = config.get('env') === 'test'
+  const isTest = config.get('isTest')
 
   const plugins = [
     requestLogger,
