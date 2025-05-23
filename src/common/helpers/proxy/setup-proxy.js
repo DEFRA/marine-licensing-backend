@@ -7,11 +7,11 @@ import { config } from '../../../config.js'
 
 export const logger = createLogger()
 
-function safeWarn(logger, message) {
-  if (logger && typeof logger.warn === 'function') {
-    logger.warn(message)
-  } else if (logger && typeof logger.info === 'function') {
-    logger.info(`WARN: ${message}`)
+function safeWarn(loggerInstance, message) {
+  if (loggerInstance && typeof loggerInstance.warn === 'function') {
+    loggerInstance.warn(message)
+  } else if (loggerInstance && typeof loggerInstance.info === 'function') {
+    loggerInstance.info(`WARN: ${message}`)
   }
 }
 
