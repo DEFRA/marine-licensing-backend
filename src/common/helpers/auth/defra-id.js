@@ -4,7 +4,7 @@ import Jwt from '@hapi/jwt'
 import { config } from '../../../config.js'
 import { createLogger } from '../logging/logger.js'
 
-const logger = createLogger()
+export const logger = createLogger()
 
 const safeLog = {
   info: (message) => {
@@ -56,7 +56,6 @@ export const defraId = {
           )
         }
 
-        // Add additional debugging for TLS issues
         safeLog.info('Attempting to fetch OIDC configuration...')
 
         try {

@@ -5,13 +5,16 @@ import { HttpsProxyAgent } from 'https-proxy-agent'
 import { createLogger } from '../logging/logger.js'
 import { config } from '../../../config.js'
 
-const logger = createLogger()
+export const logger = createLogger()
 
-/**
- * If HTTP_PROXY is set setupProxy() will enable it globally
- * for a number of http clients.
- * Node Fetch will still need to pass a ProxyAgent in on each call.
- */
+function safeWarn(logger, message) {
+  if (logger && typeof logger.warn === 'function') {
+    logger.warn(message)
+  } else if (logger && typeof logger.info === 'function') {
+    logger.info(`WARN: ${message}`)
+  }
+}
+
 export function setupProxy() {
   const proxyUrl = config.get('httpProxy')
 
@@ -47,9 +50,10 @@ export function setupProxy() {
       logger.error(`Error code: ${error.code || 'no error code'}`)
       logger.error(`Error stack: ${error.stack}`)
 
-      // Don't throw the error - we want the application to continue even if proxy setup fails
-      // This allows the application to work in environments without a proxy
-      logger.warn('Continuing application startup despite proxy setup failure')
+      safeWarn(
+        logger,
+        'Continuing application startup despite proxy setup failure'
+      )
     }
   } else {
     logger.info(

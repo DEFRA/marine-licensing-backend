@@ -2,14 +2,20 @@ import Bell from '@hapi/bell'
 import fetch from 'node-fetch'
 import Jwt from '@hapi/jwt'
 import { config } from '../../../config.js'
-import { defraId } from './defra-id.js'
+import * as defraIdModule from './defra-id.js'
 import { createLogger } from '../logging/logger.js'
 
+jest.mock('node-fetch')
+jest.mock('@hapi/bell')
+jest.mock('@hapi/jwt')
 jest.mock('../logging/logger.js')
+
 describe('defraId plugin', () => {
   let server
   let fakeOidc
   let originalNodeEnv
+  let mockLogger
+  const { defraId } = defraIdModule
 
   beforeEach(() => {
     originalNodeEnv = process.env.NODE_ENV
@@ -21,10 +27,12 @@ describe('defraId plugin', () => {
       delete global.PROXY_AGENT
     }
 
-    createLogger.mockReturnValue({
+    mockLogger = {
       info: jest.fn(),
       error: jest.fn()
-    })
+    }
+
+    createLogger.mockReturnValue(mockLogger)
 
     fakeOidc = {
       authorization_endpoint: 'https://auth/',
@@ -60,7 +68,10 @@ describe('defraId plugin', () => {
           defraIdClientSecret: 'secret-val',
           appBaseUrl: 'http://api.local:4000',
           defraIdCookiePassword: 'cookie-pass',
-          redirectUri: 'http://api.local:4000/auth/callback'
+          redirectUri: 'http://api.local:4000/auth/callback',
+          cdpEnvironment: 'test',
+          isSecureContextEnabled: true,
+          httpProxy: null
         })[key]
     )
 
@@ -85,6 +96,7 @@ describe('defraId plugin', () => {
     )
     expect(server.register).toHaveBeenCalledWith(Bell)
   })
+
   it('defines the defra-id strategy correctly', async () => {
     await defraId.plugin.register(server)
     const [name, scheme, opts] = server.auth.strategy.mock.calls[0]
@@ -97,12 +109,14 @@ describe('defraId plugin', () => {
     expect(opts.isSecure).toBe(false)
     expect(opts.providerParams).toEqual({ serviceId: 'svc-id' })
   })
+
   it('builds the correct callback URL in location()', async () => {
     await defraId.plugin.register(server)
     const opts = server.auth.strategy.mock.calls[0][2]
     const fakeReq = { info: {}, yar: { flash: jest.fn() } }
     expect(opts.location(fakeReq)).toBe('http://api.local:4000/auth/callback')
   })
+
   it('uses the OIDC discovery endpoints', async () => {
     await defraId.plugin.register(server)
     const provider = server.auth.strategy.mock.calls[0][2].provider
@@ -110,6 +124,7 @@ describe('defraId plugin', () => {
     expect(provider.token).toBe(fakeOidc.token_endpoint)
     expect(provider.scope).toEqual(['openid', 'offline_access'])
   })
+
   it('maps the JWT payload into credentials.profile', async () => {
     await defraId.plugin.register(server)
     const provider = server.auth.strategy.mock.calls[0][2].provider
@@ -128,24 +143,31 @@ describe('defraId plugin', () => {
       logoutUrl: fakeOidc.end_session_endpoint
     })
   })
+
   it('sets the default auth strategy to defra-id', async () => {
     await defraId.plugin.register(server)
     expect(server.auth.default).toHaveBeenCalledWith('defra-id')
   })
+
   it('propagates fetch errors', async () => {
-    fetch.mockRejectedValue(new Error('fetch-bang'))
+    const error = new Error('fetch-bang')
+    fetch.mockRejectedValue(error)
+
     await expect(defraId.plugin.register(server)).rejects.toThrow('fetch-bang')
   })
+
   it('propagates Bell registration errors', async () => {
     server.register.mockRejectedValue(new Error('bell-bang'))
     await expect(defraId.plugin.register(server)).rejects.toThrow('bell-bang')
   })
+
   it('sets dummy auth strategy in test environment', async () => {
     process.env.NODE_ENV = 'test'
     await defraId.plugin.register(server)
     expect(server.auth.default).toHaveBeenCalledWith('dummy')
     expect(server.register).not.toHaveBeenCalled()
   })
+
   it('uses proxy agent when available', async () => {
     global.PROXY_AGENT = { proxy: 'agent' }
 
@@ -156,6 +178,7 @@ describe('defraId plugin', () => {
       { agent: global.PROXY_AGENT }
     )
   })
+
   it('throws error for bad HTTP response', async () => {
     fetch.mockResolvedValue({
       ok: false,
@@ -170,14 +193,55 @@ describe('defraId plugin', () => {
       'Failed to fetch OIDC config: 404 Not Found'
     )
   })
-  it('safeLog handles missing logger functions gracefully', async () => {
-    createLogger.mockReturnValue({
-      error: jest.fn()
+
+  it('handles fetch errors with cause property', async () => {
+    const causeError = new Error('Underlying TLS error')
+    causeError.name = 'TLSError'
+    causeError.code = 'CERT_VALIDATION_ERROR'
+
+    const fetchError = new Error('Fetch failed')
+    fetchError.cause = causeError
+
+    fetch.mockRejectedValue(fetchError)
+
+    await expect(defraId.plugin.register(server)).rejects.toThrow(
+      'Fetch failed'
+    )
+  })
+
+  it('handles missing OIDC configuration URL', async () => {
+    config.get.mockImplementation((key) => {
+      if (key === 'defraIdOidcConfigurationUrl') {
+        return null
+      }
+      return {
+        defraIdServiceId: 'svc-id',
+        defraIdClientId: 'client-id',
+        defraIdClientSecret: 'secret-val',
+        appBaseUrl: 'http://api.local:4000',
+        defraIdCookiePassword: 'cookie-pass',
+        redirectUri: 'http://api.local:4000/auth/callback',
+        cdpEnvironment: 'test',
+        isSecureContextEnabled: true,
+        httpProxy: null
+      }[key]
     })
+
+    await defraId.plugin.register(server)
+
+    expect(server.auth.default).toHaveBeenCalledWith('dummy')
+    expect(server.register).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('safeLog handles missing logger functions gracefully', async () => {
+    mockLogger = { error: jest.fn() }
+    createLogger.mockReturnValue(mockLogger)
 
     await defraId.plugin.register(server)
     expect(server.register).toHaveBeenCalledWith(Bell)
   })
+
   it('safeLog handles null logger gracefully', async () => {
     createLogger.mockReturnValue(null)
 
