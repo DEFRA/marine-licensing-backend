@@ -14,7 +14,11 @@ export default {
   coveragePathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/.server',
-    'index.js'
+    'index.js',
+    'src/tools/test-tls-connection.js',
+    'src/tools/test-oidc-connection.js',
+    'test-tls-connection.js',
+    'TLS-TROUBLESHOOTING.md'
   ],
   coverageDirectory: '<rootDir>/coverage',
   transform: {

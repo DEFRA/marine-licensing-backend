@@ -341,6 +341,74 @@ describe('setupProxy', () => {
     // Should not throw
     expect(() => setupProxy()).not.toThrow()
   })
+
+  test('Should log warning when no TLS environment variables are found', () => {
+    ProxyAgent.mockReturnValue({})
+    HttpsProxyAgent.mockReturnValue({})
+    bootstrap.mockImplementation(() => {
+      global.GLOBAL_AGENT = {}
+    })
+
+    // Clear any TLS environment variables that might be set
+    const originalEnv = { ...process.env }
+    Object.keys(process.env)
+      .filter(
+        (key) =>
+          key.startsWith('TRUSTSTORE_') ||
+          key.startsWith('NODE_TLS_') ||
+          key === 'ENABLE_SECURE_CONTEXT'
+      )
+      .forEach((key) => {
+        delete process.env[key]
+      })
+
+    config.get.mockImplementation((key) => {
+      if (key === 'httpProxy') return 'http://proxy.example.com:8080'
+      if (key === 'cdpEnvironment') return 'test'
+      if (key === 'isSecureContextEnabled') return false
+      return null
+    })
+
+    setupProxy()
+
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'No TLS environment variables found, which may cause certificate validation issues'
+    )
+
+    // Restore the original environment
+    process.env = originalEnv
+  })
+
+  test('Should log TLS environment variables when found', () => {
+    ProxyAgent.mockReturnValue({})
+    HttpsProxyAgent.mockReturnValue({})
+    bootstrap.mockImplementation(() => {
+      global.GLOBAL_AGENT = {}
+    })
+
+    // Set some TLS environment variables
+    const originalEnv = { ...process.env }
+    process.env.TRUSTSTORE_1 = 'mock-cert'
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
+    config.get.mockImplementation((key) => {
+      if (key === 'httpProxy') return 'http://proxy.example.com:8080'
+      if (key === 'cdpEnvironment') return 'test'
+      if (key === 'isSecureContextEnabled') return false
+      return null
+    })
+
+    setupProxy()
+
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /TLS environment variables found: .*TRUSTSTORE_1.*NODE_TLS_REJECT_UNAUTHORIZED.*/
+      )
+    )
+
+    // Restore the original environment
+    process.env = originalEnv
+  })
 })
 
 describe('isTlsError', () => {
