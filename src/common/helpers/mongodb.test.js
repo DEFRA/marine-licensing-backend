@@ -1,47 +1,98 @@
-import { Db, MongoClient } from 'mongodb'
-import { LockManager } from 'mongo-locks'
+import { MongoClient } from 'mongodb'
+import { mongoDb } from './mongodb.js'
 
-import { createServer } from '../../server.js'
+jest.mock('mongodb', () => ({
+  MongoClient: {
+    connect: jest.fn()
+  }
+}))
 
-describe('#mongoDb', () => {
+jest.mock('../../config.js', () => ({
+  config: {
+    get: jest.fn((key) => {
+      if (key === 'mongo') {
+        return {
+          uri: 'mongodb://localhost:27017',
+          databaseName: 'test-db'
+        }
+      }
+      return undefined
+    })
+  }
+}))
+
+describe('MongoDB Plugin', () => {
   let server
+  let mockClient
+  let mockDb
+  let mockCollection
 
-  describe('Set up', () => {
-    beforeAll(async () => {
-      server = await createServer()
-      await server.initialize()
-    })
+  beforeEach(() => {
+    jest.clearAllMocks()
 
-    afterAll(async () => {
-      await server.stop({ timeout: 0 })
-    })
+    mockCollection = {
+      createIndex: jest.fn().mockResolvedValue(true)
+    }
 
-    test('Server should have expected MongoDb decorators', () => {
-      expect(server.db).toBeInstanceOf(Db)
-      expect(server.mongoClient).toBeInstanceOf(MongoClient)
-      expect(server.locker).toBeInstanceOf(LockManager)
-    })
+    mockDb = {
+      collection: jest.fn().mockReturnValue(mockCollection)
+    }
 
-    test('MongoDb should have expected database name', () => {
-      expect(server.db.databaseName).toBe('marine-licensing-backend')
-    })
+    mockClient = {
+      db: jest.fn().mockReturnValue(mockDb)
+    }
 
-    test('MongoDb should have expected namespace', () => {
-      expect(server.db.namespace).toBe('marine-licensing-backend')
-    })
+    MongoClient.connect.mockResolvedValue(mockClient)
+
+    server = {
+      logger: { info: jest.fn() },
+      decorate: jest.fn()
+    }
   })
 
-  describe('Shut down', () => {
-    beforeAll(async () => {
-      server = await createServer()
-      await server.initialize()
-    })
+  it('registers and decorates correctly', async () => {
+    await mongoDb.register(server)
 
-    test('Should close Mongo client on server stop', async () => {
-      const closeSpy = jest.spyOn(server.mongoClient, 'close')
-      await server.stop({ timeout: 0 })
+    expect(MongoClient.connect).toHaveBeenCalledWith(
+      'mongodb://localhost:27017',
+      { retryWrites: false, readPreference: 'secondary' }
+    )
 
-      expect(closeSpy).toHaveBeenCalledWith(true)
-    })
+    expect(server.logger.info).toHaveBeenCalledWith('Setting up mongodb')
+    expect(server.logger.info).toHaveBeenCalledWith(
+      'mongodb connected to test-db'
+    )
+
+    expect(server.decorate).toHaveBeenCalledWith(
+      'server',
+      'mongoClient',
+      mockClient
+    )
+    expect(server.decorate).toHaveBeenCalledWith('server', 'db', mockDb)
+    expect(server.decorate).toHaveBeenCalledWith('request', 'db', mockDb)
+  })
+
+  it('creates the sites index', async () => {
+    await mongoDb.register(server)
+
+    expect(mockDb.collection).toHaveBeenCalledWith('sites')
+    expect(mockCollection.createIndex).toHaveBeenCalledWith({ id: 1 })
+  })
+
+  it('passes secureContext through to the driver options', async () => {
+    const secureContext = { foo: 'bar' }
+    server.secureContext = secureContext
+
+    await mongoDb.register(server)
+
+    expect(MongoClient.connect).toHaveBeenCalledWith(
+      'mongodb://localhost:27017',
+      { retryWrites: false, readPreference: 'secondary', secureContext }
+    )
+  })
+
+  it('exposes name and version metadata', () => {
+    expect(mongoDb.name).toBe('mongodb')
+    expect(mongoDb.version).toBe('1.0.0')
   })
 })

@@ -14,16 +14,24 @@ export default {
   coveragePathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/.server',
-    'index.js'
+    'index.js',
+    'src/tools/test-tls-connection.js',
+    'src/tools/test-oidc-connection.js',
+    'test-tls-connection.js',
+    'TLS-TROUBLESHOOTING.md'
   ],
   coverageDirectory: '<rootDir>/coverage',
   transform: {
     '^.+\\.js$': 'babel-jest'
   },
   transformIgnorePatterns: [
-    `node_modules/(?!${[
-      '@defra/hapi-tracing', // Supports ESM only
-      'node-fetch' // Supports ESM only
-    ].join('|')}/)`
+    '/node_modules/(?!(?:' +
+      [
+        '@defra/hapi-tracing',
+        'node-fetch',
+        'data-uri-to-buffer',
+        '@hapi/jwt'
+      ].join('|') +
+      ')/)'
   ]
 }

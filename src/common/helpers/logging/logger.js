@@ -1,11 +1,7 @@
-import { pino } from 'pino'
+import pino from 'pino'
 
 import { loggerOptions } from './logger-options.js'
 
-const logger = pino(loggerOptions)
-
-function createLogger() {
-  return logger
+export function createLogger() {
+  return pino(loggerOptions)
 }
-
-export { createLogger }
