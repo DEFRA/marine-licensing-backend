@@ -113,7 +113,9 @@ describe('setupProxy', () => {
 
     setupProxy()
 
-    expect(HttpsProxyAgent).toHaveBeenCalledWith(proxyUrl)
+    expect(HttpsProxyAgent).toHaveBeenCalledWith(proxyUrl, {
+      rejectUnauthorized: false
+    })
 
     expect(global.PROXY_AGENT).toBe(mockHttpsProxyAgent)
 
@@ -121,7 +123,7 @@ describe('setupProxy', () => {
       'Setting up HttpsProxyAgent for node-fetch...'
     )
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'HttpsProxyAgent setup completed'
+      'HttpsProxyAgent setup completed with custom TLS options'
     )
   })
 
@@ -273,6 +275,39 @@ describe('setupProxy', () => {
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'WARN: Continuing application startup despite proxy setup failure'
+    )
+  })
+
+  test('Should log TLS diagnostic information for specific error types', () => {
+    const mockError = new Error('TLS handshake failed')
+    mockError.code = 'ECONNRESET'
+    mockError.stack = 'Test error stack'
+
+    setGlobalDispatcher.mockImplementation(() => {
+      throw mockError
+    })
+
+    config.get.mockImplementation((key) => {
+      if (key === 'httpProxy') return 'http://localhost:8080'
+      if (key === 'cdpEnvironment') return 'test'
+      if (key === 'isSecureContextEnabled') return false
+      return null
+    })
+
+    setupProxy()
+
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      'This appears to be a TLS/certificate validation issue.'
+    )
+    expect(mockLogger.error).toHaveBeenCalledWith('Please check:')
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      '1. Your proxy configuration can access the target URL'
+    )
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      '2. Your certificates are in the correct PEM format'
+    )
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      '3. Your ENABLE_SECURE_CONTEXT setting is correct'
     )
   })
 })

@@ -29,9 +29,29 @@ export function setupProxy() {
         `Secure context enabled: ${config.get('isSecureContextEnabled')}`
       )
 
+      const tlsEnvVars = Object.keys(process.env)
+        .filter(
+          (key) =>
+            key.startsWith('TRUSTSTORE_') || key === 'ENABLE_SECURE_CONTEXT'
+        )
+        .map((key) => key)
+
+      logger.info(
+        `TLS-related environment variables found: ${tlsEnvVars.join(', ') || 'none'}`
+      )
+
       logger.info('Setting up undici ProxyAgent...')
-      setGlobalDispatcher(new ProxyAgent(proxyUrl))
-      logger.info('Undici ProxyAgent setup completed')
+      const proxyAgentOptions = {
+        requestTls: {
+          rejectUnauthorized: false
+        },
+        proxyTls: {
+          rejectUnauthorized: false
+        }
+      }
+
+      setGlobalDispatcher(new ProxyAgent(proxyUrl, proxyAgentOptions))
+      logger.info('Undici ProxyAgent setup completed with custom TLS options')
 
       logger.info('Setting up global-agent...')
       bootstrap()
@@ -42,8 +62,12 @@ export function setupProxy() {
       logger.info('global-agent setup completed')
 
       logger.info('Setting up HttpsProxyAgent for node-fetch...')
-      global.PROXY_AGENT = new HttpsProxyAgent(proxyUrl)
-      logger.info('HttpsProxyAgent setup completed')
+      const httpsProxyOptions = {
+        rejectUnauthorized: false
+      }
+
+      global.PROXY_AGENT = new HttpsProxyAgent(proxyUrl, httpsProxyOptions)
+      logger.info('HttpsProxyAgent setup completed with custom TLS options')
 
       logger.info('Proxy setup completed successfully')
     } catch (error) {
@@ -51,6 +75,19 @@ export function setupProxy() {
       logger.error(`Error name: ${error.name}`)
       logger.error(`Error code: ${error.code || 'no error code'}`)
       logger.error(`Error stack: ${error.stack}`)
+
+      if (
+        error.code === 'ECONNRESET' ||
+        error.code === 'ECONNREFUSED' ||
+        error.message.includes('TLS') ||
+        error.message.includes('certificate')
+      ) {
+        logger.error('This appears to be a TLS/certificate validation issue.')
+        logger.error('Please check:')
+        logger.error('1. Your proxy configuration can access the target URL')
+        logger.error('2. Your certificates are in the correct PEM format')
+        logger.error('3. Your ENABLE_SECURE_CONTEXT setting is correct')
+      }
 
       safeWarn(
         logger,
