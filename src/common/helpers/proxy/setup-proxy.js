@@ -12,6 +12,8 @@ function safeWarn(loggerInstance, message) {
     loggerInstance.warn(message)
   } else if (loggerInstance && typeof loggerInstance.info === 'function') {
     loggerInstance.info(`WARN: ${message}`)
+  } else {
+    // No logging available
   }
 }
 
