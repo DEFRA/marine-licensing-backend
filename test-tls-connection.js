@@ -123,7 +123,7 @@ function testProxyConnection() {
       port: PORT,
       path: TARGET_PATH,
       method: 'GET',
-      agent: agent,
+      agent,
       headers: {
         'User-Agent': 'Node.js TLS Test'
       },
