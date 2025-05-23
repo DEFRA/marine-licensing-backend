@@ -4,7 +4,7 @@ import * as setupProxyModule from './setup-proxy.js'
 import { bootstrap } from 'global-agent'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 
-const { setupProxy } = setupProxyModule
+const { setupProxy, isTlsError } = setupProxyModule
 
 jest.mock('../../../config.js')
 jest.mock('undici')
@@ -67,20 +67,18 @@ describe('setupProxy', () => {
 
   test('Should setup proxy if the environment variable is set', () => {
     const mockProxyAgent = {}
-    ProxyAgent.mockImplementation(() => mockProxyAgent)
+    ProxyAgent.mockReturnValue(mockProxyAgent)
     getGlobalDispatcher.mockReturnValue(mockProxyAgent)
-    bootstrap.mockImplementation(() => {})
-    HttpsProxyAgent.mockImplementation(() => ({}))
+    bootstrap.mockImplementation(() => {
+      global.GLOBAL_AGENT = {}
+    })
+    HttpsProxyAgent.mockReturnValue({})
 
     config.get.mockImplementation((key) => {
       if (key === 'httpProxy') return 'http://localhost:8080'
       if (key === 'cdpEnvironment') return 'test'
       if (key === 'isSecureContextEnabled') return false
       return null
-    })
-
-    bootstrap.mockImplementation(() => {
-      global.GLOBAL_AGENT = {}
     })
 
     setupProxy()
@@ -96,8 +94,8 @@ describe('setupProxy', () => {
     const mockProxyAgent = {}
     const mockHttpsProxyAgent = { proxy: 'mocked-agent' }
 
-    ProxyAgent.mockImplementation(() => mockProxyAgent)
-    HttpsProxyAgent.mockImplementation(() => mockHttpsProxyAgent)
+    ProxyAgent.mockReturnValue(mockProxyAgent)
+    HttpsProxyAgent.mockReturnValue(mockHttpsProxyAgent)
 
     bootstrap.mockImplementation(() => {
       global.GLOBAL_AGENT = {}
@@ -128,8 +126,8 @@ describe('setupProxy', () => {
   })
 
   test('Should set global-agent with proper NO_PROXY from environment', () => {
-    ProxyAgent.mockImplementation(() => ({}))
-    HttpsProxyAgent.mockImplementation(() => ({}))
+    ProxyAgent.mockReturnValue({})
+    HttpsProxyAgent.mockReturnValue({})
 
     const customNoProxy = 'internal.example.com,localhost'
     process.env.NO_PROXY = customNoProxy
@@ -156,8 +154,8 @@ describe('setupProxy', () => {
   })
 
   test('Should set global-agent with default NO_PROXY when not in environment', () => {
-    ProxyAgent.mockImplementation(() => ({}))
-    HttpsProxyAgent.mockImplementation(() => ({}))
+    ProxyAgent.mockReturnValue({})
+    HttpsProxyAgent.mockReturnValue({})
 
     bootstrap.mockImplementation(() => {
       global.GLOBAL_AGENT = {}
@@ -214,7 +212,7 @@ describe('setupProxy', () => {
   })
 
   test('Should handle errors during HttpsProxyAgent setup', () => {
-    ProxyAgent.mockImplementation(() => ({}))
+    ProxyAgent.mockReturnValue({})
     bootstrap.mockImplementation(() => {
       global.GLOBAL_AGENT = {}
     })
@@ -309,5 +307,70 @@ describe('setupProxy', () => {
     expect(mockLogger.error).toHaveBeenCalledWith(
       '3. Your ENABLE_SECURE_CONTEXT setting is correct'
     )
+  })
+
+  test('Should handle different environment configurations', () => {
+    // This is a simplified test that just verifies the function runs without errors
+    // under different environment configurations
+
+    // Test with production environment
+    config.get.mockImplementation((key) => {
+      if (key === 'httpProxy') return 'http://proxy.example.com:8080'
+      if (key === 'cdpEnvironment') return 'production'
+      if (key === 'isSecureContextEnabled') return true
+      return null
+    })
+
+    ProxyAgent.mockReturnValue({})
+    HttpsProxyAgent.mockReturnValue({})
+    bootstrap.mockImplementation(() => {
+      global.GLOBAL_AGENT = {}
+    })
+
+    // Should not throw
+    expect(() => setupProxy()).not.toThrow()
+
+    // Test with test environment and secure context disabled
+    config.get.mockImplementation((key) => {
+      if (key === 'httpProxy') return 'http://proxy.example.com:8080'
+      if (key === 'cdpEnvironment') return 'test'
+      if (key === 'isSecureContextEnabled') return false
+      return null
+    })
+
+    // Should not throw
+    expect(() => setupProxy()).not.toThrow()
+  })
+})
+
+describe('isTlsError', () => {
+  test('Should identify TLS errors by error code', () => {
+    const error = new Error('Connection reset')
+    error.code = 'ECONNRESET'
+
+    expect(isTlsError(error)).toBe(true)
+  })
+
+  test('Should identify TLS errors by message content', () => {
+    const error = new Error('Failed to establish TLS connection')
+    expect(isTlsError(error)).toBe(true)
+
+    const certificateError = new Error('Invalid certificate')
+    expect(isTlsError(certificateError)).toBe(true)
+
+    const sslError = new Error('SSL handshake failed')
+    expect(isTlsError(sslError)).toBe(true)
+  })
+
+  test('Should return false for non-TLS errors', () => {
+    const error = new Error('Generic error')
+    error.code = 'GENERIC_ERROR'
+
+    expect(isTlsError(error)).toBe(false)
+  })
+
+  test('Should handle null or undefined errors', () => {
+    expect(isTlsError(null)).toBe(false)
+    expect(isTlsError(undefined)).toBe(false)
   })
 })

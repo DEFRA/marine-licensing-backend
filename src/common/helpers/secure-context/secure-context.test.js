@@ -89,6 +89,20 @@ describe('#secureContext', () => {
   })
 
   describe('When secure context is enabled without TRUSTSTORE_ certs', () => {
+    const PROCESS_ENV = process.env
+
+    beforeAll(() => {
+      // Save the original environment and set up a clean one without TRUSTSTORE variables
+      process.env = { ...PROCESS_ENV }
+
+      // Remove any TRUSTSTORE_ environment variables
+      Object.keys(process.env)
+        .filter((key) => key.startsWith('TRUSTSTORE_'))
+        .forEach((key) => {
+          delete process.env[key]
+        })
+    })
+
     beforeEach(async () => {
       config.set('isSecureContextEnabled', true)
       server = hapi.server()
@@ -98,6 +112,11 @@ describe('#secureContext', () => {
     afterEach(async () => {
       config.set('isSecureContextEnabled', false)
       await server.stop({ timeout: 0 })
+    })
+
+    afterAll(() => {
+      // Restore original environment
+      process.env = PROCESS_ENV
     })
 
     test('Should log about not finding any TRUSTSTORE_ certs', () => {
