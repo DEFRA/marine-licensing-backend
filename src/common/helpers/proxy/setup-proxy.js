@@ -7,7 +7,6 @@ import { config } from '../../../config.js'
 
 export const logger = createLogger()
 
-// Safe logging function to handle missing logger methods
 const safeLog = {
   info: (message) => {
     if (logger && typeof logger.info === 'function') {
@@ -28,7 +27,6 @@ const safeLog = {
   }
 }
 
-// List of common TLS error codes that indicate certificate validation issues
 const TLS_ERROR_CODES = [
   'ECONNRESET',
   'CERT_HAS_EXPIRED',
@@ -41,12 +39,10 @@ const TLS_ERROR_CODES = [
 export function isTlsError(error) {
   if (!error) return false
 
-  // Check error code
   if (error.code && TLS_ERROR_CODES.includes(error.code)) {
     return true
   }
 
-  // Check error message for TLS-related terms
   const errorMessage = error.message ? error.message.toLowerCase() : ''
   return (
     errorMessage.includes('tls') ||
@@ -69,7 +65,6 @@ export function setupProxy() {
       return
     }
 
-    // Log all TLS-related environment variables to help with troubleshooting
     const tlsEnvVars = Object.keys(process.env).filter(
       (key) =>
         key.startsWith('TRUSTSTORE_') ||
@@ -92,7 +87,6 @@ export function setupProxy() {
     safeLog.info(`CDP Environment: ${cdpEnvironment}`)
     safeLog.info(`Secure context enabled: ${isSecureContextEnabled}`)
 
-    // Configure undici for fetch API
     safeLog.info('Setting up ProxyAgent for undici...')
     const agent = new ProxyAgent(proxyUrl, {
       requestTls: {
@@ -102,33 +96,26 @@ export function setupProxy() {
     setGlobalDispatcher(agent)
     safeLog.info('undici dispatcher configured with proxy')
 
-    // Configure global-agent for older Node.js APIs
     safeLog.info('Setting up global-agent...')
     bootstrap()
 
-    // Configure proxy settings
     global.GLOBAL_AGENT.HTTP_PROXY = proxyUrl
     global.GLOBAL_AGENT.HTTPS_PROXY = proxyUrl
 
-    // Use NO_PROXY from environment or set default
     global.GLOBAL_AGENT.NO_PROXY = process.env.NO_PROXY || 'localhost,127.0.0.1'
     safeLog.info('global-agent setup completed')
 
-    // Setup HttpsProxyAgent for node-fetch
     safeLog.info('Setting up HttpsProxyAgent for node-fetch...')
 
-    // Configure TLS options for HttpsProxyAgent
     const tlsOptions = {
       rejectUnauthorized: isSecureContextEnabled !== false
     }
 
-    // In test or staging environments, or when troubleshooting, provide more detailed options
     if (cdpEnvironment === 'test' || cdpEnvironment === 'staging') {
       safeLog.info(
         `Using relaxed TLS options for ${cdpEnvironment} environment`
       )
 
-      // These options help with troubleshooting but should be secured in production
       if (!isSecureContextEnabled) {
         tlsOptions.rejectUnauthorized = false
         safeLog.warn(
@@ -147,7 +134,6 @@ export function setupProxy() {
     safeLog.error(`Error code: ${error.code || 'No error code'}`)
     safeLog.error(`Error stack: ${error.stack}`)
 
-    // Provide TLS-specific troubleshooting if the error appears to be TLS-related
     if (isTlsError(error)) {
       safeLog.error('This appears to be a TLS/certificate validation issue.')
       safeLog.error('Please check:')

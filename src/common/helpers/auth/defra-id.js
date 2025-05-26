@@ -6,7 +6,7 @@ import { createLogger } from '../logging/logger.js'
 
 export const logger = createLogger()
 
-const safeLog = {
+export const safeLog = {
   info: (message) => {
     if (logger && typeof logger.info === 'function') {
       logger.info(message)
@@ -19,7 +19,7 @@ const safeLog = {
   }
 }
 
-async function fetchOidcConfig(oidcConfigurationUrl) {
+export async function fetchOidcConfig(oidcConfigurationUrl) {
   safeLog.info(`Fetching OIDC configuration from ${oidcConfigurationUrl}`)
 
   const fetchOptions = {}
@@ -48,7 +48,7 @@ async function fetchOidcConfig(oidcConfigurationUrl) {
   return oidcConf
 }
 
-function setupAuthStrategy(server, oidcConf, authCallbackUrl) {
+export function setupAuthStrategy(server, oidcConf, authCallbackUrl) {
   server.auth.strategy('defra-id', 'bell', {
     location: (request) => {
       if (request.info.referrer) {
@@ -92,12 +92,11 @@ function setupAuthStrategy(server, oidcConf, authCallbackUrl) {
   server.auth.default('defra-id')
 }
 
-function logFetchError(fetchError) {
+export function logFetchError(fetchError) {
   safeLog.error(`Fetch operation failed: ${fetchError.message}`)
   safeLog.error(`Fetch error name: ${fetchError.name}`)
   safeLog.error(`Fetch error code: ${fetchError.code || 'no error code'}`)
 
-  // Log more detailed information for specific errors
   if (fetchError.name === 'FetchError') {
     safeLog.error(`FetchError type: ${fetchError.type || 'unknown'}`)
     safeLog.error(`FetchError errno: ${fetchError.errno || 'none'}`)
@@ -126,19 +125,21 @@ function logFetchError(fetchError) {
       `Underlying error code: ${fetchError.cause.code || 'no code'}`
     )
 
-    // Log more details about the cause if available
     if (fetchError.cause.stack) {
       safeLog.error(`Underlying error stack: ${fetchError.cause.stack}`)
     }
   }
 
-  // Always log the stack trace for the main error
   safeLog.error(
     `Error stack: ${fetchError.stack || 'No stack trace available'}`
   )
 }
 
-async function setupDefraIdAuth(server, oidcConfigurationUrl, authCallbackUrl) {
+export async function setupDefraIdAuth(
+  server,
+  oidcConfigurationUrl,
+  authCallbackUrl
+) {
   try {
     const oidcConf = await fetchOidcConfig(oidcConfigurationUrl)
     setupAuthStrategy(server, oidcConf, authCallbackUrl)
@@ -162,7 +163,6 @@ export const defraId = {
       )
       safeLog.info(`HTTP Proxy: ${config.get('httpProxy') || 'not configured'}`)
 
-      // Log all TLS-related environment variables
       const tlsEnvVars = Object.keys(process.env)
         .filter(
           (key) =>
@@ -190,7 +190,6 @@ export const defraId = {
           'Check if TLS certificates are properly configured or if a proxy is needed'
         )
 
-        // Log an explicit summary of the key configuration needed
         safeLog.error('CONFIGURATION CHECKLIST:')
         safeLog.error('1. HTTP_PROXY and HTTPS_PROXY are set (if needed)')
         safeLog.error('2. ENABLE_SECURE_CONTEXT is set to true')

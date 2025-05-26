@@ -1,11 +1,8 @@
-// TLS Connection Test Utility
-// This script tests direct TLS connectivity to endpoints
 import https from 'node:https'
 import tls from 'node:tls'
 import { getTrustStoreCerts } from '../common/helpers/secure-context/get-trust-store-certs.js'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 
-// Configuration with default values
 export const DEFAULT_CONFIG = {
   TARGET_URL: 'cdp-defra-id-stub.test.cdp-int.defra.cloud',
   TARGET_PATH: '/cdp-defra-id-stub/.well-known/openid-configuration',
@@ -14,15 +11,9 @@ export const DEFAULT_CONFIG = {
   TIMEOUT_MS: 10000
 }
 
-/**
- * Check if an error is TLS-related
- * @param {Error} error - The error to check
- * @returns {boolean} - True if the error is TLS-related
- */
 export function isTlsError(error) {
   if (!error) return false
 
-  // Common TLS error codes
   const TLS_ERROR_CODES = [
     'ECONNRESET',
     'CERT_HAS_EXPIRED',
@@ -32,12 +23,10 @@ export function isTlsError(error) {
     'CERT_SIGNATURE_FAILURE'
   ]
 
-  // Check error code
   if (error.code && TLS_ERROR_CODES.includes(error.code)) {
     return true
   }
 
-  // Check error message for TLS-related terms
   const errorMessage = error.message ? error.message.toLowerCase() : ''
   return (
     errorMessage.includes('tls') ||
@@ -49,19 +38,13 @@ export function isTlsError(error) {
   )
 }
 
-/**
- * Create TLS context with certificates from the environment
- * @returns {object|null} - TLS context or null if creation failed
- */
 export function createTlsContext() {
   try {
-    // Load custom certificates from environment
     const trustStoreCerts = getTrustStoreCerts(process.env)
     console.log(
       `Found ${trustStoreCerts.length} certificates in environment variables`
     )
 
-    // Setup TLS context with custom certificates
     const options = {}
     const secureContext = tls.createSecureContext(options)
 
@@ -84,12 +67,6 @@ export function createTlsContext() {
   }
 }
 
-/**
- * Test direct HTTPS connection without proxy
- * @param {object} config - Configuration options
- * @param {object} tlsContext - TLS context to use
- * @returns {Promise<void>}
- */
 export function testDirectConnection(
   config = DEFAULT_CONFIG,
   tlsContext = null
@@ -156,12 +133,6 @@ export function testDirectConnection(
   })
 }
 
-/**
- * Test HTTPS connection through proxy
- * @param {object} config - Configuration options
- * @param {object} tlsContext - TLS context to use
- * @returns {Promise<void>}
- */
 export function testProxyConnection(
   config = DEFAULT_CONFIG,
   tlsContext = null
@@ -229,11 +200,6 @@ export function testProxyConnection(
   })
 }
 
-/**
- * Test HTTPS connection with TLS verification disabled
- * @param {object} config - Configuration options
- * @returns {Promise<void>}
- */
 export function testInsecureConnection(config = DEFAULT_CONFIG) {
   return new Promise((resolve) => {
     console.log('\n=== Test 3: Connection with TLS verification disabled ===')
@@ -243,14 +209,13 @@ export function testInsecureConnection(config = DEFAULT_CONFIG) {
       port: config.PORT,
       path: config.TARGET_PATH,
       method: 'GET',
-      rejectUnauthorized: false, // Disable certificate validation
+      rejectUnauthorized: false,
       headers: {
         'User-Agent': 'Node.js TLS Test'
       },
       timeout: config.TIMEOUT_MS
     }
 
-    // Use proxy if available
     if (config.PROXY_URL) {
       try {
         options.agent = new HttpsProxyAgent(config.PROXY_URL, {
@@ -300,11 +265,6 @@ export function testInsecureConnection(config = DEFAULT_CONFIG) {
   })
 }
 
-/**
- * Run all tests
- * @param {object} config - Configuration options
- * @returns {Promise<object>} - Results of all tests
- */
 export async function runAllTests(config = DEFAULT_CONFIG) {
   console.log('=== TLS Connection Test Utility ===')
   console.log(`Target: https://${config.TARGET_URL}${config.TARGET_PATH}`)
@@ -323,7 +283,6 @@ export async function runAllTests(config = DEFAULT_CONFIG) {
   return results
 }
 
-// If this file is run directly, execute all tests
 if (import.meta.url === `file://${process.argv[1]}`) {
   runAllTests()
 }

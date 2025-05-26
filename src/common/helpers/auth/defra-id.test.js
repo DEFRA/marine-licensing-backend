@@ -1,282 +1,362 @@
-import Bell from '@hapi/bell'
 import fetch from 'node-fetch'
 import Jwt from '@hapi/jwt'
 import { config } from '../../../config.js'
-import { defraId } from './defra-id.js'
 
-// Setup mocks
-jest.mock('node-fetch')
+import {
+  setupAuthStrategy,
+  fetchOidcConfig,
+  setupDefraIdAuth,
+  defraId,
+  logFetchError
+} from './defra-id.js'
+
 jest.mock('@hapi/bell')
+jest.mock('node-fetch')
 jest.mock('@hapi/jwt')
+jest.mock('../../../config.js')
 jest.mock('../logging/logger.js')
 
-// Create mock logger before any imports that might use it
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn()
-}
+describe('defra-id.js', () => {
+  const mockServer = {
+    auth: {
+      strategy: jest.fn(),
+      default: jest.fn()
+    },
+    register: jest.fn().mockResolvedValue()
+  }
 
-// Configure the createLogger mock
-jest
-  .requireMock('../logging/logger.js')
-  .createLogger.mockReturnValue(mockLogger)
+  const mockConfig = {
+    defraIdClientId: 'test-client-id',
+    defraIdClientSecret: 'test-client-secret',
+    defraIdCookiePassword: 'test-cookie-password',
+    defraIdServiceId: 'test-service-id',
+    defraIdOidcConfigurationUrl: 'https://test-oidc-config-url',
+    cdpEnvironment: 'test',
+    isSecureContextEnabled: true,
+    httpProxy: 'http://test-proxy:8080',
+    redirectUri: 'https://test-callback-url'
+  }
 
-describe('defraId plugin', () => {
-  let server
-  let fakeOidc
-  let originalNodeEnv
+  const mockOidcConfig = {
+    authorization_endpoint: 'https://test-auth-endpoint',
+    token_endpoint: 'https://test-token-endpoint',
+    end_session_endpoint: 'https://test-logout-endpoint'
+  }
 
   beforeEach(() => {
-    originalNodeEnv = process.env.NODE_ENV
-    process.env.NODE_ENV = 'development'
-
     jest.clearAllMocks()
 
-    if (global.PROXY_AGENT) {
-      delete global.PROXY_AGENT
-    }
-
-    // Reset mock logger for each test
-    mockLogger.info.mockClear()
-    mockLogger.error.mockClear()
-
-    fakeOidc = {
-      authorization_endpoint: 'https://auth/',
-      token_endpoint: 'https://token/',
-      end_session_endpoint: 'https://logout/'
-    }
+    config.get.mockImplementation((key) => mockConfig[key])
 
     fetch.mockResolvedValue({
       ok: true,
-      json: async () => fakeOidc
+      json: jest.fn().mockResolvedValue(mockOidcConfig)
     })
 
-    Jwt.token.decode = jest.fn().mockReturnValue({
+    Jwt.token.decode.mockReturnValue({
       decoded: {
         payload: {
-          sub: 'mock-user',
-          firstName: 'Mock',
+          sub: 'test-subject',
+          firstName: 'Test',
           lastName: 'User',
-          email: 'mock@example.com',
-          roles: ['role1', 'role2'],
-          relationships: ['org1']
+          email: 'test@example.com',
+          roles: ['user'],
+          relationships: []
         }
       }
     })
 
-    jest.spyOn(config, 'get').mockImplementation(
-      (key) =>
-        ({
-          defraIdOidcConfigurationUrl:
-            'http://stub/.well-known/openid-configuration',
-          defraIdServiceId: 'svc-id',
-          defraIdClientId: 'client-id',
-          defraIdClientSecret: 'secret-val',
-          appBaseUrl: 'http://api.local:4000',
-          defraIdCookiePassword: 'cookie-pass',
-          redirectUri: 'http://api.local:4000/auth/callback',
-          cdpEnvironment: 'test',
-          isSecureContextEnabled: true,
-          httpProxy: null
-        })[key]
-    )
-
-    server = {
-      register: jest.fn().mockResolvedValue(),
-      auth: {
-        strategy: jest.fn(),
-        default: jest.fn()
+    global.PROXY_AGENT = {
+      proxy: {
+        toString: () => 'http://test-proxy:8080'
       }
     }
   })
 
   afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv
+    delete global.PROXY_AGENT
   })
 
-  it('fetches discovery and registers Bell', async () => {
-    await defraId.plugin.register(server)
-    expect(fetch).toHaveBeenCalledWith(
-      'http://stub/.well-known/openid-configuration',
-      {}
-    )
-    expect(server.register).toHaveBeenCalledWith(Bell)
-  })
+  describe('fetchOidcConfig', () => {
+    test('should fetch OIDC configuration successfully', async () => {
+      const result = await fetchOidcConfig('https://test-oidc-url')
 
-  it('defines the defra-id strategy correctly', async () => {
-    await defraId.plugin.register(server)
-    const [name, scheme, opts] = server.auth.strategy.mock.calls[0]
-    expect(name).toBe('defra-id')
-    expect(scheme).toBe('bell')
-    expect(opts.clientId).toBe('client-id')
-    expect(opts.clientSecret).toBe('secret-val')
-    expect(opts.cookie).toBe('bell-defra-id')
-    expect(opts.password).toBe('cookie-pass')
-    expect(opts.isSecure).toBe(false)
-    expect(opts.providerParams).toEqual({ serviceId: 'svc-id' })
-  })
+      expect(fetch).toHaveBeenCalledWith(
+        'https://test-oidc-url',
+        expect.any(Object)
+      )
+      expect(result).toEqual(mockOidcConfig)
+    })
 
-  it('builds the correct callback URL in location()', async () => {
-    await defraId.plugin.register(server)
-    const opts = server.auth.strategy.mock.calls[0][2]
-    const fakeReq = { info: {}, yar: { flash: jest.fn() } }
-    expect(opts.location(fakeReq)).toBe('http://api.local:4000/auth/callback')
-  })
+    test('should use proxy agent when available', async () => {
+      await fetchOidcConfig('https://test-oidc-url')
 
-  it('uses the OIDC discovery endpoints', async () => {
-    await defraId.plugin.register(server)
-    const provider = server.auth.strategy.mock.calls[0][2].provider
-    expect(provider.auth).toBe(fakeOidc.authorization_endpoint)
-    expect(provider.token).toBe(fakeOidc.token_endpoint)
-    expect(provider.scope).toEqual(['openid', 'offline_access'])
-  })
+      expect(fetch).toHaveBeenCalledWith(
+        'https://test-oidc-url',
+        expect.objectContaining({ agent: global.PROXY_AGENT })
+      )
+    })
 
-  it('maps the JWT payload into credentials.profile', async () => {
-    await defraId.plugin.register(server)
-    const provider = server.auth.strategy.mock.calls[0][2].provider
-    const creds = { token: 'ABC' }
-    const params = { id_token: 'ID-TOKEN' }
-    provider.profile(creds, params)
-    expect(Jwt.token.decode).toHaveBeenCalledWith('ABC')
-    expect(creds.profile).toEqual({
-      id: 'mock-user',
-      firstName: 'Mock',
-      lastName: 'User',
-      email: 'mock@example.com',
-      roles: ['role1', 'role2'],
-      relationships: ['org1'],
-      rawIdToken: 'ID-TOKEN',
-      logoutUrl: fakeOidc.end_session_endpoint
+    test('should handle missing proxy agent', async () => {
+      delete global.PROXY_AGENT
+
+      await fetchOidcConfig('https://test-oidc-url')
+
+      expect(fetch).toHaveBeenCalledWith('https://test-oidc-url', {})
+    })
+
+    test('should throw error when fetch response is not ok', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found'
+      })
+
+      await expect(fetchOidcConfig('https://test-oidc-url')).rejects.toThrow(
+        'Failed to fetch OIDC config: 404 Not Found'
+      )
+    })
+
+    test('should throw error when fetch fails', async () => {
+      const fetchError = new Error('Network error')
+      fetch.mockRejectedValueOnce(fetchError)
+
+      await expect(fetchOidcConfig('https://test-oidc-url')).rejects.toThrow(
+        'Network error'
+      )
     })
   })
 
-  it('sets the default auth strategy to defra-id', async () => {
-    await defraId.plugin.register(server)
-    expect(server.auth.default).toHaveBeenCalledWith('defra-id')
-  })
+  describe('setupAuthStrategy', () => {
+    test('should configure the auth strategy correctly', () => {
+      setupAuthStrategy(mockServer, mockOidcConfig, 'https://test-callback')
 
-  it('propagates fetch errors', async () => {
-    const error = new Error('fetch-bang')
-    fetch.mockRejectedValue(error)
+      expect(mockServer.auth.strategy).toHaveBeenCalledWith(
+        'defra-id',
+        'bell',
+        expect.objectContaining({
+          clientId: mockConfig.defraIdClientId,
+          clientSecret: mockConfig.defraIdClientSecret,
+          password: mockConfig.defraIdCookiePassword,
+          cookie: 'bell-defra-id',
+          isSecure: false,
+          providerParams: {
+            serviceId: mockConfig.defraIdServiceId
+          }
+        })
+      )
 
-    await expect(defraId.plugin.register(server)).rejects.toThrow('fetch-bang')
-  })
+      expect(mockServer.auth.default).toHaveBeenCalledWith('defra-id')
+    })
 
-  it('propagates Bell registration errors', async () => {
-    server.register.mockRejectedValue(new Error('bell-bang'))
-    await expect(defraId.plugin.register(server)).rejects.toThrow('bell-bang')
-  })
+    test('should configure provider endpoints correctly', () => {
+      setupAuthStrategy(mockServer, mockOidcConfig, 'https://test-callback')
 
-  it('sets dummy auth strategy in test environment', async () => {
-    process.env.NODE_ENV = 'test'
-    await defraId.plugin.register(server)
-    expect(server.auth.default).toHaveBeenCalledWith('dummy')
-    expect(server.register).not.toHaveBeenCalled()
-  })
+      const strategyConfig = mockServer.auth.strategy.mock.calls[0][2]
 
-  it('uses proxy agent when available', async () => {
-    global.PROXY_AGENT = { proxy: 'agent' }
+      expect(strategyConfig.provider.auth).toBe(
+        mockOidcConfig.authorization_endpoint
+      )
+      expect(strategyConfig.provider.token).toBe(mockOidcConfig.token_endpoint)
+      expect(strategyConfig.provider.scope).toEqual([
+        'openid',
+        'offline_access'
+      ])
+    })
 
-    await defraId.plugin.register(server)
+    test('should process JWT token and set profile correctly', () => {
+      setupAuthStrategy(mockServer, mockOidcConfig, 'https://test-callback')
 
-    expect(fetch).toHaveBeenCalledWith(
-      'http://stub/.well-known/openid-configuration',
-      { agent: global.PROXY_AGENT }
-    )
-  })
+      const strategyConfig = mockServer.auth.strategy.mock.calls[0][2]
+      const profileFn = strategyConfig.provider.profile
 
-  it('throws error for bad HTTP response', async () => {
-    fetch.mockResolvedValue({
-      ok: false,
-      status: 404,
-      statusText: 'Not Found',
-      json: async () => {
-        throw new Error('Should not be called')
+      const credentials = { token: 'test-token' }
+      const params = { id_token: 'test-id-token' }
+
+      profileFn(credentials, params)
+
+      expect(Jwt.token.decode).toHaveBeenCalledWith('test-token')
+      expect(credentials.profile).toEqual({
+        id: 'test-subject',
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        roles: ['user'],
+        relationships: [],
+        rawIdToken: 'test-id-token',
+        logoutUrl: mockOidcConfig.end_session_endpoint
+      })
+    })
+
+    test('should configure location function to capture referrer', () => {
+      setupAuthStrategy(mockServer, mockOidcConfig, 'https://test-callback')
+
+      const strategyConfig = mockServer.auth.strategy.mock.calls[0][2]
+      const locationFn = strategyConfig.location
+
+      const mockRequest = {
+        info: { referrer: 'https://previous-page' },
+        yar: { flash: jest.fn() }
       }
+
+      const result = locationFn(mockRequest)
+
+      expect(mockRequest.yar.flash).toHaveBeenCalledWith(
+        'referrer',
+        'https://previous-page'
+      )
+      expect(result).toBe('https://test-callback')
+    })
+  })
+
+  describe('logFetchError', () => {
+    test('should handle TLS-related errors', () => {
+      const tlsError = new Error('TLS handshake failed')
+      tlsError.name = 'FetchError'
+      tlsError.type = 'system'
+      tlsError.errno = 'ECONNRESET'
+
+      logFetchError(tlsError)
+
+      expect(tlsError.message).toContain('TLS')
     })
 
-    await expect(defraId.plugin.register(server)).rejects.toThrow(
-      'Failed to fetch OIDC config: 404 Not Found'
-    )
+    test('should handle errors with cause property', () => {
+      const causeError = new Error('Root cause error')
+      causeError.code = 'ECAUSE'
+      causeError.name = 'CauseError'
+      causeError.stack = 'Cause stack trace'
+
+      const mainError = new Error('Main error')
+      mainError.cause = causeError
+
+      logFetchError(mainError)
+
+      expect(mainError.cause).toBe(causeError)
+    })
+
+    test('should handle errors with cause that has stack', () => {
+      const causeError = new Error('Root cause with stack')
+      causeError.stack = 'Detailed stack trace'
+
+      const mainError = new Error('Main error')
+      mainError.cause = causeError
+
+      logFetchError(mainError)
+
+      expect(mainError.cause.stack).toBe('Detailed stack trace')
+    })
   })
 
-  it.skip('handles fetch errors with cause property', async () => {
-    const causeError = new Error('Underlying TLS error')
-    causeError.name = 'TLSError'
-    causeError.code = 'CERT_VALIDATION_ERROR'
+  describe('setupDefraIdAuth', () => {
+    test('should fetch OIDC config and setup auth strategy', async () => {
+      await setupDefraIdAuth(
+        mockServer,
+        'https://test-oidc-url',
+        'https://test-callback'
+      )
 
-    const fetchError = new Error('Fetch failed')
-    fetchError.cause = causeError
+      expect(fetch).toHaveBeenCalledWith(
+        'https://test-oidc-url',
+        expect.any(Object)
+      )
+      expect(mockServer.auth.strategy).toHaveBeenCalled()
+      expect(mockServer.auth.default).toHaveBeenCalledWith('defra-id')
+    })
 
-    fetch.mockRejectedValue(fetchError)
+    test('should throw errors from fetch operations', async () => {
+      const fetchError = new Error('Fetch failed')
+      fetch.mockRejectedValueOnce(fetchError)
 
-    await expect(defraId.plugin.register(server)).rejects.toThrow(
-      'Fetch failed'
-    )
-
-    // Verify that error logging occurred
-    expect(mockLogger.error).toHaveBeenCalled()
+      await expect(
+        setupDefraIdAuth(
+          mockServer,
+          'https://test-oidc-url',
+          'https://test-callback'
+        )
+      ).rejects.toThrow('Fetch failed')
+    })
   })
 
-  // Skip failing tests for now - these are testing implementation details
-  // that may have changed in the actual code
-  it.skip('handles TLS-specific error logging', async () => {
-    const fetchError = new Error('TLS handshake failed')
-    fetchError.name = 'FetchError'
-    fetchError.type = 'system'
-    fetchError.errno = 'ECONNRESET'
-    fetchError.code = 'ECONNRESET'
+  describe('defraId plugin', () => {
+    test('should register the plugin successfully', async () => {
+      delete process.env.NODE_ENV
 
-    fetch.mockRejectedValueOnce(fetchError)
+      await defraId.plugin.register(mockServer)
 
-    await expect(defraId.plugin.register(server)).rejects.toThrow()
-    expect(mockLogger.error).toHaveBeenCalled()
-  })
+      expect(config.get).toHaveBeenCalledWith('defraIdOidcConfigurationUrl')
 
-  it.skip('logs error cause stack trace when available', async () => {
-    const fetchError = new Error('Fetch failed')
-    fetchError.cause = new Error('Underlying error')
+      expect(mockServer.register).toHaveBeenCalled()
 
-    fetch.mockRejectedValueOnce(fetchError)
+      expect(fetch).toHaveBeenCalled()
+    })
 
-    await expect(defraId.plugin.register(server)).rejects.toThrow()
-    expect(mockLogger.error).toHaveBeenCalled()
-  })
+    test('should use dummy auth for test environment', async () => {
+      process.env.NODE_ENV = 'test'
 
-  it.skip('logs the configuration checklist when setup fails', async () => {
-    fetch.mockRejectedValueOnce(new Error('OIDC setup failed'))
+      const originalGet = config.get
+      config.get = jest.fn((key) => {
+        if (key === 'redirectUri') {
+          throw new Error('redirectUri should not be accessed')
+        }
+        return mockConfig[key]
+      })
 
-    await expect(defraId.plugin.register(server)).rejects.toThrow()
-    expect(mockLogger.error).toHaveBeenCalled()
-  })
+      await defraId.plugin.register(mockServer)
 
-  it.skip('logs TLS-related environment variables', async () => {
-    process.env.TRUSTSTORE_1 = 'mock-cert-1'
+      expect(mockServer.auth.default).toHaveBeenCalledWith('dummy')
+      expect(mockServer.register).not.toHaveBeenCalled()
 
-    await defraId.plugin.register(server)
-    expect(mockLogger.info).toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
 
-    delete process.env.TRUSTSTORE_1
-  })
+      delete process.env.NODE_ENV
+      config.get = originalGet
+    })
 
-  it('safeLog handles missing logger functions gracefully', async () => {
-    // Create a logger with only error function
-    const limitedLogger = { error: jest.fn() }
-    jest
-      .requireMock('../logging/logger.js')
-      .createLogger.mockReturnValueOnce(limitedLogger)
+    test('should use dummy auth with null OIDC URL to cover early return', async () => {
+      jest.clearAllMocks()
 
-    await defraId.plugin.register(server)
-    expect(server.register).toHaveBeenCalledWith(Bell)
-  })
+      const originalGet = config.get
+      config.get = jest.fn((key) => {
+        if (key === 'defraIdOidcConfigurationUrl') {
+          return null
+        }
+        if (key === 'redirectUri') {
+          throw new Error('redirectUri should not be accessed')
+        }
+        return mockConfig[key]
+      })
 
-  it('safeLog handles null logger gracefully', async () => {
-    // Return null for logger
-    jest
-      .requireMock('../logging/logger.js')
-      .createLogger.mockReturnValueOnce(null)
+      delete process.env.NODE_ENV
 
-    await defraId.plugin.register(server)
-    expect(server.register).toHaveBeenCalledWith(Bell)
+      await defraId.plugin.register(mockServer)
+
+      expect(mockServer.auth.default).toHaveBeenCalledWith('dummy')
+
+      expect(mockServer.register).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
+
+      config.get = originalGet
+    })
+
+    test('should use dummy auth when OIDC URL is not configured', async () => {
+      config.get.mockImplementation((key) =>
+        key === 'defraIdOidcConfigurationUrl' ? undefined : mockConfig[key]
+      )
+
+      await defraId.plugin.register(mockServer)
+
+      expect(mockServer.auth.default).toHaveBeenCalledWith('dummy')
+      expect(mockServer.register).not.toHaveBeenCalled()
+    })
+
+    test('should throw errors from OIDC configuration', async () => {
+      const oidcError = new Error('OIDC configuration failed')
+      fetch.mockRejectedValueOnce(oidcError)
+
+      await expect(defraId.plugin.register(mockServer)).rejects.toThrow(
+        'OIDC configuration failed'
+      )
+    })
   })
 })

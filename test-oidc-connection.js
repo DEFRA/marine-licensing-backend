@@ -1,14 +1,10 @@
-// OIDC Connection Test Utility
-// This script can be run directly to test connectivity to the OIDC endpoint
 import fetch from 'node-fetch'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { config } from './src/config.js'
 
-// Set this to true to disable certificate validation (for troubleshooting only)
 const DISABLE_TLS_VALIDATION =
   process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0' || false
 
-// Configuration
 const OIDC_URL =
   process.env.OIDC_URL || config.get('defraIdOidcConfigurationUrl')
 const PROXY_URL =
@@ -21,7 +17,6 @@ console.log(`Environment: ${CDP_ENV}`)
 console.log(`Using proxy: ${PROXY_URL || 'none'}`)
 console.log(`TLS validation disabled: ${DISABLE_TLS_VALIDATION}`)
 
-// Log TLS-related environment variables
 const tlsEnvVars = Object.entries(process.env).filter(
   ([key]) =>
     key.startsWith('TRUSTSTORE_') ||
@@ -32,7 +27,6 @@ const tlsEnvVars = Object.entries(process.env).filter(
 if (tlsEnvVars.length > 0) {
   console.log('\nTLS environment variables:')
   tlsEnvVars.forEach(([key, value]) => {
-    // Only show first few characters of value for security
     const safeValue =
       value && value.length > 10
         ? `${value.substring(0, 10)}...`
@@ -43,13 +37,11 @@ if (tlsEnvVars.length > 0) {
   console.log('\nNo TLS environment variables found')
 }
 
-// Test 1: Direct connection
 async function testDirectConnection() {
   console.log('\n=== Test 1: Direct connection ===')
   try {
     const options = {}
 
-    // Setup proxy if available
     if (PROXY_URL) {
       options.agent = new HttpsProxyAgent(PROXY_URL, {
         rejectUnauthorized: !DISABLE_TLS_VALIDATION
@@ -117,7 +109,6 @@ async function testDirectConnection() {
   }
 }
 
-// Test 2: Connection with fallback
 async function testFallbackConnection() {
   if (DISABLE_TLS_VALIDATION) {
     console.log('\n=== Test 2: Skipped (TLS already disabled) ===')
@@ -126,11 +117,9 @@ async function testFallbackConnection() {
 
   console.log('\n=== Test 2: Connection with TLS validation disabled ===')
 
-  // Save the original value
   const originalTlsValue = process.env.NODE_TLS_REJECT_UNAUTHORIZED
 
   try {
-    // Disable TLS validation
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
     const options = {}
@@ -162,7 +151,6 @@ async function testFallbackConnection() {
     console.error(`Error: ${error.message}`)
     return false
   } finally {
-    // Restore the original value
     if (originalTlsValue) {
       process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalTlsValue
     } else {
@@ -171,7 +159,6 @@ async function testFallbackConnection() {
   }
 }
 
-// Run the tests
 ;(async () => {
   console.log('\nRunning connection tests...')
 
