@@ -1,5 +1,5 @@
-const fs = require('fs')
-const path = require('path')
+import fs from 'fs'
+import path from 'path'
 
 const defraIdPath = path.join(__dirname, 'defra-id.js')
 const defraIdSource = fs.readFileSync(defraIdPath, 'utf8')

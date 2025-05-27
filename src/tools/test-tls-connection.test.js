@@ -1,441 +1,340 @@
 import { jest } from '@jest/globals'
-import https from 'https'
-import tls from 'tls'
-import { getTrustStoreCerts } from '../common/helpers/secure-context/get-trust-store-certs.js'
+import https from 'node:https'
+import tls from 'node:tls'
+import { EventEmitter } from 'node:events'
 import { HttpsProxyAgent } from 'https-proxy-agent'
-import * as tlsTestUtils from './test-tls-connection.js'
+import { getTrustStoreCerts } from '../common/helpers/secure-context/get-trust-store-certs.js'
+import {
+  DEFAULT_CONFIG,
+  isTlsError,
+  createTlsContext,
+  testDirectConnection,
+  testProxyConnection,
+  testInsecureConnection,
+  runAllTests
+} from './test-tls-connection.js'
 
-jest.mock('./test-tls-connection.js', () => {
-  const original = jest.requireActual('./test-tls-connection.js')
-  return {
-    ...original,
-    DEFAULT_CONFIG: original.DEFAULT_CONFIG,
-    isTlsError: original.isTlsError,
-    createTlsContext: jest.fn().mockImplementation(() => {
-      console.log('Found 2 certificates in environment variables')
-      console.log('TLS context created successfully')
-      return { context: { addCACert: jest.fn() } }
-    }),
-    testDirectConnection: jest.fn().mockImplementation(() => {
-      console.log('=== Test 1: Direct HTTPS connection (no proxy) ===')
-      return Promise.resolve({ success: true })
-    }),
-    testProxyConnection: jest.fn().mockImplementation((config) => {
-      console.log('=== Test 2: Connection through proxy ===')
-      if (!config || !config.PROXY_URL) {
-        console.log('=== Test 2: Skipped (no proxy configured) ===')
-        return Promise.resolve({
-          success: false,
-          error: new Error('No proxy configured')
-        })
-      }
-      return Promise.resolve({ success: true })
-    }),
-    testInsecureConnection: jest.fn().mockImplementation(() => {
-      console.log('=== Test 3: Connection with TLS verification disabled ===')
-      console.log('Test 3 completed successfully')
-      console.log(
-        'IF TEST 3 SUCCEEDED BUT OTHERS FAILED: This confirms it is a certificate validation issue.'
-      )
-      return Promise.resolve({ success: true })
-    }),
-    runAllTests: jest.fn().mockImplementation((config) => {
-      console.log('=== TLS Connection Test Utility ===')
-      console.log(
-        `Target: https://${config?.TARGET_URL || 'default.url'}${config?.TARGET_PATH || '/default-path'}`
-      )
-      console.log(`Using Proxy: ${config?.PROXY_URL || 'None'}`)
-
-      return Promise.resolve({
-        directConnection: { success: true },
-        proxyConnection: { success: true },
-        insecureConnection: { success: true }
-      })
-    })
-  }
-})
-
-jest.mock('https')
-jest.mock('tls')
-jest.mock('../common/helpers/secure-context/get-trust-store-certs.js')
+jest.mock('node:https')
+jest.mock('node:tls')
 jest.mock('https-proxy-agent')
+jest.mock('../common/helpers/secure-context/get-trust-store-certs.js', () => ({
+  getTrustStoreCerts: jest.fn()
+}))
 
-const originalConsoleLog = console.log
-const originalConsoleError = console.error
-const mockConsoleLog = jest.fn()
-const mockConsoleError = jest.fn()
+describe('test-tls-connection.js', () => {
+  const originalConsoleLog = console.log
+  const originalConsoleError = console.error
 
-describe('TLS Connection Utility', () => {
-  let mockRequest
-  let mockResponse
-  let mockSecureContext
-  let mockAgent
+  beforeEach(() => {
+    console.log = jest.fn()
+    console.error = jest.fn()
 
-  beforeAll(() => {
-    console.log = mockConsoleLog
-    console.error = mockConsoleError
+    jest.clearAllMocks()
+
+    getTrustStoreCerts.mockReturnValue(['CERT1', 'CERT2'])
+
+    const mockContext = {
+      addCACert: jest.fn()
+    }
+    tls.createSecureContext.mockReturnValue({
+      context: mockContext
+    })
   })
 
-  afterAll(() => {
+  afterEach(() => {
     console.log = originalConsoleLog
     console.error = originalConsoleError
   })
 
-  beforeEach(() => {
-    jest.resetModules()
-    jest.clearAllMocks()
+  function setupMockResponse() {
+    const mockResponse = new EventEmitter()
+    mockResponse.statusCode = 200
+    mockResponse.headers = { 'content-type': 'application/json' }
 
-    mockResponse = {
-      statusCode: 200,
-      headers: { 'content-type': 'application/json' },
-      on: jest.fn((event, callback) => {
-        if (event === 'data') {
-          callback(Buffer.from('{"mock":"data"}'))
-        }
-        if (event === 'end') {
-          callback()
-        }
-        return mockResponse
+    const mockRequest = new EventEmitter()
+    mockRequest.end = jest.fn(() => {
+      process.nextTick(() => {
+        mockResponse.emit('data', Buffer.from('{"test":"data"}'))
+        mockResponse.emit('end')
       })
-    }
+    })
+    mockRequest.destroy = jest.fn()
 
-    mockRequest = {
-      on: jest.fn((event, callback) => {
-        return mockRequest
-      }),
-      end: jest.fn(),
-      destroy: jest.fn()
-    }
-
-    https.request = jest.fn().mockImplementation((options, callback) => {
+    https.request.mockImplementation((options, callback) => {
       if (callback) {
-        callback(mockResponse)
+        process.nextTick(() => callback(mockResponse))
       }
       return mockRequest
     })
 
-    mockSecureContext = {
-      context: {
-        addCACert: jest.fn()
-      }
-    }
-    tls.createSecureContext = jest.fn().mockReturnValue(mockSecureContext)
-
-    mockAgent = {}
-    HttpsProxyAgent.mockImplementation(() => mockAgent)
-
-    getTrustStoreCerts.mockReturnValue(['MOCK_CERT_1', 'MOCK_CERT_2'])
-
-    process.env.HTTP_PROXY = 'http://proxy.example.com:8080'
-  })
+    return { mockRequest, mockResponse }
+  }
 
   describe('isTlsError', () => {
     test('should identify TLS errors by code', () => {
-      const error = new Error('Certificate validation failed')
-      error.code = 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'
-      expect(tlsTestUtils.isTlsError(error)).toBe(true)
+      const error = new Error('TLS error')
+      error.code = 'ECONNRESET'
 
-      const nonTlsError = new Error('Generic error')
-      nonTlsError.code = 'ENOTFOUND'
-      expect(tlsTestUtils.isTlsError(nonTlsError)).toBe(false)
+      expect(isTlsError(error)).toBe(true)
     })
 
     test('should identify TLS errors by message', () => {
-      const error = new Error('TLS handshake failed')
-      expect(tlsTestUtils.isTlsError(error)).toBe(true)
-
-      const sslError = new Error('SSL connection error')
-      expect(tlsTestUtils.isTlsError(sslError)).toBe(true)
-
-      const certError = new Error('Certificate has expired')
-      expect(tlsTestUtils.isTlsError(certError)).toBe(true)
+      const error = new Error('certificate verification failed')
+      expect(isTlsError(error)).toBe(true)
     })
 
-    test('should handle null or undefined errors', () => {
-      expect(tlsTestUtils.isTlsError(null)).toBe(false)
-      expect(tlsTestUtils.isTlsError(undefined)).toBe(false)
+    test('should return false for non-TLS errors', () => {
+      const error = new Error('Some other error')
+      error.code = 'ENOTFOUND'
+
+      expect(isTlsError(error)).toBe(false)
     })
 
-    test('should identify all specific TLS error codes', () => {
-      const tlsErrorCodes = [
-        'ECONNRESET',
-        'CERT_HAS_EXPIRED',
-        'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
-        'DEPTH_ZERO_SELF_SIGNED_CERT',
-        'ERR_TLS_CERT_ALTNAME_INVALID',
-        'CERT_SIGNATURE_FAILURE'
-      ]
-
-      tlsErrorCodes.forEach((code) => {
-        const error = new Error('TLS error')
-        error.code = code
-        expect(tlsTestUtils.isTlsError(error)).toBe(true)
-      })
+    test('should handle null error', () => {
+      expect(isTlsError(null)).toBe(false)
     })
   })
 
   describe('createTlsContext', () => {
-    test('should set up TLS context with certificates', () => {
-      tlsTestUtils.createTlsContext()
+    test('should create TLS context with certificates', () => {
+      const secureContext = createTlsContext()
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        'Found 2 certificates in environment variables'
-      )
-      expect(mockConsoleLog).toHaveBeenCalledWith(
+      expect(getTrustStoreCerts).toHaveBeenCalled()
+      expect(tls.createSecureContext).toHaveBeenCalled()
+      expect(secureContext.context.addCACert).toHaveBeenCalledTimes(2)
+      expect(console.log).toHaveBeenCalledWith(
         'TLS context created successfully'
       )
     })
 
-    test('should handle certificate loading errors', () => {
-      tlsTestUtils.createTlsContext.mockImplementationOnce(() => {
-        console.error('Failed to add certificate #1: Invalid certificate')
-        return { context: { addCACert: jest.fn() } }
+    test('should handle errors during certificate loading', () => {
+      const mockContext = {
+        addCACert: jest
+          .fn()
+          .mockImplementationOnce(() => {})
+          .mockImplementationOnce(() => {
+            throw new Error('Invalid cert')
+          })
+      }
+      tls.createSecureContext.mockReturnValue({
+        context: mockContext
       })
 
-      tlsTestUtils.createTlsContext()
+      const secureContext = createTlsContext()
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to add certificate #1')
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to add certificate #2')
       )
+      expect(secureContext).toBeTruthy()
     })
 
-    test('should handle TLS context creation errors', () => {
-      tlsTestUtils.createTlsContext.mockImplementationOnce(() => {
-        console.error(
-          'Failed to create TLS context: TLS context creation failed'
-        )
-        return null
+    test('should handle errors from getTrustStoreCerts', () => {
+      getTrustStoreCerts.mockImplementation(() => {
+        throw new Error('Cannot read environment variables')
       })
 
-      const result = tlsTestUtils.createTlsContext()
+      const secureContext = createTlsContext()
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Failed to create TLS context')
       )
-      expect(result).toBeNull()
+      expect(secureContext).toBeNull()
     })
   })
 
   describe('testDirectConnection', () => {
-    test('should handle successful responses', async () => {
-      const result = await tlsTestUtils.testDirectConnection({
-        TARGET_URL: 'example.com',
-        TARGET_PATH: '/test',
-        PORT: 443,
-        TIMEOUT_MS: 5000
-      })
+    test('should successfully test direct connection', async () => {
+      setupMockResponse()
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        '=== Test 1: Direct HTTPS connection (no proxy) ==='
-      )
+      const result = await testDirectConnection()
+
       expect(result.success).toBe(true)
+      expect(result.statusCode).toBe(200)
+      expect(result.data).toBe('{"test":"data"}')
+      expect(https.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hostname: DEFAULT_CONFIG.TARGET_URL,
+          path: DEFAULT_CONFIG.TARGET_PATH
+        }),
+        expect.any(Function)
+      )
+    })
+
+    test('should handle connection errors', async () => {
+      const mockError = new Error('Connection failed')
+      mockError.code = 'ECONNREFUSED'
+
+      const mockRequest = new EventEmitter()
+      mockRequest.end = jest.fn(() => {
+        process.nextTick(() => mockRequest.emit('error', mockError))
+      })
+      mockRequest.destroy = jest.fn()
+
+      https.request.mockReturnValue(mockRequest)
+
+      const result = await testDirectConnection()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe(mockError)
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('TEST 1 FAILED')
+      )
     })
 
     test('should handle TLS errors', async () => {
-      tlsTestUtils.testDirectConnection.mockImplementationOnce(() => {
-        console.error('TEST 1 FAILED: Certificate validation failed')
-        console.error(
-          'Error name: Error, Error code: UNABLE_TO_VERIFY_LEAF_SIGNATURE'
-        )
-        return Promise.resolve({
-          success: false,
-          error: new Error('Certificate validation failed')
-        })
+      const mockError = new Error('Certificate verification failed')
+      mockError.code = 'CERT_HAS_EXPIRED'
+
+      const mockRequest = new EventEmitter()
+      mockRequest.end = jest.fn(() => {
+        process.nextTick(() => mockRequest.emit('error', mockError))
       })
+      mockRequest.destroy = jest.fn()
 
-      await tlsTestUtils.testDirectConnection()
+      https.request.mockReturnValue(mockRequest)
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('FAILED')
-      )
-    })
+      const result = await testDirectConnection()
 
-    test('should handle timeout', async () => {
-      tlsTestUtils.testDirectConnection.mockImplementationOnce(() => {
-        console.error('TEST 1 FAILED: Request timed out')
-        return Promise.resolve({
-          success: false,
-          error: new Error('Request timed out')
-        })
-      })
-
-      await tlsTestUtils.testDirectConnection()
-
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('timed out')
-      )
-    })
-
-    test('should handle ECONNREFUSED error', async () => {
-      tlsTestUtils.testDirectConnection.mockImplementationOnce(() => {
-        console.error('TEST 1 FAILED: Connection refused')
-        console.error('Error name: Error, Error code: ECONNREFUSED')
-        return Promise.resolve({
-          success: false,
-          error: { message: 'Connection refused', code: 'ECONNREFUSED' }
-        })
-      })
-
-      const result = await tlsTestUtils.testDirectConnection()
-
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('Connection refused')
-      )
       expect(result.success).toBe(false)
+      expect(result.error).toBe(mockError)
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('certificate validation error')
+      )
     })
 
-    test('should handle ECONNRESET error', async () => {
-      tlsTestUtils.testDirectConnection.mockImplementationOnce(() => {
-        console.error('TEST 1 FAILED: Connection reset')
-        console.error('Error name: Error, Error code: ECONNRESET')
-        return Promise.resolve({
-          success: false,
-          error: { message: 'Connection reset', code: 'ECONNRESET' }
-        })
+    test('should handle timeouts', async () => {
+      const mockRequest = new EventEmitter()
+      mockRequest.end = jest.fn(() => {
+        process.nextTick(() => mockRequest.emit('timeout'))
       })
+      mockRequest.destroy = jest.fn()
 
-      const result = await tlsTestUtils.testDirectConnection()
+      https.request.mockReturnValue(mockRequest)
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('Connection reset')
-      )
+      const result = await testDirectConnection()
+
       expect(result.success).toBe(false)
+      expect(result.error.message).toBe('Request timed out')
+      expect(mockRequest.destroy).toHaveBeenCalled()
     })
   })
 
   describe('testProxyConnection', () => {
-    test('should use proxy agent', async () => {
-      await tlsTestUtils.testProxyConnection({
-        TARGET_URL: 'example.com',
-        TARGET_PATH: '/test',
-        PORT: 443,
-        PROXY_URL: 'http://proxy.example.com:8080',
-        TIMEOUT_MS: 5000
-      })
+    test('should skip test when no proxy is configured', async () => {
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: null }
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        '=== Test 2: Connection through proxy ==='
-      )
-    })
+      const result = await testProxyConnection(config)
 
-    test('should skip if no proxy is configured', async () => {
-      const result = await tlsTestUtils.testProxyConnection({
-        TARGET_URL: 'example.com',
-        TARGET_PATH: '/test',
-        PORT: 443,
-        PROXY_URL: null,
-        TIMEOUT_MS: 5000
-      })
-
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        '=== Test 2: Skipped (no proxy configured) ==='
-      )
       expect(result.success).toBe(false)
       expect(result.error.message).toBe('No proxy configured')
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Skipped (no proxy configured)')
+      )
     })
 
-    test('should handle proxy setup errors', async () => {
-      tlsTestUtils.testProxyConnection.mockImplementationOnce(() => {
-        console.error('TEST 2 FAILED during setup: Proxy setup failed')
-        return Promise.resolve({
-          success: false,
-          error: new Error('Proxy setup failed')
-        })
-      })
+    test('should test connection through proxy', async () => {
+      setupMockResponse()
 
-      const result = await tlsTestUtils.testProxyConnection({
-        PROXY_URL: 'http://proxy.example.com:8080'
-      })
+      const mockAgent = {}
+      HttpsProxyAgent.mockReturnValue(mockAgent)
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('Proxy setup failed')
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: 'http://proxy:8080' }
+
+      const result = await testProxyConnection(config)
+
+      expect(HttpsProxyAgent).toHaveBeenCalledWith(
+        'http://proxy:8080',
+        expect.objectContaining({ rejectUnauthorized: true })
       )
+      expect(https.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agent: mockAgent
+        }),
+        expect.any(Function)
+      )
+      expect(result.success).toBe(true)
+    })
+
+    test('should handle proxy connection errors', async () => {
+      const mockError = new Error('Proxy connection failed')
+      HttpsProxyAgent.mockImplementation(() => {
+        throw mockError
+      })
+
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: 'http://proxy:8080' }
+
+      const result = await testProxyConnection(config)
+
       expect(result.success).toBe(false)
+      expect(result.error).toBe(mockError)
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('TEST 2 FAILED during setup')
+      )
     })
   })
 
   describe('testInsecureConnection', () => {
-    test('should disable TLS verification', async () => {
-      await tlsTestUtils.testInsecureConnection()
+    test('should test connection with TLS verification disabled', async () => {
+      setupMockResponse()
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        '=== Test 3: Connection with TLS verification disabled ==='
+      const result = await testInsecureConnection()
+
+      expect(https.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          rejectUnauthorized: false
+        }),
+        expect.any(Function)
       )
+      expect(result.success).toBe(true)
     })
 
-    test('should log success message when test succeeds', async () => {
-      await tlsTestUtils.testInsecureConnection()
+    test('should use proxy with TLS verification disabled when proxy is configured', async () => {
+      setupMockResponse()
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        'Test 3 completed successfully'
+      const mockAgent = {}
+      HttpsProxyAgent.mockReturnValue(mockAgent)
+
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: 'http://proxy:8080' }
+
+      await testInsecureConnection(config)
+
+      expect(HttpsProxyAgent).toHaveBeenCalledWith(
+        'http://proxy:8080',
+        expect.objectContaining({ rejectUnauthorized: false })
       )
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('IF TEST 3 SUCCEEDED BUT OTHERS FAILED')
-      )
-    })
-
-    test('should log failure message when all tests fail', async () => {
-      tlsTestUtils.testInsecureConnection.mockImplementationOnce(() => {
-        console.error('TEST 3 FAILED: Network error')
-        console.error(
-          'IF ALL TESTS FAILED: This suggests a network connectivity issue rather than just a certificate problem.'
-        )
-        return Promise.resolve({
-          success: false,
-          error: new Error('Network error')
-        })
-      })
-
-      await tlsTestUtils.testInsecureConnection()
-
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('IF ALL TESTS FAILED')
+      expect(console.log).toHaveBeenCalledWith(
+        'Using proxy with TLS verification disabled'
       )
     })
   })
 
   describe('runAllTests', () => {
-    test('should execute all test functions', async () => {
-      const results = await tlsTestUtils.runAllTests()
+    beforeEach(() => {
+      setupMockResponse()
+    })
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        '=== TLS Connection Test Utility ==='
-      )
+    test('should run all tests and return results', async () => {
+      const results = await runAllTests()
+
       expect(results).toHaveProperty('directConnection')
       expect(results).toHaveProperty('proxyConnection')
       expect(results).toHaveProperty('insecureConnection')
+
+      expect(results.directConnection.success).toBe(true)
+      expect(results.proxyConnection).toHaveProperty('skipped', true)
+      expect(results.insecureConnection.success).toBe(true)
     })
 
-    test('should run with custom config', async () => {
-      const customConfig = {
-        TARGET_URL: 'custom.example.com',
-        TARGET_PATH: '/custom-path',
-        PORT: 8443,
-        PROXY_URL: 'http://custom.proxy:9090',
-        TIMEOUT_MS: 15000
-      }
+    test('should run proxy test when proxy is configured', async () => {
+      const mockAgent = {}
+      HttpsProxyAgent.mockReturnValue(mockAgent)
 
-      await tlsTestUtils.runAllTests(customConfig)
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: 'http://proxy:8080' }
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining(
-          `Target: https://${customConfig.TARGET_URL}${customConfig.TARGET_PATH}`
-        )
-      )
-    })
+      const results = await runAllTests(config)
 
-    test('should log test configuration', async () => {
-      await tlsTestUtils.runAllTests()
-
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        '=== TLS Connection Test Utility ==='
-      )
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('Target:')
-      )
-      expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('Using Proxy:')
-      )
+      expect(results.proxyConnection.success).toBe(true)
+      expect(results.proxyConnection).not.toHaveProperty('skipped')
     })
   })
 })
