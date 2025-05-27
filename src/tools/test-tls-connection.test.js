@@ -690,6 +690,57 @@ describe('test-tls-connection.js', () => {
 
       expect(typeof runAllTests).toBe('function')
     })
+
+    it('should execute runAllTests function and verify structure', async () => {
+      const createTlsContextSpy = jest
+        .spyOn(require('./test-tls-connection.js'), 'createTlsContext')
+        .mockReturnValue(null)
+
+      const testDirectConnectionSpy = jest
+        .spyOn(require('./test-tls-connection.js'), 'testDirectConnection')
+        .mockResolvedValue({ success: false, error: new Error('mock error') })
+
+      const testProxyConnectionSpy = jest
+        .spyOn(require('./test-tls-connection.js'), 'testProxyConnection')
+        .mockResolvedValue({ success: false, error: new Error('mock error') })
+
+      const testInsecureConnectionSpy = jest
+        .spyOn(require('./test-tls-connection.js'), 'testInsecureConnection')
+        .mockResolvedValue({ success: false, error: new Error('mock error') })
+
+      try {
+        const configWithProxy = {
+          ...DEFAULT_CONFIG,
+          PROXY_URL: 'http://proxy:8080'
+        }
+        const result = await runAllTests(configWithProxy)
+
+        expect(console.log).toHaveBeenCalledWith(
+          '=== TLS Connection Test Utility ==='
+        )
+        expect(console.log).toHaveBeenCalledWith(
+          `Target: https://${configWithProxy.TARGET_URL}${configWithProxy.TARGET_PATH}`
+        )
+        expect(console.log).toHaveBeenCalledWith(
+          `Using Proxy: ${configWithProxy.PROXY_URL}`
+        )
+
+        expect(result).toHaveProperty('directConnection')
+        expect(result).toHaveProperty('proxyConnection')
+        expect(result).toHaveProperty('insecureConnection')
+
+        const configWithoutProxy = { ...DEFAULT_CONFIG, PROXY_URL: null }
+        const resultNoProxy = await runAllTests(configWithoutProxy)
+
+        expect(console.log).toHaveBeenCalledWith('Using Proxy: None')
+        expect(resultNoProxy.proxyConnection).toEqual({ skipped: true })
+      } finally {
+        createTlsContextSpy.mockRestore()
+        testDirectConnectionSpy.mockRestore()
+        testProxyConnectionSpy.mockRestore()
+        testInsecureConnectionSpy.mockRestore()
+      }
+    })
   })
 
   describe('Direct script execution', () => {
