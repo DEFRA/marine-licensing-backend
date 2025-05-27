@@ -8,7 +8,9 @@ const TLS_ERROR_CODES = [
 ]
 
 export function isTlsError(error) {
-  if (!error) return false
+  if (!error) {
+    return false
+  }
 
   if (error.code && TLS_ERROR_CODES.includes(error.code)) {
     return true

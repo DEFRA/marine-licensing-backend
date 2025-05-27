@@ -11,8 +11,13 @@ export const DEFAULT_CONFIG = {
   TIMEOUT_MS: 10000
 }
 
+const USER_AGENT = 'Node.js TLS Test'
+const TIMEOUT_ERROR_MESSAGE = 'Request timed out'
+
 export function isTlsError(error) {
-  if (!error) return false
+  if (!error) {
+    return false
+  }
 
   const TLS_ERROR_CODES = [
     'ECONNRESET',
@@ -80,8 +85,10 @@ export function testDirectConnection(
       path: config.TARGET_PATH,
       method: 'GET',
       secureContext: tlsContext,
+      rejectUnauthorized: true,
+      checkServerIdentity: tls.checkServerIdentity,
       headers: {
-        'User-Agent': 'Node.js TLS Test'
+        'User-Agent': USER_AGENT
       },
       timeout: config.TIMEOUT_MS
     }
@@ -118,15 +125,19 @@ export function testDirectConnection(
         console.error(
           'Connection reset. This often indicates a TLS handshake failure.'
         )
+      } else {
+        console.error(
+          'An unexpected error occurred. Check your network connection and configuration.'
+        )
       }
 
       resolve({ success: false, error: e })
     })
 
     req.on('timeout', () => {
-      console.error('TEST 1 FAILED: Request timed out')
+      console.error(`TEST 1 FAILED: ${TIMEOUT_ERROR_MESSAGE}`)
       req.destroy()
-      resolve({ success: false, error: new Error('Request timed out') })
+      resolve({ success: false, error: new Error(TIMEOUT_ERROR_MESSAGE) })
     })
 
     req.end()
@@ -158,8 +169,10 @@ export function testProxyConnection(
         path: config.TARGET_PATH,
         method: 'GET',
         agent,
+        rejectUnauthorized: true,
+        checkServerIdentity: tls.checkServerIdentity,
         headers: {
-          'User-Agent': 'Node.js TLS Test'
+          'User-Agent': USER_AGENT
         },
         timeout: config.TIMEOUT_MS
       }
@@ -187,9 +200,9 @@ export function testProxyConnection(
       })
 
       req.on('timeout', () => {
-        console.error('TEST 2 FAILED: Request timed out')
+        console.error(`TEST 2 FAILED: ${TIMEOUT_ERROR_MESSAGE}`)
         req.destroy()
-        resolve({ success: false, error: new Error('Request timed out') })
+        resolve({ success: false, error: new Error(TIMEOUT_ERROR_MESSAGE) })
       })
 
       req.end()
@@ -211,7 +224,7 @@ export function testInsecureConnection(config = DEFAULT_CONFIG) {
       method: 'GET',
       rejectUnauthorized: false,
       headers: {
-        'User-Agent': 'Node.js TLS Test'
+        'User-Agent': USER_AGENT
       },
       timeout: config.TIMEOUT_MS
     }
@@ -256,9 +269,9 @@ export function testInsecureConnection(config = DEFAULT_CONFIG) {
     })
 
     req.on('timeout', () => {
-      console.error('TEST 3 FAILED: Request timed out')
+      console.error(`TEST 3 FAILED: ${TIMEOUT_ERROR_MESSAGE}`)
       req.destroy()
-      resolve({ success: false, error: new Error('Request timed out') })
+      resolve({ success: false, error: new Error(TIMEOUT_ERROR_MESSAGE) })
     })
 
     req.end()

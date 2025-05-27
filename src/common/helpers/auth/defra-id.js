@@ -92,42 +92,50 @@ export function setupAuthStrategy(server, oidcConf, authCallbackUrl) {
   server.auth.default('defra-id')
 }
 
+function logTlsRecommendations() {
+  safeLog.error(
+    'TLS ISSUE DETECTED: This appears to be a TLS handshake problem'
+  )
+  safeLog.error('Recommended solutions:')
+  safeLog.error(
+    '1. Verify your TRUSTSTORE certificates are correctly formatted'
+  )
+  safeLog.error('2. Check that ENABLE_SECURE_CONTEXT is set to true')
+  safeLog.error('3. Ensure your proxy can access the OIDC endpoint')
+  safeLog.error('4. Verify there are no firewall rules blocking the connection')
+}
+
+function logFetchErrorDetails(fetchError) {
+  safeLog.error(`FetchError type: ${fetchError.type || 'unknown'}`)
+  safeLog.error(`FetchError errno: ${fetchError.errno || 'none'}`)
+  safeLog.error(`FetchError input: ${fetchError.input || 'none'}`)
+
+  if (fetchError.message.includes('TLS')) {
+    logTlsRecommendations()
+  }
+}
+
+function logUnderlyingError(cause) {
+  safeLog.error(`Underlying error: ${cause.message}`)
+  safeLog.error(`Underlying error name: ${cause.name}`)
+  safeLog.error(`Underlying error code: ${cause.code || 'no code'}`)
+
+  if (cause.stack) {
+    safeLog.error(`Underlying error stack: ${cause.stack}`)
+  }
+}
+
 export function logFetchError(fetchError) {
   safeLog.error(`Fetch operation failed: ${fetchError.message}`)
   safeLog.error(`Fetch error name: ${fetchError.name}`)
   safeLog.error(`Fetch error code: ${fetchError.code || 'no error code'}`)
 
   if (fetchError.name === 'FetchError') {
-    safeLog.error(`FetchError type: ${fetchError.type || 'unknown'}`)
-    safeLog.error(`FetchError errno: ${fetchError.errno || 'none'}`)
-    safeLog.error(`FetchError input: ${fetchError.input || 'none'}`)
-
-    if (fetchError.message.includes('TLS')) {
-      safeLog.error(
-        'TLS ISSUE DETECTED: This appears to be a TLS handshake problem'
-      )
-      safeLog.error('Recommended solutions:')
-      safeLog.error(
-        '1. Verify your TRUSTSTORE certificates are correctly formatted'
-      )
-      safeLog.error('2. Check that ENABLE_SECURE_CONTEXT is set to true')
-      safeLog.error('3. Ensure your proxy can access the OIDC endpoint')
-      safeLog.error(
-        '4. Verify there are no firewall rules blocking the connection'
-      )
-    }
+    logFetchErrorDetails(fetchError)
   }
 
   if (fetchError.cause) {
-    safeLog.error(`Underlying error: ${fetchError.cause.message}`)
-    safeLog.error(`Underlying error name: ${fetchError.cause.name}`)
-    safeLog.error(
-      `Underlying error code: ${fetchError.cause.code || 'no code'}`
-    )
-
-    if (fetchError.cause.stack) {
-      safeLog.error(`Underlying error stack: ${fetchError.cause.stack}`)
-    }
+    logUnderlyingError(fetchError.cause)
   }
 
   safeLog.error(

@@ -24,6 +24,8 @@ export const safeLog = {
       logger.warn(message)
     } else if (logger && typeof logger.info === 'function') {
       logger.info(`WARN: ${message}`)
+    } else {
+      console.warn(`WARN: ${message}`)
     }
   }
 }
