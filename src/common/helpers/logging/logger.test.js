@@ -8,7 +8,6 @@ describe('logger.js module', () => {
     const logger = createLogger()
 
     expect(typeof logger).toBe('object')
-
     expect(typeof logger.info).toBe('function')
     expect(typeof logger.error).toBe('function')
 
