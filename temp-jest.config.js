@@ -1,13 +1,27 @@
 // Temporary Jest configuration for testing without MongoDB
-module.exports = {
+export default {
   rootDir: '.',
   verbose: true,
   resetModules: true,
   clearMocks: true,
-  testMatch: ['**/src/common/helpers/auth/simple-defra-id.test.js'],
-  collectCoverageFrom: ['src/common/helpers/auth/defra-id.js'],
-  coverageDirectory: '<rootDir>/temp-coverage',
+  silent: false,
+  collectCoverageFrom: [
+    'src/common/helpers/proxy/setup-proxy.js',
+    'src/common/helpers/proxy/tls-error.js',
+    'src/common/helpers/proxy/setup-proxy.mock.js'
+  ],
+  coveragePathIgnorePatterns: ['<rootDir>/node_modules/'],
   transform: {
     '^.+\\.js$': 'babel-jest'
-  }
+  },
+  transformIgnorePatterns: [
+    '/node_modules/(?!(?:' +
+      [
+        '@defra/hapi-tracing',
+        'node-fetch',
+        'data-uri-to-buffer',
+        '@hapi/jwt'
+      ].join('|') +
+      ')/)'
+  ]
 }
