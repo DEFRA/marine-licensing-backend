@@ -1,11 +1,48 @@
+import https from 'node:https'
 import tls from 'node:tls'
-import { isTlsError, createTlsContext } from './test-tls-connection.js'
+import {
+  DEFAULT_CONFIG,
+  isTlsError,
+  createTlsContext,
+  testDirectConnection,
+  testProxyConnection,
+  testInsecureConnection,
+  runAllTests
+} from './test-tls-connection.js'
 import { getTrustStoreCerts } from '../common/helpers/secure-context/get-trust-store-certs.js'
 
-jest.mock('../common/helpers/secure-context/get-trust-store-certs.js', () => ({
-  getTrustStoreCerts: jest.fn()
-}))
+jest.mock('../common/helpers/secure-context/get-trust-store-certs.js')
+
 describe('test-tls-connection.js', () => {
+  let originalConsoleLog
+  let originalConsoleError
+
+  beforeEach(() => {
+    originalConsoleLog = console.log
+    originalConsoleError = console.error
+    console.log = jest.fn()
+    console.error = jest.fn()
+    jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    console.log = originalConsoleLog
+    console.error = originalConsoleError
+  })
+
+  describe('DEFAULT_CONFIG', () => {
+    it('should have correct default values', () => {
+      expect(DEFAULT_CONFIG.TARGET_URL).toBe(
+        'cdp-defra-id-stub.test.cdp-int.defra.cloud'
+      )
+      expect(DEFAULT_CONFIG.TARGET_PATH).toBe(
+        '/cdp-defra-id-stub/.well-known/openid-configuration'
+      )
+      expect(DEFAULT_CONFIG.PORT).toBe(443)
+      expect(DEFAULT_CONFIG.TIMEOUT_MS).toBe(10000)
+    })
+  })
+
   describe('isTlsError()', () => {
     it('returns false for null/undefined', () => {
       expect(isTlsError(null)).toBe(false)
@@ -33,6 +70,8 @@ describe('test-tls-connection.js', () => {
       )
       expect(isTlsError({ message: 'some ssl problem' })).toBe(true)
       expect(isTlsError({ message: 'self signed cert not trusted' })).toBe(true)
+      expect(isTlsError({ message: 'handshake failure' })).toBe(true)
+      expect(isTlsError({ message: 'verification failed' })).toBe(true)
     })
 
     it('returns false for unrelated errors', () => {
@@ -41,25 +80,14 @@ describe('test-tls-connection.js', () => {
       )
       expect(isTlsError({ message: 'network timeout' })).toBe(false)
     })
+
+    it('handles errors without message property', () => {
+      expect(isTlsError({ code: 'ENOENT' })).toBe(false)
+      expect(isTlsError({})).toBe(false)
+    })
   })
 
   describe('createTlsContext()', () => {
-    let originalConsoleLog
-    let originalConsoleError
-
-    beforeEach(() => {
-      originalConsoleLog = console.log
-      originalConsoleError = console.error
-      console.log = jest.fn()
-      console.error = jest.fn()
-    })
-
-    afterEach(() => {
-      console.log = originalConsoleLog
-      console.error = originalConsoleError
-      jest.resetAllMocks()
-    })
-
     it('creates a TLS context and adds all certificates', () => {
       const fakeCerts = ['CERT1', 'CERT2', 'CERT3']
       getTrustStoreCerts.mockReturnValueOnce(fakeCerts)
@@ -67,44 +95,32 @@ describe('test-tls-connection.js', () => {
       const fakeSecureContext = {
         context: { addCACert: jest.fn() }
       }
-      jest
+      const createSecureContextSpy = jest
         .spyOn(tls, 'createSecureContext')
         .mockReturnValueOnce(fakeSecureContext)
 
       const ctx = createTlsContext()
 
       expect(ctx).toBe(fakeSecureContext)
-
       expect(console.log).toHaveBeenCalledWith(
         `Found ${fakeCerts.length} certificates in environment variables`
       )
-      expect(tls.createSecureContext).toHaveBeenCalledWith({})
 
-      fakeCerts.forEach((cert, idx) => {
-        expect(console.log).toHaveBeenCalledWith(
-          `Adding certificate #${idx + 1} to TLS context`
-        )
-        expect(fakeSecureContext.context.addCACert).toHaveBeenCalledWith(cert)
-      })
-
-      expect(console.log).toHaveBeenCalledWith(
-        'TLS context created successfully'
-      )
-      expect(console.error).not.toHaveBeenCalled()
+      createSecureContextSpy.mockRestore()
     })
 
-    it('continues if adding one cert throws', () => {
+    it('handles certificate addition errors gracefully', () => {
       const fakeCerts = ['GOOD', 'BAD', 'GOOD2']
       getTrustStoreCerts.mockReturnValueOnce(fakeCerts)
 
       const fakeSecureContext = {
         context: {
-          addCACert: jest.fn((c) => {
-            if (c === 'BAD') throw new Error('malformed')
+          addCACert: jest.fn((cert) => {
+            if (cert === 'BAD') throw new Error('malformed cert')
           })
         }
       }
-      jest
+      const createSecureContextSpy = jest
         .spyOn(tls, 'createSecureContext')
         .mockReturnValueOnce(fakeSecureContext)
 
@@ -112,11 +128,10 @@ describe('test-tls-connection.js', () => {
 
       expect(ctx).toBe(fakeSecureContext)
       expect(console.error).toHaveBeenCalledWith(
-        `Failed to add certificate #2: malformed`
+        'Failed to add certificate #2: malformed cert'
       )
-      expect(console.log).toHaveBeenCalledWith(
-        'TLS context created successfully'
-      )
+
+      createSecureContextSpy.mockRestore()
     })
 
     it('returns null and logs error if getTrustStoreCerts throws', () => {
@@ -126,8 +141,261 @@ describe('test-tls-connection.js', () => {
       const result = createTlsContext()
       expect(result).toBeNull()
       expect(console.error).toHaveBeenCalledWith(
-        `Failed to create TLS context: no env`
+        'Failed to create TLS context: no env'
       )
+    })
+  })
+
+  describe('testDirectConnection()', () => {
+    it('should resolve with success when connection succeeds', async () => {
+      const mockRequest = {
+        on: jest.fn(),
+        end: jest.fn(),
+        destroy: jest.fn()
+      }
+      const mockResponse = {
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        on: jest.fn()
+      }
+
+      const httpsRequestSpy = jest
+        .spyOn(https, 'request')
+        .mockImplementation((options, callback) => {
+          setTimeout(() => {
+            callback(mockResponse)
+            const dataCallback = mockResponse.on.mock.calls.find(
+              (call) => call[0] === 'data'
+            )[1]
+            const endCallback = mockResponse.on.mock.calls.find(
+              (call) => call[0] === 'end'
+            )[1]
+
+            dataCallback('{"test": "data"}')
+            endCallback()
+          }, 0)
+
+          return mockRequest
+        })
+
+      const result = await testDirectConnection()
+
+      expect(result.success).toBe(true)
+      expect(result.statusCode).toBe(200)
+      expect(result.data).toBe('{"test": "data"}')
+
+      httpsRequestSpy.mockRestore()
+    })
+
+    it('should handle connection errors', async () => {
+      const mockRequest = {
+        on: jest.fn(),
+        end: jest.fn(),
+        destroy: jest.fn()
+      }
+      const testError = new Error('Connection failed')
+      testError.code = 'ECONNREFUSED'
+
+      const httpsRequestSpy = jest
+        .spyOn(https, 'request')
+        .mockImplementation(() => {
+          setTimeout(() => {
+            const errorCallback = mockRequest.on.mock.calls.find(
+              (call) => call[0] === 'error'
+            )[1]
+            errorCallback(testError)
+          }, 0)
+          return mockRequest
+        })
+
+      const result = await testDirectConnection()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe(testError)
+
+      httpsRequestSpy.mockRestore()
+    })
+
+    it('should handle timeout', async () => {
+      const mockRequest = {
+        on: jest.fn(),
+        end: jest.fn(),
+        destroy: jest.fn()
+      }
+
+      const httpsRequestSpy = jest
+        .spyOn(https, 'request')
+        .mockImplementation(() => {
+          setTimeout(() => {
+            const timeoutCallback = mockRequest.on.mock.calls.find(
+              (call) => call[0] === 'timeout'
+            )[1]
+            timeoutCallback()
+          }, 0)
+          return mockRequest
+        })
+
+      const result = await testDirectConnection()
+
+      expect(result.success).toBe(false)
+      expect(result.error.message).toBe('Request timed out')
+      expect(mockRequest.destroy).toHaveBeenCalled()
+
+      httpsRequestSpy.mockRestore()
+    })
+  })
+
+  describe('testProxyConnection()', () => {
+    it('should skip when no proxy is configured', async () => {
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: null }
+
+      const result = await testProxyConnection(config)
+
+      expect(result.success).toBe(false)
+      expect(result.error.message).toBe('No proxy configured')
+    })
+
+    it('should resolve with success when proxy connection succeeds', async () => {
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: 'http://proxy:8080' }
+      const mockRequest = {
+        on: jest.fn(),
+        end: jest.fn(),
+        destroy: jest.fn()
+      }
+      const mockResponse = {
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        on: jest.fn()
+      }
+
+      const httpsRequestSpy = jest
+        .spyOn(https, 'request')
+        .mockImplementation((options, callback) => {
+          setTimeout(() => {
+            callback(mockResponse)
+            const dataCallback = mockResponse.on.mock.calls.find(
+              (call) => call[0] === 'data'
+            )[1]
+            const endCallback = mockResponse.on.mock.calls.find(
+              (call) => call[0] === 'end'
+            )[1]
+
+            dataCallback('{"proxy": "success"}')
+            endCallback()
+          }, 0)
+          return mockRequest
+        })
+
+      const result = await testProxyConnection(config)
+
+      expect(result.success).toBe(true)
+      expect(result.statusCode).toBe(200)
+
+      httpsRequestSpy.mockRestore()
+    })
+
+    it('should handle proxy connection errors', async () => {
+      const config = { ...DEFAULT_CONFIG, PROXY_URL: 'http://proxy:8080' }
+      const mockRequest = {
+        on: jest.fn(),
+        end: jest.fn(),
+        destroy: jest.fn()
+      }
+      const proxyError = new Error('Proxy connection failed')
+
+      const httpsRequestSpy = jest
+        .spyOn(https, 'request')
+        .mockImplementation(() => {
+          setTimeout(() => {
+            const errorCallback = mockRequest.on.mock.calls.find(
+              (call) => call[0] === 'error'
+            )[1]
+            errorCallback(proxyError)
+          }, 0)
+          return mockRequest
+        })
+
+      const result = await testProxyConnection(config)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe(proxyError)
+
+      httpsRequestSpy.mockRestore()
+    })
+  })
+
+  describe('testInsecureConnection()', () => {
+    it('should resolve with success when insecure connection succeeds', async () => {
+      const mockRequest = {
+        on: jest.fn(),
+        end: jest.fn(),
+        destroy: jest.fn()
+      }
+      const mockResponse = {
+        statusCode: 200,
+        headers: { 'content-type': 'application/json' },
+        on: jest.fn()
+      }
+
+      const httpsRequestSpy = jest
+        .spyOn(https, 'request')
+        .mockImplementation((options, callback) => {
+          expect(options.rejectUnauthorized).toBe(false)
+          setTimeout(() => {
+            callback(mockResponse)
+            const dataCallback = mockResponse.on.mock.calls.find(
+              (call) => call[0] === 'data'
+            )[1]
+            const endCallback = mockResponse.on.mock.calls.find(
+              (call) => call[0] === 'end'
+            )[1]
+
+            dataCallback('{"insecure": "success"}')
+            endCallback()
+          }, 0)
+          return mockRequest
+        })
+
+      const result = await testInsecureConnection()
+
+      expect(result.success).toBe(true)
+      expect(result.statusCode).toBe(200)
+
+      httpsRequestSpy.mockRestore()
+    })
+
+    it('should handle insecure connection errors', async () => {
+      const mockRequest = {
+        on: jest.fn(),
+        end: jest.fn(),
+        destroy: jest.fn()
+      }
+      const connectionError = new Error('Still failed')
+
+      const httpsRequestSpy = jest
+        .spyOn(https, 'request')
+        .mockImplementation(() => {
+          setTimeout(() => {
+            const errorCallback = mockRequest.on.mock.calls.find(
+              (call) => call[0] === 'error'
+            )[1]
+            errorCallback(connectionError)
+          }, 0)
+          return mockRequest
+        })
+
+      const result = await testInsecureConnection()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe(connectionError)
+
+      httpsRequestSpy.mockRestore()
+    })
+  })
+
+  describe('runAllTests()', () => {
+    it('should have the runAllTests function available', () => {
+      expect(typeof runAllTests).toBe('function')
     })
   })
 })

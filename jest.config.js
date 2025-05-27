@@ -15,9 +15,7 @@ export default {
     '<rootDir>/node_modules/',
     '<rootDir>/.server',
     'index.js',
-    'src/tools/test-tls-connection.js',
     'src/tools/test-oidc-connection.js',
-    'test-tls-connection.js',
     'TLS-TROUBLESHOOTING.md'
   ],
   coverageDirectory: '<rootDir>/coverage',
