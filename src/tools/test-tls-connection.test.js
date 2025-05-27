@@ -433,7 +433,7 @@ describe('test-tls-connection.js', () => {
       const httpsRequestSpy = jest
         .spyOn(https, 'request')
         .mockImplementation((options, callback) => {
-          expect(options.rejectUnauthorized).toBe(false)
+          expect(options.rejectUnauthorized).toBe(true)
           setTimeout(() => {
             callback(mockResponse)
             const dataCallback = mockResponse.on.mock.calls.find(
@@ -502,7 +502,7 @@ describe('test-tls-connection.js', () => {
         .spyOn(https, 'request')
         .mockImplementation((options, callback) => {
           expect(options.agent).toBeDefined()
-          expect(options.rejectUnauthorized).toBe(false)
+          expect(options.rejectUnauthorized).toBe(true)
           setTimeout(() => {
             callback(mockResponse)
             const dataCallback = mockResponse.on.mock.calls.find(
@@ -523,7 +523,7 @@ describe('test-tls-connection.js', () => {
       expect(result.success).toBe(true)
       expect(result.statusCode).toBe(200)
       expect(console.log).toHaveBeenCalledWith(
-        'Using proxy with TLS verification disabled'
+        'Using proxy with TLS verification enabled'
       )
 
       httpsRequestSpy.mockRestore()

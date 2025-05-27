@@ -222,7 +222,8 @@ export function testInsecureConnection(config = DEFAULT_CONFIG) {
       port: config.PORT,
       path: config.TARGET_PATH,
       method: 'GET',
-      rejectUnauthorized: false,
+      rejectUnauthorized: true,
+      checkServerIdentity: tls.checkServerIdentity,
       headers: {
         'User-Agent': USER_AGENT
       },
@@ -232,9 +233,9 @@ export function testInsecureConnection(config = DEFAULT_CONFIG) {
     if (config.PROXY_URL) {
       try {
         options.agent = new HttpsProxyAgent(config.PROXY_URL, {
-          rejectUnauthorized: false
+          rejectUnauthorized: true
         })
-        console.log('Using proxy with TLS verification disabled')
+        console.log('Using proxy with TLS verification enabled')
       } catch (error) {
         console.error(`Failed to create proxy agent: ${error.message}`)
       }
