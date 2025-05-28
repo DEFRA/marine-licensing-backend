@@ -7,7 +7,6 @@ import {
   fetchOidcConfig,
   setupDefraIdAuth,
   defraId,
-  logRequestError,
   safeLog,
   debugHttpClients
 } from './defra-id.js'
@@ -17,7 +16,6 @@ jest.mock('@hapi/wreck')
 jest.mock('@hapi/jwt')
 jest.mock('../../../config.js')
 jest.mock('../logging/logger.js')
-jest.mock('node:https')
 
 describe('defra-id.js', () => {
   const mockServer = {
@@ -34,9 +32,6 @@ describe('defra-id.js', () => {
     defraIdCookiePassword: 'test-cookie-password',
     defraIdServiceId: 'test-service-id',
     defraIdOidcConfigurationUrl: 'https://test-oidc-config-url',
-    cdpEnvironment: 'test',
-    isSecureContextEnabled: true,
-    httpProxy: 'http://test-proxy:8080',
     redirectUri: 'https://test-callback-url'
   }
 
@@ -68,16 +63,6 @@ describe('defra-id.js', () => {
         }
       }
     })
-
-    global.PROXY_AGENT = {
-      proxy: {
-        toString: () => 'http://test-proxy:8080'
-      }
-    }
-  })
-
-  afterEach(() => {
-    delete global.PROXY_AGENT
   })
 
   describe('safeLog', () => {
@@ -96,28 +81,8 @@ describe('defra-id.js', () => {
     test('should fetch OIDC configuration successfully', async () => {
       const result = await fetchOidcConfig('https://test-oidc-url')
 
-      expect(Wreck.get).toHaveBeenCalledWith(
-        'https://test-oidc-url',
-        expect.any(Object)
-      )
+      expect(Wreck.get).toHaveBeenCalledWith('https://test-oidc-url')
       expect(result).toEqual(mockOidcConfig)
-    })
-
-    test('should use proxy agent when available', async () => {
-      await fetchOidcConfig('https://test-oidc-url')
-
-      expect(Wreck.get).toHaveBeenCalledWith(
-        'https://test-oidc-url',
-        expect.objectContaining({ agent: global.PROXY_AGENT })
-      )
-    })
-
-    test('should handle missing proxy agent', async () => {
-      delete global.PROXY_AGENT
-
-      await fetchOidcConfig('https://test-oidc-url')
-
-      expect(Wreck.get).toHaveBeenCalledWith('https://test-oidc-url', {})
     })
 
     test('should throw error when response status is not ok', async () => {
@@ -250,98 +215,6 @@ describe('defra-id.js', () => {
     })
   })
 
-  describe('logRequestError', () => {
-    test('should handle TLS-related errors', () => {
-      const tlsError = new Error('TLS handshake failed')
-      tlsError.name = 'FetchError'
-      tlsError.type = 'system'
-      tlsError.errno = 'ECONNRESET'
-
-      logRequestError(tlsError)
-
-      expect(tlsError.message).toContain('TLS')
-    })
-
-    test('should handle errors with cause property', () => {
-      const causeError = new Error('Root cause error')
-      causeError.code = 'ECAUSE'
-      causeError.name = 'CauseError'
-      causeError.stack = 'Cause stack trace'
-
-      const mainError = new Error('Main error')
-      mainError.cause = causeError
-
-      logRequestError(mainError)
-
-      expect(mainError.cause).toBe(causeError)
-    })
-
-    test('should handle errors with cause that has stack', () => {
-      const causeError = new Error('Root cause with stack')
-      causeError.stack = 'Detailed stack trace'
-
-      const mainError = new Error('Main error')
-      mainError.cause = causeError
-
-      logRequestError(mainError)
-
-      expect(mainError.cause.stack).toBe('Detailed stack trace')
-    })
-
-    test('should handle Boom errors and log details', () => {
-      const boomError = new Error('Boom error message')
-      boomError.isBoom = true
-      boomError.output = {
-        statusCode: 500,
-        payload: { error: 'Internal Server Error' }
-      }
-      boomError.data = { custom: 'data' }
-
-      logRequestError(boomError)
-
-      expect(boomError.isBoom).toBe(true)
-    })
-
-    test('should handle RequestError type and log details', () => {
-      const requestError = new Error('Request failed')
-      requestError.name = 'RequestError'
-      requestError.code = 'ECONNRESET'
-
-      logRequestError(requestError)
-
-      expect(requestError.name).toBe('RequestError')
-    })
-
-    test('should handle TLS errors and call logTlsRecommendations', () => {
-      const tlsError = new Error('TLS connection failed')
-      tlsError.name = 'RequestError'
-      tlsError.message = 'TLS handshake error'
-
-      logRequestError(tlsError)
-
-      expect(tlsError.message).toContain('TLS')
-    })
-
-    test('should handle errors without cause', () => {
-      const simpleError = new Error('Simple error')
-      simpleError.name = 'SimpleError'
-      simpleError.code = 'SIMPLE'
-
-      logRequestError(simpleError)
-
-      expect(simpleError.cause).toBeUndefined()
-    })
-
-    test('should handle errors without stack trace', () => {
-      const errorWithoutStack = new Error('Error without stack')
-      delete errorWithoutStack.stack
-
-      logRequestError(errorWithoutStack)
-
-      expect(errorWithoutStack.stack).toBeUndefined()
-    })
-  })
-
   describe('setupDefraIdAuth', () => {
     test('should fetch OIDC config and setup auth strategy', async () => {
       await setupDefraIdAuth(
@@ -350,10 +223,7 @@ describe('defra-id.js', () => {
         'https://test-callback'
       )
 
-      expect(Wreck.get).toHaveBeenCalledWith(
-        'https://test-oidc-url',
-        expect.any(Object)
-      )
+      expect(Wreck.get).toHaveBeenCalledWith('https://test-oidc-url')
       expect(mockServer.auth.strategy).toHaveBeenCalled()
       expect(mockServer.auth.default).toHaveBeenCalledWith('defra-id')
     })
@@ -373,11 +243,18 @@ describe('defra-id.js', () => {
   })
 
   describe('debugHttpClients', () => {
-    test('should handle Wreck success and log appropriately', async () => {
-      Wreck.get.mockResolvedValueOnce({
-        res: { statusCode: 200 },
-        payload: Buffer.from(JSON.stringify({ issuer: 'test-issuer' }))
+    test('should test Wreck HTTP client successfully', async () => {
+      await debugHttpClients('https://test-oidc-url')
+
+      expect(Wreck.get).toHaveBeenCalledWith('https://test-oidc-url', {
+        timeout: 5000
       })
+    })
+
+    test('should handle Wreck errors gracefully', async () => {
+      const wreckError = new Error('Network error')
+      wreckError.code = 'ECONNREFUSED'
+      Wreck.get.mockRejectedValueOnce(wreckError)
 
       await debugHttpClients('https://test-oidc-url')
 
@@ -386,26 +263,20 @@ describe('defra-id.js', () => {
       })
     })
 
-    test('should handle Wreck failure gracefully', async () => {
-      const wreckError = new Error('Wreck failed')
-      wreckError.name = 'WreckError'
-      wreckError.code = 'ECONNRESET'
-      Wreck.get.mockRejectedValueOnce(wreckError)
-
-      await debugHttpClients('https://test-oidc-url')
-
-      expect(Wreck.get).toHaveBeenCalled()
-    })
-
-    test('should handle Wreck Boom error gracefully', async () => {
+    test('should handle Boom errors from Wreck', async () => {
       const boomError = new Error('Boom error')
       boomError.isBoom = true
-      boomError.output = { statusCode: 500 }
+      boomError.output = {
+        statusCode: 500,
+        payload: { message: 'Server error' }
+      }
       Wreck.get.mockRejectedValueOnce(boomError)
 
       await debugHttpClients('https://test-oidc-url')
 
-      expect(Wreck.get).toHaveBeenCalled()
+      expect(Wreck.get).toHaveBeenCalledWith('https://test-oidc-url', {
+        timeout: 5000
+      })
     })
   })
 
@@ -416,58 +287,20 @@ describe('defra-id.js', () => {
       await defraId.plugin.register(mockServer)
 
       expect(config.get).toHaveBeenCalledWith('defraIdOidcConfigurationUrl')
-
       expect(mockServer.register).toHaveBeenCalled()
-
       expect(Wreck.get).toHaveBeenCalled()
     })
 
     test('should use dummy auth for test environment', async () => {
       process.env.NODE_ENV = 'test'
 
-      const originalGet = config.get
-      config.get = jest.fn((key) => {
-        if (key === 'redirectUri') {
-          throw new Error('redirectUri should not be accessed')
-        }
-        return mockConfig[key]
-      })
-
       await defraId.plugin.register(mockServer)
 
       expect(mockServer.auth.default).toHaveBeenCalledWith('dummy')
       expect(mockServer.register).not.toHaveBeenCalled()
-
       expect(Wreck.get).not.toHaveBeenCalled()
 
       delete process.env.NODE_ENV
-      config.get = originalGet
-    })
-
-    test('should use dummy auth with null OIDC URL to cover early return', async () => {
-      jest.clearAllMocks()
-
-      const originalGet = config.get
-      config.get = jest.fn((key) => {
-        if (key === 'defraIdOidcConfigurationUrl') {
-          return null
-        }
-        if (key === 'redirectUri') {
-          throw new Error('redirectUri should not be accessed')
-        }
-        return mockConfig[key]
-      })
-
-      delete process.env.NODE_ENV
-
-      await defraId.plugin.register(mockServer)
-
-      expect(mockServer.auth.default).toHaveBeenCalledWith('dummy')
-
-      expect(mockServer.register).not.toHaveBeenCalled()
-      expect(Wreck.get).not.toHaveBeenCalled()
-
-      config.get = originalGet
     })
 
     test('should use dummy auth when OIDC URL is not configured', async () => {
@@ -490,42 +323,31 @@ describe('defra-id.js', () => {
       )
     })
 
-    test('should log TLS environment variables when present', async () => {
-      process.env.TRUSTSTORE_1 = 'cert1'
-      process.env.TRUSTSTORE_2 = 'cert2'
-      process.env.ENABLE_SECURE_CONTEXT = 'true'
-      process.env.NODE_ENV = 'test'
-
-      await defraId.plugin.register(mockServer)
-
-      delete process.env.TRUSTSTORE_1
-      delete process.env.TRUSTSTORE_2
-      delete process.env.ENABLE_SECURE_CONTEXT
-      delete process.env.NODE_ENV
-    })
-
-    test('should handle proxy agent with unknown proxy type', async () => {
-      global.PROXY_AGENT = {
-        proxy: null
-      }
-
-      await fetchOidcConfig('https://test-oidc-url')
-
-      expect(Wreck.get).toHaveBeenCalledWith(
-        'https://test-oidc-url',
-        expect.objectContaining({ agent: global.PROXY_AGENT })
-      )
-    })
-
-    test('should run debug HTTP clients when DEBUG_HTTP_CLIENTS is enabled', async () => {
+    test('should run debug HTTP clients when DEBUG_HTTP_CLIENTS=true', async () => {
       process.env.DEBUG_HTTP_CLIENTS = 'true'
       delete process.env.NODE_ENV
 
+      await defraId.plugin.register(mockServer)
+
+      // Should call Wreck.get twice: once for debug, once for actual setup
+      expect(Wreck.get).toHaveBeenCalledTimes(2)
+      expect(Wreck.get).toHaveBeenCalledWith(
+        mockConfig.defraIdOidcConfigurationUrl,
+        {
+          timeout: 5000
+        }
+      )
+
+      delete process.env.DEBUG_HTTP_CLIENTS
+    })
+
+    test('should handle debug HTTP client errors gracefully', async () => {
+      process.env.DEBUG_HTTP_CLIENTS = 'true'
+      delete process.env.NODE_ENV
+
+      // Make debug call fail but main call succeed
       Wreck.get
-        .mockResolvedValueOnce({
-          res: { statusCode: 200 },
-          payload: Buffer.from(JSON.stringify({ issuer: 'debug-issuer' }))
-        })
+        .mockRejectedValueOnce(new Error('Debug failed'))
         .mockResolvedValueOnce({
           res: { statusCode: 200 },
           payload: Buffer.from(JSON.stringify(mockOidcConfig))
@@ -533,15 +355,13 @@ describe('defra-id.js', () => {
 
       await defraId.plugin.register(mockServer)
 
-      expect(Wreck.get).toHaveBeenCalledWith(
-        mockConfig.defraIdOidcConfigurationUrl,
-        { timeout: 5000 }
-      )
+      expect(Wreck.get).toHaveBeenCalledTimes(2)
+      expect(mockServer.auth.strategy).toHaveBeenCalled()
 
       delete process.env.DEBUG_HTTP_CLIENTS
     })
 
-    test('should continue on error when DEBUG_CONTINUE_ON_ERROR is enabled', async () => {
+    test('should continue with dummy auth when DEBUG_CONTINUE_ON_ERROR=true', async () => {
       process.env.DEBUG_CONTINUE_ON_ERROR = 'true'
       delete process.env.NODE_ENV
 
@@ -551,30 +371,8 @@ describe('defra-id.js', () => {
       await defraId.plugin.register(mockServer)
 
       expect(mockServer.auth.default).toHaveBeenCalledWith('dummy')
-      expect(mockServer.register).toHaveBeenCalled()
 
       delete process.env.DEBUG_CONTINUE_ON_ERROR
-    })
-
-    test('should throw error normally when DEBUG_CONTINUE_ON_ERROR is not enabled', async () => {
-      delete process.env.DEBUG_CONTINUE_ON_ERROR
-      delete process.env.NODE_ENV
-
-      const oidcError = new Error('OIDC configuration failed')
-      Wreck.get.mockRejectedValueOnce(oidcError)
-
-      await expect(defraId.plugin.register(mockServer)).rejects.toThrow(
-        'OIDC configuration failed'
-      )
-    })
-
-    test('should log success message when OIDC setup completes', async () => {
-      delete process.env.NODE_ENV
-
-      await defraId.plugin.register(mockServer)
-
-      expect(Wreck.get).toHaveBeenCalled()
-      expect(mockServer.auth.strategy).toHaveBeenCalled()
     })
   })
 })

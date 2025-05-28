@@ -4,7 +4,6 @@ import { HttpsProxyAgent } from 'https-proxy-agent'
 
 import { createLogger } from '../logging/logger.js'
 import { config } from '../../../config.js'
-import { isTlsError } from './tls-error.js'
 
 export const logger = createLogger()
 
@@ -29,8 +28,6 @@ export const safeLog = {
     }
   }
 }
-
-export { isTlsError }
 
 export function checkTlsEnvironment() {
   const tlsEnvVars = Object.keys(process.env).filter(
@@ -106,18 +103,6 @@ export function handleProxyError(error) {
   safeLog.error(`Error name: ${error.name}`)
   safeLog.error(`Error code: ${error.code || 'No error code'}`)
   safeLog.error(`Error stack: ${error.stack}`)
-
-  if (isTlsError(error)) {
-    safeLog.error('This appears to be a TLS/certificate validation issue.')
-    safeLog.error('Please check:')
-    safeLog.error('1. Your proxy configuration can access the target URL')
-    safeLog.error('2. Your certificates are in the correct PEM format')
-    safeLog.error('3. Your ENABLE_SECURE_CONTEXT setting is correct')
-    safeLog.error(
-      '4. Set NODE_TLS_REJECT_UNAUTHORIZED=0 temporarily to bypass validation'
-    )
-    safeLog.error('5. Check if your proxy requires additional authentication')
-  }
 
   safeLog.warn('Continuing application startup despite proxy setup failure')
   return null
