@@ -7,6 +7,7 @@ import { createLogger } from '../logging/logger.js'
 export const logger = createLogger()
 
 const HTTP_BAD_REQUEST = 400
+const HTTPS_DEFAULT_PORT = 443
 
 export const safeLog = {
   info: (message) => {
@@ -177,9 +178,9 @@ export async function debugHttpClients(oidcConfigurationUrl) {
       timeout: 5000
     })
     safeLog.info(`DEBUG: Basic Wreck success - Status: ${res.statusCode}`)
-    const config = JSON.parse(payload.toString())
+    const oidcConfig = JSON.parse(payload.toString())
     safeLog.info(
-      `DEBUG: OIDC config retrieved - Issuer: ${config.issuer || 'unknown'}`
+      `DEBUG: OIDC config retrieved - Issuer: ${oidcConfig.issuer || 'unknown'}`
     )
   } catch (error) {
     safeLog.error(`DEBUG: Basic Wreck failed - ${error.message}`)
@@ -200,7 +201,7 @@ export async function debugHttpClients(oidcConfigurationUrl) {
       const req = https.request(
         {
           hostname: url.hostname,
-          port: url.port || 443,
+          port: url.port || HTTPS_DEFAULT_PORT,
           path: url.pathname,
           method: 'GET',
           timeout: 5000
