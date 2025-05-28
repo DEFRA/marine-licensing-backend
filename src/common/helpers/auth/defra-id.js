@@ -6,6 +6,8 @@ import { createLogger } from '../logging/logger.js'
 
 export const logger = createLogger()
 
+const HTTP_BAD_REQUEST = 400
+
 export const safeLog = {
   info: (message) => {
     if (logger && typeof logger.info === 'function') {
@@ -39,7 +41,7 @@ export async function fetchOidcConfig(oidcConfigurationUrl) {
   try {
     const { res, payload } = await Wreck.get(oidcConfigurationUrl, wreckOptions)
 
-    if (res.statusCode >= 400) {
+    if (res.statusCode >= HTTP_BAD_REQUEST) {
       throw new Error(
         `Failed to fetch OIDC config: ${res.statusCode} ${res.statusMessage}`
       )
@@ -119,7 +121,7 @@ function logRequestErrorDetails(requestError) {
     safeLog.error(`Boom error data: ${JSON.stringify(requestError.data)}`)
   }
 
-  if (requestError.message && requestError.message.includes('TLS')) {
+  if (requestError.message?.includes('TLS')) {
     logTlsRecommendations()
   }
 }
