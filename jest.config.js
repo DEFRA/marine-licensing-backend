@@ -24,12 +24,7 @@ export default {
   },
   transformIgnorePatterns: [
     '/node_modules/(?!(?:' +
-      [
-        '@defra/hapi-tracing',
-        'node-fetch',
-        'data-uri-to-buffer',
-        '@hapi/jwt'
-      ].join('|') +
+      ['@defra/hapi-tracing', '@hapi/jwt'].join('|') +
       ')/)'
   ]
 }

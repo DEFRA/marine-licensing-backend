@@ -95,7 +95,7 @@ export function createTlsOptions(isSecureContextEnabled, cdpEnvironment) {
 }
 
 export function setupHttpsProxyAgent(proxyUrl, tlsOptions) {
-  safeLog.info('Setting up HttpsProxyAgent for node-fetch...')
+  safeLog.info('Setting up HttpsProxyAgent for Wreck...')
   global.PROXY_AGENT = new HttpsProxyAgent(proxyUrl, tlsOptions)
   safeLog.info('HttpsProxyAgent setup completed with custom TLS options')
   return global.PROXY_AGENT

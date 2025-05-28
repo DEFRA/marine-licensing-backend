@@ -1,16 +1,6 @@
 import Hapi from '@hapi/hapi'
 import { health } from '../../src/routes/health.js'
 
-jest.mock('node-fetch', () => ({
-  __esModule: true,
-  default: jest.fn().mockResolvedValue({
-    json: async () => ({
-      authorization_endpoint: 'https://auth/',
-      token_endpoint: 'https://token/',
-      end_session_endpoint: 'https://logout/'
-    })
-  })
-}))
 jest.mock('@hapi/jwt', () => ({
   __esModule: true,
   token: {

@@ -23,7 +23,7 @@ This typically indicates a problem with TLS certificate validation during the ha
 We've provided two diagnostic scripts:
 
 1. `test-tls-connection.js` - Tests direct TLS connections using Node.js native https module
-2. `test-oidc-connection.js` - Tests the actual OIDC endpoint using node-fetch (same as the application)
+2. `test-oidc-connection.js` - Tests the actual OIDC endpoint using @hapi/wreck (same as the application)
 
 To run the diagnostic tools:
 

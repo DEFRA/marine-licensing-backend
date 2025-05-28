@@ -1,5 +1,5 @@
 import Bell from '@hapi/bell'
-import fetch from 'node-fetch'
+import Wreck from '@hapi/wreck'
 import Jwt from '@hapi/jwt'
 import { config } from '../../../config.js'
 import { createLogger } from '../logging/logger.js'
@@ -22,9 +22,9 @@ export const safeLog = {
 export async function fetchOidcConfig(oidcConfigurationUrl) {
   safeLog.info(`Fetching OIDC configuration from ${oidcConfigurationUrl}`)
 
-  const fetchOptions = {}
+  const wreckOptions = {}
   if (global.PROXY_AGENT) {
-    fetchOptions.agent = global.PROXY_AGENT
+    wreckOptions.agent = global.PROXY_AGENT
     safeLog.info(
       `Using proxy agent for OIDC fetch: ${global.PROXY_AGENT.proxy ? global.PROXY_AGENT.proxy.toString() : 'unknown proxy type'}`
     )
@@ -36,16 +36,24 @@ export async function fetchOidcConfig(oidcConfigurationUrl) {
 
   safeLog.info('Attempting to fetch OIDC configuration...')
 
-  const response = await fetch(oidcConfigurationUrl, fetchOptions)
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch OIDC config: ${response.status} ${response.statusText}`
-    )
-  }
+  try {
+    const { res, payload } = await Wreck.get(oidcConfigurationUrl, wreckOptions)
 
-  const oidcConf = await response.json()
-  safeLog.info('Successfully fetched OIDC configuration')
-  return oidcConf
+    if (res.statusCode >= 400) {
+      throw new Error(
+        `Failed to fetch OIDC config: ${res.statusCode} ${res.statusMessage}`
+      )
+    }
+
+    const oidcConf = JSON.parse(payload.toString())
+    safeLog.info('Successfully fetched OIDC configuration')
+    return oidcConf
+  } catch (error) {
+    if (error.isBoom) {
+      throw new Error(`Failed to fetch OIDC config: ${error.message}`)
+    }
+    throw error
+  }
 }
 
 export function setupAuthStrategy(server, oidcConf, authCallbackUrl) {
@@ -105,14 +113,33 @@ function logTlsRecommendations() {
   safeLog.error('4. Verify there are no firewall rules blocking the connection')
 }
 
-function logFetchErrorDetails(fetchError) {
-  safeLog.error(`FetchError type: ${fetchError.type || 'unknown'}`)
-  safeLog.error(`FetchError errno: ${fetchError.errno || 'none'}`)
-  safeLog.error(`FetchError input: ${fetchError.input || 'none'}`)
+function logRequestErrorDetails(requestError) {
+  if (requestError.isBoom) {
+    safeLog.error(`Boom error output: ${JSON.stringify(requestError.output)}`)
+    safeLog.error(`Boom error data: ${JSON.stringify(requestError.data)}`)
+  }
 
-  if (fetchError.message.includes('TLS')) {
+  if (requestError.message && requestError.message.includes('TLS')) {
     logTlsRecommendations()
   }
+}
+
+export function logRequestError(requestError) {
+  safeLog.error(`Request operation failed: ${requestError.message}`)
+  safeLog.error(`Request error name: ${requestError.name}`)
+  safeLog.error(`Request error code: ${requestError.code || 'no error code'}`)
+
+  if (requestError.isBoom || requestError.name === 'RequestError') {
+    logRequestErrorDetails(requestError)
+  }
+
+  if (requestError.cause) {
+    logUnderlyingError(requestError.cause)
+  }
+
+  safeLog.error(
+    `Error stack: ${requestError.stack || 'No stack trace available'}`
+  )
 }
 
 function logUnderlyingError(cause) {
@@ -125,24 +152,6 @@ function logUnderlyingError(cause) {
   }
 }
 
-export function logFetchError(fetchError) {
-  safeLog.error(`Fetch operation failed: ${fetchError.message}`)
-  safeLog.error(`Fetch error name: ${fetchError.name}`)
-  safeLog.error(`Fetch error code: ${fetchError.code || 'no error code'}`)
-
-  if (fetchError.name === 'FetchError') {
-    logFetchErrorDetails(fetchError)
-  }
-
-  if (fetchError.cause) {
-    logUnderlyingError(fetchError.cause)
-  }
-
-  safeLog.error(
-    `Error stack: ${fetchError.stack || 'No stack trace available'}`
-  )
-}
-
 export async function setupDefraIdAuth(
   server,
   oidcConfigurationUrl,
@@ -152,7 +161,7 @@ export async function setupDefraIdAuth(
     const oidcConf = await fetchOidcConfig(oidcConfigurationUrl)
     setupAuthStrategy(server, oidcConf, authCallbackUrl)
   } catch (fetchError) {
-    logFetchError(fetchError)
+    logRequestError(fetchError)
     throw fetchError
   }
 }

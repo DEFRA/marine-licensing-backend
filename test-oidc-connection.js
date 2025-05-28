@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'
+import Wreck from '@hapi/wreck'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { config } from './src/config.js'
 
@@ -56,19 +56,19 @@ async function testDirectConnection() {
 
     console.log(`Fetching from ${OIDC_URL}...`)
     const start = Date.now()
-    const response = await fetch(OIDC_URL, options)
+    const { res, payload } = await Wreck.get(OIDC_URL, options)
     const elapsed = Date.now() - start
 
-    console.log(`Status: ${response.status} ${response.statusText}`)
+    console.log(`Status: ${res.statusCode} ${res.statusMessage}`)
     console.log(`Response time: ${elapsed}ms`)
 
-    if (response.ok) {
-      const data = await response.json()
+    if (res.statusCode === 200) {
+      const data = JSON.parse(payload.toString())
       console.log('OIDC configuration retrieved successfully:')
       console.log(JSON.stringify(data, null, 2))
       return true
     } else {
-      console.error(`Failed with status: ${response.status}`)
+      console.error(`Failed with status: ${res.statusCode}`)
       return false
     }
   } catch (error) {
@@ -131,20 +131,20 @@ async function testFallbackConnection() {
 
     console.log(`Fetching from ${OIDC_URL} with TLS validation disabled...`)
     const start = Date.now()
-    const response = await fetch(OIDC_URL, options)
+    const { res } = await Wreck.get(OIDC_URL, options)
     const elapsed = Date.now() - start
 
-    console.log(`Status: ${response.status} ${response.statusText}`)
+    console.log(`Status: ${res.statusCode} ${res.statusMessage}`)
     console.log(`Response time: ${elapsed}ms`)
 
-    if (response.ok) {
+    if (res.statusCode === 200) {
       console.log(
         'OIDC configuration retrieved successfully with TLS validation disabled'
       )
       console.log('THIS CONFIRMS IT IS A CERTIFICATE VALIDATION ISSUE')
       return true
     } else {
-      console.error(`Failed with status: ${response.status}`)
+      console.error(`Failed with status: ${res.statusCode}`)
       return false
     }
   } catch (error) {

@@ -184,7 +184,7 @@ describe('setup-proxy', () => {
       expect(global.PROXY_AGENT).toBe(fake)
       expect(got).toBe(fake)
       expect(infoSpy).toHaveBeenCalledWith(
-        'Setting up HttpsProxyAgent for node-fetch...'
+        'Setting up HttpsProxyAgent for Wreck...'
       )
       expect(infoSpy).toHaveBeenCalledWith(
         'HttpsProxyAgent setup completed with custom TLS options'
