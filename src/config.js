@@ -8,6 +8,9 @@ convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
+const isDevelopment = process.env.NODE_ENV === 'development'
+const cdpEnv = process.env.ENVIRONMENT || 'local'
+const enableSecureContext = isProduction || cdpEnv === 'test'
 
 const config = convict({
   serviceVersion: {
@@ -34,6 +37,21 @@ const config = convict({
     format: String,
     default: 'marine-licensing-backend'
   },
+  isProduction: {
+    doc: 'If this application running in the production environment',
+    format: Boolean,
+    default: isProduction
+  },
+  isDevelopment: {
+    doc: 'If this application running in the development environment',
+    format: Boolean,
+    default: isDevelopment
+  },
+  isTest: {
+    doc: 'If this application running in the test environment',
+    format: Boolean,
+    default: isTest
+  },
   cdpEnvironment: {
     doc: 'The CDP environment the app is running in. With the addition of "local" for local development',
     format: [
@@ -46,7 +64,7 @@ const config = convict({
       'ext-test',
       'prod'
     ],
-    default: 'local',
+    default: cdpEnv,
     env: 'ENVIRONMENT'
   },
   log: {
@@ -100,7 +118,7 @@ const config = convict({
   isSecureContextEnabled: {
     doc: 'Enable Secure Context',
     format: Boolean,
-    default: isProduction,
+    default: enableSecureContext,
     env: 'ENABLE_SECURE_CONTEXT'
   },
   isMetricsEnabled: {
@@ -116,6 +134,51 @@ const config = convict({
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
     }
+  },
+  appBaseUrl: {
+    doc: 'Application base URL for after we login',
+    format: String,
+    default: 'http://localhost:3000',
+    env: 'APP_BASE_URL'
+  },
+  defraIdOidcConfigurationUrl: {
+    doc: 'DEFRA ID discovery URL',
+    format: String,
+    env: 'DEFRA_ID_OIDC_CONFIGURATION_URL',
+    default:
+      'http://localhost:3200/cdp-defra-id-stub/.well-known/openid-configuration'
+  },
+  defraIdServiceId: {
+    doc: 'DEFRA ID service GUID',
+    format: String,
+    env: 'DEFRA_ID_SERVICE_ID',
+    default: ''
+  },
+  defraIdClientId: {
+    doc: 'DEFRA ID client ID',
+    format: String,
+    env: 'DEFRA_ID_CLIENT_ID',
+    default: ''
+  },
+  defraIdClientSecret: {
+    doc: 'DEFRA ID client secret',
+    format: String,
+    sensitive: true,
+    env: 'DEFRA_ID_CLIENT_SECRET',
+    default: 'test_value'
+  },
+  defraIdCookiePassword: {
+    doc: 'Session cookie encryption password',
+    format: String,
+    sensitive: true,
+    env: 'SESSION_COOKIE_PASSWORD',
+    default: 'beepBoopBeepDevelopmentOnlyBeepBoop'
+  },
+  redirectUri: {
+    doc: 'The full OAuth2 callback URL that Defra-ID will send users back to',
+    format: 'url',
+    env: 'REDIRECT_URI',
+    default: 'http://localhost:3000/auth/callback'
   }
 })
 
