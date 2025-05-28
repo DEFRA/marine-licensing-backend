@@ -8,7 +8,8 @@ import {
   setupDefraIdAuth,
   defraId,
   logRequestError,
-  safeLog
+  safeLog,
+  debugHttpClients
 } from './defra-id.js'
 
 jest.mock('@hapi/bell')
@@ -16,6 +17,7 @@ jest.mock('@hapi/wreck')
 jest.mock('@hapi/jwt')
 jest.mock('../../../config.js')
 jest.mock('../logging/logger.js')
+jest.mock('node:https')
 
 describe('defra-id.js', () => {
   const mockServer = {
@@ -370,6 +372,43 @@ describe('defra-id.js', () => {
     })
   })
 
+  describe('debugHttpClients', () => {
+    test('should handle Wreck success and log appropriately', async () => {
+      Wreck.get.mockResolvedValueOnce({
+        res: { statusCode: 200 },
+        payload: Buffer.from(JSON.stringify({ issuer: 'test-issuer' }))
+      })
+
+      await debugHttpClients('https://test-oidc-url')
+
+      expect(Wreck.get).toHaveBeenCalledWith('https://test-oidc-url', {
+        timeout: 5000
+      })
+    })
+
+    test('should handle Wreck failure gracefully', async () => {
+      const wreckError = new Error('Wreck failed')
+      wreckError.name = 'WreckError'
+      wreckError.code = 'ECONNRESET'
+      Wreck.get.mockRejectedValueOnce(wreckError)
+
+      await debugHttpClients('https://test-oidc-url')
+
+      expect(Wreck.get).toHaveBeenCalled()
+    })
+
+    test('should handle Wreck Boom error gracefully', async () => {
+      const boomError = new Error('Boom error')
+      boomError.isBoom = true
+      boomError.output = { statusCode: 500 }
+      Wreck.get.mockRejectedValueOnce(boomError)
+
+      await debugHttpClients('https://test-oidc-url')
+
+      expect(Wreck.get).toHaveBeenCalled()
+    })
+  })
+
   describe('defraId plugin', () => {
     test('should register the plugin successfully', async () => {
       delete process.env.NODE_ENV
@@ -476,6 +515,66 @@ describe('defra-id.js', () => {
         'https://test-oidc-url',
         expect.objectContaining({ agent: global.PROXY_AGENT })
       )
+    })
+
+    test('should run debug HTTP clients when DEBUG_HTTP_CLIENTS is enabled', async () => {
+      process.env.DEBUG_HTTP_CLIENTS = 'true'
+      delete process.env.NODE_ENV
+
+      Wreck.get
+        .mockResolvedValueOnce({
+          res: { statusCode: 200 },
+          payload: Buffer.from(JSON.stringify({ issuer: 'debug-issuer' }))
+        })
+        .mockResolvedValueOnce({
+          res: { statusCode: 200 },
+          payload: Buffer.from(JSON.stringify(mockOidcConfig))
+        })
+
+      await defraId.plugin.register(mockServer)
+
+      expect(Wreck.get).toHaveBeenCalledWith(
+        mockConfig.defraIdOidcConfigurationUrl,
+        { timeout: 5000 }
+      )
+
+      delete process.env.DEBUG_HTTP_CLIENTS
+    })
+
+    test('should continue on error when DEBUG_CONTINUE_ON_ERROR is enabled', async () => {
+      process.env.DEBUG_CONTINUE_ON_ERROR = 'true'
+      delete process.env.NODE_ENV
+
+      const oidcError = new Error('OIDC configuration failed')
+      Wreck.get.mockRejectedValueOnce(oidcError)
+
+      await defraId.plugin.register(mockServer)
+
+      expect(mockServer.auth.default).toHaveBeenCalledWith('dummy')
+      expect(mockServer.register).toHaveBeenCalled()
+
+      delete process.env.DEBUG_CONTINUE_ON_ERROR
+    })
+
+    test('should throw error normally when DEBUG_CONTINUE_ON_ERROR is not enabled', async () => {
+      delete process.env.DEBUG_CONTINUE_ON_ERROR
+      delete process.env.NODE_ENV
+
+      const oidcError = new Error('OIDC configuration failed')
+      Wreck.get.mockRejectedValueOnce(oidcError)
+
+      await expect(defraId.plugin.register(mockServer)).rejects.toThrow(
+        'OIDC configuration failed'
+      )
+    })
+
+    test('should log success message when OIDC setup completes', async () => {
+      delete process.env.NODE_ENV
+
+      await defraId.plugin.register(mockServer)
+
+      expect(Wreck.get).toHaveBeenCalled()
+      expect(mockServer.auth.strategy).toHaveBeenCalled()
     })
   })
 })

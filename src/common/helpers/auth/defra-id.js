@@ -168,6 +168,71 @@ export async function setupDefraIdAuth(
   }
 }
 
+export async function debugHttpClients(oidcConfigurationUrl) {
+  safeLog.info('=== DEBUG: Testing HTTP clients during startup ===')
+
+  try {
+    safeLog.info(`DEBUG: Testing basic Wreck GET to ${oidcConfigurationUrl}`)
+    const { res, payload } = await Wreck.get(oidcConfigurationUrl, {
+      timeout: 5000
+    })
+    safeLog.info(`DEBUG: Basic Wreck success - Status: ${res.statusCode}`)
+    const config = JSON.parse(payload.toString())
+    safeLog.info(
+      `DEBUG: OIDC config retrieved - Issuer: ${config.issuer || 'unknown'}`
+    )
+  } catch (error) {
+    safeLog.error(`DEBUG: Basic Wreck failed - ${error.message}`)
+    safeLog.error(
+      `DEBUG: Error name: ${error.name}, code: ${error.code || 'none'}`
+    )
+    if (error.isBoom) {
+      safeLog.error(`DEBUG: Boom error output: ${JSON.stringify(error.output)}`)
+    }
+  }
+
+  try {
+    safeLog.info(`DEBUG: Testing native Node.js HTTPS`)
+    const url = new URL(oidcConfigurationUrl)
+
+    await new Promise((resolve, reject) => {
+      const https = require('node:https')
+      const req = https.request(
+        {
+          hostname: url.hostname,
+          port: url.port || 443,
+          path: url.pathname,
+          method: 'GET',
+          timeout: 5000
+        },
+        (res) => {
+          safeLog.info(
+            `DEBUG: Native HTTPS success - Status: ${res.statusCode}`
+          )
+          resolve()
+        }
+      )
+
+      req.on('error', (error) => {
+        safeLog.error(`DEBUG: Native HTTPS failed - ${error.message}`)
+        reject(error)
+      })
+
+      req.on('timeout', () => {
+        safeLog.error(`DEBUG: Native HTTPS timed out`)
+        req.destroy()
+        reject(new Error('Timeout'))
+      })
+
+      req.end()
+    })
+  } catch (error) {
+    safeLog.error(`DEBUG: Native HTTPS test failed - ${error.message}`)
+  }
+
+  safeLog.info('=== DEBUG: HTTP client testing complete ===')
+}
+
 export const defraId = {
   plugin: {
     name: 'defra-id',
@@ -198,11 +263,17 @@ export const defraId = {
         return
       }
 
+      if (process.env.DEBUG_HTTP_CLIENTS === 'true') {
+        safeLog.info('DEBUG_HTTP_CLIENTS enabled - running diagnostic tests')
+        await debugHttpClients(oidcConfigurationUrl)
+      }
+
       const authCallbackUrl = config.get('redirectUri')
       await server.register(Bell)
 
       try {
         await setupDefraIdAuth(server, oidcConfigurationUrl, authCallbackUrl)
+        safeLog.info('✅ OIDC authentication setup completed successfully')
       } catch (error) {
         safeLog.error(`OIDC configuration error: ${error.message}`)
         safeLog.error(
@@ -216,6 +287,15 @@ export const defraId = {
           '3. TRUSTSTORE_1 (and others if needed) contain valid PEM certificates'
         )
         safeLog.error('4. NO_PROXY does not include the OIDC endpoint domain')
+
+        if (process.env.DEBUG_CONTINUE_ON_ERROR === 'true') {
+          safeLog.error(
+            'DEBUG_CONTINUE_ON_ERROR enabled - continuing despite OIDC error'
+          )
+          safeLog.error('⚠️  Authentication will not work properly!')
+          server.auth.default('dummy')
+          return
+        }
 
         throw error
       }
