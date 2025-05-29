@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom'
-import { activityDescription } from '../../../models/activity-description.js'
+import { activityDescription as activityDescriptionSchema } from '../../../models/activity-description.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 
@@ -7,7 +7,7 @@ export const createActivityDescriptionController = {
   options: {
     validate: {
       query: false,
-      payload: activityDescription
+      payload: activityDescriptionSchema
     }
   },
   handler: async (request, h) => {
