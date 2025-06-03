@@ -16,6 +16,14 @@ describe('PATCH /exemptions/activity-description', () => {
     expect(result.error.message).toContain('ACTIVITY_DESCRIPTION_REQUIRED')
   })
 
+  it('should fail if activity description exceeds max length', () => {
+    const longDescription = 'a'.repeat(4001)
+    const result = payloadValidator.validate({
+      activityDescription: longDescription
+    })
+    expect(result.error.message).toContain('ACTIVITY_DESCRIPTION_MAX_LENGTH')
+  })
+
   it('should create a new exemption with activity description', async () => {
     const { mockMongo, mockHandler } = global
 
