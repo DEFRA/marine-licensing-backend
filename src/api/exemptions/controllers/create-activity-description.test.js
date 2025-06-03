@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { createActivityDescriptionController } from './create-activity-description'
+
 describe('PATCH /exemptions/activity-description', () => {
   const payloadValidator =
     createActivityDescriptionController.options.validate.payload
