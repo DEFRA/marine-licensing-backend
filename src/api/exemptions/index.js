@@ -3,7 +3,6 @@ import { createProjectNameController } from './controllers/create-project-name.j
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
 import { createActivityDescriptionController } from './controllers/create-activity-description.js'
-import { createActivityDatesController } from './controllers/create-activity-dates.js'
 import { createActivityDatesController } from './controllers/update-activity-dates.js'
 
 export const exemptions = [
