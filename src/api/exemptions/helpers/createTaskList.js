@@ -3,7 +3,8 @@ export const COMPLETED = 'COMPLETED'
 export const createTaskList = (exemption) => {
   const tasks = {
     publicRegister: (value) => (value ? COMPLETED : null),
-    projectName: (value) => (value ? COMPLETED : null)
+    projectName: (value) => (value ? COMPLETED : null),
+    activityDescription: (value) => (value ? COMPLETED : null)
   }
 
   const taskList = {}
