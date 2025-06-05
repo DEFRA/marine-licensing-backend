@@ -12,7 +12,7 @@ describe('PATCH /exemptions/activity-dates', () => {
 
   it('should fail if end date fields are missing', () => {
     const result = payloadValidator.validate({
-      activityStartDate: {
+      start: {
         day: 1,
         month: 1,
         year: 2027
@@ -23,11 +23,11 @@ describe('PATCH /exemptions/activity-dates', () => {
 
   it('should fail if any of the dd/mm/yyyy fields are missing', () => {
     const result = payloadValidator.validate({
-      activityStartDate: {
+      start: {
         day: 1,
         month: 1
       },
-      activityEndDate: {
+      end: {
         day: 31,
         month: 12,
         year: 2027
@@ -38,12 +38,12 @@ describe('PATCH /exemptions/activity-dates', () => {
 
   it('should fail if exemption id is missing', () => {
     const result = payloadValidator.validate({
-      activityStartDate: {
+      start: {
         day: 1,
         month: 1,
         year: 2027
       },
-      activityEndDate: {
+      end: {
         day: 31,
         month: 12,
         year: 2027
@@ -66,12 +66,12 @@ describe('PATCH /exemptions/activity-dates', () => {
         {
           db: mockMongo,
           payload: {
-            activityStartDate: {
+            start: {
               day: 1,
               month: 1,
               year: 2027
             },
-            activityEndDate: {
+            end: {
               day: 31,
               month: 12,
               year: 2027
@@ -100,12 +100,12 @@ describe('PATCH /exemptions/activity-dates', () => {
         {
           db: mockMongo,
           payload: {
-            activityStartDate: {
+            start: {
               day: 1,
               month: 1,
               year: 2027
             },
-            activityEndDate: {
+            end: {
               day: 31,
               month: 12,
               year: 2027
@@ -131,12 +131,12 @@ describe('PATCH /exemptions/activity-dates', () => {
       {
         db: mockMongo,
         payload: {
-          activityStartDate: {
+          start: {
             day: 1,
             month: 1,
             year: 2027
           },
-          activityEndDate: {
+          end: {
             day: 31,
             month: 12,
             year: 2027

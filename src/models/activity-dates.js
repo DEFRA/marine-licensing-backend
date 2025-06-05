@@ -3,7 +3,7 @@ import { exemptionId } from './shared-models.js'
 
 export const activityDatesSchema = joi
   .object({
-    activityStartDate: joi
+    start: joi
       .object({
         day: joi.number().min(1).max(31).required(),
         month: joi.number().min(1).max(12).required(),
@@ -14,7 +14,7 @@ export const activityDatesSchema = joi
         'date.base': 'ACTIVITY_START_DATE_INVALID',
         'any.required': 'ACTIVITY_START_DATE_REQUIRED'
       }),
-    activityEndDate: joi
+    end: joi
       .object({
         day: joi.number().min(1).max(31).required(),
         month: joi.number().min(1).max(12).required(),

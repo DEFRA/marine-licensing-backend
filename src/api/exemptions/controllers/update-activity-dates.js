@@ -1,7 +1,7 @@
 import Boom from '@hapi/boom'
-import { activityDatesSchema } from '../../../models/activity-dates.js'
-import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { StatusCodes } from 'http-status-codes'
+import { activityDatesSchema } from '../../../models/activity-dates.js'
 
 export const createActivityDatesController = {
   options: {
@@ -13,14 +13,16 @@ export const createActivityDatesController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const { activityStartDate, activityEndDate, id } = payload
+      const { start, end, id } = payload
 
       const result = await db.collection('exemptions').updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            activityStartDate,
-            activityEndDate
+            activityDates: {
+              start,
+              end
+            }
           }
         }
       )
