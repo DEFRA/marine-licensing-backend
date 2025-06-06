@@ -1,10 +1,6 @@
 export const COMPLETED = 'COMPLETED'
 
-export const checkSiteDetails = (siteDetails) => {
-  if (!siteDetails || !Object.keys(siteDetails).length) {
-    return null
-  }
-
+const checkSiteDetailsCircle = (siteDetails) => {
   const requiredValues = [
     'coordinatesType',
     'coordinatesEntry',
@@ -12,10 +8,23 @@ export const checkSiteDetails = (siteDetails) => {
     'coordinates',
     'circleWidth'
   ]
-
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
   return missingKeys.length === 0 ? COMPLETED : null
+}
+
+const checkSiteDetails = (siteDetails) => {
+  if (!siteDetails || !Object.keys(siteDetails).length) {
+    return null
+  }
+
+  const { coordinatesEntry, coordinatesType } = siteDetails
+
+  if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
+    return checkSiteDetailsCircle(siteDetails)
+  }
+
+  return null
 }
 
 export const createTaskList = (exemption) => {
