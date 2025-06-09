@@ -15,7 +15,7 @@ export const siteDetailsSchema = joi
         coordinatesEntry: coordinatesEntryFieldSchema,
         coordinatesType: coordinatesTypeFieldSchema,
         coordinateSystem: coordinateSystemFieldSchema,
-        width: circleWidthValidationSchema,
+        circleWidth: circleWidthValidationSchema,
         coordinates: joi.when('coordinateSystem', {
           is: COORDINATE_SYSTEMS.WGS84,
           then: wgs84ValidationSchema,
