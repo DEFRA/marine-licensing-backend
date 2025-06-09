@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { siteDetailsSchema } from './index.js'
+import { siteDetailsSchema } from './site-details.js'
 import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 
 const mockId = new ObjectId().toHexString()
