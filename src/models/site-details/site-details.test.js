@@ -6,7 +6,8 @@ const mockId = new ObjectId().toHexString()
 const mockSiteDetails = {
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
-  coordinateSystem: COORDINATE_SYSTEMS.WGS84
+  coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+  width: '20'
 }
 export const mockSiteDetailsRequest = {
   id: mockId,
@@ -86,6 +87,61 @@ describe('#siteDetails schema', () => {
         siteDetails: { ...mockSiteDetails, coordinateSystem: null }
       })
       expect(result.error.message).toBe('COORDINATE_SYSTEM_REQUIRED')
+    })
+  })
+
+  describe('#width', () => {
+    test('Should correctly validate on invalid data', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: { ...mockSiteDetails, width: 'invalid' }
+      })
+      expect(result.error.message).toBe('WIDTH_INVALID')
+    })
+
+    test('Should correctly validate on empty data', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: { ...mockSiteDetails, width: null }
+      })
+
+      expect(result.error.message).toBe('WIDTH_REQUIRED')
+    })
+
+    test('Should correctly validate when width is below minimum allowed value', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: { ...mockSiteDetails, width: '0' }
+      })
+
+      expect(result.error.message).toBe('WIDTH_MIN')
+    })
+
+    test('Should correctly validate when width is a negative number', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: { ...mockSiteDetails, width: '-5' }
+      })
+
+      expect(result.error.message).toBe('WIDTH_MIN')
+    })
+
+    test('Should correctly validate when width contains incorrect characters', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: { ...mockSiteDetails, width: 'test' }
+      })
+
+      expect(result.error.message).toBe('WIDTH_INVALID')
+    })
+
+    test('Should correctly validate when width is not an integer', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: { ...mockSiteDetails, width: '12.2' }
+      })
+
+      expect(result.error.message).toBe('WIDTH_NON_INTEGER')
     })
   })
 })

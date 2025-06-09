@@ -1,5 +1,5 @@
 import joi from 'joi'
-import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates'
+import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 
 export const coordinateSystemFieldSchema = joi
   .string()
