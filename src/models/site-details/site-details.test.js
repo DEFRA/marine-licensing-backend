@@ -3,10 +3,11 @@ import { siteDetailsSchema } from './site-details.js'
 import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 
 const mockId = new ObjectId().toHexString()
-const mockSiteDetails = {
+export const mockSiteDetails = {
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
   coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+  coordinates: { latitude: '51.489676', longitude: '-0.231530' },
   width: '20'
 }
 export const mockSiteDetailsRequest = {
@@ -142,6 +143,30 @@ describe('#siteDetails schema', () => {
       })
 
       expect(result.error.message).toBe('WIDTH_NON_INTEGER')
+    })
+  })
+
+  describe('#coordinates', () => {
+    test('Should correctly errors when incorrect coordinates OSGB36', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinateSystem: COORDINATE_SYSTEMS.OSGB36
+        }
+      })
+      expect(result.error.message).toBe('EASTINGS_REQUIRED')
+    })
+
+    test('Should correctly errors when incorrect coordinates WGS84', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinates: { eastings: '123456', northings: '123456' }
+        }
+      })
+      expect(result.error.message).toBe('LATITUDE_REQUIRED')
     })
   })
 })

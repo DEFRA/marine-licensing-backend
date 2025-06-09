@@ -4,6 +4,9 @@ import { coordinatesEntryFieldSchema } from './coordinates-entry.js'
 import { coordinatesTypeFieldSchema } from './coordinates-type.js'
 import { coordinateSystemFieldSchema } from './coordinate-system.js'
 import { circleWidthValidationSchema } from './circle-width.js'
+import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
+import { wgs84ValidationSchema } from './wgs84.js'
+import { osgb36ValidationSchema } from './osgb36.js'
 
 export const siteDetailsSchema = joi
   .object({
@@ -12,7 +15,12 @@ export const siteDetailsSchema = joi
         coordinatesEntry: coordinatesEntryFieldSchema,
         coordinatesType: coordinatesTypeFieldSchema,
         coordinateSystem: coordinateSystemFieldSchema,
-        width: circleWidthValidationSchema
+        width: circleWidthValidationSchema,
+        coordinates: joi.when('coordinateSystem', {
+          is: COORDINATE_SYSTEMS.WGS84,
+          then: wgs84ValidationSchema,
+          otherwise: osgb36ValidationSchema
+        })
       })
       .required()
       .messages({
