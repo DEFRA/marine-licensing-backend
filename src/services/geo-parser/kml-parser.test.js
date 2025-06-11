@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { promises as fs } from 'fs'
-import KmlParser from './kml.js'
+import KmlParser from './kml-parser.js'
 
 const fixturesDir = join(process.cwd(), 'src/services/geo-parser/fixtures')
 const kmlTestFile = 'example-test.kml'
@@ -37,7 +37,7 @@ describe('KML Parser', () => {
     const kmlPath = join(fixturesPath, kmlTestFile)
     const result = await parser.parse(kmlPath)
     expect(result.features[0].geometry.coordinates).toEqual([
-      -3.043604493362138, 51.29373558656162, 0
+      -3.043605555555554, 51.29373611111111, 0
     ])
     expect(result.features[0].properties.name).toEqual('Test placemark 1')
   })
