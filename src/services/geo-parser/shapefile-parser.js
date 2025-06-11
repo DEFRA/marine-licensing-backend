@@ -51,16 +51,13 @@ class ShapefileParser extends GeoParser {
    * @returns {Promise<Object>} The parsed GeoJSON object containing all features from all shapefiles
    */
   async parse(filename) {
-    // console.log('parsing shapefile ', filename)
     try {
       // Extract zip file
       const extractDir = await this.extractZip(filename)
-      console.log('extractDir', extractDir)
 
       try {
         // Find all shapefiles
         const shapefiles = await this.findShapefiles(extractDir)
-        // console.log('shapefiles', shapefiles)
 
         if (shapefiles.length === 0) {
           throw new Error('No shapefiles found in zip archive')
@@ -69,9 +66,7 @@ class ShapefileParser extends GeoParser {
         // Parse each shapefile and combine features
         const allFeatures = []
         for (const shpPath of shapefiles) {
-          // console.log('about to extract ', shpPath)
           const geoJson = await this.parseShapefile(shpPath)
-          // console.log('extracting ', shpPath)
           allFeatures.push(...geoJson.features)
         }
 

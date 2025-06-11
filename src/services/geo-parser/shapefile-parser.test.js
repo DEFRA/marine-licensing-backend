@@ -22,7 +22,6 @@ describe('ShapefileParser', () => {
     const zipPath = join(fixturesDir, testZipFile)
     // Parse the zip file
     const result = await parser.parse(zipPath)
-    // console.log('result', result)
 
     // Verify the result structure
     expect(result).toBeDefined()
