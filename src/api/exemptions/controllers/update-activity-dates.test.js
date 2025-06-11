@@ -7,47 +7,44 @@ describe('PATCH /exemptions/activity-dates', () => {
 
   it('should fail start date is missing', () => {
     const result = payloadValidator.validate({})
-    expect(result.error.message).toContain('ACTIVITY_START_DATE_REQUIRED')
+    expect(result.error.message).toContain('CUSTOM_START_DATE_MISSING')
   })
 
-  it('should fail if end date fields are missing', () => {
+  it('should fail if end date is missing', () => {
     const result = payloadValidator.validate({
-      start: {
-        day: 1,
-        month: 1,
-        year: 2027
-      }
+      start: new Date('2027-01-01')
     })
-    expect(result.error.message).toContain('ACTIVITY_END_DATE_REQUIRED')
+    expect(result.error.message).toContain('CUSTOM_END_DATE_MISSING')
   })
 
-  it('should fail if any of the dd/mm/yyyy fields are missing', () => {
+  it('should fail if start date is invalid', () => {
     const result = payloadValidator.validate({
-      start: {
-        day: 1,
-        month: 1
-      },
-      end: {
-        day: 31,
-        month: 12,
-        year: 2027
-      }
+      start: 'invalid-date',
+      end: new Date('2027-12-31')
     })
-    expect(result.error.message).toContain('ACTIVITY_START_DATE_REQUIRED')
+    expect(result.error.message).toContain('CUSTOM_START_DATE_INVALID')
+  })
+
+  it('should fail if end date is invalid', () => {
+    const result = payloadValidator.validate({
+      start: new Date('2027-01-01'),
+      end: 'invalid-date'
+    })
+    expect(result.error.message).toContain('CUSTOM_END_DATE_INVALID')
+  })
+
+  it('should fail if end date is before start date', () => {
+    const result = payloadValidator.validate({
+      start: new Date('2027-12-31'),
+      end: new Date('2027-01-01')
+    })
+    expect(result.error.message).toContain('CUSTOM_END_DATE_BEFORE_START_DATE')
   })
 
   it('should fail if exemption id is missing', () => {
     const result = payloadValidator.validate({
-      start: {
-        day: 1,
-        month: 1,
-        year: 2027
-      },
-      end: {
-        day: 31,
-        month: 12,
-        year: 2027
-      }
+      start: new Date('2027-01-01'),
+      end: new Date('2027-12-31')
     })
     expect(result.error.message).toContain('EXEMPTION_ID_REQUIRED')
   })
@@ -66,16 +63,8 @@ describe('PATCH /exemptions/activity-dates', () => {
         {
           db: mockMongo,
           payload: {
-            start: {
-              day: 1,
-              month: 1,
-              year: 2027
-            },
-            end: {
-              day: 31,
-              month: 12,
-              year: 2027
-            },
+            start: new Date('2027-01-01'),
+            end: new Date('2027-12-31'),
             id: new ObjectId().toHexString()
           }
         },
@@ -100,16 +89,8 @@ describe('PATCH /exemptions/activity-dates', () => {
         {
           db: mockMongo,
           payload: {
-            start: {
-              day: 1,
-              month: 1,
-              year: 2027
-            },
-            end: {
-              day: 31,
-              month: 12,
-              year: 2027
-            },
+            start: new Date('2027-01-01'),
+            end: new Date('2027-12-31'),
             id: new ObjectId().toHexString()
           }
         },
@@ -131,16 +112,8 @@ describe('PATCH /exemptions/activity-dates', () => {
       {
         db: mockMongo,
         payload: {
-          start: {
-            day: 1,
-            month: 1,
-            year: 2027
-          },
-          end: {
-            day: 31,
-            month: 12,
-            year: 2027
-          },
+          start: new Date('2027-01-01'),
+          end: new Date('2027-12-31'),
           id: new ObjectId().toHexString()
         }
       },
