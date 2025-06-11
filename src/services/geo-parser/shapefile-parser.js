@@ -6,19 +6,61 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import AdmZip from 'adm-zip'
 
+const DEFAULT_OPTIONS = {
+  maxFiles: 10000,
+  maxSize: 1000000000, // 1 GB
+  thresholdRatio: 10
+}
+
 /**
  * Shapefile parser service for .zip files containing shapefiles
  */
 class ShapefileParser extends GeoParser {
+  constructor(options = {}) {
+    super()
+    this.options = { ...DEFAULT_OPTIONS, ...options }
+  }
+
+  /**
+   * Get the safe options for zip extraction
+   * @returns {Object} The current safety options
+   */
+  getSafeOptions() {
+    return { ...this.options }
+  }
+
   /**
    * Extract a zip file to a temporary directory
    * @param {string} zipPath - Path to the zip file
    * @returns {Promise<string>} Path to the temporary directory containing extracted files
    */
   async extractZip(zipPath) {
+    let fileCount = 0
+    let totalSize = 0
     const tempDir = await mkdtemp(join(tmpdir(), 'shapefile-'))
     const zip = new AdmZip(zipPath)
-    zip.extractAllTo(tempDir, true)
+    const zipEntries = zip.getEntries()
+    zipEntries.forEach((zipEntry) => {
+      fileCount++
+      if (fileCount > this.options.maxFiles) {
+        throw new Error('Reached max number of files')
+      }
+
+      const entrySize = zipEntry.getData().length
+      totalSize += entrySize
+      if (totalSize > this.options.maxSize) {
+        throw new Error('Reached max size')
+      }
+
+      const compressionRatio = entrySize / zipEntry.header.compressedSize
+      if (compressionRatio > this.options.thresholdRatio) {
+        throw new Error('Reached max compression ratio')
+      }
+
+      if (!zipEntry.isDirectory) {
+        zip.extractEntryTo(zipEntry.entryName, tempDir)
+      }
+    })
     return tempDir
   }
 
