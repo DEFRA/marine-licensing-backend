@@ -16,7 +16,6 @@ describe('KML Parser', () => {
   it('should successfully parse a KML file to GeoJSON', async () => {
     const kmlPath = join(fixturesPath, kmlTestFile)
     const result = await parser.parse(kmlPath)
-    // console.dir(result, { depth: null })
 
     // Basic GeoJSON structure validation
     expect(result).toBeDefined()
