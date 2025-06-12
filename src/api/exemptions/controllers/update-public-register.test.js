@@ -74,7 +74,7 @@ describe('PATCH /exemptions/public-register', () => {
     ).rejects.toThrow(`Error updating public register: ${mockError}`)
   })
 
-  it('should return an 404 if id is not correct', async () => {
+  it('should return a  404 if id is not correct', async () => {
     const { mockMongo, mockHandler } = global
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
