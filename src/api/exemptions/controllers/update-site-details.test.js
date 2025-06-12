@@ -1,34 +1,17 @@
 import { ObjectId } from 'mongodb'
-import { updatePublicRegisterController } from './update-public-register.js'
+import { updateSiteDetailsController } from './update-site-details.js'
 import Boom from '@hapi/boom'
 
-describe('PATCH /exemptions/public-register', () => {
-  const payloadValidator =
-    updatePublicRegisterController.options.validate.payload
+describe('PATCH /exemptions/site-details', () => {
+  const payloadValidator = updateSiteDetailsController.options.validate.payload
 
-  it('should fail if fields are missing', () => {
+  it('should fail if siteDetails are missing', () => {
     const result = payloadValidator.validate({})
 
-    expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
+    expect(result.error.message).toContain('SITE_DETAILS_REQUIRED')
   })
 
-  it('should fail if consent is present but not a correct value', () => {
-    const result = payloadValidator.validate({
-      consent: 'incorrect value'
-    })
-
-    expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
-  })
-
-  it('should fail if consent is empty string', () => {
-    const result = payloadValidator.validate({
-      consent: ''
-    })
-
-    expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
-  })
-
-  it('should update exemption with public register', async () => {
+  it('should update exemption with site details', async () => {
     const { mockMongo, mockHandler } = global
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
@@ -37,10 +20,13 @@ describe('PATCH /exemptions/public-register', () => {
       }
     })
 
-    await updatePublicRegisterController.handler(
+    await updateSiteDetailsController.handler(
       {
         db: mockMongo,
-        payload: { id: new ObjectId().toHexString(), consent: false }
+        payload: {
+          id: new ObjectId().toHexString(),
+          siteDetails: {}
+        }
       },
       mockHandler
     )
@@ -64,14 +50,17 @@ describe('PATCH /exemptions/public-register', () => {
     })
 
     expect(() =>
-      updatePublicRegisterController.handler(
+      updateSiteDetailsController.handler(
         {
           db: mockMongo,
-          payload: { id: new ObjectId().toHexString(), consent: false }
+          payload: {
+            id: new ObjectId().toHexString(),
+            siteDetails: {}
+          }
         },
         mockHandler
       )
-    ).rejects.toThrow(`Error updating public register: ${mockError}`)
+    ).rejects.toThrow(`Error updating site details: ${mockError}`)
   })
 
   it('should return a  404 if id is not correct', async () => {
@@ -86,10 +75,13 @@ describe('PATCH /exemptions/public-register', () => {
     jest.spyOn(Boom, 'notFound')
 
     expect(() =>
-      updatePublicRegisterController.handler(
+      updateSiteDetailsController.handler(
         {
           db: mockMongo,
-          payload: { id: new ObjectId().toHexString(), consent: false }
+          payload: {
+            id: new ObjectId().toHexString(),
+            siteDetails: {}
+          }
         },
         mockHandler
       )

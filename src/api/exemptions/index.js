@@ -3,6 +3,7 @@ import { createProjectNameController } from './controllers/create-project-name.j
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
 import { createActivityDescriptionController } from './controllers/create-activity-description.js'
+import { updateSiteDetailsController } from './controllers/update-site-details.js'
 
 export const exemptions = [
   {
@@ -24,6 +25,11 @@ export const exemptions = [
     method: 'PATCH',
     path: '/exemption/public-register',
     ...updatePublicRegisterController
+  },
+  {
+    method: 'PATCH',
+    path: '/exemption/site-details',
+    ...updateSiteDetailsController
   },
   {
     method: 'PATCH',
