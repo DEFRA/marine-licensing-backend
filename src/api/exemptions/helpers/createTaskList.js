@@ -30,6 +30,7 @@ const checkSiteDetails = (siteDetails) => {
 export const createTaskList = (exemption) => {
   const tasks = {
     publicRegister: (value) => (value ? COMPLETED : null),
+    activityDates: (value) => (value ? COMPLETED : null),
     projectName: (value) => (value ? COMPLETED : null),
     siteDetails: (value) => checkSiteDetails(value),
     activityDescription: (value) => (value ? COMPLETED : null)
