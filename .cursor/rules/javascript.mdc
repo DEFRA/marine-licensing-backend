@@ -1,0 +1,87 @@
+---
+description: javascript
+globs: 
+alwaysApply: false
+---
+---
+description: Javascript API Standards
+globs: *.js
+---
+# JavaScript API Standards
+
+## Language & Runtime
+- Node.js 22+
+- JavaScript ES Modules
+- No TypeScript
+
+## Tech Stack
+- Hapi.js v21 for API framework
+- Jest for testing
+- Neostandard for linting
+- Prettier for formatting
+- Convict for configuration
+- MongoDB with native driver
+- Pino for logging
+- Joi for validation
+- @hapi/boom for error handling
+
+## Code Standards
+- Use ES Modules with named exports
+- Use relative imports (no alias)
+- Use async/await for asynchronous operations
+- Use @hapi/boom for error responses
+- Use Joi schemas for validation
+- Use Pino for structured logging
+
+## Project Structure
+```
+/src
+  /api/
+    /{resource}/   # Resource modules
+  /routes/         # Route definitions
+  /models/         # Joi validation schemas
+  /common/
+    /helpers/      # Shared utilities
+    /constants/    # Constants
+  /plugins/        # Hapi plugins
+  config.js        # Convict configuration
+  server.js        # Server setup
+  index.js         # Entry point
+```
+
+## Route Patterns
+- Export array of route objects from `/routes` files
+- Routes include method, path, handler
+- Handlers use request.db for database access
+- Use @hapi/boom for error responses
+- Return h.response() with success data
+
+## Data Models
+- Joi schemas in `/models` directory
+- Export validation schemas and constants
+- Use shared models for common fields
+- Validation messages as constants
+
+## Error Handling
+- Use @hapi/boom for HTTP errors
+- Configure failAction in server routes
+- Log errors with Pino
+- Handle async errors with try/catch
+
+## Configuration
+- Use Convict for configuration management
+- Environment-specific defaults
+- Validation with custom formats
+- Configuration in single config.js file
+
+## Database
+- MongoDB with native driver
+- Database connection via plugin
+- Access via request.db in handlers
+- Connection pooling configured
+
+## Logging
+- Pino with ECS formatting in production
+- Request logging via hapi-pino plugin
+- Tracing headers for request correlation
+- Configurable log levels and redaction
