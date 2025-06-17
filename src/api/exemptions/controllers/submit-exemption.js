@@ -47,12 +47,14 @@ export const submitExemptionController = {
         'EXEMPTION'
       )
 
+      const submittedAt = new Date()
+
       const updateResult = await db.collection('exemptions').updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
             applicationReference,
-            submittedAt: new Date(),
+            submittedAt,
             status: 'submitted'
           }
         }
@@ -67,7 +69,7 @@ export const submitExemptionController = {
           message: 'success',
           value: {
             applicationReference,
-            submittedAt: new Date().toISOString()
+            submittedAt: submittedAt.toISOString()
           }
         })
         .code(StatusCodes.OK)
