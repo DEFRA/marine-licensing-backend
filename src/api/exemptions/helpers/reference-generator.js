@@ -5,6 +5,7 @@ const APPLICATION_TYPES = {
 }
 
 const SEQUENCE_SEED = 10001
+const SEQUENCE_DIGITS = 5
 
 /**
  * Generates a unique application reference in the format: PREFIX/YYYY/NNNNN
@@ -63,7 +64,9 @@ export async function generateApplicationReference(
       }
     )
 
-    const formattedSequence = currentSequence.toString().padStart(5, '0')
+    const formattedSequence = currentSequence
+      .toString()
+      .padStart(SEQUENCE_DIGITS, '0')
 
     const reference = `${prefix}/${currentYear}/${formattedSequence}`
 

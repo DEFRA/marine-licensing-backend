@@ -31,7 +31,7 @@ export const submitExemptionController = {
       const taskList = createTaskList(exemption)
 
       const incompleteTasks = Object.entries(taskList)
-        .filter(([task, status]) => status !== 'COMPLETED')
+        .filter(([_task, status]) => status !== 'COMPLETED')
         .map(([task]) => task)
 
       if (incompleteTasks.length > 0) {
