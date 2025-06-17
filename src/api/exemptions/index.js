@@ -4,6 +4,7 @@ import { updateProjectNameController } from './controllers/update-project-name.j
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
 import { createActivityDescriptionController } from './controllers/create-activity-description.js'
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
+import { submitExemptionController } from './controllers/submit-exemption.js'
 
 export const exemptions = [
   {
@@ -35,5 +36,10 @@ export const exemptions = [
     method: 'PATCH',
     path: '/exemption/activity-description',
     ...createActivityDescriptionController
+  },
+  {
+    method: 'POST',
+    path: '/exemption/submit',
+    ...submitExemptionController
   }
 ]

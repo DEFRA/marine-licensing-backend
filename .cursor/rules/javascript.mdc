@@ -32,6 +32,7 @@ globs: *.js
 - Use @hapi/boom for error responses
 - Use Joi schemas for validation
 - Use Pino for structured logging
+- Only use comments to clarify complex or non-obvious logic
 
 ## Project Structure
 ```
