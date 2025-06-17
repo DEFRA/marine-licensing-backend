@@ -1,12 +1,14 @@
+import { jest } from '@jest/globals'
+
 // Create a mock logger that can be accessed in tests
-global.mockLogger = {
+globalThis.mockLogger = {
   info: jest.fn(),
   error: jest.fn()
 }
 
 // Mock the logger module to return our mock logger
 jest.mock('../src/common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => global.mockLogger)
+  createLogger: jest.fn(() => globalThis.mockLogger)
 }))
 
 // Mock @hapi/jwt so we don't need to transpile it either

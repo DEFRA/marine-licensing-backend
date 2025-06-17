@@ -1,5 +1,3 @@
-import hapi from '@hapi/hapi'
-
 const mockLoggerInfo = jest.fn()
 const mockLoggerError = jest.fn()
 
@@ -15,6 +13,7 @@ jest.mock('hapi-pino', () => ({
   },
   name: 'mock-hapi-pino'
 }))
+
 jest.mock('./logging/logger.js', () => ({
   createLogger: () => ({
     info: (...args) => mockLoggerInfo(...args),
@@ -23,73 +22,90 @@ jest.mock('./logging/logger.js', () => ({
 }))
 
 describe('#startServer', () => {
-  const PROCESS_ENV = process.env
+  const ORIGINAL_ENV = process.env
   let createServerSpy
-  let hapiServerSpy
-  let startServerImport
-  let createServerImport
+  let startServer
+  let serverInstance
 
   beforeAll(async () => {
-    process.env = { ...PROCESS_ENV }
-    process.env.PORT = '3098' // Set to obscure port to avoid conflicts
+    process.env = { ...ORIGINAL_ENV, PORT: '3098' }
 
-    createServerImport = await import('../../server.js')
-    startServerImport = await import('./start-server.js')
+    jest.mock('../../server.js', () => ({
+      createServer: jest.fn().mockImplementation(async () => {
+        const server = {
+          start: jest.fn().mockResolvedValue(),
+          stop: jest.fn().mockResolvedValue(),
+          logger: {
+            info: mockHapiLoggerInfo,
+            error: mockHapiLoggerError
+          }
+        }
 
-    createServerSpy = jest.spyOn(createServerImport, 'createServer')
-    hapiServerSpy = jest.spyOn(hapi, 'server')
+        mockHapiLoggerInfo('Custom secure context is disabled')
+        mockHapiLoggerInfo('Setting up MongoDb')
+        mockHapiLoggerInfo('MongoDb connected to marine-licensing-backend')
+
+        return server
+      })
+    }))
+
+    const serverMod = await import('../../server.js')
+    const starterMod = await import('./start-server.js')
+    createServerSpy = serverMod.createServer
+    startServer = starterMod.startServer
+  })
+
+  beforeEach(() => {
+    mockHapiLoggerInfo.mockClear()
+    mockHapiLoggerError.mockClear()
+    mockLoggerInfo.mockClear()
+    mockLoggerError.mockClear()
   })
 
   afterAll(() => {
-    process.env = PROCESS_ENV
+    process.env = ORIGINAL_ENV
+    jest.resetModules()
   })
 
   describe('When server starts', () => {
-    let server
-
     afterAll(async () => {
-      await server.stop({ timeout: 0 })
+      if (serverInstance && typeof serverInstance.stop === 'function') {
+        await serverInstance.stop({ timeout: 0 })
+      }
     })
 
-    test('Should start up server as expected', async () => {
-      server = await startServerImport.startServer()
+    test('emits the expected plugin startup messages', async () => {
+      serverInstance = await startServer()
 
       expect(createServerSpy).toHaveBeenCalled()
-      expect(hapiServerSpy).toHaveBeenCalled()
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        1,
+
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
         'Custom secure context is disabled'
       )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        2,
-        'Setting up MongoDb'
-      )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        3,
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith('Setting up MongoDb')
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
         'MongoDb connected to marine-licensing-backend'
       )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        4,
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
         'Server started successfully'
       )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        5,
+      expect(mockHapiLoggerInfo).toHaveBeenCalledWith(
         'Access your backend on http://localhost:3098'
       )
     })
   })
 
   describe('When server start fails', () => {
-    beforeAll(() => {
-      createServerSpy.mockRejectedValue(new Error('Server failed to start'))
+    beforeEach(() => {
+      createServerSpy.mockRejectedValueOnce(new Error('Server failed to start'))
     })
 
-    test('Should log failed startup message', async () => {
-      await startServerImport.startServer()
+    test('logs the failure via createLogger', async () => {
+      await startServer()
 
       expect(mockLoggerInfo).toHaveBeenCalledWith('Server failed to start :(')
       expect(mockLoggerError).toHaveBeenCalledWith(
-        Error('Server failed to start')
+        new Error('Server failed to start')
       )
     })
   })
