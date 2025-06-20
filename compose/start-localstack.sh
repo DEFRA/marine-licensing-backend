@@ -3,7 +3,7 @@ export AWS_REGION=eu-west-2
 export AWS_DEFAULT_REGION=eu-west-2
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
-# TODO: Work out how to pass this in
+
 CDP_UPLOAD_BUCKET=${CDP_UPLOAD_BUCKET:-'mmo-uploads'}
 
 # S3 buckets
@@ -16,6 +16,7 @@ CDP_UPLOAD_BUCKET=${CDP_UPLOAD_BUCKET:-'mmo-uploads'}
 # CDP Uploader Dependencies
 aws --endpoint-url=http://localhost:4566 s3 mb s3://cdp-uploader-quarantine
 aws --endpoint-url=http://localhost:4566 s3 mb s3://${CDP_UPLOAD_BUCKET}
+
 
 # queues
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-clamav-results
