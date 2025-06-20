@@ -94,7 +94,7 @@ services:
 
 
   cdp-uploader:
-    image: defradigital/cdp-uploader:${CDP_UPLOADER_VERSION:-1.6.0}
+    image: defradigital/cdp-uploader:${CDP_UPLOADER_VERSION:-latest}
     ports:
       - '7337:7337'
     links:
