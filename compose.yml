@@ -92,6 +92,36 @@ services:
       - ./src:/home/node/src
       - ./package.json:/home/node/package.json
 
+
+  cdp-uploader:
+    image: defradigital/cdp-uploader:${CDP_UPLOADER_VERSION:-1.6.0}
+    ports:
+      - '7337:7337'
+    links:
+      - 'localstack:localstack'
+      - 'redis:redis'
+    depends_on:
+      localstack:
+        condition: service_healthy
+    env_file:
+      - 'compose/aws.env'
+    environment:
+      VIRTUAL_HOST: ~^uploader\..*\.sslip\.io
+      VIRTUAL_PATH: /
+      VIRTUAL_PORT: 7337
+      PORT: 7337
+      NODE_ENV: development
+      REDIS_HOST: redis
+      USE_SINGLE_INSTANCE_CACHE: true
+      MOCK_VIRUS_SCAN_ENABLED: true
+      MOCK_VIRUS_RESULT_DELAY: 3
+      MOCK_VIRUS_REGEX: '.*virus.*'
+      CONSUMER_BUCKETS: "${BUCKET_EXEMPTION_UPLOADS:-exemption-uploads},cdp-uploader-quarantine"
+      SQS_ENDPOINT: http://localstack:4566
+      S3_ENDPOINT: http://localstack:4566
+    networks:
+      - cdp-tenant
+
 ################################################################################
 
 volumes:
