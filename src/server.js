@@ -1,6 +1,7 @@
 import Hapi from '@hapi/hapi'
 
 import { config } from './config.js'
+import { defraId } from './common/helpers/auth/defra-id.js'
 import { router } from './plugins/router.js'
 import { requestLogger } from './common/helpers/logging/request-logger.js'
 import { mongoDb } from './common/helpers/mongodb.js'
@@ -38,21 +39,19 @@ async function createServer() {
     }
   })
 
-  // Hapi Plugins:
-  // requestLogger  - automatically logs incoming requests
-  // requestTracing - trace header logging and propagation
-  // secureContext  - loads CA certificates from environment config
-  // pulse          - provides shutdown handlers
-  // mongoDb        - sets up mongo connection pool and attaches to `server` and `request` objects
-  // router         - routes used in the app
-  await server.register([
+  const isTest = config.get('isTest')
+
+  const plugins = [
     requestLogger,
     requestTracing,
     secureContext,
     pulse,
     mongoDb,
+    ...(!isTest ? [defraId] : []),
     router
-  ])
+  ]
+
+  await server.register(plugins)
 
   return server
 }

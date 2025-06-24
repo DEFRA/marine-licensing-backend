@@ -13,7 +13,8 @@ jest.mock('hapi-pino', () => ({
   register: (server) => {
     server.decorate('server', 'logger', {
       info: jest.fn(),
-      error: jest.fn()
+      error: jest.fn(),
+      warn: jest.fn()
     })
   },
   name: 'mock-hapi-pino'
@@ -88,6 +89,20 @@ describe('#secureContext', () => {
   })
 
   describe('When secure context is enabled without TRUSTSTORE_ certs', () => {
+    const PROCESS_ENV = process.env
+
+    beforeAll(() => {
+      // Save the original environment and set up a clean one without TRUSTSTORE variables
+      process.env = { ...PROCESS_ENV }
+
+      // Remove any TRUSTSTORE_ environment variables
+      Object.keys(process.env)
+        .filter((key) => key.startsWith('TRUSTSTORE_'))
+        .forEach((key) => {
+          delete process.env[key]
+        })
+    })
+
     beforeEach(async () => {
       config.set('isSecureContextEnabled', true)
       server = hapi.server()
@@ -99,9 +114,49 @@ describe('#secureContext', () => {
       await server.stop({ timeout: 0 })
     })
 
+    afterAll(() => {
+      // Restore original environment
+      process.env = PROCESS_ENV
+    })
+
     test('Should log about not finding any TRUSTSTORE_ certs', () => {
       expect(server.logger.info).toHaveBeenCalledWith(
         'Could not find any TRUSTSTORE_ certificates'
+      )
+    })
+  })
+
+  describe('When there is an error adding certificate', () => {
+    const PROCESS_ENV = process.env
+
+    beforeAll(() => {
+      process.env = { ...PROCESS_ENV }
+      process.env.TRUSTSTORE_ERROR = 'mock-invalid-cert'
+
+      mockAddCACert.mockImplementation(() => {
+        throw new Error('Invalid certificate format')
+      })
+    })
+
+    beforeEach(async () => {
+      config.set('isSecureContextEnabled', true)
+      server = hapi.server()
+      await server.register([requestLogger, secureContext])
+    })
+
+    afterEach(async () => {
+      config.set('isSecureContextEnabled', false)
+      await server.stop({ timeout: 0 })
+      mockAddCACert.mockReset()
+    })
+
+    afterAll(() => {
+      process.env = PROCESS_ENV
+    })
+
+    test('Should log error when adding certificate fails', () => {
+      expect(server.logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to add certificate')
       )
     })
   })
