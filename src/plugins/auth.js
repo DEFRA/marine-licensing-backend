@@ -1,16 +1,21 @@
 import Wreck from '@hapi/wreck'
 import jwkToPem from 'jwk-to-pem'
 import { config } from '../config.js'
+import Boom from '@hapi/boom'
 
 export const getKey = async () => {
   const { jwksUri } = config.get('defraId')
-  const { payload } = await Wreck.get(jwksUri, { json: true })
-  const { keys } = payload
-  if (!keys || !keys.length) {
-    return { key: undefined }
+  try {
+    const { payload } = await Wreck.get(jwksUri, { json: true })
+    const { keys } = payload
+    if (!keys?.length) {
+      return { key: undefined }
+    }
+    const pem = jwkToPem(keys[0])
+    return { key: pem }
+  } catch (e) {
+    throw Boom.internal('Cannot verify auth token')
   }
-  const pem = jwkToPem(keys[0])
-  return { key: pem }
 }
 
 export const validateToken = async (decoded) => {
@@ -32,7 +37,7 @@ export const validateToken = async (decoded) => {
 const auth = {
   plugin: {
     name: 'auth',
-    register: async (server, options) => {
+    register: async (server) => {
       server.auth.strategy('jwt', 'jwt', {
         key: getKey,
         validate: validateToken,

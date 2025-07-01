@@ -2,6 +2,7 @@ import Hapi from '@hapi/hapi'
 import hapiAuthJwt2 from 'hapi-auth-jwt2'
 import Wreck from '@hapi/wreck'
 import jwkToPem from 'jwk-to-pem'
+import Boom from '@hapi/boom'
 import { auth, getKey, validateToken } from './auth.js'
 import { config } from '../config.js'
 
@@ -85,7 +86,9 @@ describe('Auth Plugin', () => {
 
     test('should handle JWKS fetch errors gracefully', async () => {
       mockWreckGet.mockRejectedValue(new Error('Network error'))
-      await expect(getKey()).rejects.toThrow('Network error')
+      await expect(getKey()).rejects.toThrow(
+        Boom.internal('Cannot verify auth token')
+      )
     })
   })
 
@@ -138,15 +141,15 @@ describe('Auth Plugin', () => {
         }
       })
     })
-  })
 
-  describe('Verify Options', () => {
-    test('should configure RS256 algorithm', () => {
-      const verifyOptions = {
-        algorithms: ['RS256']
-      }
+    describe('Verify Options', () => {
+      test('should configure RS256 algorithm', () => {
+        const verifyOptions = {
+          algorithms: ['RS256']
+        }
 
-      expect(verifyOptions.algorithms).toEqual(['RS256'])
+        expect(verifyOptions.algorithms).toEqual(['RS256'])
+      })
     })
   })
 })
