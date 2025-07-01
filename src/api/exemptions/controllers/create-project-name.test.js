@@ -1,7 +1,9 @@
 import { createProjectNameController } from './create-project-name'
+import { ObjectId } from 'mongodb'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
+  const auth = { credentials: { userId: new ObjectId().toHexString() } }
 
   it('should fail if fields are missing', () => {
     const result = payloadValidator.validate({})
@@ -21,7 +23,7 @@ describe('POST /exemptions/project-name', () => {
     const { mockMongo, mockHandler } = global
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: { projectName: 'Project' } },
+      { db: mockMongo, payload: { projectName: 'Project' }, auth },
       mockHandler
     )
 
@@ -45,7 +47,7 @@ describe('POST /exemptions/project-name', () => {
 
     expect(() =>
       createProjectNameController.handler(
-        { db: mockMongo, payload: { projectName: 'Project' } },
+        { db: mockMongo, payload: { projectName: 'Project' }, auth },
         mockHandler
       )
     ).rejects.toThrow(`Error creating project name: ${mockError}`)

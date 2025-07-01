@@ -1,6 +1,7 @@
 import Boom from '@hapi/boom'
 import { projectName } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
+import { getUserId } from '../helpers/get-user-id.js'
 
 export const createProjectNameController = {
   options: {
@@ -11,11 +12,13 @@ export const createProjectNameController = {
   },
   handler: async (request, h) => {
     try {
-      const { payload, db } = request
+      const { payload, db, auth } = request
+      const userId = getUserId(auth)
 
-      const result = await db
-        .collection('exemptions')
-        .insertOne({ projectName: payload.projectName })
+      const result = await db.collection('exemptions').insertOne({
+        projectName: payload.projectName,
+        userId
+      })
 
       return h
         .response({
