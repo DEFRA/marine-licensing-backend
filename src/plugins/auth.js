@@ -5,20 +5,27 @@ import Boom from '@hapi/boom'
 
 export const getKey = async () => {
   const { jwksUri } = config.get('defraId')
+
   try {
     const { payload } = await Wreck.get(jwksUri, { json: true })
     const { keys } = payload
     if (!keys?.length) {
-      return { key: undefined }
+      return { key: null }
     }
     const pem = jwkToPem(keys[0])
     return { key: pem }
   } catch (e) {
-    throw Boom.internal('Cannot verify auth token')
+    throw Boom.internal('Cannot verify auth token', e)
   }
 }
 
 export const validateToken = async (decoded) => {
+  const { authEnabled } = config.get('defraId')
+
+  if (!authEnabled) {
+    return { isValid: true }
+  }
+
   const { id, email } = decoded
 
   if (!id) {

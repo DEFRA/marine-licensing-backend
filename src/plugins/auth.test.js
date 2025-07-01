@@ -25,6 +25,7 @@ describe('Auth Plugin', () => {
 
     config.get.mockImplementation(() => {
       return {
+        authEnabled: true,
         jwksUri: 'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
       }
     })
@@ -81,13 +82,13 @@ describe('Auth Plugin', () => {
 
       const result = await getKey()
 
-      expect(result).toEqual({ key: undefined })
+      expect(result).toEqual({ key: null })
     })
 
     test('should handle JWKS fetch errors gracefully', async () => {
       mockWreckGet.mockRejectedValue(new Error('Network error'))
       await expect(getKey()).rejects.toThrow(
-        Boom.internal('Cannot verify auth token')
+        Boom.internal('Cannot verify auth token: Network error')
       )
     })
   })
@@ -109,6 +110,24 @@ describe('Auth Plugin', () => {
           userId: testId,
           email: 'test@example.com'
         }
+      })
+    })
+
+    test('should skip validation when authEnabled is false', async () => {
+      const mockDecoded = {}
+      const mockRequest = {}
+      const mockH = {}
+
+      config.get.mockImplementationOnce(() => {
+        return {
+          authEnabled: false
+        }
+      })
+
+      const result = await validateToken(mockDecoded, mockRequest, mockH)
+
+      expect(result).toEqual({
+        isValid: true
       })
     })
 
