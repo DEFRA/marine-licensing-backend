@@ -49,6 +49,14 @@ const config = convict({
     default: 'local',
     env: 'ENVIRONMENT'
   },
+  defraId: {
+    jwksUri: {
+      doc: 'JWKS Token validation url',
+      format: String,
+      default: 'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json',
+      ENV: 'DEFRA_ID_JWKS_URI'
+    }
+  },
   log: {
     isEnabled: {
       doc: 'Is logging enabled',
