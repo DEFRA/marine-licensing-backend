@@ -92,7 +92,8 @@ describe('Auth Plugin', () => {
   describe('Validate Function', () => {
     test('should validate JWT token and return user credentials', async () => {
       const mockDecoded = {
-        userId: testId
+        id: testId,
+        email: 'test@example.com'
       }
       const mockRequest = {}
       const mockH = {}
@@ -101,7 +102,10 @@ describe('Auth Plugin', () => {
 
       expect(result).toEqual({
         isValid: true,
-        credentials: { userId: testId }
+        credentials: {
+          userId: testId,
+          email: 'test@example.com'
+        }
       })
     })
 
@@ -113,8 +117,25 @@ describe('Auth Plugin', () => {
       const result = await validateToken(mockDecoded, mockRequest, mockH)
 
       expect(result).toEqual({
+        isValid: false
+      })
+    })
+
+    test('should handle decoded token with userId but no email', async () => {
+      const mockDecoded = {
+        id: testId
+      }
+      const mockRequest = {}
+      const mockH = {}
+
+      const result = await validateToken(mockDecoded, mockRequest, mockH)
+
+      expect(result).toEqual({
         isValid: true,
-        credentials: { userId: undefined }
+        credentials: {
+          userId: testId,
+          email: undefined
+        }
       })
     })
   })

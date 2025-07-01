@@ -13,10 +13,19 @@ export const getKey = async () => {
   return { key: pem }
 }
 
-export const validateToken = async (decoded, request, h) => {
+export const validateToken = async (decoded) => {
+  const { id, email } = decoded
+
+  if (!id) {
+    return { isValid: false }
+  }
+
   return {
     isValid: true,
-    credentials: { userId: decoded.userId }
+    credentials: {
+      userId: id,
+      email
+    }
   }
 }
 
