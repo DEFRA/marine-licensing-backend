@@ -3,10 +3,10 @@ import { ObjectId } from 'mongodb'
 import { getUserId } from './get-user-id.js'
 
 export const authorizeOwnership = async (request, h) => {
-  const { params, db, auth } = request
+  const { payload, params, db, auth } = request
   const userId = getUserId(auth)
 
-  const { id } = params
+  const id = params.id || payload?.id
 
   const document = await db
     .collection('exemptions')

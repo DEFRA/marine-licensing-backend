@@ -36,7 +36,34 @@ describe('authorizeOwnership', () => {
   })
 
   describe('when document exists and user is authorized', () => {
-    it('should continue when user owns the document', async () => {
+    it('should continue when user owns the document, for POST and patch', async () => {
+      const document = {
+        _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011'),
+        userId: 'user123',
+        someData: 'test'
+      }
+
+      mockCollection.findOne.mockResolvedValue(document)
+
+      const result = await authorizeOwnership(
+        {
+          params: {},
+          payload: { id: '507f1f77bcf86cd799439011' },
+          db: mockDb,
+          auth: { credentials: { userId: 'user123' } }
+        },
+        mockH
+      )
+
+      expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
+      expect(mockCollection.findOne).toHaveBeenCalledWith({
+        _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
+      })
+      expect(getUserId).toHaveBeenCalledWith(mockRequest.auth)
+      expect(result).toBe('continue')
+    })
+
+    it('should continue when user owns the document, for GET route', async () => {
       const document = {
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011'),
         userId: 'user123',

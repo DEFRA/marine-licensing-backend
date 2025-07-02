@@ -8,6 +8,10 @@ import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const submitExemptionController = {
   options: {
+    payload: {
+      parse: true,
+      output: 'data'
+    },
     pre: [{ method: authorizeOwnership }],
     validate: {
       payload: submitExemption

@@ -5,6 +5,10 @@ import { getUserId } from '../helpers/get-user-id.js'
 
 export const createProjectNameController = {
   options: {
+    payload: {
+      parse: true,
+      output: 'data'
+    },
     validate: {
       query: false,
       payload: projectName

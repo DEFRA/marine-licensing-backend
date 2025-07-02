@@ -6,6 +6,10 @@ import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const createActivityDescriptionController = {
   options: {
+    payload: {
+      parse: true,
+      output: 'data'
+    },
     pre: [{ method: authorizeOwnership }],
     validate: {
       query: false,
