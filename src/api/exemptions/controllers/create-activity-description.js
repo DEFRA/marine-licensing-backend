@@ -2,9 +2,11 @@ import Boom from '@hapi/boom'
 import { activityDescriptionSchema } from '../../../models/activity-description.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const createActivityDescriptionController = {
   options: {
+    pre: [{ method: authorizeOwnership }],
     validate: {
       query: false,
       payload: activityDescriptionSchema

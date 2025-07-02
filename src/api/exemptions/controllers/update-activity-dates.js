@@ -2,9 +2,11 @@ import Boom from '@hapi/boom'
 import { ObjectId } from 'mongodb'
 import { StatusCodes } from 'http-status-codes'
 import { activityDatesSchema } from '../../../models/activity-dates.js'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const createActivityDatesController = {
   options: {
+    pre: [{ method: authorizeOwnership }],
     validate: {
       query: false,
       payload: activityDatesSchema

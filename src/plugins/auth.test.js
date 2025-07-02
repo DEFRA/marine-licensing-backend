@@ -16,6 +16,8 @@ describe('Auth Plugin', () => {
   let mockJwkToPem
 
   const testId = '123e4567-e89b-12d3-a456-426614174000'
+  const testKey =
+    '-----BEGIN PUBLIC KEY-----\ntest-pem-key\n-----END PUBLIC KEY-----'
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -42,9 +44,7 @@ describe('Auth Plugin', () => {
       }
     })
 
-    mockJwkToPem.mockReturnValue(
-      '-----BEGIN PUBLIC KEY-----\ntest-pem-key\n-----END PUBLIC KEY-----'
-    )
+    mockJwkToPem.mockReturnValue(testKey)
 
     server = Hapi.server()
     await server.register(hapiAuthJwt2)
@@ -69,7 +69,7 @@ describe('Auth Plugin', () => {
       const result = await getKey()
 
       expect(result).toEqual({
-        key: '-----BEGIN PUBLIC KEY-----\ntest-pem-key\n-----END PUBLIC KEY-----'
+        key: testKey
       })
     })
 

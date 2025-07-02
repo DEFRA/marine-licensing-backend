@@ -2,9 +2,11 @@ import Boom from '@hapi/boom'
 import { publicRegister } from '../../../models/public-register.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const updatePublicRegisterController = {
   options: {
+    pre: [{ method: authorizeOwnership }],
     validate: {
       query: false,
       payload: publicRegister
