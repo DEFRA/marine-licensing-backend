@@ -6,6 +6,7 @@ import { updateSiteDetailsController } from './controllers/update-site-details.j
 import { createActivityDescriptionController } from './controllers/create-activity-description.js'
 import { createActivityDatesController } from './controllers/update-activity-dates.js'
 import { submitExemptionController } from './controllers/submit-exemption.js'
+import { patchMultipleCoordinatesController } from './controllers/multiple-coordinates.js'
 
 export const exemptions = [
   {
@@ -42,6 +43,11 @@ export const exemptions = [
     method: 'PATCH',
     path: '/exemption/activity-dates',
     ...createActivityDatesController
+  },
+  {
+    method: 'PATCH',
+    path: '/exemption/multiple-coordinates',
+    ...patchMultipleCoordinatesController
   },
   {
     method: 'POST',
