@@ -96,7 +96,7 @@ describe('Auth Plugin', () => {
   describe('Validate Function', () => {
     test('should validate JWT token and return user credentials', async () => {
       const mockDecoded = {
-        id: testId,
+        contactId: testId,
         email: 'test@example.com'
       }
       const mockRequest = {}
@@ -107,7 +107,7 @@ describe('Auth Plugin', () => {
       expect(result).toEqual({
         isValid: true,
         credentials: {
-          userId: testId,
+          contactId: testId,
           email: 'test@example.com'
         }
       })
@@ -131,7 +131,7 @@ describe('Auth Plugin', () => {
       })
     })
 
-    test('should handle decoded token with missing userId', async () => {
+    test('should handle decoded token with missing contactId', async () => {
       const mockDecoded = {}
       const mockRequest = {}
       const mockH = {}
@@ -143,9 +143,9 @@ describe('Auth Plugin', () => {
       })
     })
 
-    test('should handle decoded token with userId but no email', async () => {
+    test('should handle decoded token with contactId but no email', async () => {
       const mockDecoded = {
-        id: testId
+        contactId: testId
       }
       const mockRequest = {}
       const mockH = {}
@@ -155,7 +155,7 @@ describe('Auth Plugin', () => {
       expect(result).toEqual({
         isValid: true,
         credentials: {
-          userId: testId,
+          contactId: testId,
           email: undefined
         }
       })

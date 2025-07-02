@@ -1,10 +1,10 @@
 import Boom from '@hapi/boom'
 import { ObjectId } from 'mongodb'
-import { getUserId } from './get-user-id.js'
+import { getContactId } from './get-contact-id.js'
 
 export const authorizeOwnership = async (request, h) => {
   const { payload, params, db, auth } = request
-  const userId = getUserId(auth)
+  const contactId = getContactId(auth)
 
   const id = params.id || payload?.id
 
@@ -15,7 +15,7 @@ export const authorizeOwnership = async (request, h) => {
   if (!document) {
     throw Boom.notFound()
   }
-  if (document.userId !== userId) {
+  if (document.contactId !== contactId) {
     throw Boom.forbidden('Not authorized to update this resource')
   }
 

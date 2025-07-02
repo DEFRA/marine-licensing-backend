@@ -1,9 +1,9 @@
 import { authorizeOwnership } from './authorize-ownership.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
-import { getUserId } from './get-user-id.js'
+import { getContactId } from './get-contact-id.js'
 
-jest.mock('./get-user-id.js')
+jest.mock('./get-contact-id.js')
 
 describe('authorizeOwnership', () => {
   let mockRequest
@@ -11,7 +11,7 @@ describe('authorizeOwnership', () => {
   let mockDb
   let mockCollection
 
-  const mockGetUserId = jest.mocked(getUserId).mockReturnValue('user123')
+  const mockgetContactId = jest.mocked(getContactId).mockReturnValue('user123')
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -31,7 +31,7 @@ describe('authorizeOwnership', () => {
     mockRequest = {
       params: { id: '507f1f77bcf86cd799439011' },
       db: mockDb,
-      auth: { credentials: { userId: 'user123' } }
+      auth: { credentials: { contactId: 'user123' } }
     }
   })
 
@@ -39,7 +39,7 @@ describe('authorizeOwnership', () => {
     it('should continue when user owns the document, for POST and patch', async () => {
       const document = {
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011'),
-        userId: 'user123',
+        contactId: 'user123',
         someData: 'test'
       }
 
@@ -50,7 +50,7 @@ describe('authorizeOwnership', () => {
           params: {},
           payload: { id: '507f1f77bcf86cd799439011' },
           db: mockDb,
-          auth: { credentials: { userId: 'user123' } }
+          auth: { credentials: { contactId: 'user123' } }
         },
         mockH
       )
@@ -59,14 +59,14 @@ describe('authorizeOwnership', () => {
       expect(mockCollection.findOne).toHaveBeenCalledWith({
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
-      expect(getUserId).toHaveBeenCalledWith(mockRequest.auth)
+      expect(getContactId).toHaveBeenCalledWith(mockRequest.auth)
       expect(result).toBe('continue')
     })
 
     it('should continue when user owns the document, for GET route', async () => {
       const document = {
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011'),
-        userId: 'user123',
+        contactId: 'user123',
         someData: 'test'
       }
 
@@ -78,7 +78,7 @@ describe('authorizeOwnership', () => {
       expect(mockCollection.findOne).toHaveBeenCalledWith({
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
-      expect(getUserId).toHaveBeenCalledWith(mockRequest.auth)
+      expect(getContactId).toHaveBeenCalledWith(mockRequest.auth)
       expect(result).toBe('continue')
     })
   })
@@ -102,7 +102,7 @@ describe('authorizeOwnership', () => {
     it('should throw 403 when user does not own the document', async () => {
       const document = {
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011'),
-        userId: 'differentUser',
+        contactId: 'differentUser',
         someData: 'test'
       }
 
@@ -116,7 +116,7 @@ describe('authorizeOwnership', () => {
       expect(mockCollection.findOne).toHaveBeenCalledWith({
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
-      expect(mockGetUserId).toHaveBeenCalledWith(mockRequest.auth)
+      expect(mockgetContactId).toHaveBeenCalledWith(mockRequest.auth)
     })
   })
 })

@@ -26,16 +26,16 @@ export const validateToken = async (decoded) => {
     return { isValid: true }
   }
 
-  const { id, email } = decoded
+  const { contactId, email } = decoded
 
-  if (!id) {
+  if (!contactId) {
     return { isValid: false }
   }
 
   return {
     isValid: true,
     credentials: {
-      userId: id,
+      contactId,
       email
     }
   }

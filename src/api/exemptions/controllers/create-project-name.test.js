@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
-  const auth = { credentials: { userId: new ObjectId().toHexString() } }
+  const auth = { credentials: { contactId: new ObjectId().toHexString() } }
 
   it('should fail if fields are missing', () => {
     const result = payloadValidator.validate({})
