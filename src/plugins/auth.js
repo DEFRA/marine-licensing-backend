@@ -7,14 +7,21 @@ export const getKey = async () => {
   const { jwksUri } = config.get('defraId')
 
   try {
+    console.log(`Attempting to fetch JWKS from: ${jwksUri}`)
     const { payload } = await Wreck.get(jwksUri, { json: true })
     const { keys } = payload
     if (!keys?.length) {
+      console.error('No keys found in JWKS response')
       return { key: null }
     }
     const pem = jwkToPem(keys[0])
+    console.log('Successfully converted JWK to PEM')
+    console.log('Returning', { key: pem })
+
     return { key: pem }
   } catch (e) {
+    console.error('Failed to fetch JWKS:', e.message)
+    console.error('JWKS URI was:', jwksUri)
     throw Boom.internal('Cannot verify auth token', e)
   }
 }
