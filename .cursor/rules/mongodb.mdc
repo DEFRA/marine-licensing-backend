@@ -1,0 +1,163 @@
+---
+description: mongodb
+globs: 
+alwaysApply: false
+---
+---
+description: MongoDB and Data Model Patterns
+globs: src/api/**/*.js
+---
+# MongoDB and Data Model Patterns
+
+## MongoDB Setup
+- Uses native MongoDB driver (not Mongoose)
+- Connection managed by `mongodb.js` plugin in `/src/common/helpers/`
+- MongoDB client available via:
+  - `server.db` - For server-level access
+  - `request.db` - For request handlers
+  - `server.locker` - For MongoDB locks via mongo-locks
+- Plugin registers on server startup with connection pooling
+
+## Collection Naming
+- Use kebab-case for collection names
+- Use singular or plural as appropriate
+- Examples: `exemptions`, `example-data`, `mongo-locks`
+
+## Database Access
+```javascript
+// In controllers
+export const controller = {
+  handler: async (request, h) => {
+    const result = await request.db
+      .collection('exemptions')
+      .findOne({ _id: ObjectId.createFromHexString(request.params.id) })
+    
+    return h.response({ message: 'success', value: result })
+  }
+}
+```
+
+## ObjectId Handling
+- Import ObjectId from mongodb
+- Use `ObjectId.createFromHexString(id)` to convert hex strings
+- Use `new ObjectId().toHexString()` for generating test IDs
+- Always convert to ObjectId in database operations
+
+```javascript
+import { ObjectId } from 'mongodb'
+
+// Converting string to ObjectId
+const objectId = ObjectId.createFromHexString(params.id)
+
+// In queries
+await db.collection('exemptions').findOne({ 
+  _id: ObjectId.createFromHexString(id) 
+})
+
+// Return as string
+return { id: result._id.toString(), ...rest }
+```
+
+## Data Models
+- Joi validation schemas in `/src/models/` directory
+- Validate ObjectId as 24-character hex string
+- Use shared models for common fields
+- Models define validation, not data structure
+
+```javascript
+import joi from 'joi'
+
+export const getExemption = joi.object({
+  id: joi.string().length(24).hex().required().messages({
+    'string.empty': 'EXEMPTION_ID_REQUIRED',
+    'string.length': 'EXEMPTION_ID_REQUIRED', 
+    'string.hex': 'EXEMPTION_ID_INVALID',
+    'any.required': 'EXEMPTION_ID_REQUIRED'
+  })
+})
+```
+
+## Common Operations
+```javascript
+// Find one document
+const result = await request.db
+  .collection('exemptions')
+  .findOne({ _id: ObjectId.createFromHexString(id) })
+
+// Update document
+const result = await request.db
+  .collection('exemptions')
+  .updateOne(
+    { _id: ObjectId.createFromHexString(id) },
+    { $set: { field: value } }
+  )
+
+// Find with projection
+const result = await db
+  .collection('example-data')
+  .find({}, { projection: { _id: 0 } })
+  .toArray()
+```
+
+## Error Handling
+- Use @hapi/boom for HTTP errors
+- Check `matchedCount` for update operations
+- Handle generic database errors
+
+```javascript
+try {
+  const result = await db.collection('exemptions').updateOne(
+    { _id: ObjectId.createFromHexString(id) },
+    { $set: data }
+  )
+  
+  if (result.matchedCount === 0) {
+    throw Boom.notFound('Exemption not found')
+  }
+} catch (error) {
+  if (error.isBoom) {
+    throw error
+  }
+  throw Boom.internal(`Error updating: ${error.message}`)
+}
+```
+
+## Controller Pattern
+```javascript
+export const controller = {
+  options: {
+    validate: {
+      params: validationSchema
+    }
+  },
+  handler: async (request, h) => {
+    try {
+      const { params, db } = request
+      
+      const result = await db
+        .collection('collection-name')
+        .operation()
+      
+      return h
+        .response({ message: 'success', value: result })
+        .code(StatusCodes.OK)
+    } catch (error) {
+      if (error.isBoom) throw error
+      throw Boom.internal(`Error: ${error.message}`)
+    }
+  }
+}
+```
+
+## Indexes
+- Defined in `createIndexes()` function in mongodb.js
+- Created on application startup
+- Simple single-field indexes
+
+```javascript
+async function createIndexes(db) {
+  await db.collection('mongo-locks').createIndex({ id: 1 })
+  await db.collection('exemptions').createIndex({ id: 1 })
+}
+```
+

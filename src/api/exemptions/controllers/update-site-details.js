@@ -2,9 +2,15 @@ import Boom from '@hapi/boom'
 import { siteDetailsSchema } from '../../../models/site-details/site-details.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const updateSiteDetailsController = {
   options: {
+    payload: {
+      parse: true,
+      output: 'data'
+    },
+    pre: [{ method: authorizeOwnership }],
     validate: {
       query: false,
       payload: siteDetailsSchema

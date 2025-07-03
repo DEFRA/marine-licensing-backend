@@ -3,9 +3,11 @@ import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
 import { createTaskList } from '../helpers/createTaskList.js'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const getExemptionController = {
   options: {
+    pre: [{ method: authorizeOwnership }],
     validate: {
       params: getExemption
     }

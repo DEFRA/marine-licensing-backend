@@ -1,0 +1,112 @@
+---
+description: testing
+globs: 
+alwaysApply: false
+---
+---
+description: API Testing Standards
+globs: tests/*.js
+---
+# API Testing Standards
+
+## Test Framework
+- Jest with @shelf/jest-mongodb
+- MongoDB in-memory for database testing
+- Babel for ES modules transformation
+- Coverage reporting enabled
+
+## Test Structure
+```javascript
+import { createServer } from '../server.js'
+
+describe('Route Tests', () => {
+  let server
+  
+  beforeAll(async () => {
+    server = await createServer()
+    await server.initialize()
+  })
+
+  afterAll(async () => {
+    await server.stop({ timeout: 0 })
+  })
+
+  test('GET /endpoint returns success', async () => {
+    const response = await server.inject({
+      method: 'GET',
+      url: '/endpoint'
+    })
+    expect(response.statusCode).toBe(200)
+    const payload = JSON.parse(response.payload)
+    expect(payload).toEqual({ message: 'success' })
+  })
+})
+```
+
+## Testing Patterns
+- Co-locate tests with source files (*.test.js)
+- Use `server.inject()` for API testing
+- Mock database operations with Jest mocks
+- Mock handlers with predefined responses
+- Test both success and error scenarios
+- Use `describe` for grouping and `it`/`test` for cases
+
+## Unit Testing
+```javascript
+describe('service function', () => {
+  it('should return expected result', async () => {
+    const mockDb = { collection: jest.fn() }
+    const result = await serviceFunction(mockDb)
+    expect(result).toEqual(expectedData)
+  })
+})
+```
+
+## Route Handler Testing
+```javascript
+const mockReq = { db: {}, params: { id: '1' } }
+const mockH = { response: jest.fn(result => result) }
+const result = await handler(mockReq, mockH)
+expect(mockH.response).toHaveBeenCalledWith(expectedResponse)
+```
+
+## Database Testing
+- MongoDB in-memory via @shelf/jest-mongodb
+- Global setup in `.jest/setup-files-after-env.js`
+- Mock database operations for unit tests
+- Access via `global.mockMongo` in tests
+
+```javascript
+jest.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+  updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 })
+}))
+``` 
+
+## Mocking
+- Mock external dependencies with `jest.spyOn()`
+- Mock database collections and operations
+- Mock Hapi response toolkit (`h.response`)
+- Use `mockResolvedValue()` for async mocks
+
+## Configuration
+- Test files: `src/**/*.test.js`
+- Coverage: All `src/**/*.js` files
+- MongoDB: In-memory database per test run
+- Babel transforms for ES modules
+
+## Best Practices
+- One assertion per test
+- Clear test descriptions
+- Setup/teardown in beforeEach/afterEach
+- Clean test data between runs
+- Test edge cases
+- Test error handling
+- Use test factories for data creation
+
+## Integration Testing
+- Test complete request/response cycle
+- Test database interactions
+- Test external service integration
+- Test authentication flow
+- Test rate limiting
+- Test concurrent requests

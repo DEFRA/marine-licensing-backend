@@ -53,4 +53,7 @@ async function createIndexes(db) {
   await db.collection('example-data').createIndex({ id: 1 })
 
   await db.collection('exemptions').createIndex({ id: 1 })
+  await db
+    .collection('reference-sequences')
+    .createIndex({ key: 1 }, { unique: true })
 }
