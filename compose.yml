@@ -116,7 +116,7 @@ services:
       MOCK_VIRUS_SCAN_ENABLED: true
       MOCK_VIRUS_RESULT_DELAY: 3
       MOCK_VIRUS_REGEX: '.*virus.*'
-      CONSUMER_BUCKETS: "${BUCKET_EXEMPTION_UPLOADS:-exemption-uploads},cdp-uploader-quarantine"
+      CONSUMER_BUCKETS: "${CDP_UPLOAD_BUCKET:-mmo-uploads},cdp-uploader-quarantine"
       SQS_ENDPOINT: http://localstack:4566
       S3_ENDPOINT: http://localstack:4566
     networks:
