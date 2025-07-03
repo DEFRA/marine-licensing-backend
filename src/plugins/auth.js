@@ -10,6 +10,7 @@ export const getKey = async () => {
     const { payload } = await Wreck.get(jwksUri, { json: true })
     const { keys } = payload
     if (!keys?.length) {
+      console.error('No keys found in JWKS response')
       return { key: null }
     }
     const pem = jwkToPem(keys[0])
