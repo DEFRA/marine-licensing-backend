@@ -16,7 +16,7 @@ export const authorizeOwnership = async (request, h) => {
     throw Boom.notFound()
   }
   if (document.contactId !== contactId) {
-    throw Boom.forbidden('Not authorized to update this resource')
+    throw Boom.notFound('Not authorized to update this resource')
   }
 
   return h.continue

@@ -87,9 +87,11 @@ describe('authorizeOwnership', () => {
     it('should throw 404 when document is not found', async () => {
       mockCollection.findOne.mockResolvedValue(null)
 
-      await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow(
-        Boom.notFound()
-      )
+      const boomSpy = jest.spyOn(Boom, 'notFound')
+
+      await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow()
+
+      expect(boomSpy).toHaveBeenCalled()
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
       expect(mockCollection.findOne).toHaveBeenCalledWith({
@@ -108,8 +110,12 @@ describe('authorizeOwnership', () => {
 
       mockCollection.findOne.mockResolvedValue(document)
 
-      await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow(
-        Boom.forbidden('Not authorized to update this resource')
+      const boomSpy = jest.spyOn(Boom, 'notFound')
+
+      await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow()
+
+      expect(boomSpy).toHaveBeenCalledWith(
+        'Not authorized to update this resource'
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
