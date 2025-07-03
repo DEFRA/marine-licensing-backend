@@ -4,9 +4,15 @@ import { submitExemption } from '../../../models/submit-exemption.js'
 import { ObjectId } from 'mongodb'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { generateApplicationReference } from '../helpers/reference-generator.js'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const submitExemptionController = {
   options: {
+    payload: {
+      parse: true,
+      output: 'data'
+    },
+    pre: [{ method: authorizeOwnership }],
     validate: {
       payload: submitExemption
     }
