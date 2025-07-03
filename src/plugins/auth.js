@@ -45,6 +45,8 @@ const auth = {
   plugin: {
     name: 'auth',
     register: async (server) => {
+      const { authEnabled } = config.get('defraId')
+
       server.auth.strategy('jwt', 'jwt', {
         key: getKey,
         validate: validateToken,
@@ -52,7 +54,10 @@ const auth = {
           algorithms: ['RS256']
         }
       })
-      server.auth.default({ strategy: 'jwt', mode: 'required' })
+      server.auth.default({
+        strategy: 'jwt',
+        mode: authEnabled ? 'required' : 'try'
+      })
     }
   }
 }

@@ -59,9 +59,44 @@ describe('Auth Plugin', () => {
     expect(server.auth.settings.default.strategies).toContain('jwt')
   })
 
-  test('should set default auth strategy to jwt with required mode', () => {
-    expect(server.auth.settings.default.strategies).toContain('jwt')
-    expect(server.auth.settings.default.mode).toBe('required')
+  describe('Default auth mode configuration', () => {
+    test('should set default auth strategy to jwt with required mode when auth is enabled', async () => {
+      config.get.mockImplementation(() => {
+        return {
+          authEnabled: true,
+          jwksUri:
+            'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
+        }
+      })
+
+      const testServer = Hapi.server()
+      await testServer.register(hapiAuthJwt2)
+      await testServer.register(auth)
+
+      expect(testServer.auth.settings.default.strategies).toContain('jwt')
+      expect(testServer.auth.settings.default.mode).toBe('required')
+
+      await testServer.stop()
+    })
+
+    test('should set default auth strategy to jwt with try mode when auth is disabled', async () => {
+      config.get.mockImplementation(() => {
+        return {
+          authEnabled: false,
+          jwksUri:
+            'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
+        }
+      })
+
+      const testServer = Hapi.server()
+      await testServer.register(hapiAuthJwt2)
+      await testServer.register(auth)
+
+      expect(testServer.auth.settings.default.strategies).toContain('jwt')
+      expect(testServer.auth.settings.default.mode).toBe('try')
+
+      await testServer.stop()
+    })
   })
 
   describe('Key Function', () => {
