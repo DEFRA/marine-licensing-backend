@@ -101,7 +101,7 @@ describe('authorizeOwnership', () => {
   })
 
   describe('when user is not authorized', () => {
-    it('should throw 403 when user does not own the document', async () => {
+    it('should throw 404 when user does not own the document', async () => {
       const document = {
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011'),
         contactId: 'differentUser',
