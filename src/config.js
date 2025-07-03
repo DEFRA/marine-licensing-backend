@@ -54,7 +54,7 @@ const config = convict({
       doc: 'JWKS Token validation url',
       format: String,
       default: 'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json',
-      ENV: 'DEFRA_ID_JWKS_URI'
+      env: 'DEFRA_ID_JWKS_URI'
     },
     authEnabled: {
       doc: 'DEFRA ID Auth enabled',
