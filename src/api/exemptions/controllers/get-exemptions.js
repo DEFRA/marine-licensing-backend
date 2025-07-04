@@ -49,10 +49,10 @@ export const sortByStatusAndProjectName = (exemptions) =>
       return aSortIndex - bSortIndex
     }
 
-    return (a.projectName ?? '').localeCompare(b.projectName ?? '')
+    return a.projectName.localeCompare(b.projectName)
   })
 
-export const getMyExemptionsController = {
+export const getExemptionsController = {
   handler: async (request, h) => {
     const { db, auth } = request
     const contactId = getContactId(auth)

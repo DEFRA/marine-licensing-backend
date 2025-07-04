@@ -1,5 +1,5 @@
 import { getExemptionController } from './controllers/get-exemption.js'
-import { getMyExemptionsController } from './controllers/get-exemptions.js'
+import { getExemptionsController } from './controllers/get-exemptions.js'
 import { createProjectNameController } from './controllers/create-project-name.js'
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
@@ -17,7 +17,7 @@ export const exemptions = [
   {
     method: 'GET',
     path: '/exemptions',
-    ...getMyExemptionsController
+    ...getExemptionsController
   },
   {
     method: 'POST',

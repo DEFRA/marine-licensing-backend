@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
 import {
-  getMyExemptionsController,
+  getExemptionsController,
   sortByStatusAndProjectName
 } from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
@@ -12,7 +12,7 @@ import { config } from '../../../config.js'
 
 jest.mock('../../../config.js')
 
-describe('getMyExemptionsController', () => {
+describe('getExemptionsController', () => {
   let mockRequest
   let mockH
   let mockDb
@@ -70,7 +70,7 @@ describe('getMyExemptionsController', () => {
         toArray: jest.fn().mockResolvedValue(mockExemptions)
       })
 
-      await getMyExemptionsController.handler(mockRequest, mockH)
+      await getExemptionsController.handler(mockRequest, mockH)
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
       expect(mockCollection.find).toHaveBeenCalledWith({
@@ -104,7 +104,7 @@ describe('getMyExemptionsController', () => {
         toArray: jest.fn().mockResolvedValue([])
       })
 
-      await getMyExemptionsController.handler(mockRequest, mockH)
+      await getExemptionsController.handler(mockRequest, mockH)
 
       expect(mockH.response).toHaveBeenCalledWith({
         message: 'success',
@@ -123,7 +123,7 @@ describe('getMyExemptionsController', () => {
         toArray: jest.fn().mockResolvedValue(mockExemptions)
       })
 
-      await getMyExemptionsController.handler(mockRequest, mockH)
+      await getExemptionsController.handler(mockRequest, mockH)
 
       expect(mockH.response).toHaveBeenCalledWith({
         message: 'success',
@@ -162,7 +162,7 @@ describe('getMyExemptionsController', () => {
         toArray: jest.fn().mockResolvedValue(mockExemptions)
       })
 
-      await getMyExemptionsController.handler(mockRequest, mockH)
+      await getExemptionsController.handler(mockRequest, mockH)
 
       const responseValue = mockH.response.mock.calls[0][0].value
 
@@ -197,7 +197,7 @@ describe('getMyExemptionsController', () => {
         toArray: jest.fn().mockResolvedValue(mockExemptions)
       })
 
-      await getMyExemptionsController.handler(mockRequest, mockH)
+      await getExemptionsController.handler(mockRequest, mockH)
 
       const responseValue = mockH.response.mock.calls[0][0].value
 
@@ -225,7 +225,7 @@ describe('getMyExemptionsController', () => {
         toArray: jest.fn().mockResolvedValue(mockExemptions)
       })
 
-      await getMyExemptionsController.handler(mockRequest, mockH)
+      await getExemptionsController.handler(mockRequest, mockH)
 
       const responseValue = mockH.response.mock.calls[0][0].value
 
@@ -234,7 +234,7 @@ describe('getMyExemptionsController', () => {
       expect(responseValue[1].status).toBe(EXEMPTION_STATUS.DRAFT)
     })
 
-    it('should sort by status first (Draft, then Closed), then by project name within each status group', async () => {
+    it('should sort by status first, then by project name within each status group', async () => {
       const mockExemptions = [
         {
           _id: new ObjectId('507f1f77bcf86cd799439011'),
@@ -266,7 +266,7 @@ describe('getMyExemptionsController', () => {
         toArray: jest.fn().mockResolvedValue(mockExemptions)
       })
 
-      await getMyExemptionsController.handler(mockRequest, mockH)
+      await getExemptionsController.handler(mockRequest, mockH)
 
       const responseValue = mockH.response.mock.calls[0][0].value
 
@@ -285,7 +285,7 @@ describe('getMyExemptionsController', () => {
   })
 
   describe('sortByStatusAndProjectName', () => {
-    it('should put DRAFTs at the top, proper order', () => {
+    it('should put DRAFTs at the top', () => {
       const exemptions = [
         { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' },
         { status: EXEMPTION_STATUS.CLOSED, projectName: 'Closed Project' }
