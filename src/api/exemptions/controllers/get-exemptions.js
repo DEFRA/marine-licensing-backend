@@ -26,7 +26,7 @@ const transformedExemptions = (exemptions) =>
     }
   })
 
-const sortByStatusAndProjectName = (exemptions) =>
+export const sortByStatusAndProjectName = (exemptions) =>
   exemptions.sort((a, b) => {
     const statusOrder = [EXEMPTION_STATUS.DRAFT, EXEMPTION_STATUS.CLOSED]
 

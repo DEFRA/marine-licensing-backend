@@ -1,5 +1,8 @@
 import { jest } from '@jest/globals'
-import { getMyExemptionsController } from './get-exemptions.js'
+import {
+  getMyExemptionsController,
+  sortByStatusAndProjectName
+} from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
 import {
   EXEMPTION_STATUS,
@@ -278,6 +281,29 @@ describe('getMyExemptionsController', () => {
       expect(responseValue[2].projectName).toBe('Alpha Closed Project')
       expect(responseValue[3].status).toBe(EXEMPTION_STATUS.CLOSED)
       expect(responseValue[3].projectName).toBe('Beta Closed Project')
+    })
+  })
+
+  describe('sortByStatusAndProjectName', () => {
+    it('should put DRAFTs at the top, proper order', () => {
+      const exemptions = [
+        { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' },
+        { status: EXEMPTION_STATUS.CLOSED, projectName: 'Closed Project' }
+      ]
+      const result = sortByStatusAndProjectName(exemptions)
+      expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
+      expect(result[1].status).toBe(EXEMPTION_STATUS.CLOSED)
+    })
+
+    it('should correctly hadle unknown status', () => {
+      const exemptions = [
+        { status: 'UNKNOWN_STATUS', projectName: 'Unknown Project' },
+        { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' }
+      ]
+      const result = sortByStatusAndProjectName(exemptions)
+      expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
+      expect(result[1].status).toBe('UNKNOWN_STATUS')
+      expect(result[1].projectName).toBe('Unknown Project')
     })
   })
 })
