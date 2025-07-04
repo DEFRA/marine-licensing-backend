@@ -3,6 +3,7 @@ import { generateApplicationReference } from '../helpers/reference-generator.js'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
+import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 
 jest.mock('../helpers/reference-generator.js')
 jest.mock('../helpers/createTaskList.js')
@@ -118,7 +119,7 @@ describe('POST /exemption/submit', () => {
           $set: {
             applicationReference: 'EXE/2025/10001',
             submittedAt: mockDate,
-            status: 'submitted'
+            status: EXEMPTION_STATUS.CLOSED
           }
         }
       )
@@ -209,7 +210,7 @@ describe('POST /exemption/submit', () => {
         projectName: 'Test Project',
         applicationReference: 'EXE/2025/10001',
         submittedAt: new Date('2025-06-01'),
-        status: 'submitted'
+        status: EXEMPTION_STATUS.CLOSED
       }
 
       mockDb.collection().findOne.mockResolvedValue(mockSubmittedExemption)
@@ -532,7 +533,7 @@ describe('POST /exemption/submit', () => {
           $set: {
             applicationReference: expectedReference,
             submittedAt: mockDate,
-            status: 'submitted'
+            status: EXEMPTION_STATUS.CLOSED
           }
         }
       )
@@ -605,7 +606,7 @@ describe('POST /exemption/submit', () => {
           $set: {
             applicationReference: 'EXE/2025/10001',
             submittedAt: mockDate,
-            status: 'submitted'
+            status: EXEMPTION_STATUS.CLOSED
           }
         }
       )
