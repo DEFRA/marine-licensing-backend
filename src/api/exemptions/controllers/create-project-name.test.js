@@ -1,5 +1,9 @@
 import { createProjectNameController } from './create-project-name'
 import { ObjectId } from 'mongodb'
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_TYPE
+} from '../../../common/constants/exemption.js'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
@@ -30,6 +34,33 @@ describe('POST /exemptions/project-name', () => {
     expect(mockHandler.response).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'success'
+      })
+    )
+  })
+
+  it('should create exemption with correct status and type properties', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockInsertOne = jest.fn().mockResolvedValue({
+      insertedId: new ObjectId()
+    })
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        insertOne: mockInsertOne
+      }
+    })
+
+    await createProjectNameController.handler(
+      { db: mockMongo, payload: { projectName: 'Test Project' }, auth },
+      mockHandler
+    )
+
+    expect(mockInsertOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectName: 'Test Project',
+        status: EXEMPTION_STATUS.DRAFT,
+        type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
+        contactId: expect.any(String)
       })
     )
   })

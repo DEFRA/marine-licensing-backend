@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { generateApplicationReference } from '../helpers/reference-generator.js'
 import { authorizeOwnership } from '../helpers/authorize-ownership.js'
+import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 
 export const submitExemptionController = {
   options: {
@@ -61,7 +62,7 @@ export const submitExemptionController = {
           $set: {
             applicationReference,
             submittedAt,
-            status: 'submitted'
+            status: EXEMPTION_STATUS.CLOSED
           }
         }
       )
