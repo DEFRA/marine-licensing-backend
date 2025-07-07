@@ -26,7 +26,7 @@ const transformedExemptions = (exemptions) =>
     }
   })
 
-export const sortByStatusAndProjectName = (exemptions) =>
+export const sortByStatus = (exemptions) =>
   exemptions.sort((a, b) => {
     const statusOrder = [EXEMPTION_STATUS.DRAFT, EXEMPTION_STATUS.CLOSED]
 
@@ -44,12 +44,7 @@ export const sortByStatusAndProjectName = (exemptions) =>
         ? unknownStatusIndex
         : comparisonExemptionStatus
 
-    const statusesAreDifferent = aSortIndex !== bSortIndex
-    if (statusesAreDifferent) {
-      return aSortIndex - bSortIndex
-    }
-
-    return a.projectName.localeCompare(b.projectName)
+    return aSortIndex - bSortIndex
   })
 
 export const getExemptionsController = {
@@ -60,10 +55,11 @@ export const getExemptionsController = {
     const exemptions = await db
       .collection('exemptions')
       .find({ contactId })
+      .sort({ projectName: 1 })
       .toArray()
 
     const transformed = transformedExemptions(exemptions)
-    const sorted = sortByStatusAndProjectName(transformed)
+    const sorted = sortByStatus(transformed)
 
     return h
       .response({

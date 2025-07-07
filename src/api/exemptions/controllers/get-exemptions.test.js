@@ -1,8 +1,5 @@
 import { jest } from '@jest/globals'
-import {
-  getExemptionsController,
-  sortByStatusAndProjectName
-} from './get-exemptions.js'
+import { getExemptionsController, sortByStatus } from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
 import {
   EXEMPTION_STATUS,
@@ -18,14 +15,41 @@ describe('getExemptionsController', () => {
   let mockDb
   let mockCollection
 
+  const mockExemptions = [
+    {
+      _id: new ObjectId('507f1f77bcf86cd799439011'),
+      status: EXEMPTION_STATUS.CLOSED,
+      applicationReference: 'EXEMPTION-2024-001',
+      projectName: 'Other Project',
+      contactId: 'test-contact-id',
+      submittedAt: '2024-01-15T10:00:00.000Z'
+    },
+    {
+      _id: new ObjectId('507f1f77bcf86cd799439012'),
+      status: EXEMPTION_STATUS.DRAFT,
+      projectName: 'Test Project',
+      contactId: 'test-contact-id'
+    },
+    {
+      _id: new ObjectId('507f1f77bcf86cd799439013'),
+      status: 'Unknown status',
+      projectName: 'Beta Project',
+      contactId: 'test-contact-id'
+    }
+  ]
+
   beforeEach(() => {
     config.get.mockReturnValue({
       authEnabled: true
     })
 
     mockCollection = {
-      find: jest.fn().mockReturnThis(),
-      toArray: jest.fn()
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          toArray: jest.fn()
+        }),
+        toArray: jest.fn()
+      })
     }
 
     mockDb = {
@@ -49,26 +73,7 @@ describe('getExemptionsController', () => {
 
   describe('handler', () => {
     it('should return all exemptions for a user with correct format', async () => {
-      const mockExemptions = [
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439011'),
-          status: EXEMPTION_STATUS.CLOSED,
-          projectName: 'Test Project 1',
-          applicationReference: 'EXEMPTION-2024-001',
-          submittedAt: '2024-01-15T10:00:00.000Z',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439012'),
-          projectName: 'Test Project 2',
-          status: EXEMPTION_STATUS.DRAFT,
-          contactId: 'test-contact-id'
-        }
-      ]
-
-      mockCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue(mockExemptions)
-      })
+      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
@@ -82,17 +87,23 @@ describe('getExemptionsController', () => {
         value: [
           {
             id: '507f1f77bcf86cd799439012',
-            projectName: 'Test Project 2',
+            projectName: 'Test Project',
             type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             status: EXEMPTION_STATUS.DRAFT
           },
           {
             id: '507f1f77bcf86cd799439011',
-            projectName: 'Test Project 1',
+            projectName: 'Other Project',
             type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             applicationReference: 'EXEMPTION-2024-001',
             status: EXEMPTION_STATUS.CLOSED,
             submittedAt: '2024-01-15T10:00:00.000Z'
+          },
+          {
+            id: '507f1f77bcf86cd799439013',
+            projectName: 'Beta Project',
+            type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
+            status: 'Unknown status'
           }
         ]
       })
@@ -100,9 +111,7 @@ describe('getExemptionsController', () => {
     })
 
     it('should return empty array when user has no exemptions', async () => {
-      mockCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue([])
-      })
+      mockCollection.find().sort().toArray.mockResolvedValue([])
 
       await getExemptionsController.handler(mockRequest, mockH)
 
@@ -113,15 +122,14 @@ describe('getExemptionsController', () => {
     })
 
     it('should handle missing data', async () => {
-      const mockExemptions = [
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439011')
-        }
-      ]
-
-      mockCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue(mockExemptions)
-      })
+      mockCollection
+        .find()
+        .sort()
+        .toArray.mockResolvedValue([
+          {
+            _id: new ObjectId('507f1f77bcf86cd799439011')
+          }
+        ])
 
       await getExemptionsController.handler(mockRequest, mockH)
 
@@ -137,30 +145,7 @@ describe('getExemptionsController', () => {
     })
 
     it('should sort exemptions by status priority (DRAFT first, then CLOSED, then others)', async () => {
-      const mockExemptions = [
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439011'),
-          status: EXEMPTION_STATUS.CLOSED,
-          projectName: 'Other Project',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439012'),
-          status: EXEMPTION_STATUS.DRAFT,
-          projectName: 'Alpha Project',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439013'),
-          status: 'Unknown status',
-          projectName: 'Beta Project',
-          contactId: 'test-contact-id'
-        }
-      ]
-
-      mockCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue(mockExemptions)
-      })
+      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
@@ -171,59 +156,18 @@ describe('getExemptionsController', () => {
       expect(responseValue[2].status).toBe('Unknown status')
     })
 
-    it('should sort exemptions by project name within same status', async () => {
-      const mockExemptions = [
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439011'),
-          status: EXEMPTION_STATUS.DRAFT,
-          projectName: 'Other Project',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439012'),
-          status: EXEMPTION_STATUS.DRAFT,
-          projectName: 'Alpha Project',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439013'),
-          status: EXEMPTION_STATUS.DRAFT,
-          projectName: 'Beta Project',
-          contactId: 'test-contact-id'
-        }
-      ]
-
-      mockCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue(mockExemptions)
-      })
-
-      await getExemptionsController.handler(mockRequest, mockH)
-
-      const responseValue = mockH.response.mock.calls[0][0].value
-
-      expect(responseValue[0].projectName).toBe('Alpha Project')
-      expect(responseValue[1].projectName).toBe('Beta Project')
-      expect(responseValue[2].projectName).toBe('Other Project')
-    })
-
     it('should handle exemptions without project names gracefully', async () => {
-      const mockExemptions = [
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439011'),
-          status: EXEMPTION_STATUS.DRAFT,
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439012'),
-          status: EXEMPTION_STATUS.DRAFT,
-          projectName: 'Alpha Project',
-          contactId: 'test-contact-id'
-        }
-      ]
-
-      mockCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue(mockExemptions)
-      })
+      mockCollection
+        .find()
+        .sort()
+        .toArray.mockResolvedValue([
+          {
+            _id: new ObjectId('507f1f77bcf86cd799439011'),
+            status: EXEMPTION_STATUS.DRAFT,
+            contactId: 'test-contact-id'
+          },
+          mockExemptions[1]
+        ])
 
       await getExemptionsController.handler(mockRequest, mockH)
 
@@ -234,63 +178,24 @@ describe('getExemptionsController', () => {
       expect(responseValue[1].status).toBe(EXEMPTION_STATUS.DRAFT)
     })
 
-    it('should sort by status first, then by project name within each status group', async () => {
-      const mockExemptions = [
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439011'),
-          status: EXEMPTION_STATUS.CLOSED,
-          projectName: 'Alpha Closed Project',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439012'),
-          status: EXEMPTION_STATUS.DRAFT,
-          projectName: 'Other Draft Project',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439013'),
-          status: EXEMPTION_STATUS.CLOSED,
-          projectName: 'Beta Closed Project',
-          contactId: 'test-contact-id'
-        },
-        {
-          _id: new ObjectId('507f1f77bcf86cd799439014'),
-          status: EXEMPTION_STATUS.DRAFT,
-          projectName: 'Alpha Draft Project',
-          contactId: 'test-contact-id'
-        }
-      ]
-
-      mockCollection.find.mockReturnValue({
-        toArray: jest.fn().mockResolvedValue(mockExemptions)
-      })
+    it('should call sort with projectName in descending order', async () => {
+      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
-      const responseValue = mockH.response.mock.calls[0][0].value
-
-      expect(responseValue).toHaveLength(4)
-
-      expect(responseValue[0].status).toBe(EXEMPTION_STATUS.DRAFT)
-      expect(responseValue[0].projectName).toBe('Alpha Draft Project')
-      expect(responseValue[1].status).toBe(EXEMPTION_STATUS.DRAFT)
-      expect(responseValue[1].projectName).toBe('Other Draft Project')
-
-      expect(responseValue[2].status).toBe(EXEMPTION_STATUS.CLOSED)
-      expect(responseValue[2].projectName).toBe('Alpha Closed Project')
-      expect(responseValue[3].status).toBe(EXEMPTION_STATUS.CLOSED)
-      expect(responseValue[3].projectName).toBe('Beta Closed Project')
+      expect(mockCollection.find().sort).toHaveBeenCalledWith({
+        projectName: 1
+      })
     })
   })
 
-  describe('sortByStatusAndProjectName', () => {
+  describe('sortByStatus', () => {
     it('should put DRAFTs at the top', () => {
       const exemptions = [
         { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' },
         { status: EXEMPTION_STATUS.CLOSED, projectName: 'Closed Project' }
       ]
-      const result = sortByStatusAndProjectName(exemptions)
+      const result = sortByStatus(exemptions)
       expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
       expect(result[1].status).toBe(EXEMPTION_STATUS.CLOSED)
     })
@@ -300,7 +205,7 @@ describe('getExemptionsController', () => {
         { status: 'UNKNOWN_STATUS', projectName: 'Unknown Project' },
         { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' }
       ]
-      const result = sortByStatusAndProjectName(exemptions)
+      const result = sortByStatus(exemptions)
       expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
       expect(result[1].status).toBe('UNKNOWN_STATUS')
       expect(result[1].projectName).toBe('Unknown Project')
