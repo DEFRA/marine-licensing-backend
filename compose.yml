@@ -86,11 +86,14 @@ services:
       NODE_ENV: development
       LOCALSTACK_ENDPOINT: http://localstack:4566
       MONGO_URI: mongodb://mongodb:27017/
+      DEFRA_ID_ENABLED: true
     networks:
       - cdp-tenant
     volumes:
       - ./src:/home/node/src
       - ./package.json:/home/node/package.json
+    extra_hosts:
+      - 'localhost:host-gateway'
 
 ################################################################################
 

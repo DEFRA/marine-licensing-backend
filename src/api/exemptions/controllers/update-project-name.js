@@ -2,9 +2,15 @@ import Boom from '@hapi/boom'
 import { updateProjectName } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const updateProjectNameController = {
   options: {
+    payload: {
+      parse: true,
+      output: 'data'
+    },
+    pre: [{ method: authorizeOwnership }],
     validate: {
       query: false,
       payload: updateProjectName
