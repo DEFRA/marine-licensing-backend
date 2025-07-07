@@ -195,7 +195,7 @@ describe('getExemptionsController', () => {
         { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' },
         { status: EXEMPTION_STATUS.CLOSED, projectName: 'Closed Project' }
       ]
-      const result = sortByStatus(exemptions)
+      const result = exemptions.sort(sortByStatus)
       expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
       expect(result[1].status).toBe(EXEMPTION_STATUS.CLOSED)
     })
@@ -205,7 +205,7 @@ describe('getExemptionsController', () => {
         { status: 'UNKNOWN_STATUS', projectName: 'Unknown Project' },
         { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' }
       ]
-      const result = sortByStatus(exemptions)
+      const result = exemptions.sort(sortByStatus)
       expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
       expect(result[1].status).toBe('UNKNOWN_STATUS')
       expect(result[1].projectName).toBe('Unknown Project')
