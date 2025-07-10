@@ -2,6 +2,10 @@ import Boom from '@hapi/boom'
 import { projectName } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_TYPE
+} from '../../../common/constants/exemption.js'
 
 export const createProjectNameController = {
   options: {
@@ -21,6 +25,8 @@ export const createProjectNameController = {
 
       const result = await db.collection('exemptions').insertOne({
         projectName: payload.projectName,
+        status: EXEMPTION_STATUS.DRAFT,
+        type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
         contactId
       })
 
