@@ -76,8 +76,7 @@ const osgb36CoordinateSchema = joi.object({
     })
 })
 
-// POST request validation
-export const multipleCoordinatesPostSchema = joi
+export const multipleCoordinatesPatchSchema = joi
   .object({
     coordinateSystem: joi
       .string()
@@ -102,6 +101,8 @@ export const multipleCoordinatesPostSchema = joi
       })
   })
   .append(exemptionId)
+
+export const multipleCoordinatesPostSchema = multipleCoordinatesPatchSchema
 
 export const multipleCoordinatesGetParamsSchema = joi.object({
   exemptionId: joi.string().length(24).hex().required().messages({
