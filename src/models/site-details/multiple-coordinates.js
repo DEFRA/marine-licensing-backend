@@ -13,6 +13,7 @@ import {
 } from '../../common/constants/coordinates.js'
 
 const NUMBER_RANGE_ERROR = 'number.range'
+const MIN_POLYGON_COORDINATES = 3
 
 const wgs84CoordinateSchema = joi.object({
   latitude: joi
@@ -103,7 +104,7 @@ export const multipleCoordinatesPatchSchema = joi
       }),
     coordinates: joi
       .array()
-      .min(3)
+      .min(MIN_POLYGON_COORDINATES)
       .when('coordinateSystem', {
         is: COORDINATE_SYSTEMS.WGS84,
         then: joi.array().items(wgs84CoordinateSchema),
