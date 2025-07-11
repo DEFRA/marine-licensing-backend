@@ -1,10 +1,11 @@
 import joi from 'joi'
-
-const MIN_LATITUDE = -90
-const MAX_LATITUDE = 90
-const MIN_LONGITUDE = -180
-const MAX_LONGITUDE = 180
-const LAT_LONG_DECIMAL_PLACES = 6
+import {
+  LAT_LONG_DECIMAL_PLACES,
+  MAX_LATITUDE,
+  MAX_LONGITUDE,
+  MIN_LATITUDE,
+  MIN_LONGITUDE
+} from '../../common/constants/coordinates.js'
 
 const validateDecimals = (value, helpers) => {
   const decimalParts = value.split('.')

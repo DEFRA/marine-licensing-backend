@@ -1,7 +1,7 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { multipleCoordinatesPatchSchema } from '../../../models/multiple-coordinates.js'
+import { multipleCoordinatesPatchSchema } from '../../../models/site-details/multiple-coordinates.js'
 import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const updateMultipleCoordinatesController = {

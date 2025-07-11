@@ -1,9 +1,10 @@
 import joi from 'joi'
-
-const MIN_EASTINGS_LENGTH = 100000
-const MAX_EASTINGS_LENGTH = 999999
-const MIN_NORTHINGS_LENGTH = 100000
-const MAX_NORTHINGS_LENGTH = 9999999
+import {
+  MIN_EASTINGS_LENGTH,
+  MAX_EASTINGS_LENGTH,
+  MIN_NORTHINGS_LENGTH,
+  MAX_NORTHINGS_LENGTH
+} from '../../common/constants/coordinates.js'
 
 const validateCoordinates = (value, helpers, type) => {
   const coordinate = Number(value)

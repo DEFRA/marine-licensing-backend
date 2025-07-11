@@ -3,7 +3,7 @@ import {
   multipleCoordinatesPostSchema,
   multipleCoordinatesGetParamsSchema
 } from './multiple-coordinates.js'
-import { COORDINATE_SYSTEMS } from '../common/constants/coordinates.js'
+import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 
 describe('Multiple Coordinates Validation Schema', () => {
   const validExemptionId = new ObjectId().toHexString()

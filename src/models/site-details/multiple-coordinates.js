@@ -1,6 +1,18 @@
 import joi from 'joi'
-import { exemptionId } from './shared-models.js'
-import { COORDINATE_SYSTEMS } from '../common/constants/coordinates.js'
+import { exemptionId } from '../shared-models.js'
+import {
+  COORDINATE_SYSTEMS,
+  MIN_LATITUDE,
+  MAX_LATITUDE,
+  MIN_LONGITUDE,
+  MAX_LONGITUDE,
+  MIN_EASTINGS_LENGTH,
+  MAX_EASTINGS_LENGTH,
+  MIN_NORTHINGS_LENGTH,
+  MAX_NORTHINGS_LENGTH
+} from '../../common/constants/coordinates.js'
+
+const NUMBER_RANGE_ERROR = 'number.range'
 
 const wgs84CoordinateSchema = joi.object({
   latitude: joi
@@ -9,8 +21,8 @@ const wgs84CoordinateSchema = joi.object({
     .pattern(/^-?\d+\.\d{6}$/)
     .custom((value, helpers) => {
       const latitude = parseFloat(value)
-      if (latitude < -90 || latitude > 90) {
-        return helpers.error('number.range')
+      if (latitude < MIN_LATITUDE || latitude > MAX_LATITUDE) {
+        return helpers.error(NUMBER_RANGE_ERROR)
       }
       return value
     })
@@ -26,8 +38,8 @@ const wgs84CoordinateSchema = joi.object({
     .pattern(/^-?\d+\.\d{6}$/)
     .custom((value, helpers) => {
       const longitude = parseFloat(value)
-      if (longitude < -180 || longitude > 180) {
-        return helpers.error('number.range')
+      if (longitude < MIN_LONGITUDE || longitude > MAX_LONGITUDE) {
+        return helpers.error(NUMBER_RANGE_ERROR)
       }
       return value
     })
@@ -46,8 +58,8 @@ const osgb36CoordinateSchema = joi.object({
     .pattern(/^\d{6}$/)
     .custom((value, helpers) => {
       const eastings = parseInt(value, 10)
-      if (eastings < 100000 || eastings > 999999) {
-        return helpers.error('number.range')
+      if (eastings < MIN_EASTINGS_LENGTH || eastings > MAX_EASTINGS_LENGTH) {
+        return helpers.error(NUMBER_RANGE_ERROR)
       }
       return value
     })
@@ -63,8 +75,11 @@ const osgb36CoordinateSchema = joi.object({
     .pattern(/^\d{6,7}$/)
     .custom((value, helpers) => {
       const northings = parseInt(value, 10)
-      if (northings < 100000 || northings > 9999999) {
-        return helpers.error('number.range')
+      if (
+        northings < MIN_NORTHINGS_LENGTH ||
+        northings > MAX_NORTHINGS_LENGTH
+      ) {
+        return helpers.error(NUMBER_RANGE_ERROR)
       }
       return value
     })
