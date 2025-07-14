@@ -444,7 +444,7 @@ describe('GeoParser', () => {
 
       // Mock Buffer.byteLength to return a size that exceeds the limit
       const originalByteLength = Buffer.byteLength
-      Buffer.byteLength = jest.fn(() => 600000000) // 600MB > 500MB limit
+      Buffer.byteLength = jest.fn(() => 600_000_000) // 600MB > 500MB limit
 
       const geoJSON = {
         type: 'FeatureCollection',

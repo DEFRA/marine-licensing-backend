@@ -105,12 +105,10 @@ export class ShapefileParser {
    */
   async parseFile(filename) {
     try {
-      // Extract zip file
       const extractDir = await this.extractZip(filename)
       logger.debug({ extractDir }, 'Extracting zip')
 
       try {
-        // Find all shapefiles
         const shapefiles = await this.findShapefiles(extractDir)
 
         logger.debug(

@@ -6,7 +6,6 @@ import { join } from 'path'
 import AdmZip from 'adm-zip'
 import * as path from 'node:path'
 
-// Mock dependencies
 jest.mock('shapefile', () => ({
   read: jest.fn()
 }))
@@ -80,16 +79,16 @@ describe('ShapefileParser', () => {
       const parser = new ShapefileParser()
 
       expect(parser.options).toEqual({
-        maxFiles: 10000,
-        maxSize: 1000000000,
+        maxFiles: 10_000,
+        maxSize: 1_000_000_000,
         thresholdRatio: 10
       })
     })
 
     it('should initialize with custom options', () => {
       const customOptions = {
-        maxFiles: 5000,
-        maxSize: 500000000,
+        maxFiles: 5_000,
+        maxSize: 500_000_000,
         thresholdRatio: 5
       }
 
@@ -100,14 +99,14 @@ describe('ShapefileParser', () => {
 
     it('should merge custom options with defaults', () => {
       const customOptions = {
-        maxFiles: 5000
+        maxFiles: 5_000
       }
 
       const parser = new ShapefileParser(customOptions)
 
       expect(parser.options).toEqual({
-        maxFiles: 5000,
-        maxSize: 1000000000,
+        maxFiles: 5_000,
+        maxSize: 1_000_000_000,
         thresholdRatio: 10
       })
     })
@@ -124,8 +123,8 @@ describe('ShapefileParser', () => {
 
     it('should return custom options', () => {
       const customOptions = {
-        maxFiles: 5000,
-        maxSize: 500000000,
+        maxFiles: 5_000,
+        maxSize: 500_000_000,
         thresholdRatio: 5
       }
       const parser = new ShapefileParser(customOptions)
@@ -204,8 +203,8 @@ describe('ShapefileParser', () => {
         {
           entryName: 'large.shp',
           isDirectory: false,
-          getData: () => Buffer.alloc(2000000000), // 2GB
-          header: { compressedSize: 1000000000 }
+          getData: () => Buffer.alloc(2_000_000_000), // 2GB
+          header: { compressedSize: 1_000_000_000 }
         }
       ]
       mockAdmZip.getEntries.mockReturnValue(largeEntries)
@@ -697,7 +696,7 @@ describe('ShapefileParser', () => {
         {
           entryName: 'bomb.shp',
           isDirectory: false,
-          getData: () => Buffer.alloc(1000000), // 1MB uncompressed
+          getData: () => Buffer.alloc(1_000_000), // 1MB uncompressed
           header: { compressedSize: 1000 } // 1KB compressed = 1000:1 ratio
         }
       ]
