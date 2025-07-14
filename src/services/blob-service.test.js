@@ -1,4 +1,3 @@
-// Mock logger first
 import {
   S3Client,
   HeadObjectCommand,
@@ -22,7 +21,6 @@ jest.mock('../common/helpers/logging/logger.js', () => ({
   createLogger: jest.fn().mockReturnValue(mockLogger)
 }))
 
-// Mock config
 jest.mock('../config.js', () => ({
   config: {
     get: jest.fn((key) => {
@@ -41,14 +39,12 @@ jest.mock('../config.js', () => ({
   }
 }))
 
-// Mock AWS SDK
 jest.mock('@aws-sdk/client-s3', () => ({
   S3Client: jest.fn(),
   HeadObjectCommand: jest.fn(),
   GetObjectCommand: jest.fn()
 }))
 
-// Mock file system operations
 jest.mock('fs', () => ({
   createWriteStream: jest.fn()
 }))
@@ -62,7 +58,6 @@ jest.mock('stream/promises', () => ({
   pipeline: jest.fn()
 }))
 
-// Import BlobService after mocks are set up
 let BlobService
 
 describe('BlobService', () => {
@@ -71,7 +66,7 @@ describe('BlobService', () => {
   let mockSend
 
   beforeAll(async () => {
-    // Import BlobService after mocks are set up
+    // Import BlobService _after_ mocks are set up
     const module = await import('./blob-service.js')
     BlobService = module.BlobService
   })
@@ -79,30 +74,27 @@ describe('BlobService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Reset logger mock
     mockLogger.info.mockReset()
     mockLogger.warn.mockReset()
     mockLogger.error.mockReset()
     mockLogger.debug.mockReset()
 
-    // Mock S3Client
     mockSend = jest.fn()
     mockS3Client = {
       send: mockSend
     }
     S3Client.mockReturnValue(mockS3Client)
 
-    // Mock config values
     config.get.mockImplementation((key) => {
       const configMap = {
         aws: {
           region: 'eu-west-2',
           s3: {
-            timeout: 30000,
+            timeout: 30_000,
             endpoint: undefined
           }
         },
-        'cdp.maxFileSize': 50000000
+        'cdp.maxFileSize': 50_000_000
       }
       return configMap[key]
     })
@@ -120,17 +112,15 @@ describe('BlobService', () => {
       expect(S3Client).toHaveBeenCalledWith({
         region: 'eu-west-2',
         requestHandler: {
-          requestTimeout: 30000
+          requestTimeout: 30_000
         }
       })
     })
 
     it('should create S3Client with custom endpoint for localstack', () => {
-      // Given - custom S3Client mock
       const customMockS3Client = { send: jest.fn() }
       S3Client.mockReturnValue(customMockS3Client)
 
-      // Create service with custom config
       const service = new BlobService()
       service.client = new S3Client({
         region: 'eu-west-2',
@@ -141,7 +131,6 @@ describe('BlobService', () => {
         }
       })
 
-      // Then - should configure S3Client with endpoint
       expect(S3Client).toHaveBeenCalledWith({
         region: 'eu-west-2',
         endpoint: 'http://localhost:4566',
@@ -153,13 +142,10 @@ describe('BlobService', () => {
     })
 
     it('should accept custom S3Client', () => {
-      // Given - custom S3Client
       const customClient = { send: jest.fn() }
 
-      // When - creating service with custom client
       const service = new BlobService(customClient)
 
-      // Then - should use custom client
       expect(service.client).toBe(customClient)
     })
   })
@@ -169,7 +155,6 @@ describe('BlobService', () => {
     const s3Key = 'test-key.kml'
 
     it('should successfully retrieve S3 object metadata', async () => {
-      // Given - successful S3 response
       const mockResponse = {
         ContentLength: 1024,
         LastModified: new Date('2023-01-01'),
@@ -178,10 +163,8 @@ describe('BlobService', () => {
       }
       mockSend.mockResolvedValue(mockResponse)
 
-      // When - getting metadata
       const result = await blobService.getMetadata(s3Bucket, s3Key)
 
-      // Then - should return formatted metadata
       expect(result).toEqual({
         size: 1024,
         lastModified: mockResponse.LastModified,
@@ -196,59 +179,49 @@ describe('BlobService', () => {
     })
 
     it('should throw 404 when S3 object not found', async () => {
-      // Given - S3 NoSuchKey error
       const error = new Error('NoSuchKey')
       error.name = 'NoSuchKey'
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw not found error
       await expect(blobService.getMetadata(s3Bucket, s3Key)).rejects.toThrow(
         Boom.notFound('File not found in S3')
       )
     })
 
     it('should throw 404 when S3 object not found (NotFound error)', async () => {
-      // Given - S3 NotFound error
       const error = new Error('NotFound')
       error.name = 'NotFound'
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw not found error
       await expect(blobService.getMetadata(s3Bucket, s3Key)).rejects.toThrow(
         Boom.notFound('File not found in S3')
       )
     })
 
     it('should throw 408 when S3 operation times out', async () => {
-      // Given - S3 timeout error
       const error = new Error('RequestTimeout')
       error.name = 'RequestTimeout'
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw timeout error
       await expect(blobService.getMetadata(s3Bucket, s3Key)).rejects.toThrow(
         Boom.clientTimeout('S3 operation timed out')
       )
     })
 
     it('should throw 408 when S3 operation times out (TimeoutError)', async () => {
-      // Given - S3 timeout error
       const error = new Error('TimeoutError')
       error.name = 'TimeoutError'
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw timeout error
       await expect(blobService.getMetadata(s3Bucket, s3Key)).rejects.toThrow(
         Boom.clientTimeout('S3 operation timed out')
       )
     })
 
     it('should throw 500 for other S3 errors', async () => {
-      // Given - generic S3 error
       const error = new Error('Access denied')
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw internal server error
       await expect(blobService.getMetadata(s3Bucket, s3Key)).rejects.toThrow(
         Boom.internal('S3 metadata retrieval failed: Access denied')
       )
