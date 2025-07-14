@@ -28,11 +28,11 @@ jest.mock('../config.js', () => ({
         aws: {
           region: 'eu-west-2',
           s3: {
-            timeout: 30000,
+            timeout: 30_000,
             endpoint: undefined
           }
         },
-        'cdp.maxFileSize': 50000000
+        'cdp.maxFileSize': 50_000_000
       }
       return configs[key]
     })
@@ -127,7 +127,7 @@ describe('BlobService', () => {
         endpoint: 'http://localhost:4566',
         forcePathStyle: true,
         requestHandler: {
-          requestTimeout: 30000
+          requestTimeout: 30_000
         }
       })
 
@@ -136,7 +136,7 @@ describe('BlobService', () => {
         endpoint: 'http://localhost:4566',
         forcePathStyle: true,
         requestHandler: {
-          requestTimeout: 30000
+          requestTimeout: 30_000
         }
       })
     })
@@ -349,7 +349,7 @@ describe('BlobService', () => {
 
     it('should throw 413 when file exceeds size limit by 1 byte', async () => {
       const mockMetadata = {
-        size: 50000001, // 1 byte over limit
+        size: 50_000_001, // 1 byte over limit
         lastModified: new Date(),
         contentType: 'application/vnd.google-earth.kml+xml',
         etag: '"abc123"'
@@ -367,7 +367,7 @@ describe('BlobService', () => {
 
     it('should allow file when exactly at size limit', async () => {
       const mockMetadata = {
-        size: 50000000, // exactly at limit
+        size: 50_000_000, // exactly at limit
         lastModified: new Date(),
         contentType: 'application/vnd.google-earth.kml+xml',
         etag: '"abc123"'
@@ -459,21 +459,21 @@ describe('BlobService', () => {
   describe('Configuration variations', () => {
     it('should handle different timeout values', () => {
       const service = new BlobService()
-      service.timeout = 60000
+      service.timeout = 60_000
 
       const customClient = new S3Client({
         region: 'us-east-1',
         requestHandler: {
-          requestTimeout: 60000
+          requestTimeout: 60_000
         }
       })
       service.client = customClient
 
-      expect(service.timeout).toBe(60000)
+      expect(service.timeout).toBe(60_000)
       expect(S3Client).toHaveBeenCalledWith({
         region: 'us-east-1',
         requestHandler: {
-          requestTimeout: 60000
+          requestTimeout: 60_000
         }
       })
     })
@@ -484,7 +484,7 @@ describe('BlobService', () => {
       const customClient = new S3Client({
         region: 'ap-southeast-2',
         requestHandler: {
-          requestTimeout: 30000
+          requestTimeout: 30_000
         }
       })
       service.client = customClient
@@ -492,7 +492,7 @@ describe('BlobService', () => {
       expect(S3Client).toHaveBeenCalledWith({
         region: 'ap-southeast-2',
         requestHandler: {
-          requestTimeout: 30000
+          requestTimeout: 30_000
         }
       })
     })
