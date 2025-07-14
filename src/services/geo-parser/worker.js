@@ -2,9 +2,9 @@ import { parentPort, workerData } from 'worker_threads'
 import { kmlParser } from './kml-parser.js'
 import { shapefileParser } from './shapefile-parser.js'
 
-async function processFile() {
+export async function processFile(data = workerData, messagePort = parentPort) {
   try {
-    const { filePath, fileType } = workerData
+    const { filePath, fileType } = data
     let geoJSON
 
     if (fileType === 'kml') {
@@ -15,10 +15,13 @@ async function processFile() {
       throw new Error(`Unsupported file type: ${fileType}`)
     }
 
-    parentPort.postMessage({ geoJSON })
+    messagePort.postMessage({ geoJSON })
   } catch (error) {
-    parentPort.postMessage({ error: error.message })
+    messagePort.postMessage({ error: error.message })
   }
 }
 
-processFile()
+// Run automatically when loaded as a worker thread (not in test/import context)
+if (parentPort && workerData) {
+  processFile()
+}

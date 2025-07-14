@@ -77,7 +77,7 @@ class BlobService {
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.requestTimeout('S3 operation timed out')
+        throw Boom.clientTimeout('S3 operation timed out')
       }
 
       throw Boom.internal(`S3 metadata retrieval failed: ${error.message}`)
@@ -130,7 +130,7 @@ class BlobService {
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.requestTimeout('S3 download timed out')
+        throw Boom.clientTimeout('S3 download timed out')
       }
 
       throw Boom.internal(`S3 download failed: ${error.message}`)
@@ -184,4 +184,5 @@ class BlobService {
   }
 }
 
+export { BlobService }
 export const blobService = new BlobService()

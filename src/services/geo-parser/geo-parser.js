@@ -81,7 +81,7 @@ export class GeoParser {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         worker.terminate()
-        reject(Boom.requestTimeout('Processing timeout exceeded'))
+        reject(Boom.clientTimeout('Processing timeout exceeded'))
       }, this.processingTimeout)
 
       // This is relative to the project root
