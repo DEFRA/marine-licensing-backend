@@ -261,19 +261,16 @@ describe('BlobService', () => {
     const tempPath = '/tmp/test-file'
 
     beforeEach(() => {
-      // Mock createWriteStream
       const mockWriteStream = {
         write: jest.fn(),
         end: jest.fn()
       }
       createWriteStream.mockReturnValue(mockWriteStream)
 
-      // Mock pipeline
       pipeline.mockResolvedValue()
     })
 
     it('should successfully download file from S3', async () => {
-      // Given - successful S3 response with body
       const mockBody = new Readable({
         read() {
           this.push('test content')
@@ -285,10 +282,8 @@ describe('BlobService', () => {
       }
       mockSend.mockResolvedValue(mockResponse)
 
-      // When - downloading file
       const result = await blobService.downloadFile(s3Bucket, s3Key, tempPath)
 
-      // Then - should download successfully
       expect(result).toBe(tempPath)
       expect(mockSend).toHaveBeenCalledWith(expect.any(GetObjectCommand))
       expect(GetObjectCommand).toHaveBeenCalledWith({
@@ -300,13 +295,11 @@ describe('BlobService', () => {
     })
 
     it('should throw error when S3 response has no body', async () => {
-      // Given - S3 response without body
       const mockResponse = {
         Body: null
       }
       mockSend.mockResolvedValue(mockResponse)
 
-      // When/Then - should throw error
       await expect(
         blobService.downloadFile(s3Bucket, s3Key, tempPath)
       ).rejects.toThrow(
@@ -315,31 +308,26 @@ describe('BlobService', () => {
     })
 
     it('should throw 404 when S3 file not found', async () => {
-      // Given - S3 NoSuchKey error
       const error = new Error('NoSuchKey')
       error.name = 'NoSuchKey'
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw not found error
       await expect(
         blobService.downloadFile(s3Bucket, s3Key, tempPath)
       ).rejects.toThrow(Boom.notFound('File not found in S3'))
     })
 
     it('should throw 408 when S3 download times out', async () => {
-      // Given - S3 timeout error
       const error = new Error('RequestTimeout')
       error.name = 'RequestTimeout'
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw timeout error
       await expect(
         blobService.downloadFile(s3Bucket, s3Key, tempPath)
       ).rejects.toThrow(Boom.clientTimeout('S3 download timed out'))
     })
 
     it('should throw 500 for pipeline errors', async () => {
-      // Given - pipeline error
       const mockBody = new Readable({
         read() {
           this.push('test content')
@@ -352,18 +340,15 @@ describe('BlobService', () => {
       mockSend.mockResolvedValue(mockResponse)
       pipeline.mockRejectedValue(new Error('Pipeline failed'))
 
-      // When/Then - should throw internal server error
       await expect(
         blobService.downloadFile(s3Bucket, s3Key, tempPath)
       ).rejects.toThrow(Boom.internal('S3 download failed: Pipeline failed'))
     })
 
     it('should throw 500 for other S3 errors', async () => {
-      // Given - generic S3 error
       const error = new Error('Access denied')
       mockSend.mockRejectedValue(error)
 
-      // When/Then - should throw internal server error
       await expect(
         blobService.downloadFile(s3Bucket, s3Key, tempPath)
       ).rejects.toThrow(Boom.internal('S3 download failed: Access denied'))
@@ -375,7 +360,6 @@ describe('BlobService', () => {
     const s3Key = 'test-key.kml'
 
     it('should validate file size within limits', async () => {
-      // Given - file size within limits
       const mockMetadata = {
         size: 1024,
         lastModified: new Date(),
@@ -384,16 +368,13 @@ describe('BlobService', () => {
       }
       jest.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
 
-      // When - validating file size
       const result = await blobService.validateFileSize(s3Bucket, s3Key)
 
-      // Then - should return metadata
       expect(result).toEqual(mockMetadata)
       expect(blobService.getMetadata).toHaveBeenCalledWith(s3Bucket, s3Key)
     })
 
     it('should throw 413 when file exceeds size limit by 1 byte', async () => {
-      // Given - file size 1 byte over limit
       const mockMetadata = {
         size: 50000001, // 1 byte over limit
         lastModified: new Date(),
@@ -402,7 +383,6 @@ describe('BlobService', () => {
       }
       jest.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
 
-      // When/Then - should throw entity too large error
       await expect(
         blobService.validateFileSize(s3Bucket, s3Key)
       ).rejects.toThrow(
@@ -413,7 +393,6 @@ describe('BlobService', () => {
     })
 
     it('should allow file when exactly at size limit', async () => {
-      // Given - file size exactly at limit
       const mockMetadata = {
         size: 50000000, // exactly at limit
         lastModified: new Date(),
@@ -422,20 +401,17 @@ describe('BlobService', () => {
       }
       jest.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
 
-      // When - validating file size
       const result = await blobService.validateFileSize(s3Bucket, s3Key)
 
-      // Then - should return metadata without throwing
+      // Should return metadata without throwing
       expect(result).toEqual(mockMetadata)
       expect(blobService.getMetadata).toHaveBeenCalledWith(s3Bucket, s3Key)
     })
 
     it('should propagate getMetadata errors', async () => {
-      // Given - getMetadata throws error
       const error = Boom.notFound('File not found')
       jest.spyOn(blobService, 'getMetadata').mockRejectedValue(error)
 
-      // When/Then - should propagate error
       await expect(
         blobService.validateFileSize(s3Bucket, s3Key)
       ).rejects.toThrow(error)
@@ -448,35 +424,25 @@ describe('BlobService', () => {
     })
 
     it('should create temporary directory', async () => {
-      // Given - successful mkdir operation
-
-      // When - creating temp directory
       const result = await blobService.createTempDirectory()
 
-      // Then - should create directory and return path
       expect(result).toMatch(/geo-parser\/[a-f0-9-]+$/)
       expect(mkdir).toHaveBeenCalledWith(result, { recursive: true })
     })
 
     it('should throw error when mkdir fails', async () => {
-      // Given - mkdir fails
       const error = new Error('Permission denied')
       mkdir.mockRejectedValue(error)
 
-      // When/Then - should throw error
       await expect(blobService.createTempDirectory()).rejects.toThrow(
         'Permission denied'
       )
     })
 
     it('should create unique directory names', async () => {
-      // Given - multiple calls
-
-      // When - creating multiple temp directories
       const dir1 = await blobService.createTempDirectory()
       const dir2 = await blobService.createTempDirectory()
 
-      // Then - should create unique directories
       expect(dir1).not.toBe(dir2)
       expect(mkdir).toHaveBeenCalledTimes(2)
     })
@@ -486,53 +452,42 @@ describe('BlobService', () => {
     const tempDir = '/tmp/test-directory'
 
     it('should successfully cleanup temporary directory', async () => {
-      // Given - successful rm operation
       rm.mockResolvedValue()
 
-      // When - cleaning up temp directory
       await blobService.cleanupTempDirectory(tempDir)
 
-      // Then - should remove directory recursively
       expect(rm).toHaveBeenCalledWith(tempDir, { recursive: true, force: true })
     })
 
     it('should not throw error when cleanup fails', async () => {
-      // Given - rm fails
       const error = new Error('Directory not found')
       rm.mockRejectedValue(error)
 
-      // When - cleaning up temp directory
       await expect(
         blobService.cleanupTempDirectory(tempDir)
       ).resolves.not.toThrow()
 
-      // Then - should handle error gracefully
       expect(rm).toHaveBeenCalledWith(tempDir, { recursive: true, force: true })
     })
 
     it('should handle non-existent directory gracefully', async () => {
-      // Given - directory doesn't exist
       const error = new Error('ENOENT: no such file or directory')
       error.code = 'ENOENT'
       rm.mockRejectedValue(error)
 
-      // When - cleaning up non-existent directory
       await expect(
         blobService.cleanupTempDirectory(tempDir)
       ).resolves.not.toThrow()
 
-      // Then - should handle gracefully
       expect(rm).toHaveBeenCalledWith(tempDir, { recursive: true, force: true })
     })
   })
 
   describe('Configuration variations', () => {
     it('should handle different timeout values', () => {
-      // Given - service with custom timeout
       const service = new BlobService()
       service.timeout = 60000
 
-      // Create S3Client with custom timeout config
       const customClient = new S3Client({
         region: 'us-east-1',
         requestHandler: {
@@ -541,7 +496,6 @@ describe('BlobService', () => {
       })
       service.client = customClient
 
-      // Then - should use correct timeout
       expect(service.timeout).toBe(60000)
       expect(S3Client).toHaveBeenCalledWith({
         region: 'us-east-1',
@@ -552,10 +506,8 @@ describe('BlobService', () => {
     })
 
     it('should handle different regions', () => {
-      // Given - service with custom region
       const service = new BlobService()
 
-      // Create S3Client with different region config
       const customClient = new S3Client({
         region: 'ap-southeast-2',
         requestHandler: {
@@ -564,7 +516,6 @@ describe('BlobService', () => {
       })
       service.client = customClient
 
-      // Then - should use correct region
       expect(S3Client).toHaveBeenCalledWith({
         region: 'ap-southeast-2',
         requestHandler: {
@@ -574,30 +525,27 @@ describe('BlobService', () => {
     })
 
     it('should handle different max file sizes', async () => {
-      // Given - different max file size configuration
       config.get.mockImplementation((key) => {
         const configMap = {
           'aws.region': 'eu-west-2',
-          'aws.s3.timeout': 30000,
+          'aws.s3.timeout': 30_000,
           'aws.s3.endpoint': undefined,
-          'cdp.maxFileSize': 100000000 // 100MB
+          'cdp.maxFileSize': 100_000_000 // 100MB
         }
         return configMap[key]
       })
 
       const service = new BlobService()
       const mockMetadata = {
-        size: 80000000, // 80MB
+        size: 80_000_000, // 80MB
         lastModified: new Date(),
         contentType: 'application/vnd.google-earth.kml+xml',
         etag: '"abc123"'
       }
       jest.spyOn(service, 'getMetadata').mockResolvedValue(mockMetadata)
 
-      // When - validating file size
       const result = await service.validateFileSize('bucket', 'key')
 
-      // Then - should accept larger file
       expect(result).toEqual(mockMetadata)
     })
   })

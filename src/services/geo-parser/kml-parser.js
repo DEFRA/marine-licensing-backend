@@ -11,15 +11,12 @@ export class KmlParser {
     logger.debug({ filePath }, 'Parsing KML file')
 
     try {
-      // Read the KML file
       const kmlContent = await readFile(filePath, 'utf-8')
 
-      // Parse with JSDOM
       const dom = new JSDOM(kmlContent, {
         contentType: 'application/xml'
       })
 
-      // Convert to GeoJSON
       const geoJSON = togeojson.kml(dom.window.document)
 
       logger.debug(

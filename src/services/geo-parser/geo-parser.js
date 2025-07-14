@@ -2,8 +2,6 @@ import { Worker } from 'worker_threads'
 import { join } from 'path'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 import { blobService } from '../blob-service.js'
-import { kmlParser } from './kml-parser.js'
-import { shapefileParser } from './shapefile-parser.js'
 import Boom from '@hapi/boom'
 
 const logger = createLogger()
@@ -20,20 +18,14 @@ export class GeoParser {
     let tempDir = null
 
     try {
-      // Create temporary directory
       tempDir = await blobService.createTempDirectory()
-
-      // Validate file size before download
       await blobService.validateFileSize(s3Bucket, s3Key)
 
-      // Download file to temp directory
       const tempFilePath = join(tempDir, `file_${Date.now()}`)
       await blobService.downloadFile(s3Bucket, s3Key, tempFilePath)
 
-      // Parse the file based on type
       const geoJSON = await this.parseFile(tempFilePath, fileType)
 
-      // Validate the result
       this.validateGeoJSON(geoJSON)
 
       logger.info(
@@ -64,9 +56,7 @@ export class GeoParser {
 
       throw Boom.internal(`GeoJSON extraction failed: ${error.message}`)
     } finally {
-      // Clean up temporary directory
       if (tempDir) {
-        // Use setImmediate to clean up asynchronously
         setImmediate(() => {
           blobService.cleanupTempDirectory(tempDir)
         })
@@ -119,41 +109,6 @@ export class GeoParser {
         }
       })
     })
-  }
-
-  // For now, we'll parse directly without worker threads as it's simpler
-  // In a production environment, we'd use the worker thread approach above
-  async parseFileDirectly(filePath, fileType) {
-    logger.debug({ filePath, fileType }, 'Parsing file directly')
-
-    try {
-      let geoJSON
-
-      if (fileType === 'kml') {
-        geoJSON = await kmlParser.parseFile(filePath)
-      } else if (fileType === 'shapefile') {
-        geoJSON = await shapefileParser.parseFile(filePath)
-      } else {
-        throw Boom.badRequest(`Unsupported file type: ${fileType}`)
-      }
-
-      return geoJSON
-    } catch (error) {
-      logger.error(
-        {
-          filePath,
-          fileType,
-          error: error.message
-        },
-        'Failed to parse file directly'
-      )
-
-      if (error.isBoom) {
-        throw error
-      }
-
-      throw Boom.internal(`File parsing failed: ${error.message}`)
-    }
   }
 
   validateGeoJSON(geoJSON) {

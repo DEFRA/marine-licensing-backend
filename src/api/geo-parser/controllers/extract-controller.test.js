@@ -4,21 +4,18 @@ import { config } from '../../../config.js'
 import { StatusCodes } from 'http-status-codes'
 import Boom from '@hapi/boom'
 
-// Mock the geoParser service
 jest.mock('../../../services/geo-parser/geo-parser.js', () => ({
   geoParser: {
     extract: jest.fn()
   }
 }))
 
-// Mock config
 jest.mock('../../../config.js', () => ({
   config: {
     get: jest.fn()
   }
 }))
 
-// Mock logger
 jest.mock('../../../common/helpers/logging/logger.js', () => ({
   createLogger: jest.fn(() => ({
     info: jest.fn(),

@@ -1,17 +1,13 @@
 import { GeoParser } from './geo-parser.js'
 import { Worker } from 'worker_threads'
 import { blobService } from '../blob-service.js'
-import { kmlParser } from './kml-parser.js'
-import { shapefileParser } from './shapefile-parser.js'
 import Boom from '@hapi/boom'
 import { join } from 'path'
 
-// Mock worker threads
 jest.mock('worker_threads', () => ({
   Worker: jest.fn()
 }))
 
-// Mock blob service
 jest.mock('../blob-service.js', () => ({
   blobService: {
     createTempDirectory: jest.fn(),
@@ -21,20 +17,6 @@ jest.mock('../blob-service.js', () => ({
   }
 }))
 
-// Mock parsers
-jest.mock('./kml-parser.js', () => ({
-  kmlParser: {
-    parseFile: jest.fn()
-  }
-}))
-
-jest.mock('./shapefile-parser.js', () => ({
-  shapefileParser: {
-    parseFile: jest.fn()
-  }
-}))
-
-// Mock logger
 jest.mock('../../common/helpers/logging/logger.js', () => ({
   createLogger: jest.fn(() => ({
     info: jest.fn(),
@@ -44,7 +26,6 @@ jest.mock('../../common/helpers/logging/logger.js', () => ({
   }))
 }))
 
-// Mock path
 jest.mock('path', () => ({
   join: jest.fn()
 }))
@@ -59,7 +40,6 @@ describe('GeoParser', () => {
     // Mock setImmediate to execute synchronously
     global.setImmediate = jest.fn((cb) => cb())
 
-    // Mock worker
     mockWorker = {
       on: jest.fn(),
       terminate: jest.fn()
@@ -108,7 +88,6 @@ describe('GeoParser', () => {
       blobService.downloadFile.mockResolvedValue(tempFilePath)
       blobService.cleanupTempDirectory.mockResolvedValue()
 
-      // Mock successful parseFile
       jest.spyOn(geoParser, 'parseFile').mockResolvedValue(mockGeoJSON)
       jest.spyOn(geoParser, 'validateGeoJSON').mockReturnValue(true)
     })
@@ -347,74 +326,6 @@ describe('GeoParser', () => {
       await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow()
 
       expect(mockWorker.terminate).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('parseFileDirectly', () => {
-    const filePath = '/tmp/test-file.kml'
-    const mockGeoJSON = {
-      type: 'FeatureCollection',
-      features: []
-    }
-
-    beforeEach(() => {
-      kmlParser.parseFile.mockResolvedValue(mockGeoJSON)
-      shapefileParser.parseFile.mockResolvedValue(mockGeoJSON)
-    })
-
-    it('should parse KML file directly', async () => {
-      const fileType = 'kml'
-
-      const result = await geoParser.parseFileDirectly(filePath, fileType)
-
-      expect(result).toEqual(mockGeoJSON)
-      expect(kmlParser.parseFile).toHaveBeenCalledWith(filePath)
-      expect(shapefileParser.parseFile).not.toHaveBeenCalled()
-    })
-
-    it('should parse shapefile directly', async () => {
-      const fileType = 'shapefile'
-
-      const result = await geoParser.parseFileDirectly(filePath, fileType)
-
-      expect(result).toEqual(mockGeoJSON)
-      expect(shapefileParser.parseFile).toHaveBeenCalledWith(filePath)
-      expect(kmlParser.parseFile).not.toHaveBeenCalled()
-    })
-
-    it('should throw error for unsupported file type', async () => {
-      const fileType = 'unsupported'
-
-      await expect(
-        geoParser.parseFileDirectly(filePath, fileType)
-      ).rejects.toThrow(Boom.badRequest('Unsupported file type: unsupported'))
-    })
-
-    it('should handle KML parser errors', async () => {
-      const error = new Error('Parse failed')
-      kmlParser.parseFile.mockRejectedValue(error)
-
-      await expect(
-        geoParser.parseFileDirectly(filePath, 'kml')
-      ).rejects.toThrow(Boom.internal('File parsing failed: Parse failed'))
-    })
-
-    it('should handle shapefile parser errors', async () => {
-      const error = new Error('Parse failed')
-      shapefileParser.parseFile.mockRejectedValue(error)
-
-      await expect(
-        geoParser.parseFileDirectly(filePath, 'shapefile')
-      ).rejects.toThrow(Boom.internal('File parsing failed: Parse failed'))
-    })
-
-    it('should propagate Boom errors from parsers', async () => {
-      const error = Boom.badRequest('Invalid KML')
-      kmlParser.parseFile.mockRejectedValue(error)
-
-      await expect(
-        geoParser.parseFileDirectly(filePath, 'kml')
-      ).rejects.toThrow(error)
     })
   })
 

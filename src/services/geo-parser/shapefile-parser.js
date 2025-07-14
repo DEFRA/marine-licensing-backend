@@ -9,8 +9,8 @@ import * as path from 'node:path'
 const logger = createLogger()
 
 const DEFAULT_OPTIONS = {
-  maxFiles: 10000,
-  maxSize: 1000000000, // 1 GB
+  maxFiles: 10_000,
+  maxSize: 1_000_000_000, // 1 GB in bytes
   thresholdRatio: 10
 }
 

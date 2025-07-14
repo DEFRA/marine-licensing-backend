@@ -4,22 +4,18 @@ import { JSDOM } from 'jsdom'
 import * as togeojson from '@tmcw/togeojson'
 import Boom from '@hapi/boom'
 
-// Mock file system
 jest.mock('fs/promises', () => ({
   readFile: jest.fn()
 }))
 
-// Mock JSDOM
 jest.mock('jsdom', () => ({
   JSDOM: jest.fn()
 }))
 
-// Mock togeojson
 jest.mock('@tmcw/togeojson', () => ({
   kml: jest.fn()
 }))
 
-// Mock logger
 jest.mock('../../common/helpers/logging/logger.js', () => ({
   createLogger: jest.fn(() => ({
     debug: jest.fn(),
@@ -35,18 +31,15 @@ describe('KmlParser', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Mock DOM document
     mockDocument = {
       createElement: jest.fn(),
       documentElement: {}
     }
 
-    // Mock DOM window
     mockWindow = {
       document: mockDocument
     }
 
-    // Mock JSDOM instance
     JSDOM.mockReturnValue({
       window: mockWindow
     })

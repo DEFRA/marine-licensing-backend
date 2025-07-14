@@ -2,7 +2,6 @@ import { processFile } from './worker.js'
 import { kmlParser } from './kml-parser.js'
 import { shapefileParser } from './shapefile-parser.js'
 
-// Mock parsers
 jest.mock('./kml-parser.js', () => ({
   kmlParser: {
     parseFile: jest.fn()
@@ -21,7 +20,6 @@ describe('Worker', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Mock message port
     mockMessagePort = {
       postMessage: jest.fn()
     }

@@ -36,7 +36,6 @@ jest.mock('adm-zip', () => {
   }))
 })
 
-// Mock logger
 jest.mock('../../common/helpers/logging/logger.js', () => ({
   createLogger: jest.fn(() => ({
     debug: jest.fn(),
@@ -52,23 +51,18 @@ describe('ShapefileParser', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Mock os.tmpdir
     tmpdir.mockReturnValue('/tmp')
 
-    // Mock path.join
     join.mockImplementation((dir, file) => {
       if (file === 'shapefile-') return '/tmp/shapefile-'
       return `${dir}/${file}`
     })
     path.join.mockImplementation((dir, file) => `${dir}/${file}`)
 
-    // Mock mkdtemp
     mkdtemp.mockResolvedValue('/tmp/shapefile-test')
 
-    // Mock rm
     rm.mockResolvedValue()
 
-    // Mock AdmZip
     mockZipEntries = []
     mockAdmZip = {
       getEntries: jest.fn(() => mockZipEntries),
@@ -76,7 +70,6 @@ describe('ShapefileParser', () => {
     }
     AdmZip.mockImplementation(() => mockAdmZip)
 
-    // Mock glob
     glob.mockResolvedValue([])
 
     shapefileParser = new ShapefileParser()
@@ -123,7 +116,6 @@ describe('ShapefileParser', () => {
   describe('getSafeOptions', () => {
     it('should return current safety options', () => {
       const parser = new ShapefileParser()
-
       const options = parser.getSafeOptions()
 
       expect(options).toEqual(parser.options)
@@ -137,7 +129,6 @@ describe('ShapefileParser', () => {
         thresholdRatio: 5
       }
       const parser = new ShapefileParser(customOptions)
-
       const options = parser.getSafeOptions()
 
       expect(options).toEqual(customOptions)
@@ -148,7 +139,6 @@ describe('ShapefileParser', () => {
     const zipPath = '/tmp/test.zip'
 
     beforeEach(() => {
-      // Mock zip entries
       mockZipEntries = [
         {
           entryName: 'test.shp',
