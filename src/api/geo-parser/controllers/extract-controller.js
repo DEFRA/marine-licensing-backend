@@ -40,7 +40,6 @@ export const extractController = {
         throw Boom.forbidden('Invalid S3 bucket')
       }
 
-      // Extract GeoJSON from the file
       const geoJSON = await geoParser.extract(s3Bucket, s3Key, fileType)
 
       logger.info(
