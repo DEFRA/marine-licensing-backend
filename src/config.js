@@ -130,6 +130,42 @@ const config = convict({
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
     }
+  },
+  aws: {
+    region: {
+      doc: 'AWS region',
+      format: String,
+      default: 'eu-west-2',
+      env: 'AWS_REGION'
+    },
+    s3: {
+      endpoint: {
+        doc: 'AWS S3 Endpoint (needed for localstack)',
+        format: String,
+        default: 'http://localhost:4566',
+        env: 'AWS_S3_ENDPOINT'
+      },
+      timeout: {
+        doc: 'S3 operation timeout in milliseconds',
+        format: Number,
+        default: 30_000,
+        env: 'AWS_S3_TIMEOUT'
+      }
+    }
+  },
+  cdp: {
+    uploadBucket: {
+      doc: 'S3 bucket for file uploads - required for S3 bucket validation',
+      format: String,
+      default: 'mmo-uploads',
+      env: 'CDP_UPLOAD_BUCKET'
+    },
+    maxFileSize: {
+      doc: 'Maximum file size in bytes',
+      format: Number,
+      default: 50_000_000,
+      env: 'MAX_FILE_SIZE'
+    }
   }
 })
 
