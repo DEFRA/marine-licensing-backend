@@ -43,17 +43,14 @@ describe('Worker', () => {
 
   describe('processFile function', () => {
     it('should process KML file successfully', async () => {
-      // Given - KML file data
       const workerData = {
         filePath: '/path/to/test.kml',
         fileType: 'kml'
       }
       kmlParser.parseFile.mockResolvedValue(mockGeoJSON)
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should parse KML and send success message
       expect(kmlParser.parseFile).toHaveBeenCalledWith('/path/to/test.kml')
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         geoJSON: mockGeoJSON
@@ -61,17 +58,14 @@ describe('Worker', () => {
     })
 
     it('should process shapefile successfully', async () => {
-      // Given - shapefile data
       const workerData = {
         filePath: '/path/to/test.zip',
         fileType: 'shapefile'
       }
       shapefileParser.parseFile.mockResolvedValue(mockGeoJSON)
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should parse shapefile and send success message
       expect(shapefileParser.parseFile).toHaveBeenCalledWith(
         '/path/to/test.zip'
       )
@@ -81,16 +75,13 @@ describe('Worker', () => {
     })
 
     it('should handle unsupported file type', async () => {
-      // Given - unsupported file type
       const workerData = {
         filePath: '/path/to/test.pdf',
         fileType: 'pdf'
       }
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send error message
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         error: 'Unsupported file type: pdf'
       })
@@ -99,7 +90,6 @@ describe('Worker', () => {
     })
 
     it('should handle KML parser errors', async () => {
-      // Given - KML parser throws error
       const workerData = {
         filePath: '/path/to/invalid.kml',
         fileType: 'kml'
@@ -107,10 +97,8 @@ describe('Worker', () => {
       const parseError = new Error('Invalid KML format')
       kmlParser.parseFile.mockRejectedValue(parseError)
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send error message
       expect(kmlParser.parseFile).toHaveBeenCalledWith('/path/to/invalid.kml')
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         error: 'Invalid KML format'
@@ -118,7 +106,6 @@ describe('Worker', () => {
     })
 
     it('should handle shapefile parser errors', async () => {
-      // Given - shapefile parser throws error
       const workerData = {
         filePath: '/path/to/invalid.zip',
         fileType: 'shapefile'
@@ -126,10 +113,8 @@ describe('Worker', () => {
       const parseError = new Error('Invalid shapefile format')
       shapefileParser.parseFile.mockRejectedValue(parseError)
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send error message
       expect(shapefileParser.parseFile).toHaveBeenCalledWith(
         '/path/to/invalid.zip'
       )
@@ -139,7 +124,6 @@ describe('Worker', () => {
     })
 
     it('should handle parser errors with complex error objects', async () => {
-      // Given - parser throws complex error
       const workerData = {
         filePath: '/path/to/test.kml',
         fileType: 'kml'
@@ -149,58 +133,47 @@ describe('Worker', () => {
       complexError.path = '/path/to/test.kml'
       kmlParser.parseFile.mockRejectedValue(complexError)
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send error message with error.message
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         error: 'Parse failed'
       })
     })
 
     it('should handle null/undefined workerData gracefully', async () => {
-      // Given - invalid worker data
       const workerData = {
         filePath: null,
         fileType: 'kml'
       }
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should handle the error
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         error: expect.any(String)
       })
     })
 
     it('should handle empty file type', async () => {
-      // Given - empty file type
       const workerData = {
         filePath: '/path/to/test.file',
         fileType: ''
       }
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send error message
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         error: 'Unsupported file type: '
       })
     })
 
     it('should handle case sensitivity in file type', async () => {
-      // Given - uppercase file type
       const workerData = {
         filePath: '/path/to/test.kml',
         fileType: 'KML'
       }
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send error message (case sensitive)
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         error: 'Unsupported file type: KML'
       })
@@ -208,7 +181,6 @@ describe('Worker', () => {
     })
 
     it('should handle successful parsing with empty GeoJSON', async () => {
-      // Given - parser returns empty GeoJSON
       const emptyGeoJSON = {
         type: 'FeatureCollection',
         features: []
@@ -219,17 +191,14 @@ describe('Worker', () => {
       }
       kmlParser.parseFile.mockResolvedValue(emptyGeoJSON)
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send success message with empty GeoJSON
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         geoJSON: emptyGeoJSON
       })
     })
 
     it('should handle successful parsing with large GeoJSON', async () => {
-      // Given - parser returns large GeoJSON
       const largeGeoJSON = {
         type: 'FeatureCollection',
         features: Array.from({ length: 10 }, (_, i) => ({
@@ -247,10 +216,8 @@ describe('Worker', () => {
       }
       kmlParser.parseFile.mockResolvedValue(largeGeoJSON)
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should send success message with large GeoJSON
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         geoJSON: largeGeoJSON
       })
@@ -258,15 +225,12 @@ describe('Worker', () => {
     })
 
     it('should handle missing fileType', async () => {
-      // Given - missing fileType
       const workerData = {
         filePath: '/path/to/test.kml'
       }
 
-      // When - processing file
       await processFile(workerData, mockMessagePort)
 
-      // Then - should handle the error
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
         error: 'Unsupported file type: undefined'
       })

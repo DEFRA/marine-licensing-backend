@@ -90,12 +90,8 @@ describe('KmlParser', () => {
     })
 
     it('should successfully parse KML file', async () => {
-      // Given - valid KML file
-
-      // When - parsing file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should return GeoJSON
       expect(result).toEqual(mockGeoJSON)
       expect(readFile).toHaveBeenCalledWith(filePath, 'utf-8')
       expect(JSDOM).toHaveBeenCalledWith(mockKmlContent, {
@@ -105,7 +101,6 @@ describe('KmlParser', () => {
     })
 
     it('should handle file with multiple placemarks', async () => {
-      // Given - KML with multiple placemarks
       const multiFeatureGeoJSON = {
         type: 'FeatureCollection',
         features: [
@@ -133,32 +128,26 @@ describe('KmlParser', () => {
       }
       togeojson.kml.mockReturnValue(multiFeatureGeoJSON)
 
-      // When - parsing file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should return GeoJSON with multiple features
       expect(result).toEqual(multiFeatureGeoJSON)
       expect(result.features).toHaveLength(2)
     })
 
     it('should handle empty KML file', async () => {
-      // Given - empty KML file
       const emptyGeoJSON = {
         type: 'FeatureCollection',
         features: []
       }
       togeojson.kml.mockReturnValue(emptyGeoJSON)
 
-      // When - parsing file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should return empty GeoJSON
       expect(result).toEqual(emptyGeoJSON)
       expect(result.features).toHaveLength(0)
     })
 
     it('should handle KML with polygon geometry', async () => {
-      // Given - KML with polygon
       const polygonGeoJSON = {
         type: 'FeatureCollection',
         features: [
@@ -184,16 +173,13 @@ describe('KmlParser', () => {
       }
       togeojson.kml.mockReturnValue(polygonGeoJSON)
 
-      // When - parsing file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should return polygon GeoJSON
       expect(result).toEqual(polygonGeoJSON)
       expect(result.features[0].geometry.type).toBe('Polygon')
     })
 
     it('should handle KML with linestring geometry', async () => {
-      // Given - KML with linestring
       const linestringGeoJSON = {
         type: 'FeatureCollection',
         features: [
@@ -215,40 +201,33 @@ describe('KmlParser', () => {
       }
       togeojson.kml.mockReturnValue(linestringGeoJSON)
 
-      // When - parsing file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should return linestring GeoJSON
       expect(result).toEqual(linestringGeoJSON)
       expect(result.features[0].geometry.type).toBe('LineString')
     })
 
     it('should handle file read errors', async () => {
-      // Given - file read fails
       const error = new Error('File not found')
       readFile.mockRejectedValue(error)
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile(filePath)).rejects.toThrow(
         Boom.internal('KML parsing failed: File not found')
       )
     })
 
     it('should handle JSDOM creation errors', async () => {
-      // Given - JSDOM creation fails
       const error = new Error('Invalid XML')
       JSDOM.mockImplementation(() => {
         throw error
       })
 
-      // When/Then - should throw bad request error
       await expect(kmlParser.parseFile(filePath)).rejects.toThrow(
         Boom.badRequest('Invalid KML file format')
       )
     })
 
     it('should handle invalid XML format', async () => {
-      // Given - invalid XML content
       const invalidXml = 'not valid xml'
       readFile.mockResolvedValue(invalidXml)
 
@@ -257,27 +236,23 @@ describe('KmlParser', () => {
         throw error
       })
 
-      // When/Then - should throw bad request error
       await expect(kmlParser.parseFile(filePath)).rejects.toThrow(
         Boom.badRequest('Invalid KML file format')
       )
     })
 
     it('should handle togeojson conversion errors', async () => {
-      // Given - togeojson conversion fails
       const error = new Error('Conversion failed')
       togeojson.kml.mockImplementation(() => {
         throw error
       })
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile(filePath)).rejects.toThrow(
         Boom.internal('KML parsing failed: Conversion failed')
       )
     })
 
     it('should handle empty file', async () => {
-      // Given - empty file content
       readFile.mockResolvedValue('')
 
       const error = new Error('Empty document')
@@ -285,14 +260,12 @@ describe('KmlParser', () => {
         throw error
       })
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile(filePath)).rejects.toThrow(
         Boom.internal('KML parsing failed: Empty document')
       )
     })
 
     it('should handle malformed KML structure', async () => {
-      // Given - malformed KML structure
       const malformedKml = `<?xml version="1.0" encoding="UTF-8"?>
         <kml xmlns="http://www.opengis.net/kml/2.2">
           <Document>
@@ -311,15 +284,12 @@ describe('KmlParser', () => {
       }
       togeojson.kml.mockReturnValue(emptyGeoJSON)
 
-      // When - parsing malformed file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should return empty GeoJSON
       expect(result).toEqual(emptyGeoJSON)
     })
 
     it('should handle KML with extended data', async () => {
-      // Given - KML with extended data
       const extendedDataGeoJSON = {
         type: 'FeatureCollection',
         features: [
@@ -339,16 +309,13 @@ describe('KmlParser', () => {
       }
       togeojson.kml.mockReturnValue(extendedDataGeoJSON)
 
-      // When - parsing file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should preserve extended data
       expect(result).toEqual(extendedDataGeoJSON)
       expect(result.features[0].properties.customProperty).toBe('custom value')
     })
 
     it('should handle KML with different coordinate systems', async () => {
-      // Given - KML with different coordinate system
       const coordinateSystemGeoJSON = {
         type: 'FeatureCollection',
         features: [
@@ -366,16 +333,13 @@ describe('KmlParser', () => {
       }
       togeojson.kml.mockReturnValue(coordinateSystemGeoJSON)
 
-      // When - parsing file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should handle different coordinates
       expect(result).toEqual(coordinateSystemGeoJSON)
       expect(result.features[0].geometry.coordinates).toEqual([123.456, 12.345])
     })
 
     it('should handle very large KML files', async () => {
-      // Given - large KML content
       const largeKml = `<?xml version="1.0" encoding="UTF-8"?>
         <kml xmlns="http://www.opengis.net/kml/2.2">
           <Document>
@@ -399,16 +363,13 @@ describe('KmlParser', () => {
       }
       togeojson.kml.mockReturnValue(largeGeoJSON)
 
-      // When - parsing large file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should handle large file
       expect(result).toEqual(largeGeoJSON)
       expect(result.features).toHaveLength(1000)
     })
 
     it('should handle KML with namespaces', async () => {
-      // Given - KML with different namespace
       const namespacedKml = `<?xml version="1.0" encoding="UTF-8"?>
         <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
           <Document>
@@ -422,10 +383,8 @@ describe('KmlParser', () => {
         </kml>`
       readFile.mockResolvedValue(namespacedKml)
 
-      // When - parsing namespaced file
       const result = await kmlParser.parseFile(filePath)
 
-      // Then - should handle namespaces
       expect(result).toEqual(mockGeoJSON)
       expect(JSDOM).toHaveBeenCalledWith(namespacedKml, {
         contentType: 'application/xml'
@@ -433,24 +392,20 @@ describe('KmlParser', () => {
     })
 
     it('should handle permission errors', async () => {
-      // Given - permission error
       const error = new Error('Permission denied')
       error.code = 'EACCES'
       readFile.mockRejectedValue(error)
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile(filePath)).rejects.toThrow(
         Boom.internal('KML parsing failed: Permission denied')
       )
     })
 
     it('should handle file not found errors', async () => {
-      // Given - file not found
       const error = new Error('File not found')
       error.code = 'ENOENT'
       readFile.mockRejectedValue(error)
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile(filePath)).rejects.toThrow(
         Boom.internal('KML parsing failed: File not found')
       )
@@ -459,17 +414,14 @@ describe('KmlParser', () => {
 
   describe('Constructor', () => {
     it('should create KmlParser instance', () => {
-      // Given - KmlParser constructor
       const parser = new KmlParser()
 
-      // Then - should create instance
       expect(parser).toBeInstanceOf(KmlParser)
     })
   })
 
   describe('Error handling edge cases', () => {
     it('should handle null file content', async () => {
-      // Given - null file content
       readFile.mockResolvedValue(null)
 
       const error = new Error('Cannot read null content')
@@ -477,14 +429,12 @@ describe('KmlParser', () => {
         throw error
       })
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile('/tmp/test.kml')).rejects.toThrow(
         Boom.internal('KML parsing failed: Cannot read null content')
       )
     })
 
     it('should handle undefined file content', async () => {
-      // Given - undefined file content
       readFile.mockResolvedValue(undefined)
 
       const error = new Error('Cannot read undefined content')
@@ -492,20 +442,17 @@ describe('KmlParser', () => {
         throw error
       })
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile('/tmp/test.kml')).rejects.toThrow(
         Boom.internal('KML parsing failed: Cannot read undefined content')
       )
     })
 
     it('should handle memory errors during parsing', async () => {
-      // Given - memory error
       const error = new Error('JavaScript heap out of memory')
       togeojson.kml.mockImplementation(() => {
         throw error
       })
 
-      // When/Then - should throw internal server error
       await expect(kmlParser.parseFile('/tmp/test.kml')).rejects.toThrow(
         Boom.internal('KML parsing failed: JavaScript heap out of memory')
       )
