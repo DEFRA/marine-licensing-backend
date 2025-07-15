@@ -9,6 +9,8 @@ convict.addFormats(convictFormatWithValidator)
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 
+const oneMinuteInMS = 60 * 1000
+
 const config = convict({
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
@@ -129,6 +131,20 @@ const config = convict({
       format: String,
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
+    }
+  },
+  dynamics: {
+    maxRetries: {
+      doc: 'Maximum number of retries for failed Dynamics queue items',
+      format: 'nat',
+      default: 3,
+      env: 'DYNAMICS_MAX_RETRIES'
+    },
+    retryDelayMs: {
+      doc: 'Delay in milliseconds before retrying a failed Dynamics queue item',
+      format: 'nat',
+      default: oneMinuteInMS,
+      env: 'DYNAMICS_RETRY_DELAY_MS'
     }
   }
 })
