@@ -4,6 +4,7 @@ import { createTaskList } from '../helpers/createTaskList.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
 
 jest.mock('../helpers/reference-generator.js')
 jest.mock('../helpers/createTaskList.js')
@@ -32,7 +33,8 @@ describe('POST /exemption/submit', () => {
     mockDb = {
       collection: jest.fn().mockReturnValue({
         findOne: jest.fn(),
-        updateOne: jest.fn()
+        updateOne: jest.fn(),
+        insertOne: jest.fn()
       })
     }
 
@@ -133,6 +135,43 @@ describe('POST /exemption/submit', () => {
       })
 
       expect(mockHandler.code).toHaveBeenCalledWith(200)
+    })
+
+    it('should insert request queue document when exemption is submitted', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        siteDetails: {
+          coordinatesType: 'point',
+          coordinates: { latitude: '54.978', longitude: '-1.617' }
+        },
+        activityDescription: 'Test marine activity'
+      }
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockDb
+        .collection()
+        .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId },
+          db: mockDb,
+          locker: mockLocker
+        },
+        mockHandler
+      )
+
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
+      expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'EXE/2025/10001',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0,
+        createdAt: mockDate,
+        updatedAt: mockDate
+      })
     })
 
     it('should validate task completion before submission', async () => {

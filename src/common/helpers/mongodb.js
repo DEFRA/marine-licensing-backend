@@ -56,4 +56,6 @@ async function createIndexes(db) {
   await db
     .collection('reference-sequences')
     .createIndex({ key: 1 }, { unique: true })
+
+  await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
 }
