@@ -1,9 +1,8 @@
-import { config } from '../../config.js'
 import Boom from '@hapi/boom'
+import { REQUEST_QUEUE_STATUS } from '../constants/request-queue.js'
+import { config } from '../../config.js'
 
 export const startExemptionsQueuePolling = (server, intervalMs) => {
-  if (!server.app) server.app = {}
-
   processExemptionsQueue(server)
 
   server.app.pollTimer = setInterval(() => {
@@ -18,10 +17,55 @@ export const stopExemptionsQueuePolling = (server) => {
   }
 }
 
-export const processExemptionsQueue = async (server) => {
-  const maxRetries = config.get('dynamics.maxRetries')
-  const retryDelayMs = config.get('dynamics.retryDelayMs')
+export const handleQueueItemSuccess = async (server, item) => {
+  await server.db.collection('exemption-dynamics-queue').updateOne(
+    { _id: item._id },
+    {
+      $set: {
+        status: REQUEST_QUEUE_STATUS.SUCCESS,
+        updatedAt: new Date()
+      }
+    }
+  )
+  server.logger.info(`Successfully processed item ${item._id}`)
+}
 
+export const handleQueueItemFailure = async (server, item) => {
+  const { maxRetries } = config.get('dynamics')
+
+  const retries = item.retries + 1
+  if (retries >= maxRetries) {
+    await server.db.collection('exemption-dynamics-queue-failed').insertOne({
+      ...item,
+      retries: maxRetries,
+      status: REQUEST_QUEUE_STATUS.FAILED
+    })
+
+    await server.db
+      .collection('exemption-dynamics-queue')
+      .deleteOne({ _id: item._id })
+
+    server.logger.error(
+      `Moved item ${item._id} to dead letter queue after ${retries} retries`
+    )
+  } else {
+    await server.db.collection('exemption-dynamics-queue').updateOne(
+      { _id: item._id },
+      {
+        $set: {
+          status: REQUEST_QUEUE_STATUS.FAILED,
+          updatedAt: new Date()
+        },
+        $inc: { retries: 1 }
+      }
+    )
+    server.logger.error(
+      `Incremented retries for item ${item._id} to ${retries}`
+    )
+  }
+}
+
+export const processExemptionsQueue = async (server) => {
   try {
     server.logger.info('Starting exemption queue poll')
 
@@ -31,11 +75,10 @@ export const processExemptionsQueue = async (server) => {
       .collection('exemption-dynamics-queue')
       .find({
         $or: [
-          { status: 'pending' },
+          { status: REQUEST_QUEUE_STATUS.PENDING },
           {
-            status: 'failed',
-            retries: { $lt: maxRetries },
-            updatedAt: { $lte: new Date(now.getTime() - retryDelayMs) }
+            status: REQUEST_QUEUE_STATUS.FAILED,
+            updatedAt: { $lte: new Date(now.getTime() - 0) }
           }
         ]
       })
@@ -45,15 +88,12 @@ export const processExemptionsQueue = async (server) => {
 
     for (const item of queueItems) {
       try {
-        // TODO: Implement actual processing logic here
-        server.logger.info(item)
+        await handleQueueItemSuccess(server, item)
       } catch (err) {
-        throw Boom.badImplementation('Processing failed')
+        await handleQueueItemFailure(server, item)
       }
     }
-
-    server.logger.info('Exemption queue poll completed')
   } catch (error) {
-    throw Boom.badImplementation('Error during processing', error)
+    throw Boom.badImplementation('Error during processing')
   }
 }

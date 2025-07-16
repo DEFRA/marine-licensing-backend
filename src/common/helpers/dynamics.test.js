@@ -1,34 +1,37 @@
-import { jest } from '@jest/globals'
-import {
-  startExemptionsQueuePolling,
-  stopExemptionsQueuePolling,
-  processExemptionsQueue
-} from './dynamics.js'
+import { expect, jest } from '@jest/globals'
+import * as dynamicsModule from './dynamics.js'
 
 import { config } from '../../config.js'
+import { REQUEST_QUEUE_STATUS } from '../constants/request-queue.js'
+import Boom from '@hapi/boom'
 
 jest.mock('../../config.js')
 
 describe('Dynamics Helper', () => {
   let mockServer
+  let mockDb
+
+  const mockItem = { _id: 'abc123' }
 
   jest.useFakeTimers()
 
   beforeEach(() => {
+    mockDb = {
+      collection: jest.fn().mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([])
+        }),
+        updateOne: jest.fn().mockResolvedValue({})
+      })
+    }
     mockServer = {
+      app: {},
       logger: {
         info: jest.fn(),
         warn: jest.fn(),
         error: jest.fn()
       },
-      db: {
-        collection: jest.fn().mockReturnValue({
-          find: jest.fn().mockReturnValue({
-            toArray: jest.fn().mockResolvedValue([])
-          }),
-          updateOne: jest.fn().mockResolvedValue({})
-        })
-      }
+      db: mockDb
     }
 
     config.get.mockReturnValue({ maxRetries: 3, retryDelayMs: 60000 })
@@ -36,15 +39,11 @@ describe('Dynamics Helper', () => {
     jest.clearAllTimers()
   })
 
-  afterEach(() => {
-    stopExemptionsQueuePolling(mockServer)
-  })
-
   describe('startExemptionsQueuePolling', () => {
     it('should start polling with the specified interval', () => {
       const intervalMs = 5000
 
-      startExemptionsQueuePolling(mockServer, intervalMs)
+      dynamicsModule.startExemptionsQueuePolling(mockServer, intervalMs)
 
       jest.advanceTimersByTime(10000)
       jest.advanceTimersByTime(intervalMs)
@@ -57,11 +56,11 @@ describe('Dynamics Helper', () => {
 
   describe('stopExemptionsQueuePolling', () => {
     it('should stop polling and clear the timer', () => {
-      startExemptionsQueuePolling(mockServer, 5000)
+      dynamicsModule.startExemptionsQueuePolling(mockServer, 5000)
 
       mockServer.logger.info.mockClear()
 
-      stopExemptionsQueuePolling(mockServer)
+      dynamicsModule.stopExemptionsQueuePolling(mockServer)
 
       expect(mockServer.logger.info).not.toHaveBeenCalledWith(
         'Starting exemption queue poll'
@@ -69,32 +68,109 @@ describe('Dynamics Helper', () => {
     })
 
     it('should handle stop when no polling is active', () => {
-      expect(() => stopExemptionsQueuePolling(mockServer)).not.toThrow()
+      expect(() =>
+        dynamicsModule.stopExemptionsQueuePolling(mockServer)
+      ).not.toThrow()
+    })
+  })
+
+  describe('handleQueueItemSuccess', () => {
+    it('should update the item status to SUCCESS and log info', async () => {
+      mockServer.db.collection().updateOne.mockReturnValue({})
+
+      await dynamicsModule.handleQueueItemSuccess(mockServer, mockItem)
+
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        mockItem,
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.SUCCESS,
+            updatedAt: expect.any(Date)
+          }
+        }
+      )
+    })
+  })
+
+  describe('handleQueueItemFailure', () => {
+    it('should increment retries and update status', async () => {
+      const item = { ...mockItem, retries: 1 }
+
+      await dynamicsModule.handleQueueItemFailure(mockServer, item)
+
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        mockItem,
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.FAILED,
+            updatedAt: expect.any(Date)
+          },
+          $inc: { retries: 1 }
+        }
+      )
+    })
+    it('should move to dead letter queue if retries hit the maximum', async () => {
+      const insertOne = jest.fn().mockResolvedValue({})
+      const deleteOne = jest.fn().mockResolvedValue({})
+      mockServer.db.collection.mockImplementation((name) => {
+        if (name === 'exemption-dynamics-queue') return { deleteOne }
+        if (name === 'exemption-dynamics-queue-failed') return { insertOne }
+        throw new Error('Unexpected collection')
+      })
+
+      const item = { ...mockItem, retries: 2 }
+
+      await dynamicsModule.handleQueueItemFailure(mockServer, item)
+
+      expect(insertOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ...mockItem,
+          retries: 3
+        })
+      )
+      expect(deleteOne).toHaveBeenCalledWith(mockItem)
     })
   })
 
   describe('processExemptionsQueue', () => {
-    it('should process queue items and log them', async () => {
+    it('should call handleQueueItemSuccess for each queue item', async () => {
       const mockQueueItems = [
-        { _id: '1', status: 'pending', retries: 0 },
+        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 },
         {
           _id: '2',
-          status: 'failed',
+          status: REQUEST_QUEUE_STATUS.FAILED,
           retries: 1,
           updatedAt: new Date(Date.now() - 70000)
         }
       ]
 
-      mockServer.db.collection.mockReturnValue({
-        find: jest.fn().mockReturnValue({
-          toArray: jest.fn().mockResolvedValue(mockQueueItems)
-        })
+      mockDb.collection().find.mockReturnValueOnce({
+        toArray: jest.fn().mockResolvedValue(mockQueueItems)
       })
 
-      await expect(processExemptionsQueue(mockServer)).resolves.toBeUndefined()
+      mockServer.db.collection().updateOne.mockResolvedValue({})
 
-      expect(mockServer.logger.info).toHaveBeenCalledWith(mockQueueItems[0])
-      expect(mockServer.logger.info).toHaveBeenCalledWith(mockQueueItems[1])
+      await dynamicsModule.processExemptionsQueue(mockServer)
+
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledTimes(2)
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        { _id: '1' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.SUCCESS,
+            updatedAt: expect.any(Date)
+          }
+        }
+      )
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        { _id: '2' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.SUCCESS,
+            updatedAt: expect.any(Date)
+          }
+        }
+      )
     })
 
     it('should handle database errors during processing', async () => {
@@ -102,8 +178,41 @@ describe('Dynamics Helper', () => {
         throw new Error('Database error')
       })
 
-      await expect(processExemptionsQueue(mockServer)).rejects.toThrow(
-        'Error during processing'
+      const boomSpy = jest.spyOn(Boom, 'badImplementation')
+
+      await expect(
+        dynamicsModule.processExemptionsQueue(mockServer)
+      ).rejects.toThrow()
+
+      expect(boomSpy).toHaveBeenCalledWith('Error during processing')
+    })
+
+    it('should call handleQueueItemFailure when processing fails', async () => {
+      const mockQueueItems = [
+        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 1 }
+      ]
+
+      mockDb.collection().find.mockReturnValueOnce({
+        toArray: jest.fn().mockResolvedValue(mockQueueItems)
+      })
+
+      // Mock handleQueueItemSuccess to throw an error by making updateOne reject
+      mockServer.db
+        .collection()
+        .updateOne.mockRejectedValueOnce(new Error('Processing failed'))
+
+      await dynamicsModule.processExemptionsQueue(mockServer)
+
+      // Should have called updateOne for the failure case (incrementing retries)
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        { _id: '1' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.FAILED,
+            updatedAt: expect.any(Date)
+          },
+          $inc: { retries: 1 }
+        }
       )
     })
   })
