@@ -70,18 +70,10 @@ describe('#startServer', () => {
       )
       expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
         4,
-        'processExemptionsQueue plugin registered'
-      )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        5,
-        'Starting exemption queue poll'
-      )
-      expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        6,
         'Server started successfully'
       )
       expect(mockHapiLoggerInfo).toHaveBeenNthCalledWith(
-        7,
+        5,
         'Access your backend on http://localhost:3098'
       )
     })

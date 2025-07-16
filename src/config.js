@@ -134,15 +134,21 @@ const config = convict({
     }
   },
   dynamics: {
+    isEnabled: {
+      doc: 'Is Dynamics integration enabled',
+      format: Boolean,
+      default: false,
+      env: 'DYNAMICS_ENABLED'
+    },
     maxRetries: {
       doc: 'Maximum number of retries for failed Dynamics queue items',
-      format: 'nat',
+      format: Number,
       default: 3,
       env: 'DYNAMICS_MAX_RETRIES'
     },
     retryDelayMs: {
       doc: 'Delay in milliseconds before retrying a failed Dynamics queue item',
-      format: 'nat',
+      format: Number,
       default: oneMinuteInMS,
       env: 'DYNAMICS_RETRY_DELAY_MS'
     }

@@ -7,11 +7,18 @@ import {
 } from '../common/helpers/dynamics.js'
 
 import { processExemptionsQueuePlugin } from './dynamics.js'
+import { config } from '../config.js'
 
 jest.mock('../common/helpers/dynamics.js')
 
 describe('processExemptionsQueue Plugin', () => {
   let server
+
+  const mockServer = {
+    ext: jest.fn(),
+    logger: { info: jest.fn() },
+    app: {}
+  }
 
   const mockedStartExemptionsQueuePolling = jest.mocked(
     startExemptionsQueuePolling
@@ -37,28 +44,43 @@ describe('processExemptionsQueue Plugin', () => {
     server.logger.error = jest.fn()
   })
 
-  describe('Plugin Registration', () => {
-    it('should register the plugin successfully', () => {
-      expect(server.registrations['process-exemptions-queue']).toBeDefined()
-    })
+  it('should register hooks and log when enabled', async () => {
+    jest.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
 
-    it('should have correct plugin name', () => {
-      const plugin = server.registrations['process-exemptions-queue']
-      expect(plugin.name).toBe('process-exemptions-queue')
-    })
+    await processExemptionsQueuePlugin.plugin.register(mockServer, {})
+
+    expect(mockServer.ext).toHaveBeenCalledTimes(2)
+    expect(mockServer.logger.info).toHaveBeenCalledWith(
+      'processExemptionsQueue plugin registered'
+    )
+
+    const calls = mockServer.ext.mock.calls
+
+    const postStartHandler = calls.find(([event]) => event === 'onPostStart')[1]
+    const preStopHandler = calls.find(([event]) => event === 'onPreStop')[1]
+
+    postStartHandler()
+    expect(startExemptionsQueuePolling).toHaveBeenCalledWith(
+      mockServer,
+      expect.any(Number)
+    )
+
+    preStopHandler()
+    expect(stopExemptionsQueuePolling).toHaveBeenCalledWith(mockServer)
   })
-})
 
-it('should not throw if register is called with undefined options', async () => {
-  const mockServer = {
-    ext: jest.fn(),
-    logger: { info: jest.fn() }
-  }
-  await expect(
-    processExemptionsQueuePlugin.plugin.register(mockServer, undefined)
-  ).resolves.not.toThrow()
+  it('should not register hooks when disabled', async () => {
+    await processExemptionsQueuePlugin.plugin.register(mockServer, {})
+    expect(mockServer.ext).not.toHaveBeenCalled()
+  })
 
-  expect(mockServer.logger.info).toHaveBeenCalledWith(
-    'processExemptionsQueue plugin registered'
-  )
+  it('should work with defaults without config', async () => {
+    jest.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
+
+    await processExemptionsQueuePlugin.plugin.register(mockServer)
+
+    expect(mockServer.logger.info).toHaveBeenCalledWith(
+      'processExemptionsQueue plugin registered'
+    )
+  })
 })

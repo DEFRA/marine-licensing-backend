@@ -1,3 +1,4 @@
+import { config } from '../config.js'
 import {
   startExemptionsQueuePolling,
   stopExemptionsQueuePolling
@@ -9,7 +10,15 @@ const processExemptionsQueuePlugin = {
   plugin: {
     name: 'process-exemptions-queue',
     register: async (server, options = {}) => {
-      const pollInterval = options.pollIntervalMs || fiveMinutesInMS
+      const { isEnabled } = config.get('dynamics')
+
+      if (!isEnabled) {
+        return
+      }
+
+      const { pollIntervalMs } = options
+
+      const pollInterval = pollIntervalMs || fiveMinutesInMS
 
       server.ext('onPostStart', () => {
         startExemptionsQueuePolling(server, pollInterval)
