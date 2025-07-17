@@ -2,7 +2,7 @@ import { config } from '../config.js'
 import {
   startExemptionsQueuePolling,
   stopExemptionsQueuePolling
-} from '../common/helpers/dynamics.js'
+} from '../common/helpers/dynamics/index.js'
 
 const fiveMinutesInMS = 5 * 60 * 1000
 

@@ -134,6 +134,25 @@ const config = convict({
     }
   },
   dynamics: {
+    clientId: {
+      doc: 'The client ID.',
+      format: String,
+      default: '269cb955-6009-4b38-a519-c71aeeea6207',
+      env: 'DYNAMICS_CLIENT_ID'
+    },
+    clientSecret: {
+      doc: 'The client secret.',
+      format: String,
+      default: 'test_value',
+      env: 'DYNAMICS_CLIENT_SECRET'
+    },
+    tokenUrl: {
+      doc: 'URL to get token for the Dynamics request',
+      format: String,
+      default:
+        'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/oauth2/v2.0/token',
+      env: 'DYNAMICS_TOKEN_URL'
+    },
     isEnabled: {
       doc: 'Is Dynamics integration enabled',
       format: Boolean,

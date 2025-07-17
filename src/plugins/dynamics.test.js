@@ -4,12 +4,12 @@ import { createServer } from '../server.js'
 import {
   startExemptionsQueuePolling,
   stopExemptionsQueuePolling
-} from '../common/helpers/dynamics.js'
+} from '../common/helpers/dynamics/index.js'
 
 import { processExemptionsQueuePlugin } from './dynamics.js'
 import { config } from '../config.js'
 
-jest.mock('../common/helpers/dynamics.js')
+jest.mock('../common/helpers/dynamics/index.js')
 
 describe('processExemptionsQueue Plugin', () => {
   let server

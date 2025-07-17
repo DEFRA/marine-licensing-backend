@@ -1,21 +1,26 @@
 import { expect, jest } from '@jest/globals'
-import * as dynamicsModule from './dynamics.js'
+import * as dynamicsModule from './dynamics-processor.js'
+import { getDynamicsAccessToken } from './dynamics-client.js'
 
-import { config } from '../../config.js'
-import { REQUEST_QUEUE_STATUS } from '../constants/request-queue.js'
+import { config } from '../../../config.js'
+import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import Boom from '@hapi/boom'
 
-jest.mock('../../config.js')
+jest.mock('../../../config.js')
+jest.mock('./dynamics-client.js')
 
-describe('Dynamics Helper', () => {
+describe('Dynamics Processor', () => {
   let mockServer
   let mockDb
+  const mockGetDynamicsAccessToken = jest.mocked(getDynamicsAccessToken)
 
   const mockItem = { _id: 'abc123' }
 
   jest.useFakeTimers()
 
   beforeEach(() => {
+    mockGetDynamicsAccessToken.mockReturnValue('test_token')
+
     mockDb = {
       collection: jest.fn().mockReturnValue({
         find: jest.fn().mockReturnValue({
@@ -24,6 +29,7 @@ describe('Dynamics Helper', () => {
         updateOne: jest.fn().mockResolvedValue({})
       })
     }
+
     mockServer = {
       app: {},
       logger: {
@@ -34,8 +40,16 @@ describe('Dynamics Helper', () => {
       db: mockDb
     }
 
-    config.get.mockReturnValue({ maxRetries: 3, retryDelayMs: 60000 })
+    config.get.mockReturnValue({
+      clientId: 'test-client-id',
+      clientSecret: 'test-client-secret',
+      scope: 'test-scope',
+      maxRetries: 3,
+      retryDelayMs: 60000,
+      tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
+    })
 
+    jest.clearAllMocks()
     jest.clearAllTimers()
   })
 
@@ -109,6 +123,7 @@ describe('Dynamics Helper', () => {
         }
       )
     })
+
     it('should move to dead letter queue if retries hit the maximum', async () => {
       const insertOne = jest.fn().mockResolvedValue({})
       const deleteOne = jest.fn().mockResolvedValue({})
@@ -144,7 +159,7 @@ describe('Dynamics Helper', () => {
         }
       ]
 
-      mockDb.collection().find.mockReturnValueOnce({
+      mockServer.db.collection().find.mockReturnValueOnce({
         toArray: jest.fn().mockResolvedValue(mockQueueItems)
       })
 
@@ -192,7 +207,7 @@ describe('Dynamics Helper', () => {
         { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 1 }
       ]
 
-      mockDb.collection().find.mockReturnValueOnce({
+      mockServer.db.collection().find.mockReturnValueOnce({
         toArray: jest.fn().mockResolvedValue(mockQueueItems)
       })
 
@@ -214,6 +229,21 @@ describe('Dynamics Helper', () => {
           $inc: { retries: 1 }
         }
       )
+    })
+
+    it('should get access token before processing queue items', async () => {
+      const mockQueueItems = [
+        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 }
+      ]
+      mockServer.db.collection().find.mockReturnValueOnce({
+        toArray: jest.fn().mockResolvedValue(mockQueueItems)
+      })
+
+      mockServer.db.collection().updateOne.mockResolvedValue({})
+
+      await dynamicsModule.processExemptionsQueue(mockServer)
+
+      expect(mockGetDynamicsAccessToken).toHaveBeenCalledWith(mockServer)
     })
   })
 })
