@@ -15,6 +15,7 @@ describe('POST /exemption/submit', () => {
   let mockHandler
   let mockExemptionId
   let mockDate
+  let mockServer
 
   beforeEach(() => {
     jest.resetAllMocks()
@@ -40,6 +41,12 @@ describe('POST /exemption/submit', () => {
 
     mockLocker = {
       lock: jest.fn()
+    }
+
+    mockServer = {
+      methods: {
+        processExemptionsQueue: jest.fn().mockResolvedValue(undefined)
+      }
     }
 
     generateApplicationReference.mockResolvedValue('EXE/2025/10001')
@@ -104,7 +111,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -159,7 +167,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -172,6 +181,7 @@ describe('POST /exemption/submit', () => {
         createdAt: mockDate,
         updatedAt: mockDate
       })
+      expect(mockServer.methods.processExemptionsQueue).toHaveBeenCalled()
     })
 
     it('should validate task completion before submission', async () => {
@@ -190,7 +200,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -530,7 +541,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -561,7 +573,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -596,7 +609,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -633,7 +647,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )

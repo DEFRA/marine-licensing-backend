@@ -80,6 +80,8 @@ export const submitExemptionController = {
         updatedAt: submittedAt
       })
 
+      await request.server.methods.processExemptionsQueue()
+
       return h
         .response({
           message: 'success',

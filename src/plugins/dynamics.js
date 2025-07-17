@@ -1,7 +1,8 @@
 import { config } from '../config.js'
 import {
   startExemptionsQueuePolling,
-  stopExemptionsQueuePolling
+  stopExemptionsQueuePolling,
+  processExemptionsQueue
 } from '../common/helpers/dynamics/index.js'
 
 const fiveMinutesInMS = 5 * 60 * 1000
@@ -19,6 +20,17 @@ const processExemptionsQueuePlugin = {
       const { pollIntervalMs } = options
 
       const pollInterval = pollIntervalMs || fiveMinutesInMS
+
+      server.method(
+        'processExemptionsQueue',
+        async () => {
+          return await processExemptionsQueue(server)
+        },
+        {
+          cache: false,
+          generateKey: () => 'process-exemptions-queue'
+        }
+      )
 
       server.ext('onPostStart', () => {
         startExemptionsQueuePolling(server, pollInterval)
