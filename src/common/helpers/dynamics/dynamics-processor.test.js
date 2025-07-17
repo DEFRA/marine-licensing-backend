@@ -211,14 +211,12 @@ describe('Dynamics Processor', () => {
         toArray: jest.fn().mockResolvedValue(mockQueueItems)
       })
 
-      // Mock handleQueueItemSuccess to throw an error by making updateOne reject
       mockServer.db
         .collection()
-        .updateOne.mockRejectedValueOnce(new Error('Processing failed'))
+        .updateOne.mockRejectedValueOnce('Processing failed')
 
       await dynamicsModule.processExemptionsQueue(mockServer)
 
-      // Should have called updateOne for the failure case (incrementing retries)
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         { _id: '1' },
         {
@@ -243,7 +241,7 @@ describe('Dynamics Processor', () => {
 
       await dynamicsModule.processExemptionsQueue(mockServer)
 
-      expect(mockGetDynamicsAccessToken).toHaveBeenCalledWith(mockServer)
+      expect(mockGetDynamicsAccessToken).toHaveBeenCalled()
     })
   })
 })

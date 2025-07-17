@@ -153,6 +153,18 @@ const config = convict({
         'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/oauth2/v2.0/token',
       env: 'DYNAMICS_TOKEN_URL'
     },
+    scope: {
+      doc: 'Scope for the Dynamics API access',
+      format: String,
+      default: 'https://service.flow.microsoft.com//.default',
+      env: 'DYNAMICS_SCOPE'
+    },
+    apiUrl: {
+      doc: 'URL for the Dynamics API',
+      format: String,
+      default: 'https://placeholder.dynamics.com/api/data/v9.2',
+      env: 'DYNAMICS_API_URL'
+    },
     isEnabled: {
       doc: 'Is Dynamics integration enabled',
       format: Boolean,

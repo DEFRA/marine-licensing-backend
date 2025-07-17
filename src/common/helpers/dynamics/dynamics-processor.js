@@ -1,7 +1,10 @@
 import Boom from '@hapi/boom'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { config } from '../../../config.js'
-import { getDynamicsAccessToken } from './dynamics-client.js'
+import {
+  getDynamicsAccessToken,
+  sendExemptionToDynamics
+} from './dynamics-client.js'
 
 export const startExemptionsQueuePolling = (server, intervalMs) => {
   processExemptionsQueue(server)
@@ -87,14 +90,18 @@ export const processExemptionsQueue = async (server) => {
 
     server.logger.info(`Found ${queueItems.length} items to process in queue`)
 
+    let accessToken
+
     if (queueItems.length > 0) {
-      await getDynamicsAccessToken(server)
+      accessToken = await getDynamicsAccessToken()
     }
 
     for (const item of queueItems) {
       try {
+        await sendExemptionToDynamics(server, accessToken, item)
         await handleQueueItemSuccess(server, item)
       } catch (err) {
+        console.log(err)
         await handleQueueItemFailure(server, item)
       }
     }

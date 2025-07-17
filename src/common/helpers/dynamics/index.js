@@ -1,8 +1,2 @@
-export { getDynamicsAccessToken } from './dynamics-client.js'
-export {
-  startExemptionsQueuePolling,
-  stopExemptionsQueuePolling,
-  handleQueueItemSuccess,
-  handleQueueItemFailure,
-  processExemptionsQueue
-} from './dynamics-processor.js'
+export * from './dynamics-client.js'
+export * from './dynamics-processor.js'
