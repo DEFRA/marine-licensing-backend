@@ -144,9 +144,102 @@ describe('#siteDetails schema', () => {
 
       expect(result.error.message).toBe('WIDTH_NON_INTEGER')
     })
+
+    test('Should require circleWidth when coordinatesEntry is single', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinatesEntry: 'single',
+          circleWidth: undefined
+        }
+      })
+
+      expect(result.error.message).toBe('WIDTH_REQUIRED')
+    })
+
+    test('Should not require circleWidth when coordinatesEntry is multiple', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinatesEntry: 'multiple',
+          circleWidth: undefined
+        }
+      })
+
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should validate circleWidth format even when coordinatesEntry is multiple', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinatesEntry: 'multiple',
+          circleWidth: 'invalid'
+        }
+      })
+
+      expect(result.error.message).toBe('WIDTH_INVALID')
+    })
   })
 
   describe('#coordinates', () => {
+    test('Should correctly validate with single WGS84 coordinates object', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          coordinates: { latitude: '51.489676', longitude: '-0.231530' }
+        }
+      })
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should correctly validate with array of WGS84 coordinates objects', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          coordinates: [
+            { latitude: '51.489676', longitude: '-0.231530' },
+            { latitude: '51.489677', longitude: '-0.231531' }
+          ]
+        }
+      })
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should correctly validate with single OSGB36 coordinates object', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
+          coordinates: { eastings: '123456', northings: '123456' }
+        }
+      })
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should correctly validate with array of OSGB36 coordinates objects', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
+          coordinates: [
+            { eastings: '123456', northings: '123456' },
+            { eastings: '123457', northings: '123457' }
+          ]
+        }
+      })
+      expect(result.error).toBeUndefined()
+    })
+
     test('Should correctly errors when incorrect coordinates OSGB36', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
@@ -167,6 +260,19 @@ describe('#siteDetails schema', () => {
         }
       })
       expect(result.error.message).toBe('LATITUDE_REQUIRED')
+    })
+
+    test('Should correctly error when array is empty', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          coordinates: []
+        }
+      })
+      expect(result.error.message).toBe(
+        '"siteDetails.coordinates" must contain at least 1 items'
+      )
     })
   })
 })

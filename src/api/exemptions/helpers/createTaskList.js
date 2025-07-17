@@ -13,6 +13,17 @@ const checkSiteDetailsCircle = (siteDetails) => {
   return missingKeys.length === 0 ? COMPLETED : null
 }
 
+const checkSiteDetailsMultiple = (siteDetails) => {
+  const requiredValues = [
+    'coordinatesType',
+    'coordinatesEntry',
+    'coordinateSystem',
+    'coordinates'
+  ]
+  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
+  return missingKeys.length === 0 ? COMPLETED : null
+}
+
 const checkSiteDetails = (siteDetails) => {
   if (!siteDetails || !Object.keys(siteDetails).length) {
     return null
@@ -22,6 +33,10 @@ const checkSiteDetails = (siteDetails) => {
 
   if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
     return checkSiteDetailsCircle(siteDetails)
+  }
+
+  if (coordinatesEntry === 'multiple' && coordinatesType === 'coordinates') {
+    return checkSiteDetailsMultiple(siteDetails)
   }
 
   return null
