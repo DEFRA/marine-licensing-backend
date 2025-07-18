@@ -87,7 +87,7 @@ describe('Dynamics Client', () => {
 
   describe('sendExemptionToDynamics', () => {
     const mockQueueItem = {
-      applicationReference: 'TEST-REF-001'
+      applicationReferenceNumber: 'TEST-REF-001'
     }
 
     const mockExemption = {

@@ -3,7 +3,8 @@ import { createServer } from '../server.js'
 
 import {
   startExemptionsQueuePolling,
-  stopExemptionsQueuePolling
+  stopExemptionsQueuePolling,
+  processExemptionsQueue
 } from '../common/helpers/dynamics/index.js'
 
 import { processExemptionsQueuePlugin } from './dynamics.js'
@@ -102,5 +103,32 @@ describe('processExemptionsQueue Plugin', () => {
       expect.any(Function),
       {}
     )
+  })
+
+  it('should register the processExemptionsQueue server method with correct implementation', async () => {
+    jest.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
+
+    const mockServer = {
+      ext: jest.fn(),
+      logger: { info: jest.fn() },
+      app: {},
+      method: jest.fn()
+    }
+
+    const processExemptionsQueueSpy = jest
+      .spyOn({ processExemptionsQueue }, 'processExemptionsQueue')
+      .mockResolvedValue('processed')
+
+    await processExemptionsQueuePlugin.plugin.register(mockServer, {})
+
+    const registeredMethodCall = mockServer.method.mock.calls.find(
+      ([name]) => name === 'processExemptionsQueue'
+    )
+    const registeredFunction = registeredMethodCall[1]
+
+    const result = await registeredFunction()
+
+    expect(processExemptionsQueueSpy).toHaveBeenCalledWith(mockServer)
+    expect(result).toBe('processed')
   })
 })

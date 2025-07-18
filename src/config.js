@@ -137,7 +137,7 @@ const config = convict({
     clientId: {
       doc: 'The client ID.',
       format: String,
-      default: '269cb955-6009-4b38-a519-c71aeeea6207',
+      default: '',
       env: 'DYNAMICS_CLIENT_ID'
     },
     clientSecret: {
@@ -162,7 +162,7 @@ const config = convict({
     apiUrl: {
       doc: 'URL for the Dynamics API',
       format: String,
-      default: 'https://placeholder.dynamics.com/api/data/v9.2',
+      default: '',
       env: 'DYNAMICS_API_URL'
     },
     isEnabled: {

@@ -39,22 +39,22 @@ export const sendExemptionToDynamics = async (
 ) => {
   const { apiUrl } = config.get('dynamics')
 
-  const { applicationReference } = queueItem
+  const { applicationReferenceNumber } = queueItem
 
   const exemption = await server.db.collection('exemptions').findOne({
-    applicationReference
+    applicationReference: applicationReferenceNumber
   })
 
   if (!exemption) {
     throw Boom.notFound(
-      `Exemption not found for applicationReference: ${applicationReference}`
+      `Exemption not found for applicationReference: ${applicationReferenceNumber}`
     )
   }
 
   const payload = {
     contactid: exemption.contactId,
     projectName: exemption.projectName,
-    reference: applicationReference,
+    reference: applicationReferenceNumber,
     type: exemption.type,
     applicationUrl:
       'https://marine-licensing-frontend.dev.cdp-int.defra.cloud/exemption',
