@@ -28,12 +28,7 @@ export const getDynamicsAccessToken = async () => {
 
     return responsePayload.access_token
   } catch (error) {
-    if (error.data?.payload?.error_description) {
-      throw Boom.badImplementation(
-        `Dynamics token request failed: ${error.data.payload.error_description}`
-      )
-    }
-    throw error
+    throw Boom.badImplementation(`Dynamics token request failed`, error)
   }
 }
 

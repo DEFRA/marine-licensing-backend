@@ -26,10 +26,7 @@ const processExemptionsQueuePlugin = {
         async () => {
           return await processExemptionsQueue(server)
         },
-        {
-          cache: false,
-          generateKey: () => 'process-exemptions-queue'
-        }
+        {}
       )
 
       server.ext('onPostStart', () => {

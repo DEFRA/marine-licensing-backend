@@ -68,7 +68,7 @@ describe('Dynamics Client', () => {
         payload: Buffer.from('{}')
       })
       await expect(getDynamicsAccessToken()).rejects.toThrow(
-        'No access_token in response'
+        'Dynamics token request failed'
       )
     })
 

@@ -143,6 +143,8 @@ describe('POST /exemption/submit', () => {
       })
 
       expect(mockHandler.code).toHaveBeenCalledWith(200)
+
+      expect(mockServer.methods.processExemptionsQueue).toHaveBeenCalled()
     })
 
     it('should insert request queue document when exemption is submitted', async () => {
@@ -181,7 +183,6 @@ describe('POST /exemption/submit', () => {
         createdAt: mockDate,
         updatedAt: mockDate
       })
-      expect(mockServer.methods.processExemptionsQueue).toHaveBeenCalled()
     })
 
     it('should validate task completion before submission', async () => {
@@ -219,7 +220,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -245,7 +247,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -270,7 +273,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -303,7 +307,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -336,7 +341,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -368,7 +374,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -403,7 +410,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -437,7 +445,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -465,7 +474,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -486,7 +496,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -514,7 +525,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
