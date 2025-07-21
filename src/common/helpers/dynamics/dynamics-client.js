@@ -3,6 +3,7 @@ import Wreck from '@hapi/wreck'
 import { config } from '../../../config.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import querystring from 'node:querystring'
+import { StatusCodes } from 'http-status-codes'
 
 export const getDynamicsAccessToken = async () => {
   const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
@@ -69,7 +70,7 @@ export const sendExemptionToDynamics = async (
     }
   })
 
-  if (response.res.statusCode !== 202) {
+  if (response.res.statusCode !== StatusCodes.ACCEPTED) {
     throw Boom.badImplementation(
       `Dynamics API returned status ${response.res.statusCode}`
     )

@@ -6,6 +6,8 @@ import {
   sendExemptionToDynamics
 } from './dynamics-client.js'
 
+const DYNAMICS_QUEUE_TABLE = 'exemption-dynamics-queue'
+
 export const startExemptionsQueuePolling = (server, intervalMs) => {
   processExemptionsQueue(server)
 
@@ -22,7 +24,7 @@ export const stopExemptionsQueuePolling = (server) => {
 }
 
 export const handleQueueItemSuccess = async (server, item) => {
-  await server.db.collection('exemption-dynamics-queue').updateOne(
+  await server.db.collection(DYNAMICS_QUEUE_TABLE).updateOne(
     { _id: item._id },
     {
       $set: {
@@ -46,14 +48,14 @@ export const handleQueueItemFailure = async (server, item) => {
     })
 
     await server.db
-      .collection('exemption-dynamics-queue')
+      .collection(DYNAMICS_QUEUE_TABLE)
       .deleteOne({ _id: item._id })
 
     server.logger.error(
       `Moved item ${item._id} to dead letter queue after ${retries} retries`
     )
   } else {
-    await server.db.collection('exemption-dynamics-queue').updateOne(
+    await server.db.collection(DYNAMICS_QUEUE_TABLE).updateOne(
       { _id: item._id },
       {
         $set: {
@@ -76,7 +78,7 @@ export const processExemptionsQueue = async (server) => {
     const now = new Date()
 
     const queueItems = await server.db
-      .collection('exemption-dynamics-queue')
+      .collection(DYNAMICS_QUEUE_TABLE)
       .find({
         $or: [
           { status: REQUEST_QUEUE_STATUS.PENDING },
