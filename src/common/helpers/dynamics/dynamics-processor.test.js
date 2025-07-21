@@ -59,6 +59,7 @@ describe('Dynamics Processor', () => {
       const setIntervalSpy = jest.spyOn(global, 'setInterval')
 
       dynamicsModule.startExemptionsQueuePolling(mockServer, intervalMs)
+      jest.advanceTimersByTime(intervalMs)
 
       expect(setIntervalSpy).toHaveBeenCalledWith(
         expect.any(Function),
