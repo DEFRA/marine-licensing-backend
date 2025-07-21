@@ -21,7 +21,8 @@ describe('Dynamics Client', () => {
     mockServer = {
       db: {
         collection: jest.fn().mockReturnValue({
-          findOne: jest.fn()
+          findOne: jest.fn(),
+          updateOne: jest.fn()
         })
       }
     }
@@ -31,7 +32,7 @@ describe('Dynamics Client', () => {
       scope: 'test-scope',
       maxRetries: 3,
       retryDelayMs: 60000,
-      appBaseUrl: 'http://localhost',
+      frontEndBaseUrl: 'http://localhost',
       tokenUrl: 'https://localhost/oauth2/token',
       apiUrl: 'https://localhost/api/data/v9.2'
     })
@@ -92,6 +93,7 @@ describe('Dynamics Client', () => {
     }
 
     const mockExemption = {
+      _id: '123',
       contactId: 'test-contact-id',
       projectName: 'Test Project',
       reference: 'TEST-REF-001',
@@ -121,6 +123,14 @@ describe('Dynamics Client', () => {
       expect(mockServer.db.collection().findOne).toHaveBeenCalledWith({
         applicationReference: 'TEST-REF-001'
       })
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _id: '123'
+        }),
+        {
+          $set: { status: 'in_progress', updatedAt: expect.any(Date) }
+        }
+      )
       expect(mockWreckPost).toHaveBeenCalledWith(
         'https://localhost/api/data/v9.2/exemptions',
         expect.objectContaining({

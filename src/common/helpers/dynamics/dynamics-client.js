@@ -4,6 +4,7 @@ import { config } from '../../../config.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import querystring from 'node:querystring'
 import { StatusCodes } from 'http-status-codes'
+import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 
 export const getDynamicsAccessToken = async () => {
   const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
@@ -38,7 +39,7 @@ export const sendExemptionToDynamics = async (
   accessToken,
   queueItem
 ) => {
-  const { apiUrl, appBaseUrl } = config.get('dynamics')
+  const { apiUrl, frontEndBaseUrl } = config.get('dynamics')
 
   const { applicationReferenceNumber } = queueItem
 
@@ -52,12 +53,22 @@ export const sendExemptionToDynamics = async (
     )
   }
 
+  await server.db.collection('exemption-dynamics-queue').updateOne(
+    { _id: exemption._id },
+    {
+      $set: {
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+        updatedAt: new Date()
+      }
+    }
+  )
+
   const payload = {
     contactid: exemption.contactId,
     projectName: exemption.projectName,
     reference: applicationReferenceNumber,
     type: exemption.type,
-    applicationUrl: `${appBaseUrl}/exemption`,
+    applicationUrl: `${frontEndBaseUrl}/exemption`,
     status: EXEMPTION_STATUS.SUBMITTED
   }
 
