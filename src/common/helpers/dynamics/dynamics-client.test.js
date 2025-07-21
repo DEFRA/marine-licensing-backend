@@ -31,8 +31,9 @@ describe('Dynamics Client', () => {
       scope: 'test-scope',
       maxRetries: 3,
       retryDelayMs: 60000,
-      tokenUrl: 'https://placeholder.dynamics.com/oauth2/token',
-      apiUrl: 'https://placeholder.dynamics.com/api/data/v9.2'
+      appBaseUrl: 'http://localhost',
+      tokenUrl: 'https://localhost/oauth2/token',
+      apiUrl: 'https://localhost/api/data/v9.2'
     })
 
     jest.clearAllMocks()
@@ -44,7 +45,7 @@ describe('Dynamics Client', () => {
 
       expect(result).toBe('test_token')
       expect(mockWreckPost).toHaveBeenCalledWith(
-        'https://placeholder.dynamics.com/oauth2/token',
+        'https://localhost/oauth2/token',
         expect.objectContaining({
           payload:
             'client_id=test-client-id&client_secret=test-client-secret&grant_type=client_credentials&scope=test-scope',
@@ -121,15 +122,14 @@ describe('Dynamics Client', () => {
         applicationReference: 'TEST-REF-001'
       })
       expect(mockWreckPost).toHaveBeenCalledWith(
-        'https://placeholder.dynamics.com/api/data/v9.2/exemptions',
+        'https://localhost/api/data/v9.2/exemptions',
         expect.objectContaining({
           payload: {
             contactid: 'test-contact-id',
             projectName: 'Test Project',
             reference: 'TEST-REF-001',
             type: 'Exempt activity',
-            applicationUrl:
-              'https://marine-licensing-frontend.dev.cdp-int.defra.cloud/exemption',
+            applicationUrl: 'http://localhost/exemption',
             status: EXEMPTION_STATUS.SUBMITTED
           },
           headers: {

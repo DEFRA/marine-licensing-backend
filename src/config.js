@@ -36,6 +36,12 @@ const config = convict({
     format: String,
     default: 'marine-licensing-backend'
   },
+  appBaseUrl: {
+    doc: 'Base URL for the application',
+    format: String,
+    default: 'http://localhost:3001',
+    env: 'APP_BASE_URL'
+  },
   cdpEnvironment: {
     doc: 'The CDP environment the app is running in. With the addition of "local" for local development',
     format: [

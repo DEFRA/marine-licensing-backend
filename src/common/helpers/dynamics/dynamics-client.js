@@ -38,7 +38,7 @@ export const sendExemptionToDynamics = async (
   accessToken,
   queueItem
 ) => {
-  const { apiUrl } = config.get('dynamics')
+  const { apiUrl, appBaseUrl } = config.get('dynamics')
 
   const { applicationReferenceNumber } = queueItem
 
@@ -57,8 +57,7 @@ export const sendExemptionToDynamics = async (
     projectName: exemption.projectName,
     reference: applicationReferenceNumber,
     type: exemption.type,
-    applicationUrl:
-      'https://marine-licensing-frontend.dev.cdp-int.defra.cloud/exemption',
+    applicationUrl: `${appBaseUrl}/exemption`,
     status: EXEMPTION_STATUS.SUBMITTED
   }
 

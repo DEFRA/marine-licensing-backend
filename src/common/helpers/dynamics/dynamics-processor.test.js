@@ -46,7 +46,7 @@ describe('Dynamics Processor', () => {
       scope: 'test-scope',
       maxRetries: 3,
       retryDelayMs: 60000,
-      tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
+      tokenUrl: 'https://localhost/oauth2/token'
     })
 
     jest.clearAllMocks()
