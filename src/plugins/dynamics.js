@@ -24,7 +24,7 @@ const processExemptionsQueuePlugin = {
       server.method(
         'processExemptionsQueue',
         async () => {
-          return await processExemptionsQueue(server)
+          return processExemptionsQueue(server)
         },
         {}
       )

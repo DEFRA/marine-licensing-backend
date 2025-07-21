@@ -199,7 +199,10 @@ describe('Dynamics Processor', () => {
         dynamicsModule.processExemptionsQueue(mockServer)
       ).rejects.toThrow()
 
-      expect(boomSpy).toHaveBeenCalledWith('Error during processing')
+      expect(boomSpy).toHaveBeenCalledWith(
+        'Error during processing',
+        'Database error'
+      )
     })
 
     it('should call handleQueueItemFailure when processing fails', async () => {

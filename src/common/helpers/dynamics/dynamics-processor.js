@@ -108,6 +108,6 @@ export const processExemptionsQueue = async (server) => {
       }
     }
   } catch (error) {
-    throw Boom.badImplementation('Error during processing')
+    throw Boom.badImplementation('Error during processing', error.message)
   }
 }
