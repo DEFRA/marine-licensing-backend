@@ -73,8 +73,6 @@ export const handleQueueItemFailure = async (server, item) => {
 
 export const processExemptionsQueue = async (server) => {
   try {
-    server.logger.info('Starting exemption queue poll')
-
     const now = new Date()
 
     const queueItems = await server.db
@@ -90,11 +88,10 @@ export const processExemptionsQueue = async (server) => {
       })
       .toArray()
 
-    server.logger.info(`Found ${queueItems.length} items to process in queue`)
-
     let accessToken
 
     if (queueItems.length > 0) {
+      server.logger.info(`Found ${queueItems.length} items to process in queue`)
       accessToken = await getDynamicsAccessToken()
     }
 

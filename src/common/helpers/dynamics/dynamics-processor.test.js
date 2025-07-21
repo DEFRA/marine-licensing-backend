@@ -46,7 +46,7 @@ describe('Dynamics Processor', () => {
       scope: 'test-scope',
       maxRetries: 3,
       retryDelayMs: 60000,
-      tokenUrl: 'https://localhost/oauth2/token'
+      tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
     })
 
     jest.clearAllMocks()
@@ -56,15 +56,15 @@ describe('Dynamics Processor', () => {
   describe('startExemptionsQueuePolling', () => {
     it('should start polling with the specified interval', () => {
       const intervalMs = 5000
+      const setIntervalSpy = jest.spyOn(global, 'setInterval')
 
       dynamicsModule.startExemptionsQueuePolling(mockServer, intervalMs)
 
-      jest.advanceTimersByTime(10000)
-      jest.advanceTimersByTime(intervalMs)
-
-      expect(mockServer.logger.info).toHaveBeenCalledWith(
-        'Starting exemption queue poll'
+      expect(setIntervalSpy).toHaveBeenCalledWith(
+        expect.any(Function),
+        intervalMs
       )
+      expect(mockServer.app.pollTimer).toBeDefined()
     })
   })
 
