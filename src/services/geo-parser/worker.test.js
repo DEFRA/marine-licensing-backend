@@ -233,5 +233,86 @@ describe('Worker', () => {
         error: 'Unsupported file type: undefined'
       })
     })
+
+    it('should handle completely undefined workerData', async () => {
+      await processFile(undefined, mockMessagePort)
+
+      expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
+        error: "Cannot read properties of null (reading 'filePath')"
+      })
+    })
+
+    it('should handle null workerData', async () => {
+      await processFile(null, mockMessagePort)
+
+      expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
+        error: "Cannot read properties of null (reading 'filePath')"
+      })
+    })
+
+    it('should handle undefined messagePort and throw error', async () => {
+      const workerData = {
+        filePath: '/path/to/test.kml',
+        fileType: 'kml'
+      }
+      kmlParser.parseFile.mockResolvedValue(mockGeoJSON)
+
+      // Should throw an error when messagePort is undefined (defaults to parentPort which is null in test)
+      await expect(processFile(workerData, undefined)).rejects.toThrow(
+        "Cannot read properties of null (reading 'postMessage')"
+      )
+    })
+
+    it('should handle null messagePort and throw error', async () => {
+      const workerData = {
+        filePath: '/path/to/test.kml',
+        fileType: 'kml'
+      }
+      kmlParser.parseFile.mockResolvedValue(mockGeoJSON)
+
+      // Should throw an error when messagePort is null
+      await expect(processFile(workerData, null)).rejects.toThrow(
+        "Cannot read properties of null (reading 'postMessage')"
+      )
+    })
+
+    it('should handle empty workerData object', async () => {
+      const workerData = {}
+
+      await processFile(workerData, mockMessagePort)
+
+      expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
+        error: 'Unsupported file type: undefined'
+      })
+    })
+
+    it('should handle workerData with only filePath', async () => {
+      const workerData = {
+        filePath: '/path/to/test.kml'
+      }
+
+      await processFile(workerData, mockMessagePort)
+
+      expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
+        error: 'Unsupported file type: undefined'
+      })
+      expect(kmlParser.parseFile).not.toHaveBeenCalled()
+      expect(shapefileParser.parseFile).not.toHaveBeenCalled()
+    })
+
+    it('should handle workerData with only fileType', async () => {
+      const workerData = {
+        fileType: 'kml'
+      }
+      // Mock the parser to throw an error when called with undefined filePath
+      kmlParser.parseFile.mockRejectedValue(new Error('File path is required'))
+
+      await processFile(workerData, mockMessagePort)
+
+      expect(kmlParser.parseFile).toHaveBeenCalledWith(undefined)
+      expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
+        error: 'File path is required'
+      })
+    })
   })
 })
