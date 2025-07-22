@@ -149,7 +149,7 @@ const config = convict({
     clientSecret: {
       doc: 'The client secret.',
       format: String,
-      default: 'test_value',
+      default: '',
       env: 'DYNAMICS_CLIENT_SECRET'
     },
     tokenUrl: {

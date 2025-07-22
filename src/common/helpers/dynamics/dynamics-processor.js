@@ -33,7 +33,9 @@ export const handleQueueItemSuccess = async (server, item) => {
       }
     }
   )
-  server.logger.info(`Successfully processed item ${item._id}`)
+  server.logger.info(
+    `Successfully processed item ${item.applicationReferenceNumber}`
+  )
 }
 
 export const handleQueueItemFailure = async (server, item) => {
@@ -44,7 +46,8 @@ export const handleQueueItemFailure = async (server, item) => {
     await server.db.collection('exemption-dynamics-queue-failed').insertOne({
       ...item,
       retries: maxRetries,
-      status: REQUEST_QUEUE_STATUS.FAILED
+      status: REQUEST_QUEUE_STATUS.FAILED,
+      updatedAt: new Date()
     })
 
     await server.db
@@ -52,7 +55,7 @@ export const handleQueueItemFailure = async (server, item) => {
       .deleteOne({ _id: item._id })
 
     server.logger.error(
-      `Moved item ${item._id} to dead letter queue after ${retries} retries`
+      `Moved item ${item._id} for application ${item.applicationReferenceNumber} to dead letter queue after ${retries} retries`
     )
   } else {
     await server.db.collection(DYNAMICS_QUEUE_TABLE).updateOne(
@@ -66,7 +69,7 @@ export const handleQueueItemFailure = async (server, item) => {
       }
     )
     server.logger.error(
-      `Incremented retries for item ${item._id} to ${retries}`
+      `Incremented retries for item ${item.applicationReferenceNumber} to ${retries}`
     )
   }
 }
@@ -100,11 +103,12 @@ export const processExemptionsQueue = async (server) => {
         await sendExemptionToDynamics(server, accessToken, item)
         await handleQueueItemSuccess(server, item)
       } catch (err) {
-        console.log(err)
+        server.logger.error(err)
         await handleQueueItemFailure(server, item)
       }
     }
   } catch (error) {
+    server.logger.error(error)
     throw Boom.badImplementation('Error during processing', error.message)
   }
 }

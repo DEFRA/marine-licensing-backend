@@ -5,7 +5,7 @@ import {
   processExemptionsQueue
 } from '../common/helpers/dynamics/index.js'
 
-const fiveMinutesInMS = 300000
+const fiveMinutesInMS = 300_000
 
 const processExemptionsQueuePlugin = {
   plugin: {
