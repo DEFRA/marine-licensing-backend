@@ -15,20 +15,27 @@ import Boom from '@hapi/boom'
 
 const logger = createLogger()
 const awsConfig = config.get('aws')
+const cdpEnvironment = config.get('cdpEnvironment')
 
 class BlobService {
   constructor(s3Client) {
     if (s3Client === undefined) {
-      this.client = new S3Client({
+      const options = {
         region: awsConfig.region,
-        ...(awsConfig.s3.endpoint && {
-          endpoint: awsConfig.s3.endpoint,
-          forcePathStyle: true
-        }),
         requestHandler: {
           requestTimeout: awsConfig.s3.timeout
         }
-      })
+      }
+
+      if (cdpEnvironment === 'local') {
+        options.endpoint = awsConfig.s3.endpoint
+        options.forcePathStyle = true
+      }
+
+      logger.info(options, 'BlobService: constructor(): S3 client options')
+      logger.info(`config: cdpEnvironment is [${cdpEnvironment}]`)
+
+      this.client = new S3Client(options)
     } else {
       this.client = s3Client
     }
