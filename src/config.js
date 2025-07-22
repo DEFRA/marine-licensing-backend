@@ -171,7 +171,7 @@ const config = convict({
       default: '',
       env: 'DYNAMICS_API_URL'
     },
-    isEnabled: {
+    isDynamicsEnabled: {
       doc: 'Is Dynamics integration enabled',
       format: Boolean,
       default: false,

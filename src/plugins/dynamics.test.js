@@ -47,7 +47,7 @@ describe('processExemptionsQueue Plugin', () => {
   })
 
   it('should register hooks and log when enabled', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
+    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     await processExemptionsQueuePlugin.plugin.register(mockServer, {})
 
@@ -77,7 +77,7 @@ describe('processExemptionsQueue Plugin', () => {
   })
 
   it('should work with defaults without config', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
+    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     await processExemptionsQueuePlugin.plugin.register(mockServer)
 
@@ -87,7 +87,7 @@ describe('processExemptionsQueue Plugin', () => {
   })
 
   it('should register the processExemptionsQueue server method', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
+    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     const mockServer = {
       ext: jest.fn(),
@@ -106,7 +106,7 @@ describe('processExemptionsQueue Plugin', () => {
   })
 
   it('should register the processExemptionsQueue server method with correct implementation', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
+    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     const mockServer = {
       ext: jest.fn(),

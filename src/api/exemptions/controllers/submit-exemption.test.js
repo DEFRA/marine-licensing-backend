@@ -5,9 +5,11 @@ import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
+import { config } from '../../../config.js'
 
 jest.mock('../helpers/reference-generator.js')
 jest.mock('../helpers/createTaskList.js')
+jest.mock('../../../config.js')
 
 describe('POST /exemption/submit', () => {
   let mockDb
@@ -19,6 +21,10 @@ describe('POST /exemption/submit', () => {
 
   beforeEach(() => {
     jest.resetAllMocks()
+
+    config.get.mockReturnValue({
+      isDynamicsEnabled: true
+    })
 
     mockDate = new Date('2025-06-15T10:30:00Z')
     jest.spyOn(global, 'Date').mockImplementation(() => mockDate)
@@ -183,6 +189,38 @@ describe('POST /exemption/submit', () => {
         createdAt: mockDate,
         updatedAt: mockDate
       })
+    })
+
+    it('should not insert request queue document when dynamics is not enabled when exemption is submitted', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        siteDetails: {
+          coordinatesType: 'point',
+          coordinates: { latitude: '54.978', longitude: '-1.617' }
+        },
+        activityDescription: 'Test marine activity'
+      }
+
+      config.get.mockReturnValueOnce({
+        isDynamicsEnabled: false
+      })
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer
+        },
+        mockHandler
+      )
+
+      expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
     })
 
     it('should validate task completion before submission', async () => {

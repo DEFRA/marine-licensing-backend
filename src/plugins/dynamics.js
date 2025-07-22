@@ -11,9 +11,9 @@ const processExemptionsQueuePlugin = {
   plugin: {
     name: 'process-exemptions-queue',
     register: async (server, options = {}) => {
-      const { isEnabled } = config.get('dynamics')
+      const { isDynamicsEnabled } = config.get('dynamics')
 
-      if (!isEnabled) {
+      if (!isDynamicsEnabled) {
         return
       }
 
