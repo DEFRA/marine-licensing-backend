@@ -256,7 +256,7 @@ describe('GeoParser', () => {
       })
 
       await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
-        Boom.internal('Worker error: Worker error')
+        'Worker error: Worker error'
       )
     })
 
@@ -270,7 +270,7 @@ describe('GeoParser', () => {
       })
 
       await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
-        Boom.internal('Worker stopped with exit code 1')
+        'Worker stopped with exit code 1'
       )
     })
 
@@ -298,7 +298,7 @@ describe('GeoParser', () => {
       geoParser.processingTimeout = 100
 
       await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
-        Boom.clientTimeout('Processing timeout exceeded')
+        'Processing timeout exceeded'
       )
 
       expect(mockWorker.terminate).toHaveBeenCalled()
