@@ -9,6 +9,8 @@ convict.addFormats(convictFormatWithValidator)
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 
+const oneMinuteInMS = 60 * 1000
+
 const config = convict({
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
@@ -33,6 +35,12 @@ const config = convict({
     doc: 'Api Service Name',
     format: String,
     default: 'marine-licensing-backend'
+  },
+  frontEndBaseUrl: {
+    doc: 'Base URL for the front end application',
+    format: String,
+    default: 'http://localhost:3000',
+    env: 'FRONTEND_BASE_URL'
   },
   cdpEnvironment: {
     doc: 'The CDP environment the app is running in. With the addition of "local" for local development',
@@ -129,6 +137,57 @@ const config = convict({
       format: String,
       default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
+    }
+  },
+  dynamics: {
+    clientId: {
+      doc: 'The client ID.',
+      format: String,
+      default: '',
+      env: 'DYNAMICS_CLIENT_ID'
+    },
+    clientSecret: {
+      doc: 'The client secret.',
+      format: String,
+      default: '',
+      env: 'DYNAMICS_CLIENT_SECRET'
+    },
+    tokenUrl: {
+      doc: 'URL to get token for the Dynamics request',
+      format: String,
+      default:
+        'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/oauth2/v2.0/token',
+      env: 'DYNAMICS_TOKEN_URL'
+    },
+    scope: {
+      doc: 'Scope for the Dynamics API access',
+      format: String,
+      default: 'https://service.flow.microsoft.com//.default',
+      env: 'DYNAMICS_SCOPE'
+    },
+    apiUrl: {
+      doc: 'URL for the Dynamics API',
+      format: String,
+      default: '',
+      env: 'DYNAMICS_API_URL'
+    },
+    isDynamicsEnabled: {
+      doc: 'Is Dynamics integration enabled',
+      format: Boolean,
+      default: false,
+      env: 'DYNAMICS_ENABLED'
+    },
+    maxRetries: {
+      doc: 'Maximum number of retries for failed Dynamics queue items',
+      format: Number,
+      default: 3,
+      env: 'DYNAMICS_MAX_RETRIES'
+    },
+    retryDelayMs: {
+      doc: 'Delay in milliseconds before retrying a failed Dynamics queue item',
+      format: Number,
+      default: oneMinuteInMS,
+      env: 'DYNAMICS_RETRY_DELAY_MS'
     }
   }
 })

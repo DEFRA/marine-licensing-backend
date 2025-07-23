@@ -4,9 +4,12 @@ import { createTaskList } from '../helpers/createTaskList.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
+import { config } from '../../../config.js'
 
 jest.mock('../helpers/reference-generator.js')
 jest.mock('../helpers/createTaskList.js')
+jest.mock('../../../config.js')
 
 describe('POST /exemption/submit', () => {
   let mockDb
@@ -14,9 +17,14 @@ describe('POST /exemption/submit', () => {
   let mockHandler
   let mockExemptionId
   let mockDate
+  let mockServer
 
   beforeEach(() => {
     jest.resetAllMocks()
+
+    config.get.mockReturnValue({
+      isDynamicsEnabled: true
+    })
 
     mockDate = new Date('2025-06-15T10:30:00Z')
     jest.spyOn(global, 'Date').mockImplementation(() => mockDate)
@@ -32,12 +40,19 @@ describe('POST /exemption/submit', () => {
     mockDb = {
       collection: jest.fn().mockReturnValue({
         findOne: jest.fn(),
-        updateOne: jest.fn()
+        updateOne: jest.fn(),
+        insertOne: jest.fn()
       })
     }
 
     mockLocker = {
       lock: jest.fn()
+    }
+
+    mockServer = {
+      methods: {
+        processExemptionsQueue: jest.fn().mockResolvedValue(undefined)
+      }
     }
 
     generateApplicationReference.mockResolvedValue('EXE/2025/10001')
@@ -102,7 +117,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -133,6 +149,78 @@ describe('POST /exemption/submit', () => {
       })
 
       expect(mockHandler.code).toHaveBeenCalledWith(200)
+
+      expect(mockServer.methods.processExemptionsQueue).toHaveBeenCalled()
+    })
+
+    it('should insert request queue document when exemption is submitted', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        siteDetails: {
+          coordinatesType: 'point',
+          coordinates: { latitude: '54.978', longitude: '-1.617' }
+        },
+        activityDescription: 'Test marine activity'
+      }
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockDb
+        .collection()
+        .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer
+        },
+        mockHandler
+      )
+
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
+      expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'EXE/2025/10001',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0,
+        createdAt: mockDate,
+        updatedAt: mockDate
+      })
+    })
+
+    it('should not insert request queue document when dynamics is not enabled when exemption is submitted', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        siteDetails: {
+          coordinatesType: 'point',
+          coordinates: { latitude: '54.978', longitude: '-1.617' }
+        },
+        activityDescription: 'Test marine activity'
+      }
+
+      config.get.mockReturnValueOnce({
+        isDynamicsEnabled: false
+      })
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer
+        },
+        mockHandler
+      )
+
+      expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
     })
 
     it('should validate task completion before submission', async () => {
@@ -151,7 +239,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -169,7 +258,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -195,7 +285,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -220,7 +311,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -253,7 +345,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -286,7 +379,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -318,7 +412,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -353,7 +448,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -387,7 +483,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -415,7 +512,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -436,7 +534,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -464,7 +563,8 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
-            locker: mockLocker
+            locker: mockLocker,
+            server: mockServer
           },
           mockHandler
         )
@@ -491,7 +591,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -522,7 +623,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -557,7 +659,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
@@ -594,7 +697,8 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
-          locker: mockLocker
+          locker: mockLocker,
+          server: mockServer
         },
         mockHandler
       )
