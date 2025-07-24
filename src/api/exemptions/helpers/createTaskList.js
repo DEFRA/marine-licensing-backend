@@ -13,12 +13,29 @@ const checkSiteDetailsCircle = (siteDetails) => {
   return missingKeys.length === 0 ? COMPLETED : null
 }
 
+const checkSiteDetailsFileUpload = (siteDetails) => {
+  const requiredValues = [
+    'coordinatesType',
+    'fileUploadType',
+    'geoJSON',
+    'featureCount',
+    's3Location'
+  ]
+  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
+
+  return missingKeys.length === 0 ? COMPLETED : null
+}
+
 const checkSiteDetails = (siteDetails) => {
   if (!siteDetails || !Object.keys(siteDetails).length) {
     return null
   }
 
   const { coordinatesEntry, coordinatesType } = siteDetails
+
+  if (coordinatesType === 'file') {
+    return checkSiteDetailsFileUpload(siteDetails)
+  }
 
   if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
     return checkSiteDetailsCircle(siteDetails)

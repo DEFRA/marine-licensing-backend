@@ -1,5 +1,5 @@
-import { mockSiteDetails } from './site-details.test'
-import { wgs84ValidationSchema } from './wgs84'
+import { mockSiteDetails } from './test-fixtures.js'
+import { wgs84ValidationSchema } from './wgs84.js'
 
 describe('#centreCoordinate models', () => {
   beforeEach(() => {
