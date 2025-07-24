@@ -16,8 +16,8 @@ export const mockSiteDetailsRequest = {
   siteDetails: mockSiteDetails
 }
 
-const testCoordinates = [-0.1, 51.5]
-
+const testLatitude = 51.474968
+const testLongitude = 1.076016
 export const mockFileUploadSiteDetails = {
   coordinatesType: 'file',
   fileUploadType: 'kml',
@@ -28,7 +28,7 @@ export const mockFileUploadSiteDetails = {
         type: 'Feature',
         geometry: {
           type: 'Point',
-          coordinates: testCoordinates
+          coordinates: [testLatitude, testLongitude]
         },
         properties: {}
       }
