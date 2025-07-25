@@ -21,7 +21,7 @@ globs: src/api/**/*.js
 ## Collection Naming
 - Use kebab-case for collection names
 - Use singular or plural as appropriate
-- Examples: `exemptions`, `example-data`, `mongo-locks`
+- Examples: `exemptions`, `mongo-locks`
 
 ## Database Access
 ```javascript
@@ -94,7 +94,7 @@ const result = await request.db
 
 // Find with projection
 const result = await db
-  .collection('example-data')
+  .collection('exemptons')
   .find({}, { projection: { _id: 0 } })
   .toArray()
 ```
