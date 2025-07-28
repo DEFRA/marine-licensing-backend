@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom'
-import { projectName } from '../../../models/project-name.js'
+import { projectName as projectNameSchema } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
 import {
@@ -15,7 +15,7 @@ export const createProjectNameController = {
     },
     validate: {
       query: false,
-      payload: projectName
+      payload: projectNameSchema
     }
   },
   handler: async (request, h) => {

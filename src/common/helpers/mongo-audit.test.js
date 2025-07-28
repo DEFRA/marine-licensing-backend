@@ -24,7 +24,7 @@ describe('mongo-audit', () => {
 
       mockedGetContactId.mockReturnValue('user123')
 
-      const result = addCreateAuditFields(payload, auth)
+      const result = addCreateAuditFields(auth, payload)
 
       expect(result).toEqual({
         name: 'Test Project',
@@ -42,7 +42,7 @@ describe('mongo-audit', () => {
 
       mockedGetContactId.mockReturnValue('user123')
 
-      const result = addCreateAuditFields(payload, auth)
+      const result = addCreateAuditFields(auth, payload)
 
       expect(result).toEqual({
         createdAt: expectedDate,
@@ -61,7 +61,7 @@ describe('mongo-audit', () => {
 
       mockedGetContactId.mockReturnValue('user456')
 
-      const result = addUpdateAuditFields(payload, auth)
+      const result = addUpdateAuditFields(auth, payload)
 
       expect(result).toEqual({
         name: 'Updated Project',
@@ -77,7 +77,7 @@ describe('mongo-audit', () => {
 
       mockedGetContactId.mockReturnValue('user456')
 
-      const result = addUpdateAuditFields(payload, auth)
+      const result = addUpdateAuditFields(auth, payload)
 
       expect(result).toEqual({
         updatedAt: expectedDate,

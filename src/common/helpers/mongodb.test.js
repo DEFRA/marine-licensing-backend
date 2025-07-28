@@ -70,8 +70,8 @@ describe('#mongoDb', () => {
       const result = await addAuditFields(request, h)
 
       expect(mockedAddCreateAuditFields).toHaveBeenCalledWith(
-        mockPayload,
-        mockAuth
+        mockAuth,
+        mockPayload
       )
       expect(request.payload).toEqual(mockAuditedPayload)
       expect(result).toBe('continue')
@@ -100,8 +100,8 @@ describe('#mongoDb', () => {
       const result = await addAuditFields(request, h)
 
       expect(mockedAddUpdateAuditFields).toHaveBeenCalledWith(
-        mockPayload,
-        mockAuth
+        mockAuth,
+        mockPayload
       )
       expect(request.payload).toEqual(mockAuditedPayload)
       expect(result).toBe('continue')

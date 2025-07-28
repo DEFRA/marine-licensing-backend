@@ -22,11 +22,11 @@ export const addAuditFields = (request, h) => {
   const { auth, payload } = request
 
   if (requestMethod === 'POST') {
-    request.payload = addCreateAuditFields(payload, auth)
+    request.payload = addCreateAuditFields(auth, payload)
     return h.continue
   }
 
-  request.payload = addUpdateAuditFields(payload, auth)
+  request.payload = addUpdateAuditFields(auth, payload)
 
   return h.continue
 }

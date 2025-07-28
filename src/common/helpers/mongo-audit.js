@@ -1,6 +1,6 @@
 import { getContactId } from '../../api/exemptions/helpers/get-contact-id.js'
 
-export const addCreateAuditFields = (payload = {}, auth) => {
+export const addCreateAuditFields = (auth, payload = {}) => {
   const userId = getContactId(auth)
   const now = new Date()
 
@@ -15,7 +15,7 @@ export const addCreateAuditFields = (payload = {}, auth) => {
   }
 }
 
-export const addUpdateAuditFields = (payload = {}, auth) => {
+export const addUpdateAuditFields = (auth, payload = {}) => {
   const userId = getContactId(auth)
   const now = new Date()
 
