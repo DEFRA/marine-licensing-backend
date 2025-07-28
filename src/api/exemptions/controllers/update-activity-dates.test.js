@@ -4,6 +4,10 @@ import { ObjectId } from 'mongodb'
 describe('PATCH /exemptions/activity-dates', () => {
   const payloadValidator =
     createActivityDatesController.options.validate.payload
+  const mockAuditPayload = {
+    updatedAt: new Date('2025-01-01T12:00:00Z'),
+    updatedBy: 'user123'
+  }
 
   it('should fail start date is missing', () => {
     const result = payloadValidator.validate({})
@@ -51,6 +55,12 @@ describe('PATCH /exemptions/activity-dates', () => {
 
   it('should fail if exemption is not found', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      start: new Date('2027-01-01'),
+      end: new Date('2027-12-31'),
+      id: new ObjectId().toHexString(),
+      ...mockAuditPayload
+    }
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
@@ -62,11 +72,7 @@ describe('PATCH /exemptions/activity-dates', () => {
       createActivityDatesController.handler(
         {
           db: mockMongo,
-          payload: {
-            start: new Date('2027-01-01'),
-            end: new Date('2027-12-31'),
-            id: new ObjectId().toHexString()
-          }
+          payload: mockPayload
         },
         mockHandler
       )
@@ -75,6 +81,12 @@ describe('PATCH /exemptions/activity-dates', () => {
 
   it('should fail if there is a database error', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      start: new Date('2027-01-01'),
+      end: new Date('2027-12-31'),
+      id: new ObjectId().toHexString(),
+      ...mockAuditPayload
+    }
 
     const mockError = 'Database failed'
 
@@ -88,11 +100,7 @@ describe('PATCH /exemptions/activity-dates', () => {
       createActivityDatesController.handler(
         {
           db: mockMongo,
-          payload: {
-            start: new Date('2027-01-01'),
-            end: new Date('2027-12-31'),
-            id: new ObjectId().toHexString()
-          }
+          payload: mockPayload
         },
         mockHandler
       )
@@ -101,29 +109,44 @@ describe('PATCH /exemptions/activity-dates', () => {
 
   it('should update exemption with activity dates', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      start: new Date('2027-01-01'),
+      end: new Date('2027-12-31'),
+      id: new ObjectId().toHexString(),
+      ...mockAuditPayload
+    }
 
+    const mockUpdateOne = jest.fn().mockResolvedValueOnce({})
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({})
+        updateOne: mockUpdateOne
       }
     })
 
     await createActivityDatesController.handler(
       {
         db: mockMongo,
-        payload: {
-          start: new Date('2027-01-01'),
-          end: new Date('2027-12-31'),
-          id: new ObjectId().toHexString()
-        }
+        payload: mockPayload
       },
       mockHandler
     )
 
-    expect(mockHandler.response).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'success'
-      })
+    expect(mockHandler.response).toHaveBeenCalledWith({
+      message: 'success'
+    })
+
+    expect(mockMongo.collection).toHaveBeenCalledWith('exemptions')
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: ObjectId.createFromHexString(mockPayload.id) },
+      {
+        $set: {
+          activityDates: {
+            start: mockPayload.start,
+            end: mockPayload.end
+          },
+          ...mockAuditPayload
+        }
+      }
     )
   })
 })

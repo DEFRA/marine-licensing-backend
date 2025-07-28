@@ -20,13 +20,13 @@ export const updateSiteDetailsController = {
     try {
       const { payload, db } = request
 
-      const { siteDetails, id } = payload
+      const { siteDetails, id, updatedAt, updatedBy } = payload
 
       const result = await db
         .collection('exemptions')
         .updateOne(
           { _id: ObjectId.createFromHexString(id) },
-          { $set: { siteDetails } }
+          { $set: { siteDetails, updatedAt, updatedBy } }
         )
 
       if (result.matchedCount === 0) {

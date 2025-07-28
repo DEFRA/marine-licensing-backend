@@ -20,13 +20,13 @@ export const createActivityDescriptionController = {
     try {
       const { payload, db } = request
 
-      const { id, activityDescription } = payload
+      const { id, activityDescription, updatedAt, updatedBy } = payload
 
       const result = await db
         .collection('exemptions')
         .updateOne(
           { _id: ObjectId.createFromHexString(id) },
-          { $set: { activityDescription } }
+          { $set: { activityDescription, updatedAt, updatedBy } }
         )
 
       if (result.matchedCount === 0) {

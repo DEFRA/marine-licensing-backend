@@ -20,14 +20,14 @@ export const updatePublicRegisterController = {
     try {
       const { payload, db } = request
 
-      const { reason, consent, id } = payload
+      const { reason, consent, id, updatedAt, updatedBy } = payload
 
-      const result = await db
-        .collection('exemptions')
-        .updateOne(
-          { _id: ObjectId.createFromHexString(id) },
-          { $set: { publicRegister: { reason, consent } } }
-        )
+      const result = await db.collection('exemptions').updateOne(
+        { _id: ObjectId.createFromHexString(id) },
+        {
+          $set: { publicRegister: { reason, consent, updatedAt, updatedBy } }
+        }
+      )
 
       if (result.matchedCount === 0) {
         throw Boom.notFound('Exemption not found')

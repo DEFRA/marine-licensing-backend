@@ -5,6 +5,10 @@ import Boom from '@hapi/boom'
 describe('PATCH /exemptions/public-register', () => {
   const payloadValidator =
     updatePublicRegisterController.options.validate.payload
+  const mockAuditPayload = {
+    updatedAt: new Date('2025-01-01T12:00:00Z'),
+    updatedBy: 'user123'
+  }
 
   it('should fail if fields are missing', () => {
     const result = payloadValidator.validate({})
@@ -30,17 +34,23 @@ describe('PATCH /exemptions/public-register', () => {
 
   it('should update exemption with public register', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      consent: false,
+      ...mockAuditPayload
+    }
 
+    const mockUpdateOne = jest.fn().mockResolvedValueOnce({})
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({})
+        updateOne: mockUpdateOne
       }
     })
 
     await updatePublicRegisterController.handler(
       {
         db: mockMongo,
-        payload: { id: new ObjectId().toHexString(), consent: false }
+        payload: mockPayload
       },
       mockHandler
     )
@@ -50,10 +60,29 @@ describe('PATCH /exemptions/public-register', () => {
         message: 'success'
       })
     )
+
+    expect(mockMongo.collection).toHaveBeenCalledWith('exemptions')
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: ObjectId.createFromHexString(mockPayload.id) },
+      {
+        $set: {
+          publicRegister: {
+            reason: mockPayload.reason,
+            consent: mockPayload.consent,
+            ...mockAuditPayload
+          }
+        }
+      }
+    )
   })
 
   it('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      consent: false,
+      ...mockAuditPayload
+    }
 
     const mockError = 'Database failed'
 
@@ -67,7 +96,7 @@ describe('PATCH /exemptions/public-register', () => {
       updatePublicRegisterController.handler(
         {
           db: mockMongo,
-          payload: { id: new ObjectId().toHexString(), consent: false }
+          payload: mockPayload
         },
         mockHandler
       )
@@ -76,6 +105,11 @@ describe('PATCH /exemptions/public-register', () => {
 
   it('should return a  404 if id is not correct', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      consent: false,
+      ...mockAuditPayload
+    }
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
@@ -89,7 +123,7 @@ describe('PATCH /exemptions/public-register', () => {
       updatePublicRegisterController.handler(
         {
           db: mockMongo,
-          payload: { id: new ObjectId().toHexString(), consent: false }
+          payload: mockPayload
         },
         mockHandler
       )

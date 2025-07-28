@@ -4,6 +4,10 @@ import Boom from '@hapi/boom'
 
 describe('PATCH /exemptions/site-details', () => {
   const payloadValidator = updateSiteDetailsController.options.validate.payload
+  const mockAuditPayload = {
+    updatedAt: new Date('2025-01-01T12:00:00Z'),
+    updatedBy: 'user123'
+  }
 
   it('should fail if siteDetails are missing', () => {
     const result = payloadValidator.validate({})
@@ -13,33 +17,50 @@ describe('PATCH /exemptions/site-details', () => {
 
   it('should update exemption with site details', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      siteDetails: {},
+      ...mockAuditPayload
+    }
 
+    const mockUpdateOne = jest.fn().mockResolvedValueOnce({})
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({})
+        updateOne: mockUpdateOne
       }
     })
 
     await updateSiteDetailsController.handler(
       {
         db: mockMongo,
-        payload: {
-          id: new ObjectId().toHexString(),
-          siteDetails: {}
-        }
+        payload: mockPayload
       },
       mockHandler
     )
 
-    expect(mockHandler.response).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'success'
-      })
+    expect(mockHandler.response).toHaveBeenCalledWith({
+      message: 'success'
+    })
+
+    expect(mockMongo.collection).toHaveBeenCalledWith('exemptions')
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: ObjectId.createFromHexString(mockPayload.id) },
+      {
+        $set: {
+          siteDetails: mockPayload.siteDetails,
+          ...mockAuditPayload
+        }
+      }
     )
   })
 
   it('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      siteDetails: {},
+      ...mockAuditPayload
+    }
 
     const mockError = 'Database failed'
 
@@ -53,10 +74,7 @@ describe('PATCH /exemptions/site-details', () => {
       updateSiteDetailsController.handler(
         {
           db: mockMongo,
-          payload: {
-            id: new ObjectId().toHexString(),
-            siteDetails: {}
-          }
+          payload: mockPayload
         },
         mockHandler
       )
@@ -65,6 +83,11 @@ describe('PATCH /exemptions/site-details', () => {
 
   it('should return a  404 if id is not correct', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      siteDetails: {},
+      ...mockAuditPayload
+    }
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
@@ -78,10 +101,7 @@ describe('PATCH /exemptions/site-details', () => {
       updateSiteDetailsController.handler(
         {
           db: mockMongo,
-          payload: {
-            id: new ObjectId().toHexString(),
-            siteDetails: {}
-          }
+          payload: mockPayload
         },
         mockHandler
       )
