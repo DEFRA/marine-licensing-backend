@@ -36,13 +36,12 @@ describe('mongo-audit', () => {
     })
 
     it('should handle a null payload', () => {
-      const payload = {}
       const auth = { credentials: { contactId: 'user123' } }
       const expectedDate = new Date('2023-01-01T12:00:00.000Z')
 
       mockedGetContactId.mockReturnValue('user123')
 
-      const result = addCreateAuditFields(auth, payload)
+      const result = addCreateAuditFields(auth)
 
       expect(result).toEqual({
         createdAt: expectedDate,
@@ -71,13 +70,12 @@ describe('mongo-audit', () => {
     })
 
     it('should handle a null payload', () => {
-      const payload = {}
       const auth = { credentials: { contactId: 'user456' } }
       const expectedDate = new Date('2023-01-01T12:00:00.000Z')
 
       mockedGetContactId.mockReturnValue('user456')
 
-      const result = addUpdateAuditFields(auth, payload)
+      const result = addUpdateAuditFields(auth)
 
       expect(result).toEqual({
         updatedAt: expectedDate,
