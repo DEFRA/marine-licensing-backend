@@ -8,6 +8,12 @@ import {
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
   const auth = { credentials: { contactId: new ObjectId().toHexString() } }
+  const mockAuditPayload = {
+    createdAt: new Date('2025-01-01T12:00:00Z'),
+    createdBy: 'user123',
+    updatedAt: new Date('2025-01-01T12:00:00Z'),
+    updatedBy: 'user123'
+  }
 
   it('should fail if fields are missing', () => {
     const result = payloadValidator.validate({})
@@ -25,9 +31,13 @@ describe('POST /exemptions/project-name', () => {
 
   it('should create a new exemption with project name', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Project',
+      ...mockAuditPayload
+    }
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: { projectName: 'Project' }, auth },
+      { db: mockMongo, payload: mockPayload, auth },
       mockHandler
     )
 
@@ -40,6 +50,10 @@ describe('POST /exemptions/project-name', () => {
 
   it('should create exemption with correct status and type properties', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Test Project',
+      ...mockAuditPayload
+    }
     const mockInsertOne = jest.fn().mockResolvedValue({
       insertedId: new ObjectId()
     })
@@ -51,22 +65,25 @@ describe('POST /exemptions/project-name', () => {
     })
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: { projectName: 'Test Project' }, auth },
+      { db: mockMongo, payload: mockPayload, auth },
       mockHandler
     )
 
-    expect(mockInsertOne).toHaveBeenCalledWith(
-      expect.objectContaining({
-        projectName: 'Test Project',
-        status: EXEMPTION_STATUS.DRAFT,
-        type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
-        contactId: expect.any(String)
-      })
-    )
+    expect(mockInsertOne).toHaveBeenCalledWith({
+      projectName: 'Test Project',
+      status: EXEMPTION_STATUS.DRAFT,
+      type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
+      contactId: expect.any(String),
+      ...mockAuditPayload
+    })
   })
 
   it('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Project',
+      ...mockAuditPayload
+    }
 
     const mockError = 'Database failed'
 
@@ -78,7 +95,7 @@ describe('POST /exemptions/project-name', () => {
 
     expect(() =>
       createProjectNameController.handler(
-        { db: mockMongo, payload: { projectName: 'Project' }, auth },
+        { db: mockMongo, payload: mockPayload, auth },
         mockHandler
       )
     ).rejects.toThrow(`Error creating project name: ${mockError}`)

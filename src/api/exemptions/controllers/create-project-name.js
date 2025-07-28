@@ -23,8 +23,15 @@ export const createProjectNameController = {
       const { payload, db, auth } = request
       const contactId = getContactId(auth)
 
+      const { projectName, createdBy, createdAt, updatedBy, updatedAt } =
+        payload
+
       const result = await db.collection('exemptions').insertOne({
-        projectName: payload.projectName,
+        projectName,
+        createdBy,
+        createdAt,
+        updatedBy,
+        updatedAt,
         status: EXEMPTION_STATUS.DRAFT,
         type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
         contactId
