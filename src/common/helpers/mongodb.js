@@ -49,11 +49,11 @@ export const mongoDb = {
 async function createIndexes(db) {
   await db.collection('mongo-locks').createIndex({ id: 1 })
 
-  // Example of how to create a mongodb index. Remove as required
-  await db.collection('example-data').createIndex({ id: 1 })
-
   await db.collection('exemptions').createIndex({ id: 1 })
   await db
     .collection('reference-sequences')
     .createIndex({ key: 1 }, { unique: true })
+
+  await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
+  await db.collection('exemption-dynamics-queue-failed').createIndex({ id: 1 })
 }

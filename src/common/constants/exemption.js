@@ -1,6 +1,7 @@
 export const EXEMPTION_STATUS = {
   DRAFT: 'Draft',
-  CLOSED: 'Closed'
+  CLOSED: 'Closed',
+  SUBMITTED: 'Submitted'
 }
 
 export const EXEMPTION_TYPE = {

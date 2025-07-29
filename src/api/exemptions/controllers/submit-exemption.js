@@ -6,6 +6,8 @@ import { createTaskList } from '../helpers/createTaskList.js'
 import { generateApplicationReference } from '../helpers/reference-generator.js'
 import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
+import { config } from '../../../config.js'
 
 export const submitExemptionController = {
   options: {
@@ -22,6 +24,7 @@ export const submitExemptionController = {
     try {
       const { payload, db, locker } = request
       const { id } = payload
+      const { isDynamicsEnabled } = config.get('dynamics')
 
       const exemption = await db
         .collection('exemptions')
@@ -69,6 +72,18 @@ export const submitExemptionController = {
 
       if (updateResult.matchedCount === 0) {
         throw Boom.notFound('Exemption not found during update')
+      }
+
+      if (isDynamicsEnabled) {
+        await db.collection('exemption-dynamics-queue').insertOne({
+          applicationReferenceNumber: applicationReference,
+          status: REQUEST_QUEUE_STATUS.PENDING,
+          retries: 0,
+          createdAt: submittedAt,
+          updatedAt: submittedAt
+        })
+
+        await request.server.methods.processExemptionsQueue()
       }
 
       return h
