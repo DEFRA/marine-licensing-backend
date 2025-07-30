@@ -20,13 +20,13 @@ export const updateProjectNameController = {
     try {
       const { payload, db } = request
 
-      const { projectName, id } = payload
+      const { projectName, id, updatedAt, updatedBy } = payload
 
       const result = await db
         .collection('exemptions')
         .updateOne(
           { _id: ObjectId.createFromHexString(id) },
-          { $set: { projectName } }
+          { $set: { projectName, updatedAt, updatedBy } }
         )
 
       if (result.matchedCount === 0) {

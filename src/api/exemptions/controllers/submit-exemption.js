@@ -23,7 +23,7 @@ export const submitExemptionController = {
   handler: async (request, h) => {
     try {
       const { payload, db, locker } = request
-      const { id } = payload
+      const { id, createdAt, createdBy, updatedAt, updatedBy } = payload
       const { isDynamicsEnabled } = config.get('dynamics')
 
       const exemption = await db
@@ -65,7 +65,9 @@ export const submitExemptionController = {
           $set: {
             applicationReference,
             submittedAt,
-            status: EXEMPTION_STATUS.CLOSED
+            status: EXEMPTION_STATUS.CLOSED,
+            updatedAt,
+            updatedBy
           }
         }
       )
@@ -79,8 +81,10 @@ export const submitExemptionController = {
           applicationReferenceNumber: applicationReference,
           status: REQUEST_QUEUE_STATUS.PENDING,
           retries: 0,
-          createdAt: submittedAt,
-          updatedAt: submittedAt
+          createdAt,
+          createdBy,
+          updatedAt,
+          updatedBy
         })
 
         await request.server.methods.processExemptionsQueue()

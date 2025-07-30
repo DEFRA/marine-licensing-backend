@@ -19,6 +19,13 @@ describe('POST /exemption/submit', () => {
   let mockDate
   let mockServer
 
+  const mockAuditPayload = {
+    createdAt: new Date('2025-01-01T12:00:00Z'),
+    createdBy: 'user123',
+    updatedAt: new Date('2025-02-01T12:00:00Z'),
+    updatedBy: 'user123'
+  }
+
   beforeEach(() => {
     jest.resetAllMocks()
 
@@ -173,7 +180,7 @@ describe('POST /exemption/submit', () => {
 
       await submitExemptionController.handler(
         {
-          payload: { id: mockExemptionId },
+          payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
           locker: mockLocker,
           server: mockServer
@@ -186,8 +193,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
-        createdAt: mockDate,
-        updatedAt: mockDate
+        ...mockAuditPayload
       })
     })
 

@@ -4,6 +4,10 @@ import { createActivityDescriptionController } from './create-activity-descripti
 describe('PATCH /exemptions/activity-description', () => {
   const payloadValidator =
     createActivityDescriptionController.options.validate.payload
+  const mockAuditPayload = {
+    updatedAt: new Date('2025-01-01T12:00:00Z'),
+    updatedBy: 'user123'
+  }
 
   it('should fail if fields are missing', () => {
     const result = payloadValidator.validate({})
@@ -27,33 +31,50 @@ describe('PATCH /exemptions/activity-description', () => {
 
   it('should create a new exemption with activity description', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      activityDescription: 'Test Activity',
+      ...mockAuditPayload
+    }
 
+    const mockUpdateOne = jest.fn().mockResolvedValueOnce({ matchedCount: 1 })
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({ matchedCount: 1 })
+        updateOne: mockUpdateOne
       }
     })
 
     await createActivityDescriptionController.handler(
       {
         db: mockMongo,
-        payload: {
-          id: new ObjectId().toHexString(),
-          activityDescription: 'Test Activity'
-        }
+        payload: mockPayload
       },
       mockHandler
     )
 
-    expect(mockHandler.response).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'success'
-      })
+    expect(mockHandler.response).toHaveBeenCalledWith({
+      message: 'success'
+    })
+
+    expect(mockMongo.collection).toHaveBeenCalledWith('exemptions')
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: ObjectId.createFromHexString(mockPayload.id) },
+      {
+        $set: {
+          activityDescription: mockPayload.activityDescription,
+          ...mockAuditPayload
+        }
+      }
     )
   })
 
   it('should return an error message if the exemption is not found', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      activityDescription: 'Test Activity',
+      ...mockAuditPayload
+    }
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
@@ -65,10 +86,7 @@ describe('PATCH /exemptions/activity-description', () => {
       await createActivityDescriptionController.handler(
         {
           db: mockMongo,
-          payload: {
-            id: new ObjectId().toHexString(),
-            activityDescription: 'Test Activity'
-          }
+          payload: mockPayload
         },
         mockHandler
       )
@@ -81,6 +99,11 @@ describe('PATCH /exemptions/activity-description', () => {
 
   it('should return an internal server error if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      activityDescription: 'Test Activity',
+      ...mockAuditPayload
+    }
 
     const mockError = 'Database failed'
 
@@ -94,10 +117,7 @@ describe('PATCH /exemptions/activity-description', () => {
       await createActivityDescriptionController.handler(
         {
           db: mockMongo,
-          payload: {
-            id: new ObjectId().toHexString(),
-            activityDescription: 'Test Activity'
-          }
+          payload: mockPayload
         },
         mockHandler
       )

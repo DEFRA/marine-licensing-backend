@@ -2,6 +2,11 @@ import { ObjectId } from 'mongodb'
 import { updateProjectNameController } from './update-project-name.js'
 
 describe('PATCH /exemptions/public-register', () => {
+  const mockAuditPayload = {
+    updatedAt: new Date('2025-01-01T12:00:00Z'),
+    updatedBy: 'user123'
+  }
+
   const payloadValidator = updateProjectNameController.options.validate.payload
 
   it('should fail if fields are missing', () => {
@@ -20,28 +25,42 @@ describe('PATCH /exemptions/public-register', () => {
 
   it('should update exemption with project name', async () => {
     const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      projectName: 'Test project',
+      ...mockAuditPayload
+    }
 
+    const mockUpdateOne = jest.fn().mockResolvedValueOnce({})
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({})
+        updateOne: mockUpdateOne
       }
     })
 
     await updateProjectNameController.handler(
       {
         db: mockMongo,
-        payload: {
-          id: new ObjectId().toHexString(),
-          projectName: 'Test project'
-        }
+        payload: mockPayload,
+        auth: { credentials: { contactId: 'user123' } }
       },
       mockHandler
     )
 
-    expect(mockHandler.response).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: 'success'
-      })
+    expect(mockHandler.response).toHaveBeenCalledWith({
+      message: 'success'
+    })
+
+    expect(mockMongo.collection).toHaveBeenCalledWith('exemptions')
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: ObjectId.createFromHexString(mockPayload.id) },
+      {
+        $set: {
+          projectName: mockPayload.projectName,
+          updatedAt: mockPayload.updatedAt,
+          updatedBy: mockPayload.updatedBy
+        }
+      }
     )
   })
 

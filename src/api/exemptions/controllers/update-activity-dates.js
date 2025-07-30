@@ -19,7 +19,7 @@ export const createActivityDatesController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const { start, end, id } = payload
+      const { start, end, id, updatedAt, updatedBy } = payload
 
       const result = await db.collection('exemptions').updateOne(
         { _id: ObjectId.createFromHexString(id) },
@@ -28,7 +28,9 @@ export const createActivityDatesController = {
             activityDates: {
               start,
               end
-            }
+            },
+            updatedAt,
+            updatedBy
           }
         }
       )

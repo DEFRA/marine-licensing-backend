@@ -2,8 +2,34 @@ import { MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
 
 import { config } from '../../config.js'
+import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 
 const mongoConfig = config.get('mongo')
+
+export const addAuditFields = (request, h) => {
+  const requestMethod = request.method.toUpperCase()
+
+  if (requestMethod === 'GET') {
+    return h.continue
+  }
+
+  const isUnauthenticatedRequest = !request.auth?.credentials
+
+  if (isUnauthenticatedRequest) {
+    return h.continue
+  }
+
+  const { auth, payload } = request
+
+  if (requestMethod === 'POST') {
+    request.payload = addCreateAuditFields(auth, payload)
+    return h.continue
+  }
+
+  request.payload = addUpdateAuditFields(auth, payload)
+
+  return h.continue
+}
 
 export const mongoDb = {
   plugin: {
@@ -31,6 +57,8 @@ export const mongoDb = {
       server.decorate('server', 'locker', locker)
       server.decorate('request', 'db', () => db, { apply: true })
       server.decorate('request', 'locker', () => locker, { apply: true })
+
+      server.ext('onPreHandler', addAuditFields)
 
       server.events.on('stop', async () => {
         server.logger.info('Closing Mongo client')
