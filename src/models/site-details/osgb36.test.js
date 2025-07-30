@@ -1,5 +1,5 @@
-import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates'
-import { osgb36ValidationSchema } from './osgb36'
+import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
+import { osgb36ValidationSchema } from './osgb36.js'
 
 const mockCoordinates = {
   [COORDINATE_SYSTEMS.OSGB36]: { eastings: '425053', northings: '564180' }

@@ -124,7 +124,6 @@ services:
       S3_ENDPOINT: http://localstack:4566
     networks:
       - cdp-tenant
-
 ################################################################################
 
 volumes:
