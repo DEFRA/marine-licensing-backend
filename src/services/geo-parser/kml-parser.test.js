@@ -1,8 +1,8 @@
-import { KmlParser } from './kml-parser.js'
+import Boom from '@hapi/boom'
+import * as togeojson from '@tmcw/togeojson'
 import { readFile } from 'fs/promises'
 import { JSDOM } from 'jsdom'
-import * as togeojson from '@tmcw/togeojson'
-import Boom from '@hapi/boom'
+import { KmlParser } from './kml-parser.js'
 
 jest.mock('fs/promises', () => ({
   readFile: jest.fn()
@@ -27,6 +27,40 @@ describe('KmlParser', () => {
   let kmlParser
   let mockDocument
   let mockWindow
+
+  const createFeature = (geometry, properties = {}) => ({
+    type: 'Feature',
+    geometry,
+    properties
+  })
+
+  const createFeatureCollection = (features) => ({
+    type: 'FeatureCollection',
+    features
+  })
+
+  const createPointGeometry = (coordinates) => ({
+    type: 'Point',
+    coordinates
+  })
+
+  const createPolygonGeometry = (coordinates) => ({
+    type: 'Polygon',
+    coordinates
+  })
+
+  const createLineStringGeometry = (coordinates) => ({
+    type: 'LineString',
+    coordinates
+  })
+
+  const setupMockAndTest = async (
+    mockGeoJSON,
+    filePath = '/tmp/test-file.kml'
+  ) => {
+    togeojson.kml.mockReturnValue(mockGeoJSON)
+    return await kmlParser.parseFile(filePath)
+  }
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -61,21 +95,9 @@ describe('KmlParser', () => {
         </Document>
       </kml>`
 
-    const mockGeoJSON = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [-0.1, 51.5]
-          },
-          properties: {
-            name: 'Test Point'
-          }
-        }
-      ]
-    }
+    const mockGeoJSON = createFeatureCollection([
+      createFeature(createPointGeometry([-0.1, 51.5]), { name: 'Test Point' })
+    ])
 
     beforeEach(() => {
       readFile.mockResolvedValue(mockKmlContent)
@@ -94,107 +116,61 @@ describe('KmlParser', () => {
     })
 
     it('should handle file with multiple placemarks', async () => {
-      const multiFeatureGeoJSON = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [-0.1, 51.5]
-            },
-            properties: {
-              name: 'Point 1'
-            }
-          },
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [-0.2, 51.6]
-            },
-            properties: {
-              name: 'Point 2'
-            }
-          }
-        ]
-      }
-      togeojson.kml.mockReturnValue(multiFeatureGeoJSON)
+      const multiFeatureGeoJSON = createFeatureCollection([
+        createFeature(createPointGeometry([-0.1, 51.5]), { name: 'Point 1' }),
+        createFeature(createPointGeometry([-0.2, 51.6]), { name: 'Point 2' })
+      ])
 
-      const result = await kmlParser.parseFile(filePath)
+      const result = await setupMockAndTest(multiFeatureGeoJSON, filePath)
 
       expect(result).toEqual(multiFeatureGeoJSON)
       expect(result.features).toHaveLength(2)
     })
 
     it('should handle empty KML file', async () => {
-      const emptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: []
-      }
-      togeojson.kml.mockReturnValue(emptyGeoJSON)
+      const emptyGeoJSON = createFeatureCollection([])
 
-      const result = await kmlParser.parseFile(filePath)
+      const result = await setupMockAndTest(emptyGeoJSON, filePath)
 
       expect(result).toEqual(emptyGeoJSON)
       expect(result.features).toHaveLength(0)
     })
 
     it('should handle KML with polygon geometry', async () => {
-      const polygonGeoJSON = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [-0.1, 51.5],
-                  [-0.2, 51.5],
-                  [-0.2, 51.6],
-                  [-0.1, 51.6],
-                  [-0.1, 51.5]
-                ]
-              ]
-            },
-            properties: {
-              name: 'Test Polygon'
-            }
-          }
+      const polygonCoords = [
+        [
+          [-0.1, 51.5],
+          [-0.2, 51.5],
+          [-0.2, 51.6],
+          [-0.1, 51.6],
+          [-0.1, 51.5]
         ]
-      }
-      togeojson.kml.mockReturnValue(polygonGeoJSON)
+      ]
+      const polygonGeoJSON = createFeatureCollection([
+        createFeature(createPolygonGeometry(polygonCoords), {
+          name: 'Test Polygon'
+        })
+      ])
 
-      const result = await kmlParser.parseFile(filePath)
+      const result = await setupMockAndTest(polygonGeoJSON, filePath)
 
       expect(result).toEqual(polygonGeoJSON)
       expect(result.features[0].geometry.type).toBe('Polygon')
     })
 
     it('should handle KML with linestring geometry', async () => {
-      const linestringGeoJSON = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: [
-                [-0.1, 51.5],
-                [-0.2, 51.6],
-                [-0.3, 51.7]
-              ]
-            },
-            properties: {
-              name: 'Test Line'
-            }
-          }
-        ]
-      }
-      togeojson.kml.mockReturnValue(linestringGeoJSON)
+      const lineCoords = [
+        [-0.1, 51.5],
+        [-0.2, 51.6],
+        [-0.3, 51.7]
+      ]
+      const linestringGeoJSON = createFeatureCollection([
+        createFeature(createLineStringGeometry(lineCoords), {
+          name: 'Test Line'
+        })
+      ])
 
-      const result = await kmlParser.parseFile(filePath)
+      const result = await setupMockAndTest(linestringGeoJSON, filePath)
 
       expect(result).toEqual(linestringGeoJSON)
       expect(result.features[0].geometry.type).toBe('LineString')

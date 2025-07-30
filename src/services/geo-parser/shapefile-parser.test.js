@@ -1,10 +1,10 @@
-import { ShapefileParser } from './shapefile-parser.js'
-import * as shapefile from 'shapefile'
-import { mkdtemp, rm, glob } from 'fs/promises'
+import AdmZip from 'adm-zip'
+import { glob, mkdtemp, rm } from 'fs/promises'
+import * as path from 'node:path'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import AdmZip from 'adm-zip'
-import * as path from 'node:path'
+import * as shapefile from 'shapefile'
+import { ShapefileParser } from './shapefile-parser.js'
 
 jest.mock('shapefile', () => ({
   read: jest.fn()
@@ -47,6 +47,46 @@ describe('ShapefileParser', () => {
   let mockAdmZip
   let mockZipEntries
 
+  const createFeature = (geometry, properties = {}) => ({
+    type: 'Feature',
+    geometry,
+    properties
+  })
+
+  const createFeatureCollection = (features) => ({
+    type: 'FeatureCollection',
+    features
+  })
+
+  const createPointGeometry = (coordinates) => ({
+    type: 'Point',
+    coordinates
+  })
+
+  const createPolygonGeometry = (coordinates) => ({
+    type: 'Polygon',
+    coordinates
+  })
+
+  const createZipEntry = (
+    entryName,
+    isDirectory = false,
+    uncompressedSize = 100,
+    compressedSize = 50
+  ) => ({
+    entryName,
+    isDirectory,
+    getData: () => Buffer.alloc(uncompressedSize),
+    header: { compressedSize }
+  })
+
+  const createShapefileOptions = (overrides = {}) => ({
+    maxFiles: 10_000,
+    maxSize: 1_000_000_000,
+    thresholdRatio: 10,
+    ...overrides
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
 
@@ -78,19 +118,15 @@ describe('ShapefileParser', () => {
     it('should initialize with default options', () => {
       const parser = new ShapefileParser()
 
-      expect(parser.options).toEqual({
-        maxFiles: 10_000,
-        maxSize: 1_000_000_000,
-        thresholdRatio: 10
-      })
+      expect(parser.options).toEqual(createShapefileOptions())
     })
 
     it('should initialize with custom options', () => {
-      const customOptions = {
+      const customOptions = createShapefileOptions({
         maxFiles: 5_000,
         maxSize: 500_000_000,
         thresholdRatio: 5
-      }
+      })
 
       const parser = new ShapefileParser(customOptions)
 
@@ -104,11 +140,9 @@ describe('ShapefileParser', () => {
 
       const parser = new ShapefileParser(customOptions)
 
-      expect(parser.options).toEqual({
-        maxFiles: 5_000,
-        maxSize: 1_000_000_000,
-        thresholdRatio: 10
-      })
+      expect(parser.options).toEqual(
+        createShapefileOptions({ maxFiles: 5_000 })
+      )
     })
   })
 
@@ -122,11 +156,11 @@ describe('ShapefileParser', () => {
     })
 
     it('should return custom options', () => {
-      const customOptions = {
+      const customOptions = createShapefileOptions({
         maxFiles: 5_000,
         maxSize: 500_000_000,
         thresholdRatio: 5
-      }
+      })
       const parser = new ShapefileParser(customOptions)
       const options = parser.getSafeOptions()
 
@@ -139,24 +173,9 @@ describe('ShapefileParser', () => {
 
     beforeEach(() => {
       mockZipEntries = [
-        {
-          entryName: 'test.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(1000),
-          header: { compressedSize: 500 }
-        },
-        {
-          entryName: 'test.shx',
-          isDirectory: false,
-          getData: () => Buffer.alloc(100),
-          header: { compressedSize: 50 }
-        },
-        {
-          entryName: 'test.dbf',
-          isDirectory: false,
-          getData: () => Buffer.alloc(200),
-          header: { compressedSize: 100 }
-        }
+        createZipEntry('test.shp', false, 1000, 500),
+        createZipEntry('test.shx', false, 100, 50),
+        createZipEntry('test.dbf', false, 200, 100)
       ]
       mockAdmZip.getEntries.mockReturnValue(mockZipEntries)
     })
@@ -185,12 +204,7 @@ describe('ShapefileParser', () => {
     })
 
     it('should throw error when exceeding max files limit', async () => {
-      const manyEntries = Array(10001).fill({
-        entryName: 'test.shp',
-        isDirectory: false,
-        getData: () => Buffer.alloc(100),
-        header: { compressedSize: 50 }
-      })
+      const manyEntries = Array(10001).fill(createZipEntry('test.shp'))
       mockAdmZip.getEntries.mockReturnValue(manyEntries)
 
       await expect(shapefileParser.extractZip(zipPath)).rejects.toThrow(
@@ -200,12 +214,7 @@ describe('ShapefileParser', () => {
 
     it('should throw error when exceeding max size limit', async () => {
       const largeEntries = [
-        {
-          entryName: 'large.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(2_000_000_000), // 2GB
-          header: { compressedSize: 1_000_000_000 }
-        }
+        createZipEntry('large.shp', false, 2_000_000_000, 1_000_000_000)
       ]
       mockAdmZip.getEntries.mockReturnValue(largeEntries)
 
@@ -216,12 +225,7 @@ describe('ShapefileParser', () => {
 
     it('should throw error when exceeding compression ratio limit', async () => {
       const suspiciousEntries = [
-        {
-          entryName: 'suspicious.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(1000),
-          header: { compressedSize: 50 } // 20:1 ratio > 10:1 threshold
-        }
+        createZipEntry('suspicious.shp', false, 1000, 50)
       ]
       mockAdmZip.getEntries.mockReturnValue(suspiciousEntries)
 
@@ -373,21 +377,9 @@ describe('ShapefileParser', () => {
 
   describe('parseShapefile', () => {
     const shpPath = '/tmp/test.shp'
-    const mockGeoJSON = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [-0.1, 51.5]
-          },
-          properties: {
-            name: 'Test Point'
-          }
-        }
-      ]
-    }
+    const mockGeoJSON = createFeatureCollection([
+      createFeature(createPointGeometry([-0.1, 51.5]), { name: 'Test Point' })
+    ])
 
     beforeEach(() => {
       shapefile.read.mockResolvedValue(mockGeoJSON)
@@ -410,10 +402,7 @@ describe('ShapefileParser', () => {
     })
 
     it('should handle empty shapefile', async () => {
-      const emptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: []
-      }
+      const emptyGeoJSON = createFeatureCollection([])
       shapefile.read.mockResolvedValue(emptyGeoJSON)
 
       const result = await shapefileParser.parseShapefile(shpPath)
@@ -422,19 +411,12 @@ describe('ShapefileParser', () => {
     })
 
     it('should handle large shapefile', async () => {
-      const largeGeoJSON = {
-        type: 'FeatureCollection',
-        features: Array(1000).fill({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [-0.1, 51.5]
-          },
-          properties: {
-            name: 'Point'
-          }
-        })
-      }
+      const largeFeature = createFeature(createPointGeometry([-0.1, 51.5]), {
+        name: 'Point'
+      })
+      const largeGeoJSON = createFeatureCollection(
+        Array(1000).fill(largeFeature)
+      )
       shapefile.read.mockResolvedValue(largeGeoJSON)
 
       const result = await shapefileParser.parseShapefile(shpPath)
@@ -444,35 +426,19 @@ describe('ShapefileParser', () => {
     })
 
     it('should handle different geometry types', async () => {
-      const mixedGeoJSON = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [-0.1, 51.5]
-            },
-            properties: {}
-          },
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [-0.1, 51.5],
-                  [-0.2, 51.5],
-                  [-0.2, 51.6],
-                  [-0.1, 51.6],
-                  [-0.1, 51.5]
-                ]
-              ]
-            },
-            properties: {}
-          }
+      const polygonCoords = [
+        [
+          [-0.1, 51.5],
+          [-0.2, 51.5],
+          [-0.2, 51.6],
+          [-0.1, 51.6],
+          [-0.1, 51.5]
         ]
-      }
+      ]
+      const mixedGeoJSON = createFeatureCollection([
+        createFeature(createPointGeometry([-0.1, 51.5]), {}),
+        createFeature(createPolygonGeometry(polygonCoords), {})
+      ])
       shapefile.read.mockResolvedValue(mixedGeoJSON)
 
       const result = await shapefileParser.parseShapefile(shpPath)
@@ -485,19 +451,9 @@ describe('ShapefileParser', () => {
 
   describe('parseFile', () => {
     const filename = '/tmp/test.zip'
-    const mockGeoJSON = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [-0.1, 51.5]
-          },
-          properties: {}
-        }
-      ]
-    }
+    const mockGeoJSON = createFeatureCollection([
+      createFeature(createPointGeometry([-0.1, 51.5]), {})
+    ])
 
     beforeEach(() => {
       // Mock setImmediate to execute synchronously
@@ -537,26 +493,12 @@ describe('ShapefileParser', () => {
         '/tmp/extract-dir/test1.shp',
         '/tmp/extract-dir/test2.shp'
       ]
-      const geoJSON1 = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [-0.1, 51.5] },
-            properties: { name: 'Point 1' }
-          }
-        ]
-      }
-      const geoJSON2 = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [-0.2, 51.6] },
-            properties: { name: 'Point 2' }
-          }
-        ]
-      }
+      const geoJSON1 = createFeatureCollection([
+        createFeature(createPointGeometry([-0.1, 51.5]), { name: 'Point 1' })
+      ])
+      const geoJSON2 = createFeatureCollection([
+        createFeature(createPointGeometry([-0.2, 51.6]), { name: 'Point 2' })
+      ])
 
       shapefileParser.findShapefiles.mockResolvedValue(shapefilePaths)
       shapefileParser.parseShapefile
@@ -613,18 +555,12 @@ describe('ShapefileParser', () => {
     })
 
     it('should handle empty shapefiles', async () => {
-      const emptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: []
-      }
+      const emptyGeoJSON = createFeatureCollection([])
       shapefileParser.parseShapefile.mockResolvedValue(emptyGeoJSON)
 
       const result = await shapefileParser.parseFile(filename)
 
-      expect(result).toEqual({
-        type: 'FeatureCollection',
-        features: []
-      })
+      expect(result).toEqual(createFeatureCollection([]))
     })
 
     it('should handle mixed empty and non-empty shapefiles', async () => {
@@ -632,20 +568,10 @@ describe('ShapefileParser', () => {
         '/tmp/extract-dir/empty.shp',
         '/tmp/extract-dir/nonempty.shp'
       ]
-      const emptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: []
-      }
-      const nonEmptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [-0.1, 51.5] },
-            properties: {}
-          }
-        ]
-      }
+      const emptyGeoJSON = createFeatureCollection([])
+      const nonEmptyGeoJSON = createFeatureCollection([
+        createFeature(createPointGeometry([-0.1, 51.5]), {})
+      ])
 
       shapefileParser.findShapefiles.mockResolvedValue(shapefilePaths)
       shapefileParser.parseShapefile
@@ -693,12 +619,7 @@ describe('ShapefileParser', () => {
   describe('Security features', () => {
     it('should prevent zip bomb attacks', async () => {
       const suspiciousEntries = [
-        {
-          entryName: 'bomb.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(1_000_000), // 1MB uncompressed
-          header: { compressedSize: 1000 } // 1KB compressed = 1000:1 ratio
-        }
+        createZipEntry('bomb.shp', false, 1_000_000, 1000)
       ]
       mockAdmZip.getEntries.mockReturnValue(suspiciousEntries)
 
@@ -708,14 +629,7 @@ describe('ShapefileParser', () => {
     })
 
     it('should prevent directory traversal attacks', async () => {
-      const maliciousEntries = [
-        {
-          entryName: '../../../etc/passwd',
-          isDirectory: false,
-          getData: () => Buffer.alloc(100),
-          header: { compressedSize: 50 }
-        }
-      ]
+      const maliciousEntries = [createZipEntry('../../../etc/passwd')]
       mockAdmZip.getEntries.mockReturnValue(maliciousEntries)
 
       await shapefileParser.extractZip('/tmp/test.zip')
@@ -727,13 +641,10 @@ describe('ShapefileParser', () => {
     })
 
     it('should limit number of files extracted', async () => {
-      const restrictiveParser = new ShapefileParser({ maxFiles: 2 })
-      const manyEntries = Array(3).fill({
-        entryName: 'test.shp',
-        isDirectory: false,
-        getData: () => Buffer.alloc(100),
-        header: { compressedSize: 50 }
-      })
+      const restrictiveParser = new ShapefileParser(
+        createShapefileOptions({ maxFiles: 2 })
+      )
+      const manyEntries = Array(3).fill(createZipEntry('test.shp'))
       mockAdmZip.getEntries.mockReturnValue(manyEntries)
 
       await expect(
@@ -742,15 +653,10 @@ describe('ShapefileParser', () => {
     })
 
     it('should limit total extracted size', async () => {
-      const restrictiveParser = new ShapefileParser({ maxSize: 1000 })
-      const largeEntries = [
-        {
-          entryName: 'large.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(2000),
-          header: { compressedSize: 1000 }
-        }
-      ]
+      const restrictiveParser = new ShapefileParser(
+        createShapefileOptions({ maxSize: 1000 })
+      )
+      const largeEntries = [createZipEntry('large.shp', false, 2000, 1000)]
       mockAdmZip.getEntries.mockReturnValue(largeEntries)
 
       await expect(
