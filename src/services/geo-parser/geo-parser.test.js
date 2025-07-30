@@ -1,8 +1,8 @@
-import { GeoParser } from './geo-parser.js'
-import { Worker } from 'worker_threads'
-import { blobService } from '../blob-service.js'
 import Boom from '@hapi/boom'
 import { join } from 'path'
+import { Worker } from 'worker_threads'
+import { blobService } from '../blob-service.js'
+import { GeoParser } from './geo-parser.js'
 
 jest.mock('worker_threads', () => ({
   Worker: jest.fn()
@@ -207,6 +207,14 @@ describe('GeoParser', () => {
       features: []
     }
 
+    const setupMockWorker = (eventType, eventData) => {
+      mockWorker.on.mockImplementation((event, callback) => {
+        if (event === eventType) {
+          setTimeout(() => callback(eventData), 10)
+        }
+      })
+    }
+
     beforeEach(() => {
       // Reset worker mock
       jest.clearAllMocks()
@@ -218,12 +226,7 @@ describe('GeoParser', () => {
     })
 
     it('should successfully parse file using worker thread', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
-        if (event === 'message') {
-          // Simulate successful message
-          setTimeout(() => callback({ geoJSON: mockGeoJSON }), 10)
-        }
-      })
+      setupMockWorker('message', { geoJSON: mockGeoJSON })
 
       const result = await geoParser.parseFile(filePath, fileType)
 
@@ -237,51 +240,39 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker error messages', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
-        if (event === 'message') {
-          setTimeout(() => callback({ error: 'Parse failed' }), 10)
-        }
-      })
+      setupMockWorker('message', { error: 'Parse failed' })
 
       await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
         'Parse failed'
       )
     })
 
-    it('should handle worker error event', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
-        if (event === 'error') {
-          setTimeout(() => callback(new Error('Worker error')), 10)
-        }
-      })
+    it.each([
+      {
+        scenario: 'worker error event',
+        eventType: 'error',
+        eventData: new Error('Worker error'),
+        expectedError: 'Worker error: Worker error'
+      },
+      {
+        scenario: 'worker exit with non-zero code',
+        eventType: 'exit',
+        eventData: 1,
+        expectedError: 'Worker stopped with exit code 1'
+      }
+    ])(
+      'should handle $scenario',
+      async ({ eventType, eventData, expectedError }) => {
+        setupMockWorker(eventType, eventData)
 
-      await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
-        'Worker error: Worker error'
-      )
-    })
-
-    it('should handle worker exit with non-zero code', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
-        if (event === 'exit') {
-          // Worker exit event handler expects exit code (number) as first parameter
-          // eslint-disable-next-line n/no-callback-literal
-          setTimeout(() => callback(1), 10)
-        }
-      })
-
-      await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
-        'Worker stopped with exit code 1'
-      )
-    })
+        await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
+          expectedError
+        )
+      }
+    )
 
     it('should handle worker exit with exit code 0', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
-        if (event === 'exit') {
-          // Worker exit event handler expects exit code (number) as first parameter
-          // eslint-disable-next-line n/no-callback-literal
-          setTimeout(() => callback(0), 10)
-        }
-      })
+      setupMockWorker('exit', 0)
 
       geoParser.parseFile(filePath, fileType)
 
@@ -304,29 +295,35 @@ describe('GeoParser', () => {
       expect(mockWorker.terminate).toHaveBeenCalled()
     })
 
-    it('should clear timeout when worker responds', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
-        if (event === 'message') {
-          setTimeout(() => callback({ geoJSON: mockGeoJSON }), 10)
+    it.each([
+      {
+        scenario: 'worker responds',
+        eventType: 'message',
+        eventData: { geoJSON: mockGeoJSON },
+        shouldReject: false
+      },
+      {
+        scenario: 'worker has error',
+        eventType: 'error',
+        eventData: new Error('Worker error'),
+        shouldReject: true
+      }
+    ])(
+      'should clear timeout when $scenario',
+      async ({ eventType, eventData, shouldReject }) => {
+        setupMockWorker(eventType, eventData)
+
+        if (shouldReject) {
+          await expect(
+            geoParser.parseFile(filePath, fileType)
+          ).rejects.toThrow()
+        } else {
+          await geoParser.parseFile(filePath, fileType)
         }
-      })
 
-      await geoParser.parseFile(filePath, fileType)
-
-      expect(mockWorker.terminate).not.toHaveBeenCalled()
-    })
-
-    it('should clear timeout when worker has error', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
-        if (event === 'error') {
-          setTimeout(() => callback(new Error('Worker error')), 10)
-        }
-      })
-
-      await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow()
-
-      expect(mockWorker.terminate).not.toHaveBeenCalled()
-    })
+        expect(mockWorker.terminate).not.toHaveBeenCalled()
+      }
+    )
   })
 
   describe('validateGeoJSON', () => {
