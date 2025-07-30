@@ -68,9 +68,9 @@ describe('PATCH /exemptions/public-register', () => {
         $set: {
           publicRegister: {
             reason: mockPayload.reason,
-            consent: mockPayload.consent,
-            ...mockAuditPayload
-          }
+            consent: mockPayload.consent
+          },
+          ...mockAuditPayload
         }
       }
     )

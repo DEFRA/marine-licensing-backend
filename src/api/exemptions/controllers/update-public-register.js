@@ -25,7 +25,7 @@ export const updatePublicRegisterController = {
       const result = await db.collection('exemptions').updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
-          $set: { publicRegister: { reason, consent, updatedAt, updatedBy } }
+          $set: { publicRegister: { reason, consent }, updatedAt, updatedBy }
         }
       )
 
