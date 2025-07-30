@@ -1,152 +1,105 @@
 import { geoParserExtract } from './geo-parser-extract.js'
 
 describe('geoParserExtract validation schema', () => {
+  const createPayload = (overrides = {}) => ({
+    s3Bucket: 'mmo-uploads',
+    s3Key: 'test.kml',
+    fileType: 'kml',
+    ...overrides
+  })
+
+  const validatePayload = (payload) => geoParserExtract.validate(payload)
+
+  const expectValidPayload = (result, expectedValues = {}) => {
+    expect(result.error).toBeUndefined()
+    Object.entries(expectedValues).forEach(([key, value]) => {
+      expect(result.value[key]).toBe(value)
+    })
+  }
+
+  const expectInvalidPayload = (result, expectedMessage) => {
+    expect(result.error).toBeDefined()
+    expect(result.error.details[0].message).toBe(expectedMessage)
+  }
+
+  const testMultipleValues = (values, createPayloadFunc, assertionFunc) => {
+    values.forEach((value) => {
+      const payload = createPayloadFunc(value)
+      const result = validatePayload(payload)
+      assertionFunc(result, value)
+    })
+  }
   describe('s3Bucket validation', () => {
     it('should validate valid s3Bucket', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Bucket).toBe('mmo-uploads')
+      const payload = createPayload({ s3Bucket: 'mmo-uploads' })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Bucket: 'mmo-uploads' })
     })
 
     it('should reject missing s3Bucket', () => {
-      const payload = {
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe('S3_BUCKET_REQUIRED')
+      const payload = createPayload()
+      delete payload.s3Bucket
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, 'S3_BUCKET_REQUIRED')
     })
 
     it('should reject empty s3Bucket', () => {
-      const payload = {
-        s3Bucket: '',
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe('S3_BUCKET_REQUIRED')
+      const payload = createPayload({ s3Bucket: '' })
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, 'S3_BUCKET_REQUIRED')
     })
 
     it('should reject null s3Bucket', () => {
-      const payload = {
-        s3Bucket: null,
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe(
-        '"s3Bucket" must be a string'
-      )
+      const payload = createPayload({ s3Bucket: null })
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, '"s3Bucket" must be a string')
     })
 
     it('should handle s3Bucket with special characters', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads-test',
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Bucket).toBe('mmo-uploads-test')
+      const payload = createPayload({ s3Bucket: 'mmo-uploads-test' })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Bucket: 'mmo-uploads-test' })
     })
 
     it('should handle s3Bucket with numbers', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads-123',
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Bucket).toBe('mmo-uploads-123')
+      const payload = createPayload({ s3Bucket: 'mmo-uploads-123' })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Bucket: 'mmo-uploads-123' })
     })
   })
 
   describe('s3Key validation', () => {
     it('should validate valid s3Key', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'folder/test-file.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Key).toBe('folder/test-file.kml')
+      const payload = createPayload({ s3Key: 'folder/test-file.kml' })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Key: 'folder/test-file.kml' })
     })
 
     it('should reject missing s3Key', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe('S3_KEY_REQUIRED')
+      const payload = createPayload()
+      delete payload.s3Key
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, 'S3_KEY_REQUIRED')
     })
 
     it('should reject empty s3Key', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: '',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe('S3_KEY_REQUIRED')
+      const payload = createPayload({ s3Key: '' })
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, 'S3_KEY_REQUIRED')
     })
 
     it('should reject s3Key that is too long', () => {
       const longKey = 'a'.repeat(1025)
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: longKey,
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe('S3_KEY_INVALID')
+      const payload = createPayload({ s3Key: longKey })
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, 'S3_KEY_INVALID')
     })
 
     it('should accept s3Key at maximum length', () => {
       const maxKey = 'a'.repeat(1024)
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: maxKey,
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Key).toBe(maxKey)
+      const payload = createPayload({ s3Key: maxKey })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Key: maxKey })
     })
 
     it('should accept s3Key with valid characters', () => {
@@ -160,18 +113,11 @@ describe('geoParserExtract validation schema', () => {
         'file-name_with.various/characters123.kml'
       ]
 
-      for (const s3Key of validKeys) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeUndefined()
-        expect(result.value.s3Key).toBe(s3Key)
-      }
+      testMultipleValues(
+        validKeys,
+        (s3Key) => createPayload({ s3Key }),
+        (result, s3Key) => expectValidPayload(result, { s3Key })
+      )
     })
 
     it('should reject s3Key with invalid characters', () => {
@@ -190,18 +136,11 @@ describe('geoParserExtract validation schema', () => {
         'file\nname.kml' // newline
       ]
 
-      for (const s3Key of invalidKeys) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeDefined()
-        expect(result.error.details[0].message).toBe('S3_KEY_INVALID')
-      }
+      testMultipleValues(
+        invalidKeys,
+        (s3Key) => createPayload({ s3Key }),
+        (result) => expectInvalidPayload(result, 'S3_KEY_INVALID')
+      )
     })
 
     it('should reject s3Key with path traversal attempts', () => {
@@ -215,18 +154,11 @@ describe('geoParserExtract validation schema', () => {
         'folder\\..\\file.kml'
       ]
 
-      for (const s3Key of pathTraversalKeys) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeDefined()
-        expect(result.error.details[0].message).toBe('S3_KEY_INVALID')
-      }
+      testMultipleValues(
+        pathTraversalKeys,
+        (s3Key) => createPayload({ s3Key }),
+        (result) => expectInvalidPayload(result, 'S3_KEY_INVALID')
+      )
     })
 
     it('should accept s3Key with legitimate dots in filename', () => {
@@ -237,46 +169,28 @@ describe('geoParserExtract validation schema', () => {
         'data.backup.kml'
       ]
 
-      for (const s3Key of legitimateKeys) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeUndefined()
-        expect(result.value.s3Key).toBe(s3Key)
-      }
+      testMultipleValues(
+        legitimateKeys,
+        (s3Key) => createPayload({ s3Key }),
+        (result, s3Key) => expectValidPayload(result, { s3Key })
+      )
     })
   })
 
   describe('fileType validation', () => {
     it('should validate valid fileType kml', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.fileType).toBe('kml')
+      const payload = createPayload({ fileType: 'kml' })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { fileType: 'kml' })
     })
 
     it('should validate valid fileType shapefile', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
+      const payload = createPayload({
         s3Key: 'test.zip',
         fileType: 'shapefile'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.fileType).toBe('shapefile')
+      })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { fileType: 'shapefile' })
     })
 
     it('should normalize fileType to lowercase', () => {
@@ -306,43 +220,22 @@ describe('geoParserExtract validation schema', () => {
     })
 
     it('should reject missing fileType', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'test.kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe('FILE_TYPE_REQUIRED')
+      const payload = createPayload()
+      delete payload.fileType
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, 'FILE_TYPE_REQUIRED')
     })
 
     it('should reject empty fileType', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'test.kml',
-        fileType: ''
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe('FILE_TYPE_REQUIRED')
+      const payload = createPayload({ fileType: '' })
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, 'FILE_TYPE_REQUIRED')
     })
 
     it('should reject null fileType', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'test.kml',
-        fileType: null
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeDefined()
-      expect(result.error.details[0].message).toBe(
-        '"fileType" must be a string'
-      )
+      const payload = createPayload({ fileType: null })
+      const result = validatePayload(payload)
+      expectInvalidPayload(result, '"fileType" must be a string')
     })
 
     it('should reject invalid fileType', () => {
@@ -359,31 +252,18 @@ describe('geoParserExtract validation schema', () => {
         'zip'
       ]
 
-      for (const fileType of invalidFileTypes) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key: 'test.file',
-          fileType
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeDefined()
-        expect(result.error.details[0].message).toBe('FILE_TYPE_INVALID')
-      }
+      testMultipleValues(
+        invalidFileTypes,
+        (fileType) => createPayload({ s3Key: 'test.file', fileType }),
+        (result) => expectInvalidPayload(result, 'FILE_TYPE_INVALID')
+      )
     })
   })
 
   describe('Complete payload validation', () => {
     it('should validate complete valid payload', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'folder/subfolder/test-file.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
+      const payload = createPayload({ s3Key: 'folder/subfolder/test-file.kml' })
+      const result = validatePayload(payload)
       expect(result.error).toBeUndefined()
       expect(result.value).toEqual({
         s3Bucket: 'mmo-uploads',
@@ -393,14 +273,12 @@ describe('geoParserExtract validation schema', () => {
     })
 
     it('should validate complete valid payload with shapefile', () => {
-      const payload = {
+      const payload = createPayload({
         s3Bucket: 'production-uploads',
         s3Key: 'data/2023/november/boundaries.zip',
         fileType: 'SHAPEFILE'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
+      })
+      const result = validatePayload(payload)
       expect(result.error).toBeUndefined()
       expect(result.value).toEqual({
         s3Bucket: 'production-uploads',
@@ -410,15 +288,8 @@ describe('geoParserExtract validation schema', () => {
     })
 
     it('should reject payload with extra fields', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'test.kml',
-        fileType: 'kml',
-        extraField: 'should not be here'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
+      const payload = createPayload({ extraField: 'should not be here' })
+      const result = validatePayload(payload)
       expect(result.error).toBeDefined()
     })
 
@@ -441,78 +312,47 @@ describe('geoParserExtract validation schema', () => {
         }
       ]
 
-      for (const payload of payloads) {
-        const result = geoParserExtract.validate(payload)
-
+      payloads.forEach((payload) => {
+        const result = validatePayload(payload)
         expect(result.error).toBeDefined()
-      }
+      })
     })
   })
 
   describe('Edge cases', () => {
     it('should handle s3Key with minimum length', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'a',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Key).toBe('a')
+      const payload = createPayload({ s3Key: 'a' })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Key: 'a' })
     })
 
     it('should handle s3Key with UUID-like format', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: '550e8400-e29b-41d4-a716-446655440000.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Key).toBe(
-        '550e8400-e29b-41d4-a716-446655440000.kml'
-      )
+      const s3Key = '550e8400-e29b-41d4-a716-446655440000.kml'
+      const payload = createPayload({ s3Key })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Key })
     })
 
     it('should handle s3Key with nested folder structure', () => {
-      const payload = {
-        s3Bucket: 'mmo-uploads',
-        s3Key: 'level1/level2/level3/level4/file.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Key).toBe('level1/level2/level3/level4/file.kml')
+      const s3Key = 'level1/level2/level3/level4/file.kml'
+      const payload = createPayload({ s3Key })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Key })
     })
 
     it('should handle s3Bucket with minimum valid name', () => {
-      const payload = {
-        s3Bucket: 'a',
-        s3Key: 'test.kml',
-        fileType: 'kml'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
-      expect(result.error).toBeUndefined()
-      expect(result.value.s3Bucket).toBe('a')
+      const payload = createPayload({ s3Bucket: 'a' })
+      const result = validatePayload(payload)
+      expectValidPayload(result, { s3Bucket: 'a' })
     })
 
     it('should handle mixed case in all fields', () => {
-      const payload = {
+      const payload = createPayload({
         s3Bucket: 'MMO-Uploads',
         s3Key: 'TEST-File.KML',
         fileType: 'KML'
-      }
-
-      const result = geoParserExtract.validate(payload)
-
+      })
+      const result = validatePayload(payload)
       expect(result.error).toBeUndefined()
       expect(result.value).toEqual({
         s3Bucket: 'MMO-Uploads',
@@ -534,52 +374,31 @@ describe('geoParserExtract validation schema', () => {
         'folder/../../'
       ]
 
-      for (const attempt of pathTraversalAttempts) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key: `${attempt}file.kml`,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeDefined()
-        expect(result.error.details[0].message).toBe('S3_KEY_INVALID')
-      }
+      testMultipleValues(
+        pathTraversalAttempts,
+        (attempt) => createPayload({ s3Key: `${attempt}file.kml` }),
+        (result) => expectInvalidPayload(result, 'S3_KEY_INVALID')
+      )
     })
 
     it('should prevent encoded path traversal', () => {
       const encodedAttempts = ['%2e%2e%2f', '%2e%2e%5c', '%252e%252e%252f']
 
-      for (const attempt of encodedAttempts) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key: `${attempt}file.kml`,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeDefined()
-        expect(result.error.details[0].message).toBe('S3_KEY_INVALID')
-      }
+      testMultipleValues(
+        encodedAttempts,
+        (attempt) => createPayload({ s3Key: `${attempt}file.kml` }),
+        (result) => expectInvalidPayload(result, 'S3_KEY_INVALID')
+      )
     })
 
     it('should prevent null byte injection', () => {
       const nullByteAttempts = ['file.kml\x00', 'file\x00.kml', '\x00file.kml']
 
-      for (const attempt of nullByteAttempts) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key: attempt,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeDefined()
-        expect(result.error.details[0].message).toBe('S3_KEY_INVALID')
-      }
+      testMultipleValues(
+        nullByteAttempts,
+        (attempt) => createPayload({ s3Key: attempt }),
+        (result) => expectInvalidPayload(result, 'S3_KEY_INVALID')
+      )
     })
 
     it('should prevent control character injection', () => {
@@ -590,18 +409,11 @@ describe('geoParserExtract validation schema', () => {
         'file\x1f.kml'
       ]
 
-      for (const attempt of controlCharAttempts) {
-        const payload = {
-          s3Bucket: 'mmo-uploads',
-          s3Key: attempt,
-          fileType: 'kml'
-        }
-
-        const result = geoParserExtract.validate(payload)
-
-        expect(result.error).toBeDefined()
-        expect(result.error.details[0].message).toBe('S3_KEY_INVALID')
-      }
+      testMultipleValues(
+        controlCharAttempts,
+        (attempt) => createPayload({ s3Key: attempt }),
+        (result) => expectInvalidPayload(result, 'S3_KEY_INVALID')
+      )
     })
   })
 })
