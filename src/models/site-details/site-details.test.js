@@ -1,19 +1,11 @@
-import { ObjectId } from 'mongodb'
 import { siteDetailsSchema } from './site-details.js'
 import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
-
-const mockId = new ObjectId().toHexString()
-export const mockSiteDetails = {
-  coordinatesType: 'coordinates',
-  coordinatesEntry: 'single',
-  coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-  coordinates: { latitude: '51.489676', longitude: '-0.231530' },
-  circleWidth: '20'
-}
-export const mockSiteDetailsRequest = {
-  id: mockId,
-  siteDetails: mockSiteDetails
-}
+import {
+  mockSiteDetails,
+  mockSiteDetailsRequest,
+  mockFileUploadSiteDetailsRequest,
+  mockId
+} from './test-fixtures.js'
 
 describe('#siteDetails schema', () => {
   beforeEach(() => {
@@ -167,6 +159,101 @@ describe('#siteDetails schema', () => {
         }
       })
       expect(result.error.message).toBe('LATITUDE_REQUIRED')
+    })
+  })
+
+  describe('#file upload validation', () => {
+    test('Should correctly validate file upload data', () => {
+      const result = siteDetailsSchema.validate(
+        mockFileUploadSiteDetailsRequest
+      )
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should correctly validate the exact data structure from production error', () => {
+      const productionData = {
+        siteDetails: {
+          coordinatesType: 'file',
+          fileUploadType: 'kml',
+          geoJSON: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    [-1.6037083838360786, 55.08150239432132],
+                    [-1.7930481641727738, 54.95753857504246],
+                    [-1.4723509092498546, 54.93725630538344],
+                    [-1.4910720035708493, 55.09085853021563],
+                    [-1.642244053697766, 55.08009968965797]
+                  ]
+                },
+                properties: {}
+              }
+            ]
+          },
+          featureCount: 1,
+          uploadedFile: {
+            filename: 'la Garde côtière.kml'
+          },
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key:
+              'exemptions/cc8986fd-586a-4b27-988c-43d6d9c2306a/26e258bb-f6ef-43cf-b102-80f9195014c8',
+            checksumSha256: 'edpLwm1vcMM2G5PzuyLr4hlxdLxHcjTjXFye3X3WGXo='
+          }
+        },
+        id: '68811d2a64a5901f5ea56cb5'
+      }
+
+      const result = siteDetailsSchema.validate(productionData)
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should reject manual coordinate fields when coordinatesType is file', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockFileUploadSiteDetailsRequest,
+        siteDetails: {
+          ...mockFileUploadSiteDetailsRequest.siteDetails,
+          coordinatesEntry: 'single', // This should be forbidden for file uploads
+          coordinateSystem: 'wgs84'
+        }
+      })
+      expect(result.error.message).toContain('coordinatesEntry')
+      expect(result.error.message).toContain('not allowed')
+    })
+
+    test('Should reject file upload fields when coordinatesType is coordinates', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          fileUploadType: 'kml', // This should be forbidden for manual coordinates
+          geoJSON: { type: 'FeatureCollection', features: [] }
+        }
+      })
+      expect(result.error.message).toContain('fileUploadType')
+      expect(result.error.message).toContain('not allowed')
+    })
+
+    test('Should require all file upload fields when coordinatesType is file', () => {
+      const result = siteDetailsSchema.validate({
+        id: mockId,
+        siteDetails: {
+          coordinatesType: 'file',
+          fileUploadType: 'kml',
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'test-file-key',
+            checksumSha256: 'test-checksum'
+          },
+          featureCount: 1
+          // Missing required field: geoJSON
+        }
+      })
+      expect(result.error.message).toBe('GEO_JSON_REQUIRED')
     })
   })
 })

@@ -86,3 +86,6 @@ globs: *.js
 - Request logging via hapi-pino plugin
 - Tracing headers for request correlation
 - Configurable log levels and redaction
+
+## SonarQube
+- do not assign to undefined; use null
