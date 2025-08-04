@@ -9,7 +9,7 @@ const mongoConfig = config.get('mongo')
 export const addAuditFields = (request, h) => {
   const requestMethod = request.method.toUpperCase()
 
-  if (requestMethod === 'GET') {
+  if (requestMethod === 'GET' || requestMethod === 'DELETE') {
     return h.continue
   }
 
