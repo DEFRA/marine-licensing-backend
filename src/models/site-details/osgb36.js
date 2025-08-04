@@ -1,4 +1,5 @@
 import joi from 'joi'
+import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../common/constants/coordinates.js'
 
 const MIN_EASTINGS_LENGTH = 100000
 const MAX_EASTINGS_LENGTH = 999999
@@ -32,6 +33,7 @@ const validateCoordinates = (value, helpers, type) => {
   return value
 }
 
+// Single coordinate validation schema
 export const osgb36ValidationSchema = joi.object({
   eastings: joi
     .string()
@@ -62,3 +64,17 @@ export const osgb36ValidationSchema = joi.object({
       'any.required': 'NORTHINGS_REQUIRED'
     })
 })
+
+// Multiple coordinates validation schema (array of coordinate objects)
+export const osgb36MultipleValidationSchema = joi
+  .array()
+  .items(osgb36ValidationSchema)
+  .min(MIN_POINTS_MULTIPLE_COORDINATES)
+  .max(1000)
+  .required()
+  .messages({
+    'array.min': 'COORDINATES_MINIMUM_REQUIRED',
+    'array.max': 'COORDINATES_MAXIMUM_EXCEEDED',
+    'array.base': 'COORDINATES_ARRAY_REQUIRED',
+    'any.required': 'COORDINATES_REQUIRED'
+  })

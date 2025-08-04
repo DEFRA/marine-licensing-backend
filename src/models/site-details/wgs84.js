@@ -1,4 +1,5 @@
 import joi from 'joi'
+import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../common/constants/coordinates.js'
 
 const MIN_LATITUDE = -90
 const MAX_LATITUDE = 90
@@ -41,6 +42,7 @@ const validateCoordinates = (value, helpers, type) => {
   return value
 }
 
+// Single coordinate validation schema
 export const wgs84ValidationSchema = joi.object({
   latitude: joi
     .string()
@@ -73,3 +75,17 @@ export const wgs84ValidationSchema = joi.object({
       'number.decimal': 'LONGITUDE_DECIMAL_PLACES'
     })
 })
+
+// Multiple coordinates validation schema (array of coordinate objects)
+export const wgs84MultipleValidationSchema = joi
+  .array()
+  .items(wgs84ValidationSchema)
+  .min(MIN_POINTS_MULTIPLE_COORDINATES)
+  .max(1000)
+  .required()
+  .messages({
+    'array.min': 'COORDINATES_MINIMUM_REQUIRED',
+    'array.max': 'COORDINATES_MAXIMUM_EXCEEDED',
+    'array.base': 'COORDINATES_ARRAY_REQUIRED',
+    'any.required': 'COORDINATES_REQUIRED'
+  })
