@@ -39,7 +39,8 @@ export const sendExemptionToDynamics = async (
   accessToken,
   queueItem
 ) => {
-  const { apiUrl, frontEndBaseUrl } = config.get('dynamics')
+  const { apiUrl } = config.get('dynamics')
+  const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
   const { applicationReferenceNumber } = queueItem
 
