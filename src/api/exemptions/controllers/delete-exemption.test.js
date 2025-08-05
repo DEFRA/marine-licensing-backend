@@ -1,4 +1,6 @@
+import Boom from '@hapi/boom'
 import { deleteExemptionController } from './delete-exemption'
+import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 
 describe('DELETE /exemption', () => {
   const paramsValidator = deleteExemptionController.options.validate.params
@@ -23,11 +25,15 @@ describe('DELETE /exemption', () => {
     expect(result.error.message).toContain('EXEMPTION_ID_INVALID')
   })
 
-  it('should delete exemption by id', async () => {
+  it('should delete exemption by id when status is DRAFT', async () => {
     const { mockMongo, mockHandler } = global
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
+        findOne: jest.fn().mockResolvedValue({
+          _id: mockId,
+          status: EXEMPTION_STATUS.DRAFT
+        }),
         deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 })
       }
     })
@@ -44,12 +50,36 @@ describe('DELETE /exemption', () => {
     )
   })
 
+  it('should return 400 if exemption status is not DRAFT', async () => {
+    const { mockMongo, mockHandler } = global
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        findOne: jest.fn().mockResolvedValue({
+          _id: mockId,
+          status: EXEMPTION_STATUS.SUBMITTED
+        })
+      }
+    })
+
+    await expect(
+      deleteExemptionController.handler(
+        { db: mockMongo, params: { id: mockId } },
+        mockHandler
+      )
+    ).rejects.toThrow(
+      Boom.badRequest(
+        `Cannot delete exemption as exemption must be the status '${EXEMPTION_STATUS.DRAFT}'.`
+      )
+    )
+  })
+
   it('should return 404 if ID does not exist', async () => {
     const { mockMongo, mockHandler } = global
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        deleteOne: jest.fn().mockResolvedValue({ deletedCount: 0 })
+        findOne: jest.fn().mockResolvedValue(null)
       }
     })
 
@@ -68,7 +98,7 @@ describe('DELETE /exemption', () => {
 
     jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        deleteOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
+        findOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
