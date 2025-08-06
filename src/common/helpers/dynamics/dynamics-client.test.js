@@ -26,16 +26,19 @@ describe('Dynamics Client', () => {
         })
       }
     }
-    config.get.mockReturnValue({
-      clientId: 'test-client-id',
-      clientSecret: 'test-client-secret',
-      scope: 'test-scope',
-      maxRetries: 3,
-      retryDelayMs: 60000,
-      frontEndBaseUrl: 'http://localhost',
-      tokenUrl: 'https://localhost/oauth2/token',
-      apiUrl: 'https://localhost/api/data/v9.2'
-    })
+    config.get.mockImplementation((value) =>
+      value === 'dynamics'
+        ? {
+            clientId: 'test-client-id',
+            clientSecret: 'test-client-secret',
+            scope: 'test-scope',
+            maxRetries: 3,
+            retryDelayMs: 60000,
+            tokenUrl: 'https://localhost/oauth2/token',
+            apiUrl: 'https://localhost/api/data/v9.2'
+          }
+        : 'http://localhost'
+    )
 
     jest.clearAllMocks()
   })
