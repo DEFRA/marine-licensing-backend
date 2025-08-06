@@ -1,10 +1,10 @@
-import { siteDetailsSchema } from './site-details.js'
 import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
+import { siteDetailsSchema } from './site-details.js'
 import {
-  mockSiteDetails,
-  mockSiteDetailsRequest,
   mockFileUploadSiteDetailsRequest,
-  mockId
+  mockId,
+  mockSiteDetails,
+  mockSiteDetailsRequest
 } from './test-fixtures.js'
 
 describe('#siteDetails schema', () => {
@@ -254,6 +254,54 @@ describe('#siteDetails schema', () => {
         }
       })
       expect(result.error.message).toBe('GEO_JSON_REQUIRED')
+    })
+
+    const createGeoJSONFeatureTest = (featureOverrides = {}) => ({
+      id: mockId,
+      siteDetails: {
+        ...mockFileUploadSiteDetailsRequest.siteDetails,
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [-1.2951, 50.7602]
+              },
+              properties: {},
+              ...featureOverrides
+            }
+          ]
+        }
+      }
+    })
+
+    test('Should accept GeoJSON features with string id properties', () => {
+      const result = siteDetailsSchema.validate(
+        createGeoJSONFeatureTest({ id: 'SID12271033' })
+      )
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should accept GeoJSON features with number id properties', () => {
+      const result = siteDetailsSchema.validate(
+        createGeoJSONFeatureTest({ id: 12271033 })
+      )
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should accept GeoJSON features without id properties (backwards compatibility)', () => {
+      const result = siteDetailsSchema.validate(createGeoJSONFeatureTest())
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should reject GeoJSON features with invalid id types', () => {
+      const result = siteDetailsSchema.validate(
+        createGeoJSONFeatureTest({ id: { invalid: 'object' } })
+      )
+      expect(result.error).toBeDefined()
+      expect(result.error.message).toContain('id')
     })
   })
 })
