@@ -4,6 +4,9 @@ import { getExemption } from '../../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
 import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { createLogger } from '../../../common/helpers/logging/logger.js'
+
+const logger = createLogger()
 
 export const deleteExemptionController = {
   options: {
@@ -33,6 +36,8 @@ export const deleteExemptionController = {
       await db
         .collection('exemptions')
         .deleteOne({ _id: ObjectId.createFromHexString(params.id) })
+
+      logger.info({ exemptionId: params.id }, 'Exemption deleted successfully')
 
       return h
         .response({ message: 'Exemption deleted successfully' })
