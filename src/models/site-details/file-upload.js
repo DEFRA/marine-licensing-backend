@@ -19,6 +19,7 @@ export const geoJSONFieldSchema = joi
         joi
           .object({
             type: joi.string().valid('Feature').required(),
+            id: joi.alternatives(joi.string(), joi.number()).optional(),
             geometry: joi
               .object({
                 type: joi.string().required(),
