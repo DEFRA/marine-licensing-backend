@@ -2,6 +2,8 @@ import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 import { siteDetailsSchema } from './site-details.js'
 import {
   mockFileUploadSiteDetailsRequest,
+  mockWgs84MultipleCoordinatesRequest,
+  mockOsgb36MultipleCoordinatesRequest,
   mockId,
   mockSiteDetails,
   mockSiteDetailsRequest
@@ -302,6 +304,96 @@ describe('#siteDetails schema', () => {
       )
       expect(result.error).toBeDefined()
       expect(result.error.message).toContain('id')
+    })
+  })
+
+  describe('#multiple coordinates validation', () => {
+    test('Should correctly validate WGS84 multiple coordinates', () => {
+      const result = siteDetailsSchema.validate(
+        mockWgs84MultipleCoordinatesRequest
+      )
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should correctly validate OSGB36 multiple coordinates', () => {
+      const result = siteDetailsSchema.validate(
+        mockOsgb36MultipleCoordinatesRequest
+      )
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should reject multiple coordinates with fewer than 3 points', () => {
+      const invalidRequest = {
+        ...mockWgs84MultipleCoordinatesRequest,
+        siteDetails: {
+          ...mockWgs84MultipleCoordinatesRequest.siteDetails,
+          coordinates: [
+            { latitude: '54.088594', longitude: '-0.178408' },
+            { latitude: '54.086782', longitude: '-0.177369' }
+          ]
+        }
+      }
+      const result = siteDetailsSchema.validate(invalidRequest)
+      expect(result.error.message).toBe('COORDINATES_MINIMUM_REQUIRED')
+    })
+
+    test('Should reject multiple coordinates with invalid coordinate format', () => {
+      const invalidRequest = {
+        ...mockWgs84MultipleCoordinatesRequest,
+        siteDetails: {
+          ...mockWgs84MultipleCoordinatesRequest.siteDetails,
+          coordinates: [
+            { latitude: 'invalid', longitude: '-0.178408' },
+            { latitude: '54.086782', longitude: '-0.177369' },
+            { latitude: '54.088057', longitude: '-0.175219' }
+          ]
+        }
+      }
+      const result = siteDetailsSchema.validate(invalidRequest)
+      expect(result.error.message).toBe('LATITUDE_NON_NUMERIC')
+    })
+
+    test('Should reject OSGB36 multiple coordinates with invalid values', () => {
+      const invalidRequest = {
+        ...mockOsgb36MultipleCoordinatesRequest,
+        siteDetails: {
+          ...mockOsgb36MultipleCoordinatesRequest.siteDetails,
+          coordinates: [
+            { eastings: '50000', northings: '476895' }, // Below minimum
+            { eastings: '514040', northings: '476693' },
+            { eastings: '514193', northings: '476835' }
+          ]
+        }
+      }
+      const result = siteDetailsSchema.validate(invalidRequest)
+      expect(result.error.message).toBe('EASTINGS_LENGTH')
+    })
+
+    test('Should reject multiple coordinates when circleWidth is provided', () => {
+      const invalidRequest = {
+        ...mockWgs84MultipleCoordinatesRequest,
+        siteDetails: {
+          ...mockWgs84MultipleCoordinatesRequest.siteDetails,
+          circleWidth: '20' // Should be forbidden for multiple coordinates
+        }
+      }
+      const result = siteDetailsSchema.validate(invalidRequest)
+      expect(result.error.message).toBe(
+        '"siteDetails.circleWidth" is not allowed'
+      )
+    })
+
+    test('Should still require circleWidth for single coordinates', () => {
+      const invalidRequest = {
+        ...mockSiteDetailsRequest,
+        siteDetails: {
+          ...mockSiteDetails,
+          // circleWidth is missing but required for single coordinates
+          circleWidth: undefined
+        }
+      }
+      const result = siteDetailsSchema.validate(invalidRequest)
+      expect(result.error.message).toBe('WIDTH_REQUIRED')
     })
   })
 })
