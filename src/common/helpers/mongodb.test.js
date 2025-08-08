@@ -89,7 +89,7 @@ describe('#mongoDb', () => {
       mockedAddUpdateAuditFields.mockReturnValue(mockAuditedPayload)
 
       const request = {
-        method: 'patch',
+        method: 'PATCH',
         payload: mockPayload,
         auth: mockAuth
       }
@@ -109,7 +109,7 @@ describe('#mongoDb', () => {
 
     test('should not add audit fields when no auth credentials exist', async () => {
       const request = {
-        method: 'post',
+        method: 'POST',
         payload: { name: 'Test Project' },
         auth: null
       }
@@ -127,7 +127,23 @@ describe('#mongoDb', () => {
 
     test('should not add update audit fields for GET requests', async () => {
       const request = {
-        method: 'get',
+        method: 'GET',
+        auth: { credentials: { contactId: 'user123' } }
+      }
+      const h = {
+        continue: 'continue'
+      }
+
+      const result = await addAuditFields(request, h)
+
+      expect(mockedAddCreateAuditFields).not.toHaveBeenCalled()
+      expect(mockedAddUpdateAuditFields).not.toHaveBeenCalled()
+      expect(result).toBe('continue')
+    })
+
+    test('should not add update audit fields for DELETE requests', async () => {
+      const request = {
+        method: 'DELETE',
         auth: { credentials: { contactId: 'user123' } }
       }
       const h = {
