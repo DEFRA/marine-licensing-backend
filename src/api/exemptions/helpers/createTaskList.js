@@ -1,3 +1,4 @@
+import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../../common/constants/coordinates.js'
 export const COMPLETED = 'COMPLETED'
 
 const checkSiteDetailsCircle = (siteDetails) => {
@@ -26,6 +27,31 @@ const checkSiteDetailsFileUpload = (siteDetails) => {
   return missingKeys.length === 0 ? COMPLETED : null
 }
 
+const checkSiteDetailsMultiple = (siteDetails) => {
+  const requiredValues = [
+    'coordinatesType',
+    'coordinatesEntry',
+    'coordinateSystem',
+    'coordinates'
+  ]
+  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
+
+  if (missingKeys.length > 0) {
+    return null
+  }
+
+  // Validate coordinates array has at least 3 points (minimum for polygon)
+  const { coordinates } = siteDetails
+  if (
+    !Array.isArray(coordinates) ||
+    coordinates.length < MIN_POINTS_MULTIPLE_COORDINATES
+  ) {
+    return null
+  }
+
+  return COMPLETED
+}
+
 const checkSiteDetails = (siteDetails) => {
   if (!siteDetails || !Object.keys(siteDetails).length) {
     return null
@@ -39,6 +65,10 @@ const checkSiteDetails = (siteDetails) => {
 
   if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
     return checkSiteDetailsCircle(siteDetails)
+  }
+
+  if (coordinatesEntry === 'multiple' && coordinatesType === 'coordinates') {
+    return checkSiteDetailsMultiple(siteDetails)
   }
 
   return null

@@ -50,4 +50,54 @@ export const mockFileUploadSiteDetailsRequest = {
   siteDetails: mockFileUploadSiteDetails
 }
 
+export const mockWgs84MultipleCoordinates = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'multiple',
+  coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+  coordinates: [
+    {
+      latitude: '54.088594',
+      longitude: '-0.178408'
+    },
+    {
+      latitude: '54.086782',
+      longitude: '-0.177369'
+    },
+    {
+      latitude: '54.088057',
+      longitude: '-0.175219'
+    }
+  ]
+}
+
+export const mockOsgb36MultipleCoordinates = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'multiple',
+  coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
+  coordinates: [
+    {
+      eastings: '513967',
+      northings: '476895'
+    },
+    {
+      eastings: '514040',
+      northings: '476693'
+    },
+    {
+      eastings: '514193',
+      northings: '476835'
+    }
+  ]
+}
+
+export const mockWgs84MultipleCoordinatesRequest = {
+  id: mockId,
+  siteDetails: mockWgs84MultipleCoordinates
+}
+
+export const mockOsgb36MultipleCoordinatesRequest = {
+  id: mockId,
+  siteDetails: mockOsgb36MultipleCoordinates
+}
+
 export { mockId }
