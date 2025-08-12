@@ -52,6 +52,7 @@
     "mongo-locks": "3.0.2",
     "mongodb": "6.10.0",
     "node-fetch": "3.3.2",
+    "notifications-node-client": "8.2.1",
     "pino": "9.5.0",
     "pino-pretty": "13.0.0",
     "shapefile": "^0.6.6",

@@ -7,6 +7,11 @@ import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
 import { config } from '../../../config.js'
 
+jest.mock('notifications-node-client', () => ({
+  NotifyClient: jest.fn().mockImplementation(() => ({
+    sendEmail: jest.fn()
+  }))
+}))
 jest.mock('../helpers/reference-generator.js')
 jest.mock('../helpers/createTaskList.js')
 jest.mock('../../../config.js')
@@ -30,7 +35,10 @@ describe('POST /exemption/submit', () => {
     jest.resetAllMocks()
 
     config.get.mockReturnValue({
-      isDynamicsEnabled: true
+      isDynamicsEnabled: true,
+      apiKey: 'test-api-key',
+      retryIntervalMs: 1,
+      retries: 1
     })
 
     mockDate = new Date('2025-06-15T10:30:00Z')
@@ -94,11 +102,15 @@ describe('POST /exemption/submit', () => {
       expect(result.error.message).toContain('EXEMPTION_ID_REQUIRED')
     })
 
-    it('should accept valid exemption ID', () => {
+    it('should accept valid request payload', () => {
       const payloadValidator =
         submitExemptionController.options.validate.payload
 
-      const result = payloadValidator.validate({ id: mockExemptionId })
+      const result = payloadValidator.validate({
+        id: mockExemptionId,
+        userName: 'John Doe',
+        userEmail: 'john.doe@example.com'
+      })
 
       expect(result.error).toBeUndefined()
     })
