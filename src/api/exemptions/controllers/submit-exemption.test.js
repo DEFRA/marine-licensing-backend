@@ -37,7 +37,7 @@ describe('POST /exemption/submit', () => {
     config.get.mockReturnValue({
       isDynamicsEnabled: true,
       apiKey: 'test-api-key',
-      retryIntervalMs: 1,
+      retryIntervalSeconds: 1,
       retries: 1
     })
 

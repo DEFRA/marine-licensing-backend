@@ -5,7 +5,7 @@ import { retryAsyncOperation } from '../../../common/helpers/retry-async-operati
 
 const sendEmail = async ({ userName, userEmail, applicationReference }) => {
   const logger = createLogger()
-  const { apiKey, retryIntervalMs, retries } = config.get('notify')
+  const { apiKey, retryIntervalSeconds, retries } = config.get('notify')
   if (!apiKey) {
     throw new Error('Notify API key is not set')
   }
@@ -24,7 +24,7 @@ const sendEmail = async ({ userName, userEmail, applicationReference }) => {
       operation: () =>
         notifyClient.sendEmail(notifyTemplateId, userEmail, options),
       retries,
-      intervalMs: retryIntervalMs
+      intervalMs: retryIntervalSeconds * 1000
     })
     const { id } = result.data
     logger.info(`Sent confirmation email for exemption ${applicationReference}`)

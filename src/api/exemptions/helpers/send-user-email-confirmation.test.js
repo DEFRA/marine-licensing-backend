@@ -36,7 +36,7 @@ describe('sendUserEmailConfirmation', () => {
 
     mockConfig = {
       apiKey: 'test-api-key',
-      retryIntervalMs: 1,
+      retryIntervalSeconds: 1,
       retries: 1
     }
 
