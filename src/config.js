@@ -236,13 +236,13 @@ const config = convict({
     retryIntervalMs: {
       doc: 'Retry interval in milliseconds for Notify',
       format: Number,
-      default: 1000,
+      default: 10000,
       env: 'NOTIFY_RETRY_INTERVAL_MS'
     },
     retries: {
       doc: 'Number of retries for Notify',
       format: Number,
-      default: 0,
+      default: 3,
       env: 'NOTIFY_RETRIES'
     }
   }

@@ -1,23 +1,32 @@
-export const retryAsyncOperation = ({
-  operation,
-  retries = 3,
-  intervalMs = 1000
-}) => {
+export const retryAsyncOperation = ({ operation, retries, intervalMs }) => {
   return new Promise((resolve, reject) => {
-    let result
     let retryCount = 0
-    const intervalId = setInterval(async () => {
+    let intervalId = null
+
+    const executeOperation = async () => {
       try {
-        result = await operation()
-        clearInterval(intervalId)
+        const result = await operation()
+        if (intervalId) {
+          clearInterval(intervalId)
+        }
         resolve(result)
       } catch (error) {
         retryCount++
         if (retryCount >= retries) {
-          clearInterval(intervalId)
+          if (intervalId) {
+            clearInterval(intervalId)
+          }
           reject(error)
+        } else if (retryCount === 1) {
+          // If this is the first failure, set up the interval for retries
+          intervalId = setInterval(() => {
+            executeOperation()
+          }, intervalMs)
         }
       }
-    }, intervalMs)
+    }
+
+    // Execute the first attempt immediately
+    executeOperation()
   })
 }

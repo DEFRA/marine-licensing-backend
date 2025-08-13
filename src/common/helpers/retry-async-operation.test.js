@@ -3,24 +3,17 @@ import { retryAsyncOperation } from './retry-async-operation.js'
 describe('retryAsyncOperation', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    jest.useFakeTimers()
-  })
-
-  afterEach(() => {
-    jest.runOnlyPendingTimers()
-    jest.useRealTimers()
   })
 
   describe('Happy Path - Successful Operations', () => {
     it('should resolve immediately on first successful attempt', async () => {
       const mockOperation = jest.fn().mockResolvedValue('success')
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      // Fast-forward to trigger the first interval
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
       expect(result).toBe('success')
       expect(mockOperation).toHaveBeenCalledTimes(1)
@@ -30,11 +23,11 @@ describe('retryAsyncOperation', () => {
       const expectedResult = { data: 'test-data', id: 123 }
       const mockOperation = jest.fn().mockResolvedValue(expectedResult)
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
       expect(result).toEqual(expectedResult)
     })
@@ -42,14 +35,11 @@ describe('retryAsyncOperation', () => {
     it('should work with custom interval timing', async () => {
       const mockOperation = jest.fn().mockResolvedValue('custom-timing')
 
-      const promise = retryAsyncOperation({
+      const result = await retryAsyncOperation({
         operation: mockOperation,
+        retries: 3,
         intervalMs: 500
       })
-
-      jest.advanceTimersByTime(500)
-
-      const result = await promise
 
       expect(result).toBe('custom-timing')
     })
@@ -62,15 +52,11 @@ describe('retryAsyncOperation', () => {
         .mockRejectedValueOnce(new Error('First failure'))
         .mockResolvedValueOnce('success on retry')
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      // First attempt fails
-      jest.advanceTimersByTime(1000)
-
-      // Second attempt succeeds
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 5
+      })
 
       expect(result).toBe('success on retry')
       expect(mockOperation).toHaveBeenCalledTimes(2)
@@ -83,18 +69,11 @@ describe('retryAsyncOperation', () => {
         .mockRejectedValueOnce(new Error('Second failure'))
         .mockResolvedValueOnce('success on third try')
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      // First attempt fails
-      jest.advanceTimersByTime(1000)
-
-      // Second attempt fails
-      jest.advanceTimersByTime(1000)
-
-      // Third attempt succeeds
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 5
+      })
 
       expect(result).toBe('success on third try')
       expect(mockOperation).toHaveBeenCalledTimes(3)
@@ -109,17 +88,11 @@ describe('retryAsyncOperation', () => {
         .mockRejectedValueOnce(new Error('Fourth failure'))
         .mockResolvedValueOnce('success on fifth try')
 
-      const promise = retryAsyncOperation({
+      const result = await retryAsyncOperation({
         operation: mockOperation,
-        retries: 5
+        retries: 5,
+        intervalMs: 5
       })
-
-      // Advance through all attempts
-      for (let i = 0; i < 5; i++) {
-        jest.advanceTimersByTime(1000)
-      }
-
-      const result = await promise
 
       expect(result).toBe('success on fifth try')
       expect(mockOperation).toHaveBeenCalledTimes(5)
@@ -131,14 +104,13 @@ describe('retryAsyncOperation', () => {
       const expectedError = new Error('Persistent failure')
       const mockOperation = jest.fn().mockRejectedValue(expectedError)
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      // Advance through all 3 retry attempts
-      jest.advanceTimersByTime(1000) // 1st attempt
-      jest.advanceTimersByTime(1000) // 2nd attempt
-      jest.advanceTimersByTime(1000) // 3rd attempt
-
-      await expect(promise).rejects.toThrow('Persistent failure')
+      await expect(
+        retryAsyncOperation({
+          operation: mockOperation,
+          retries: 3,
+          intervalMs: 5
+        })
+      ).rejects.toThrow('Persistent failure')
       expect(mockOperation).toHaveBeenCalledTimes(3)
     })
 
@@ -153,43 +125,37 @@ describe('retryAsyncOperation', () => {
         .mockRejectedValueOnce(secondError)
         .mockRejectedValueOnce(thirdError)
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000) // 1st attempt
-      jest.advanceTimersByTime(1000) // 2nd attempt
-      jest.advanceTimersByTime(1000) // 3rd attempt
-
-      await expect(promise).rejects.toThrow('Third error')
+      await expect(
+        retryAsyncOperation({
+          operation: mockOperation,
+          retries: 3,
+          intervalMs: 5
+        })
+      ).rejects.toThrow('Third error')
     })
 
     it('should respect custom retry count before rejecting', async () => {
       const expectedError = new Error('Custom retry failure')
       const mockOperation = jest.fn().mockRejectedValue(expectedError)
 
-      const promise = retryAsyncOperation({
-        operation: mockOperation,
-        retries: 2
-      })
-
-      jest.advanceTimersByTime(1000) // 1st attempt
-      jest.advanceTimersByTime(1000) // 2nd attempt
-
-      await expect(promise).rejects.toThrow('Custom retry failure')
+      await expect(
+        retryAsyncOperation({
+          operation: mockOperation,
+          retries: 2,
+          intervalMs: 5
+        })
+      ).rejects.toThrow('Custom retry failure')
       expect(mockOperation).toHaveBeenCalledTimes(2)
     })
 
     it('should execute the operation once only if zero retries specified', async () => {
       const mockOperation = jest.fn().mockResolvedValue('success')
 
-      const promise = retryAsyncOperation({
+      const result = await retryAsyncOperation({
         operation: mockOperation,
-        retries: 0
+        retries: 0,
+        intervalMs: 1000
       })
-
-      // Fast-forward to trigger the first interval
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
 
       expect(result).toBe('success')
       expect(mockOperation).toHaveBeenCalledTimes(1)
@@ -203,60 +169,55 @@ describe('retryAsyncOperation', () => {
         .mockRejectedValueOnce(new Error('First failure'))
         .mockResolvedValueOnce('success')
 
-      const promise = retryAsyncOperation({
+      const startTime = Date.now()
+      const result = await retryAsyncOperation({
         operation: mockOperation,
-        intervalMs: 2000
+        intervalMs: 50
       })
-
-      // First attempt at custom interval
-      jest.advanceTimersByTime(2000)
-
-      // Second attempt at custom interval
-      jest.advanceTimersByTime(2000)
-
-      const result = await promise
+      const endTime = Date.now()
 
       expect(result).toBe('success')
       expect(mockOperation).toHaveBeenCalledTimes(2)
+      // Verify that some time passed for the retry interval
+      expect(endTime - startTime).toBeGreaterThanOrEqual(45)
     })
 
-    it('should not call operation before first interval', async () => {
+    it('should call operation immediately without waiting for interval', async () => {
       const mockOperation = jest.fn().mockResolvedValue('immediate')
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
-      // Don't advance timers yet
-      expect(mockOperation).not.toHaveBeenCalled()
-
-      // Now advance and it should be called
-      jest.advanceTimersByTime(1000)
-
-      await promise
+      // Operation should be called immediately without advancing timers
+      expect(result).toBe('immediate')
       expect(mockOperation).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('Parameter Validation and Edge Cases', () => {
-    it('should use default values when parameters are not provided', async () => {
-      const mockOperation = jest.fn().mockResolvedValue('default-params')
+    it('should work when all parameters are explicitly provided', async () => {
+      const mockOperation = jest.fn().mockResolvedValue('explicit-params')
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
-      jest.advanceTimersByTime(1000) // Default interval
-
-      const result = await promise
-
-      expect(result).toBe('default-params')
+      expect(result).toBe('explicit-params')
     })
 
     it('should handle operation that returns null', async () => {
       const mockOperation = jest.fn().mockResolvedValue(null)
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
       expect(result).toBeNull()
     })
@@ -264,11 +225,11 @@ describe('retryAsyncOperation', () => {
     it('should handle operation that returns undefined', async () => {
       const mockOperation = jest.fn().mockResolvedValue(undefined)
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
       expect(result).toBeUndefined()
     })
@@ -276,26 +237,28 @@ describe('retryAsyncOperation', () => {
     it('should handle operation that returns false', async () => {
       const mockOperation = jest.fn().mockResolvedValue(false)
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000)
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
       expect(result).toBe(false)
     })
   })
 
   describe('Memory and Resource Management', () => {
-    it('should clear interval on successful completion', async () => {
-      const mockOperation = jest.fn().mockResolvedValue('success')
+    it('should clear interval on successful completion after retry', async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('First failure'))
+        .mockResolvedValueOnce('success')
       const clearIntervalSpy = jest.spyOn(global, 'clearInterval')
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000)
-
-      await promise
+      await retryAsyncOperation({
+        operation: mockOperation,
+        intervalMs: 5
+      })
 
       expect(clearIntervalSpy).toHaveBeenCalled()
       clearIntervalSpy.mockRestore()
@@ -305,15 +268,12 @@ describe('retryAsyncOperation', () => {
       const mockOperation = jest.fn().mockRejectedValue(new Error('Failure'))
       const clearIntervalSpy = jest.spyOn(global, 'clearInterval')
 
-      const promise = retryAsyncOperation({
-        operation: mockOperation,
-        retries: 1
-      })
-
-      jest.advanceTimersByTime(1000)
-
       try {
-        await promise
+        await retryAsyncOperation({
+          operation: mockOperation,
+          retries: 2,
+          intervalMs: 5
+        })
       } catch (error) {
         // Expected to fail
       }
@@ -327,16 +287,15 @@ describe('retryAsyncOperation', () => {
     it('should handle async operations that take time to resolve', async () => {
       const mockOperation = jest.fn().mockImplementation(() => {
         return new Promise((resolve) => {
-          setTimeout(() => resolve('delayed-success'), 100)
+          setTimeout(() => resolve('delayed-success'), 10)
         })
       })
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000) // Trigger the retry interval
-      jest.advanceTimersByTime(100) // Complete the async operation
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 3,
+        intervalMs: 1000
+      })
 
       expect(result).toBe('delayed-success')
     })
@@ -346,18 +305,15 @@ describe('retryAsyncOperation', () => {
         .fn()
         .mockImplementationOnce(() => {
           return new Promise((_resolve, reject) => {
-            setTimeout(() => reject(new Error('delayed-error')), 100)
+            setTimeout(() => reject(new Error('delayed-error')), 10)
           })
         })
         .mockResolvedValueOnce('success-after-delay')
 
-      const promise = retryAsyncOperation({ operation: mockOperation })
-
-      jest.advanceTimersByTime(1000) // First attempt
-      jest.advanceTimersByTime(100) // Complete the async rejection
-      jest.advanceTimersByTime(1000) // Second attempt
-
-      const result = await promise
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        intervalMs: 5
+      })
 
       expect(result).toBe('success-after-delay')
       expect(mockOperation).toHaveBeenCalledTimes(2)
