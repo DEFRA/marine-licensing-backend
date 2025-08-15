@@ -2,6 +2,7 @@ import { config } from '../../../config.js'
 import { NotifyClient } from 'notifications-node-client'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 import { retryAsyncOperation } from '../../../common/helpers/retry-async-operation.js'
+import { ErrorWithData } from '../../../common/helpers/error-with-data.js'
 
 const sendEmail = async ({ userName, userEmail, applicationReference }) => {
   const logger = createLogger()
@@ -21,8 +22,21 @@ const sendEmail = async ({ userName, userEmail, applicationReference }) => {
   }
   try {
     const result = await retryAsyncOperation({
-      operation: () =>
-        notifyClient.sendEmail(notifyTemplateId, userEmail, options),
+      operation: async () => {
+        try {
+          const response = await notifyClient.sendEmail(
+            notifyTemplateId,
+            userEmail,
+            options
+          )
+          return response
+        } catch (error) {
+          throw new ErrorWithData(
+            'Error sending email',
+            error.response?.data?.errors
+          )
+        }
+      },
       retries,
       intervalMs: retryIntervalSeconds * 1000
     })
@@ -30,7 +44,7 @@ const sendEmail = async ({ userName, userEmail, applicationReference }) => {
     logger.info(`Sent confirmation email for exemption ${applicationReference}`)
     return { status: 'success', id, reference: emailSendReference }
   } catch (error) {
-    const errors = JSON.stringify(error.response?.data?.errors)
+    const errors = JSON.stringify(error.data)
     logger.error(
       `Error sending email for exemption ${applicationReference}: ${errors}`
     )
