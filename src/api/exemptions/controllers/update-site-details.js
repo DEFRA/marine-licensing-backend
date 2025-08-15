@@ -20,14 +20,20 @@ export const updateSiteDetailsController = {
     try {
       const { payload, db } = request
 
-      const { siteDetails, id, updatedAt, updatedBy } = payload
+      const { multipleSiteDetails, siteDetails, id, updatedAt, updatedBy } =
+        payload
 
-      const result = await db
-        .collection('exemptions')
-        .updateOne(
-          { _id: ObjectId.createFromHexString(id) },
-          { $set: { siteDetails, updatedAt, updatedBy } }
-        )
+      const result = await db.collection('exemptions').updateOne(
+        { _id: ObjectId.createFromHexString(id) },
+        {
+          $set: {
+            ...(multipleSiteDetails && { multipleSiteDetails }),
+            siteDetails,
+            updatedAt,
+            updatedBy
+          }
+        }
+      )
 
       if (result.matchedCount === 0) {
         throw Boom.notFound('Exemption not found')
