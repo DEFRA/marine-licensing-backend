@@ -319,4 +319,125 @@ describe('retryAsyncOperation', () => {
       expect(mockOperation).toHaveBeenCalledTimes(2)
     })
   })
+
+  describe('Default Parameters', () => {
+    it('should use default retries (3) when retries parameter is not provided', async () => {
+      const expectedError = new Error('Persistent failure')
+      const mockOperation = jest.fn().mockRejectedValue(expectedError)
+
+      await expect(
+        retryAsyncOperation({
+          operation: mockOperation,
+          intervalMs: 5 // Provide intervalMs to speed up test
+        })
+      ).rejects.toThrow('Persistent failure')
+
+      // Should retry 3 times (default) before failing
+      expect(mockOperation).toHaveBeenCalledTimes(3)
+    })
+
+    it('should use default intervalMs (1000) when intervalMs parameter is not provided', async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('First failure'))
+        .mockResolvedValueOnce('success on retry')
+
+      const startTime = Date.now()
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 2 // Limit retries to speed up test
+      })
+      const endTime = Date.now()
+
+      expect(result).toBe('success on retry')
+      expect(mockOperation).toHaveBeenCalledTimes(2)
+      // Verify that approximately 1000ms passed for the default interval
+      expect(endTime - startTime).toBeGreaterThanOrEqual(950)
+      expect(endTime - startTime).toBeLessThan(1200) // Allow some tolerance
+    })
+
+    it('should use both default parameters when neither retries nor intervalMs are provided', async () => {
+      const expectedError = new Error('Default params failure')
+      const mockOperation = jest.fn().mockRejectedValue(expectedError)
+
+      const startTime = Date.now()
+      await expect(
+        retryAsyncOperation({
+          operation: mockOperation
+        })
+      ).rejects.toThrow('Default params failure')
+      const endTime = Date.now()
+
+      // Should use default retries (3)
+      expect(mockOperation).toHaveBeenCalledTimes(3)
+      // Should use default intervalMs (1000ms), so roughly 2000ms total (2 intervals)
+      expect(endTime - startTime).toBeGreaterThanOrEqual(1900)
+      expect(endTime - startTime).toBeLessThan(2200) // Allow some tolerance
+    })
+
+    it('should succeed immediately with defaults when operation succeeds on first attempt', async () => {
+      const mockOperation = jest.fn().mockResolvedValue('immediate-success')
+
+      const result = await retryAsyncOperation({
+        operation: mockOperation
+      })
+
+      expect(result).toBe('immediate-success')
+      expect(mockOperation).toHaveBeenCalledTimes(1)
+    })
+
+    it('should retry once with defaults and succeed on second attempt', async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('First failure'))
+        .mockResolvedValueOnce('success with defaults')
+
+      const startTime = Date.now()
+      const result = await retryAsyncOperation({
+        operation: mockOperation
+      })
+      const endTime = Date.now()
+
+      expect(result).toBe('success with defaults')
+      expect(mockOperation).toHaveBeenCalledTimes(2)
+      // Should wait default interval (1000ms) between attempts
+      expect(endTime - startTime).toBeGreaterThanOrEqual(950)
+      expect(endTime - startTime).toBeLessThan(1200)
+    })
+
+    it('should handle partial default usage - only operation and retries provided', async () => {
+      const mockOperation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('First failure'))
+        .mockResolvedValueOnce('success with partial defaults')
+
+      const startTime = Date.now()
+      const result = await retryAsyncOperation({
+        operation: mockOperation,
+        retries: 2
+      })
+      const endTime = Date.now()
+
+      expect(result).toBe('success with partial defaults')
+      expect(mockOperation).toHaveBeenCalledTimes(2)
+      // Should use default intervalMs (1000ms)
+      expect(endTime - startTime).toBeGreaterThanOrEqual(950)
+      expect(endTime - startTime).toBeLessThan(1200)
+    })
+
+    it('should handle partial default usage - only operation and intervalMs provided', async () => {
+      const expectedError = new Error('Partial defaults failure')
+      const mockOperation = jest.fn().mockRejectedValue(expectedError)
+
+      await expect(
+        retryAsyncOperation({
+          operation: mockOperation,
+          intervalMs: 10 // Fast interval for testing
+        })
+      ).rejects.toThrow('Partial defaults failure')
+
+      // Should use default retries (3)
+      expect(mockOperation).toHaveBeenCalledTimes(3)
+    })
+  })
 })

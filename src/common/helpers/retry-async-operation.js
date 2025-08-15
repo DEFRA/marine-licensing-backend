@@ -1,4 +1,8 @@
-export const retryAsyncOperation = ({ operation, retries, intervalMs }) => {
+export const retryAsyncOperation = ({
+  operation,
+  retries = 3,
+  intervalMs = 1000
+}) => {
   return new Promise((resolve, reject) => {
     let retryCount = 0
     let intervalId = null
@@ -22,6 +26,8 @@ export const retryAsyncOperation = ({ operation, retries, intervalMs }) => {
           intervalId = setInterval(() => {
             executeOperation()
           }, intervalMs)
+        } else {
+          // do nothing and wait for the next interval
         }
       }
     }
