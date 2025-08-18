@@ -37,7 +37,8 @@ describe('sendUserEmailConfirmation', () => {
     mockConfig = {
       apiKey: 'test-api-key',
       retryIntervalSeconds: 1,
-      retries: 1
+      retries: 1,
+      notifyTemplateId: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12'
     }
 
     config.get.mockReturnValue(mockConfig)

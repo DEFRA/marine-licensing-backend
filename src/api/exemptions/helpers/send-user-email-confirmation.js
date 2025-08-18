@@ -12,12 +12,12 @@ const sendEmail = async ({
   exemptionId
 }) => {
   const logger = createLogger()
-  const { apiKey, retryIntervalSeconds, retries } = config.get('notify')
+  const { apiKey, retryIntervalSeconds, retries, notifyTemplateId } =
+    config.get('notify')
   if (!apiKey) {
     throw new Error('Notify API key is not set')
   }
   const notifyClient = new NotifyClient(apiKey)
-  const notifyTemplateId = 'a9f8607a-1a1b-4c49-87c0-b260824d2e12'
   const emailSendReference = applicationReference
   const viewDetailsUrl = `${frontEndBaseUrl}/exemption/view-details/${exemptionId}`
   const options = {

@@ -244,6 +244,12 @@ const config = convict({
       format: Number,
       default: 3,
       env: 'NOTIFY_RETRIES'
+    },
+    notifyTemplateId: {
+      doc: 'Notify template ID',
+      format: String,
+      default: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+      env: 'NOTIFY_TEMPLATE_ID'
     }
   }
 })
