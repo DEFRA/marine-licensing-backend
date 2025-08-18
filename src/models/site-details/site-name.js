@@ -10,4 +10,3 @@ export const siteNameFieldSchema = joi
     'any.required': 'SITE_NAME_REQUIRED',
     'string.max': 'SITE_NAME_MAX_LENGTH'
   })
-
