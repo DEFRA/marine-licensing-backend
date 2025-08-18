@@ -6,9 +6,7 @@ import {
   mockOsgb36MultipleCoordinatesRequest,
   mockId,
   mockSiteDetails,
-  mockSiteDetailsRequest,
-  mockMultipleSiteDetails,
-  mockMultipleSiteDetailsEnabled
+  mockSiteDetailsRequest
 } from './test-fixtures.js'
 
 describe('#siteDetails schema', () => {
@@ -33,39 +31,9 @@ describe('#siteDetails schema', () => {
     })
   })
 
-  describe('#multipleSiteDetails', () => {
+  describe('#multipleSiteDetails integration', () => {
     describe('when coordinatesType is "coordinates"', () => {
-      test('Should correctly validate when multipleSitesEnabled is explicitly false', () => {
-        const result = siteDetailsSchema.validate(mockSiteDetailsRequest)
-        expect(result.error).toBeUndefined()
-        expect(result.value.multipleSiteDetails.multipleSitesEnabled).toBe(
-          false
-        )
-      })
-
-      test('Should correctly validate when multipleSitesEnabled is true', () => {
-        const requestWithTrue = {
-          ...mockSiteDetailsRequest,
-          multipleSiteDetails: mockMultipleSiteDetailsEnabled
-        }
-        const result = siteDetailsSchema.validate(requestWithTrue)
-        expect(result.error).toBeUndefined()
-        expect(result.value.multipleSiteDetails.multipleSitesEnabled).toBe(true)
-      })
-
-      test('Should default multipleSitesEnabled to false when not provided in object', () => {
-        const requestWithEmptyObject = {
-          ...mockSiteDetailsRequest,
-          multipleSiteDetails: {}
-        }
-        const result = siteDetailsSchema.validate(requestWithEmptyObject)
-        expect(result.error).toBeUndefined()
-        expect(result.value.multipleSiteDetails.multipleSitesEnabled).toBe(
-          false
-        )
-      })
-
-      test('Should reject when multipleSiteDetails is missing', () => {
+      test('Should require multipleSiteDetails when coordinatesType is coordinates', () => {
         const requestWithoutMultipleSiteDetails = {
           id: mockId,
           siteDetails: mockSiteDetails
@@ -75,48 +43,14 @@ describe('#siteDetails schema', () => {
         )
         expect(result.error.message).toBe('"multipleSiteDetails" is required')
       })
-
-      test('Should reject when multipleSitesEnabled is null', () => {
-        const requestWithNull = {
-          ...mockSiteDetailsRequest,
-          multipleSiteDetails: { multipleSitesEnabled: null }
-        }
-        const result = siteDetailsSchema.validate(requestWithNull)
-        expect(result.error.message).toBe(
-          '"multipleSiteDetails.multipleSitesEnabled" must be a boolean'
-        )
-      })
-
-      test('Should reject when multipleSitesEnabled is non-boolean', () => {
-        const requestWithString = {
-          ...mockSiteDetailsRequest,
-          multipleSiteDetails: { multipleSitesEnabled: 'maybe' }
-        }
-        const result = siteDetailsSchema.validate(requestWithString)
-        expect(result.error.message).toBe(
-          '"multipleSiteDetails.multipleSitesEnabled" must be a boolean'
-        )
-      })
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should correctly validate when multipleSiteDetails is not provided', () => {
+      test('Should allow multipleSiteDetails to be optional when coordinatesType is file', () => {
         const result = siteDetailsSchema.validate(
           mockFileUploadSiteDetailsRequest
         )
         expect(result.error).toBeUndefined()
-      })
-
-      test('Should correctly validate when multipleSitesEnabled is explicitly false', () => {
-        const requestWithFalse = {
-          ...mockFileUploadSiteDetailsRequest,
-          multipleSiteDetails: mockMultipleSiteDetails
-        }
-        const result = siteDetailsSchema.validate(requestWithFalse)
-        expect(result.error).toBeUndefined()
-        expect(result.value.multipleSiteDetails.multipleSitesEnabled).toBe(
-          false
-        )
       })
     })
   })

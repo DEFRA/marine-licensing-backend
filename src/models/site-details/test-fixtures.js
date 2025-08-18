@@ -7,10 +7,6 @@ export const mockMultipleSiteDetails = {
   multipleSitesEnabled: false
 }
 
-export const mockMultipleSiteDetailsEnabled = {
-  multipleSitesEnabled: true
-}
-
 export const mockSiteDetails = {
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
