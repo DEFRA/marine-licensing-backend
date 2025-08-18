@@ -19,7 +19,7 @@ const sendEmail = async ({
   const notifyClient = new NotifyClient(apiKey)
   const notifyTemplateId = 'a9f8607a-1a1b-4c49-87c0-b260824d2e12'
   const emailSendReference = applicationReference
-  const viewDetailsUrl = `${frontEndBaseUrl}/exemptions/${exemptionId}`
+  const viewDetailsUrl = `${frontEndBaseUrl}/exemption/view-details/${exemptionId}`
   const options = {
     personalisation: {
       name: userName,

@@ -78,7 +78,7 @@ describe('sendUserEmailConfirmation', () => {
             name: 'John Doe',
             reference: 'EXE/2025/10001',
             viewDetailsUrl:
-              'https://marine-licensing.defra.gov.uk/exemptions/507f1f77bcf86cd799439011'
+              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439011'
           },
           reference: 'EXE/2025/10001'
         }
@@ -330,7 +330,7 @@ describe('sendUserEmailConfirmation', () => {
         mockNotifyClient.sendEmail.mock.calls[0][2].personalisation
           .viewDetailsUrl
       ).toEqual(
-        'https://test-environment.marine-licensing.defra.gov.uk/exemptions/64a1b2c3d4e5f6789abcdef0'
+        'https://test-environment.marine-licensing.defra.gov.uk/exemption/view-details/64a1b2c3d4e5f6789abcdef0'
       )
     })
 
@@ -360,7 +360,7 @@ describe('sendUserEmailConfirmation', () => {
             name: 'Base URL Test',
             reference: 'EXE/2025/10014',
             viewDetailsUrl:
-              'http://localhost:3000/exemptions/64a1b2c3d4e5f6789abcdef1'
+              'http://localhost:3000/exemption/view-details/64a1b2c3d4e5f6789abcdef1'
           },
           reference: 'EXE/2025/10014'
         })
@@ -395,7 +395,7 @@ describe('sendUserEmailConfirmation', () => {
             name: '',
             reference: 'EXE/2025/10009',
             viewDetailsUrl:
-              'https://marine-licensing.defra.gov.uk/exemptions/507f1f77bcf86cd799439019'
+              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439019'
           }
         })
       )
@@ -428,7 +428,7 @@ describe('sendUserEmailConfirmation', () => {
             name: 'Long Reference User',
             reference: longReference,
             viewDetailsUrl:
-              'https://marine-licensing.defra.gov.uk/exemptions/507f1f77bcf86cd799439020'
+              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439020'
           },
           reference: longReference
         })
