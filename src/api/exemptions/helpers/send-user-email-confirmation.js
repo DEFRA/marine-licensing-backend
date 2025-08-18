@@ -4,7 +4,13 @@ import { createLogger } from '../../../common/helpers/logging/logger.js'
 import { retryAsyncOperation } from '../../../common/helpers/retry-async-operation.js'
 import { ErrorWithData } from '../../../common/helpers/error-with-data.js'
 
-const sendEmail = async ({ userName, userEmail, applicationReference }) => {
+const sendEmail = async ({
+  userName,
+  userEmail,
+  applicationReference,
+  frontEndBaseUrl,
+  exemptionId
+}) => {
   const logger = createLogger()
   const { apiKey, retryIntervalSeconds, retries } = config.get('notify')
   if (!apiKey) {
@@ -13,10 +19,12 @@ const sendEmail = async ({ userName, userEmail, applicationReference }) => {
   const notifyClient = new NotifyClient(apiKey)
   const notifyTemplateId = 'a9f8607a-1a1b-4c49-87c0-b260824d2e12'
   const emailSendReference = applicationReference
+  const viewDetailsUrl = `${frontEndBaseUrl}/exemptions/${exemptionId}`
   const options = {
     personalisation: {
       name: userName,
-      reference: applicationReference
+      reference: applicationReference,
+      viewDetailsUrl
     },
     reference: emailSendReference
   }
@@ -60,9 +68,17 @@ export const sendUserEmailConfirmation = async ({
   db,
   userName,
   userEmail,
-  applicationReference
+  applicationReference,
+  frontEndBaseUrl,
+  exemptionId
 }) => {
-  const result = await sendEmail({ userName, userEmail, applicationReference })
+  const result = await sendEmail({
+    userName,
+    userEmail,
+    applicationReference,
+    frontEndBaseUrl,
+    exemptionId
+  })
   db.collection('email-queue')?.insertOne({
     applicationReferenceNumber: applicationReference,
     ...result

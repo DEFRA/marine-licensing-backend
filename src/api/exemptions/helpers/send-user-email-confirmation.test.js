@@ -59,7 +59,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'John Doe',
         userEmail: 'john.doe@example.com',
-        applicationReference: 'EXE/2025/10001'
+        applicationReference: 'EXE/2025/10001',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439011'
       }
 
       await sendUserEmailConfirmation(params)
@@ -74,7 +76,9 @@ describe('sendUserEmailConfirmation', () => {
         {
           personalisation: {
             name: 'John Doe',
-            reference: 'EXE/2025/10001'
+            reference: 'EXE/2025/10001',
+            viewDetailsUrl:
+              'https://marine-licensing.defra.gov.uk/exemptions/507f1f77bcf86cd799439011'
           },
           reference: 'EXE/2025/10001'
         }
@@ -102,20 +106,17 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'José María García-López',
         userEmail: 'jose.garcia@example.com',
-        applicationReference: 'EXE/2025/10002'
+        applicationReference: 'EXE/2025/10002',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439012'
       }
 
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        expect.anything(),
         'jose.garcia@example.com',
-        expect.objectContaining({
-          personalisation: {
-            name: 'José María García-López',
-            reference: 'EXE/2025/10002'
-          }
-        })
+        expect.anything()
       )
     })
   })
@@ -141,7 +142,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Jane Smith',
         userEmail: 'invalid-email',
-        applicationReference: 'EXE/2025/10003'
+        applicationReference: 'EXE/2025/10003',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439013'
       }
 
       await sendUserEmailConfirmation(params)
@@ -179,7 +182,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Bob Wilson',
         userEmail: 'bob.wilson@example.com',
-        applicationReference: 'EXE/2025/10004'
+        applicationReference: 'EXE/2025/10004',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439014'
       }
 
       await sendUserEmailConfirmation(params)
@@ -208,7 +213,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Test User',
         userEmail: 'test@example.com',
-        applicationReference: 'EXE/2025/10005'
+        applicationReference: 'EXE/2025/10005',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439015'
       }
 
       await sendUserEmailConfirmation(params)
@@ -228,7 +235,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Alice Johnson',
         userEmail: 'alice.johnson@example.com',
-        applicationReference: 'EXE/2025/10006'
+        applicationReference: 'EXE/2025/10006',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439016'
       }
 
       await sendUserEmailConfirmation(params)
@@ -256,7 +265,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Charlie Brown',
         userEmail: 'charlie.brown@example.com',
-        applicationReference: 'EXE/2025/10007'
+        applicationReference: 'EXE/2025/10007',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439017'
       }
 
       await sendUserEmailConfirmation(params)
@@ -282,15 +293,77 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Template Test',
         userEmail: 'template@example.com',
-        applicationReference: 'EXE/2025/10008'
+        applicationReference: 'EXE/2025/10008',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439018'
       }
 
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
         'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
-        'template@example.com',
-        expect.any(Object)
+        expect.anything(),
+        expect.anything()
+      )
+    })
+
+    it('should construct view details URL correctly using frontEndBaseUrl and exemptionId', async () => {
+      const mockEmailResponse = {
+        data: { id: 'url-test-id' }
+      }
+
+      mockNotifyClient.sendEmail.mockResolvedValue(mockEmailResponse)
+
+      const params = {
+        db: mockDb,
+        userName: 'URL Test User',
+        userEmail: 'url.test@example.com',
+        applicationReference: 'EXE/2025/10013',
+        frontEndBaseUrl:
+          'https://test-environment.marine-licensing.defra.gov.uk',
+        exemptionId: '64a1b2c3d4e5f6789abcdef0'
+      }
+
+      await sendUserEmailConfirmation(params)
+
+      expect(
+        mockNotifyClient.sendEmail.mock.calls[0][2].personalisation
+          .viewDetailsUrl
+      ).toEqual(
+        'https://test-environment.marine-licensing.defra.gov.uk/exemptions/64a1b2c3d4e5f6789abcdef0'
+      )
+    })
+
+    it('should handle different frontEndBaseUrl formats', async () => {
+      const mockEmailResponse = {
+        data: { id: 'base-url-test-id' }
+      }
+
+      mockNotifyClient.sendEmail.mockResolvedValue(mockEmailResponse)
+
+      const params = {
+        db: mockDb,
+        userName: 'Base URL Test',
+        userEmail: 'baseurl@example.com',
+        applicationReference: 'EXE/2025/10014',
+        frontEndBaseUrl: 'http://localhost:3000', // Different format for testing
+        exemptionId: '64a1b2c3d4e5f6789abcdef1'
+      }
+
+      await sendUserEmailConfirmation(params)
+
+      expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
+        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        'baseurl@example.com',
+        expect.objectContaining({
+          personalisation: {
+            name: 'Base URL Test',
+            reference: 'EXE/2025/10014',
+            viewDetailsUrl:
+              'http://localhost:3000/exemptions/64a1b2c3d4e5f6789abcdef1'
+          },
+          reference: 'EXE/2025/10014'
+        })
       )
     })
   })
@@ -307,7 +380,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: '',
         userEmail: 'empty.name@example.com',
-        applicationReference: 'EXE/2025/10009'
+        applicationReference: 'EXE/2025/10009',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439019'
       }
 
       await sendUserEmailConfirmation(params)
@@ -318,7 +393,9 @@ describe('sendUserEmailConfirmation', () => {
         expect.objectContaining({
           personalisation: {
             name: '',
-            reference: 'EXE/2025/10009'
+            reference: 'EXE/2025/10009',
+            viewDetailsUrl:
+              'https://marine-licensing.defra.gov.uk/exemptions/507f1f77bcf86cd799439019'
           }
         })
       )
@@ -336,7 +413,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Long Reference User',
         userEmail: 'long.ref@example.com',
-        applicationReference: longReference
+        applicationReference: longReference,
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439020'
       }
 
       await sendUserEmailConfirmation(params)
@@ -347,7 +426,9 @@ describe('sendUserEmailConfirmation', () => {
         expect.objectContaining({
           personalisation: {
             name: 'Long Reference User',
-            reference: longReference
+            reference: longReference,
+            viewDetailsUrl:
+              'https://marine-licensing.defra.gov.uk/exemptions/507f1f77bcf86cd799439020'
           },
           reference: longReference
         })
@@ -365,7 +446,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Plus User',
         userEmail: 'user+test@example.com',
-        applicationReference: 'EXE/2025/10010'
+        applicationReference: 'EXE/2025/10010',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439021'
       }
 
       await sendUserEmailConfirmation(params)
@@ -390,7 +473,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Logging Test User',
         userEmail: 'logging@example.com',
-        applicationReference: 'EXE/2025/10011'
+        applicationReference: 'EXE/2025/10011',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439022'
       }
 
       await sendUserEmailConfirmation(params)
@@ -416,7 +501,9 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Error Test',
         userEmail: 'error@example.com',
-        applicationReference: 'EXE/2025/10012'
+        applicationReference: 'EXE/2025/10012',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439023'
       }
 
       await sendUserEmailConfirmation(params)

@@ -62,6 +62,7 @@ export const submitExemptionController = {
         userName
       } = payload
       const { isDynamicsEnabled } = config.get('dynamics')
+      const frontEndBaseUrl = config.get('frontEndBaseUrl')
       const exemption = await getExemptionWithId(db, id)
       checkForIncompleteTasks(exemption)
 
@@ -109,7 +110,9 @@ export const submitExemptionController = {
         db,
         userName,
         userEmail,
-        applicationReference
+        applicationReference,
+        frontEndBaseUrl,
+        exemptionId: id
       })
 
       return h
