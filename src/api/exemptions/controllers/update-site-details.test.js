@@ -1,7 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { updateSiteDetailsController } from './update-site-details.js'
 import Boom from '@hapi/boom'
-import { mockMultipleSiteDetails } from '../../../models/site-details/test-fixtures.js'
 
 describe('PATCH /exemptions/site-details', () => {
   const payloadValidator = updateSiteDetailsController.options.validate.payload
@@ -20,9 +19,10 @@ describe('PATCH /exemptions/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      multipleSiteDetails: mockMultipleSiteDetails,
+      multipleSiteDetails: { multipleSitesEnabled: true },
       siteDetails: {
         coordinatesType: 'coordinates',
+        siteName: 'Test Site Name',
         coordinatesEntry: 'single',
         coordinateSystem: 'wgs84',
         coordinates: { latitude: '51.489676', longitude: '-0.231530' },
@@ -67,9 +67,10 @@ describe('PATCH /exemptions/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      multipleSiteDetails: mockMultipleSiteDetails,
+      multipleSiteDetails: { multipleSitesEnabled: true },
       siteDetails: {
         coordinatesType: 'coordinates',
+        siteName: 'Test Site Name',
         coordinatesEntry: 'single',
         coordinateSystem: 'wgs84',
         coordinates: { latitude: '51.489676', longitude: '-0.231530' },
@@ -101,9 +102,10 @@ describe('PATCH /exemptions/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      multipleSiteDetails: mockMultipleSiteDetails,
+      multipleSiteDetails: { multipleSitesEnabled: true },
       siteDetails: {
         coordinatesType: 'coordinates',
+        siteName: 'Test Site Name',
         coordinatesEntry: 'single',
         coordinateSystem: 'wgs84',
         coordinates: { latitude: '51.489676', longitude: '-0.231530' },
