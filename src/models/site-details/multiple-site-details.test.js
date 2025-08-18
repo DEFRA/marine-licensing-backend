@@ -43,9 +43,7 @@ describe('multipleSiteDetailsSchema', () => {
       })
 
       expect(result.error).toBeDefined()
-      expect(result.error.message).toContain(
-        '"multipleSitesEnabled" must be a boolean'
-      )
+      expect(result.error.message).toContain('MULTIPLE_SITES_REQUIRED')
     })
 
     it('should fail when multipleSitesEnabled is a number', () => {
@@ -53,9 +51,7 @@ describe('multipleSiteDetailsSchema', () => {
         multipleSitesEnabled: 1
       })
 
-      expect(result.error.message).toContain(
-        '"multipleSitesEnabled" must be a boolean'
-      )
+      expect(result.error.message).toContain('MULTIPLE_SITES_REQUIRED')
     })
 
     it('should fail when multipleSitesEnabled is null', () => {
@@ -63,9 +59,7 @@ describe('multipleSiteDetailsSchema', () => {
         multipleSitesEnabled: null
       })
 
-      expect(result.error.message).toContain(
-        '"multipleSitesEnabled" must be a boolean'
-      )
+      expect(result.error.message).toContain('MULTIPLE_SITES_REQUIRED')
     })
   })
 })
