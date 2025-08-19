@@ -2,10 +2,7 @@ import Boom from '@hapi/boom'
 import { projectName as projectNameSchema } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
-import {
-  EXEMPTION_STATUS,
-  EXEMPTION_TYPE
-} from '../../../common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 
 export const createProjectNameController = {
   options: {
@@ -33,7 +30,6 @@ export const createProjectNameController = {
         updatedBy,
         updatedAt,
         status: EXEMPTION_STATUS.DRAFT,
-        type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
         contactId
       })
 
