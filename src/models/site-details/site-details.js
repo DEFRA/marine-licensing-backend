@@ -33,9 +33,13 @@ export const siteDetailsSchema = joi
     siteDetails: joi
       .object({
         coordinatesType: coordinatesTypeFieldSchema,
-        siteName: joi.when('coordinatesType', {
-          is: 'coordinates',
-          then: siteNameFieldSchema.optional(),
+        siteName: joi.when('/multipleSiteDetails.multipleSitesEnabled', {
+          is: true,
+          then: joi.when('coordinatesType', {
+            is: 'coordinates',
+            then: siteNameFieldSchema,
+            otherwise: joi.forbidden()
+          }),
           otherwise: joi.forbidden()
         }),
         // File upload fields (conditional)
@@ -106,24 +110,5 @@ export const siteDetailsSchema = joi
       .messages({
         'any.required': 'SITE_DETAILS_REQUIRED'
       })
-  })
-  .custom((value, helpers) => {
-    // Check if siteName should be required or forbidden based on multipleSitesEnabled
-    if (value.siteDetails?.coordinatesType === 'coordinates') {
-      if (value.multipleSiteDetails?.multipleSitesEnabled === true) {
-        // When multipleSitesEnabled is true, siteName is required
-        if (!value.siteDetails?.siteName) {
-          return helpers.error('any.invalid', { message: 'SITE_NAME_REQUIRED' })
-        }
-      } else if (value.multipleSiteDetails?.multipleSitesEnabled === false) {
-        // When multipleSitesEnabled is false, siteName is forbidden
-        if (value.siteDetails?.siteName) {
-          return helpers.error('any.invalid', {
-            message: '"siteDetails.siteName" is not allowed'
-          })
-        }
-      }
-    }
-    return value
   })
   .append(exemptionId)

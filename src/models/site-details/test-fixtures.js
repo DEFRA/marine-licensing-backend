@@ -28,7 +28,7 @@ export const mockSiteDetailsRequest = {
 
 export const mockSiteDetailsRequestWithSiteName = {
   id: mockId,
-  multipleSiteDetails: mockMultipleSiteDetails,
+  multipleSiteDetails: { multipleSitesEnabled: true },
   siteDetails: mockSiteDetailsWithSiteName
 }
 

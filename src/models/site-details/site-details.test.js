@@ -96,60 +96,31 @@ describe('#siteDetails schema', () => {
   describe('#siteName', () => {
     describe('when coordinatesType is "coordinates" and multipleSitesEnabled is false', () => {
       test('Should reject siteName when multipleSitesEnabled is false', () => {
-        const result = siteDetailsSchema.validate(
-          mockSiteDetailsRequestWithSiteName
-        )
-        expect(result.error.message).toBe('"value" contains an invalid value')
-      })
-
-      test('Should fail when siteName is empty string', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequestWithSiteName,
-          siteDetails: { ...mockSiteDetailsWithSiteName, siteName: '' }
+          multipleSiteDetails: { multipleSitesEnabled: false }
         })
-        expect(result.error.message).toBe('SITE_NAME_REQUIRED')
+        expect(result.error.message).toBe(
+          '"siteDetails.siteName" is not allowed'
+        )
       })
 
-      test('Should fail when siteName is missing', () => {
+      test('Should not fail when siteName is missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequestWithSiteName,
-          siteDetails: { ...mockSiteDetailsWithSiteName, siteName: undefined }
+          siteDetails: { ...mockSiteDetails },
+          multipleSiteDetails: { multipleSitesEnabled: false }
         })
         expect(result.error).toBeUndefined()
       })
 
-      test('Should fail when siteName is null', () => {
+      test('Should not fail when siteName is undefined', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequestWithSiteName,
-          siteDetails: { ...mockSiteDetailsWithSiteName, siteName: null }
+          siteDetails: { ...mockSiteDetailsWithSiteName, siteName: undefined },
+          multipleSiteDetails: { multipleSitesEnabled: false }
         })
-        expect(result.error.message).toBe(
-          '"siteDetails.siteName" must be a string'
-        )
-      })
-
-      test('Should fail when siteName is too long', () => {
-        const longSiteName = 'a'.repeat(251)
-        const result = siteDetailsSchema.validate({
-          ...mockSiteDetailsRequestWithSiteName,
-          siteDetails: {
-            ...mockSiteDetailsWithSiteName,
-            siteName: longSiteName
-          }
-        })
-        expect(result.error.message).toBe('SITE_NAME_MAX_LENGTH')
-      })
-
-      test('Should reject long siteName when multipleSitesEnabled is false', () => {
-        const maxLengthSiteName = 'a'.repeat(250)
-        const result = siteDetailsSchema.validate({
-          ...mockSiteDetailsRequestWithSiteName,
-          siteDetails: {
-            ...mockSiteDetailsWithSiteName,
-            siteName: maxLengthSiteName
-          }
-        })
-        expect(result.error.message).toBe('"value" contains an invalid value')
+        expect(result.error).toBeUndefined()
       })
     })
 
@@ -160,7 +131,7 @@ describe('#siteDetails schema', () => {
           multipleSiteDetails: { multipleSitesEnabled: true },
           siteDetails: { ...mockSiteDetails }
         })
-        expect(result.error.message).toBe('"value" contains an invalid value')
+        expect(result.error.message).toBe('SITE_NAME_REQUIRED')
       })
 
       test('Should allow coordinates with siteName when multipleSitesEnabled is true', () => {

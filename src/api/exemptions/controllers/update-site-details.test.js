@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { updateSiteDetailsController } from './update-site-details.js'
+import { mockMultipleSiteDetails } from '../../../models/site-details/test-fixtures.js'
 import Boom from '@hapi/boom'
 
 describe('PATCH /exemptions/site-details', () => {
@@ -19,7 +20,7 @@ describe('PATCH /exemptions/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      multipleSiteDetails: { multipleSitesEnabled: true },
+      multipleSiteDetails: mockMultipleSiteDetails,
       siteDetails: {
         coordinatesType: 'coordinates',
         siteName: 'Test Site Name',
@@ -67,7 +68,7 @@ describe('PATCH /exemptions/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      multipleSiteDetails: { multipleSitesEnabled: true },
+      multipleSiteDetails: mockMultipleSiteDetails,
       siteDetails: {
         coordinatesType: 'coordinates',
         siteName: 'Test Site Name',
@@ -102,7 +103,7 @@ describe('PATCH /exemptions/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      multipleSiteDetails: { multipleSitesEnabled: true },
+      multipleSiteDetails: mockMultipleSiteDetails,
       siteDetails: {
         coordinatesType: 'coordinates',
         siteName: 'Test Site Name',
