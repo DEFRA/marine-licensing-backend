@@ -1,9 +1,6 @@
 import { createProjectNameController } from './create-project-name'
 import { ObjectId } from 'mongodb'
-import {
-  EXEMPTION_STATUS,
-  EXEMPTION_TYPE
-} from '../../../common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
@@ -72,7 +69,6 @@ describe('POST /exemptions/project-name', () => {
     expect(mockInsertOne).toHaveBeenCalledWith({
       projectName: 'Test Project',
       status: EXEMPTION_STATUS.DRAFT,
-      type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
       contactId: expect.any(String),
       ...mockAuditPayload
     })

@@ -1,10 +1,7 @@
 import { jest } from '@jest/globals'
 import { getExemptionsController, sortByStatus } from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
-import {
-  EXEMPTION_STATUS,
-  EXEMPTION_TYPE
-} from '../../../common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { config } from '../../../config.js'
 
 jest.mock('../../../config.js')
@@ -88,13 +85,11 @@ describe('getExemptionsController', () => {
           {
             id: '507f1f77bcf86cd799439012',
             projectName: 'Test Project',
-            type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             status: EXEMPTION_STATUS.DRAFT
           },
           {
             id: '507f1f77bcf86cd799439011',
             projectName: 'Other Project',
-            type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             applicationReference: 'EXEMPTION-2024-001',
             status: EXEMPTION_STATUS.CLOSED,
             submittedAt: '2024-01-15T10:00:00.000Z'
@@ -102,7 +97,6 @@ describe('getExemptionsController', () => {
           {
             id: '507f1f77bcf86cd799439013',
             projectName: 'Beta Project',
-            type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             status: 'Unknown status'
           }
         ]
@@ -137,8 +131,7 @@ describe('getExemptionsController', () => {
         message: 'success',
         value: [
           {
-            id: '507f1f77bcf86cd799439011',
-            type: EXEMPTION_TYPE.EXEMPT_ACTIVITY
+            id: '507f1f77bcf86cd799439011'
           }
         ]
       })

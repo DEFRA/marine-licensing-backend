@@ -1,24 +1,14 @@
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
-import {
-  EXEMPTION_STATUS,
-  EXEMPTION_TYPE
-} from '../../../common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 
 const transformedExemptions = (exemptions) =>
   exemptions.map((exemption) => {
-    const {
-      _id,
-      projectName,
-      applicationReference,
-      type,
-      status,
-      submittedAt
-    } = exemption
+    const { _id, projectName, applicationReference, status, submittedAt } =
+      exemption
 
     return {
       id: _id.toString(),
-      type: type ?? EXEMPTION_TYPE.EXEMPT_ACTIVITY,
       ...(status && { status }),
       ...(projectName && { projectName }),
       ...(applicationReference && { applicationReference }),

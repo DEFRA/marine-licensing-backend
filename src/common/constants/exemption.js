@@ -5,5 +5,5 @@ export const EXEMPTION_STATUS = {
 }
 
 export const EXEMPTION_TYPE = {
-  EXEMPT_ACTIVITY: 'Exempt activity'
+  EXEMPT_ACTIVITY: 'EXEMPT_ACTIVITY'
 }
