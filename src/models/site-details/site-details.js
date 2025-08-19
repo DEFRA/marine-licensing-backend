@@ -20,9 +20,15 @@ import {
   uploadedFileFieldSchema,
   s3LocationFieldSchema
 } from './file-upload.js'
+import { multipleSiteDetailsSchema } from './multiple-site-details.js'
 
 export const siteDetailsSchema = joi
   .object({
+    multipleSiteDetails: joi.when('siteDetails.coordinatesType', {
+      is: 'coordinates',
+      then: multipleSiteDetailsSchema.required(),
+      otherwise: multipleSiteDetailsSchema.optional()
+    }),
     siteDetails: joi
       .object({
         coordinatesType: coordinatesTypeFieldSchema,

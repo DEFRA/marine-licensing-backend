@@ -31,6 +31,30 @@ describe('#siteDetails schema', () => {
     })
   })
 
+  describe('#multipleSiteDetails integration', () => {
+    describe('when coordinatesType is "coordinates"', () => {
+      test('Should require multipleSiteDetails when coordinatesType is coordinates', () => {
+        const requestWithoutMultipleSiteDetails = {
+          id: mockId,
+          siteDetails: mockSiteDetails
+        }
+        const result = siteDetailsSchema.validate(
+          requestWithoutMultipleSiteDetails
+        )
+        expect(result.error.message).toBe('"multipleSiteDetails" is required')
+      })
+    })
+
+    describe('when coordinatesType is "file"', () => {
+      test('Should allow multipleSiteDetails to be optional when coordinatesType is file', () => {
+        const result = siteDetailsSchema.validate(
+          mockFileUploadSiteDetailsRequest
+        )
+        expect(result.error).toBeUndefined()
+      })
+    })
+  })
+
   describe('#coordinatesEntry', () => {
     test('Should correctly validate on invalid data', () => {
       const result = siteDetailsSchema.validate({

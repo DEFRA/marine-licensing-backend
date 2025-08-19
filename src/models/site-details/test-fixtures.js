@@ -3,6 +3,10 @@ import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 
 const mockId = new ObjectId().toHexString()
 
+export const mockMultipleSiteDetails = {
+  multipleSitesEnabled: false
+}
+
 export const mockSiteDetails = {
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
@@ -13,6 +17,7 @@ export const mockSiteDetails = {
 
 export const mockSiteDetailsRequest = {
   id: mockId,
+  multipleSiteDetails: mockMultipleSiteDetails,
   siteDetails: mockSiteDetails
 }
 
@@ -92,11 +97,13 @@ export const mockOsgb36MultipleCoordinates = {
 
 export const mockWgs84MultipleCoordinatesRequest = {
   id: mockId,
+  multipleSiteDetails: mockMultipleSiteDetails,
   siteDetails: mockWgs84MultipleCoordinates
 }
 
 export const mockOsgb36MultipleCoordinatesRequest = {
   id: mockId,
+  multipleSiteDetails: mockMultipleSiteDetails,
   siteDetails: mockOsgb36MultipleCoordinates
 }
 
