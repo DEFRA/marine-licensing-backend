@@ -1,7 +1,7 @@
 import Boom from '@hapi/boom'
 import Wreck from '@hapi/wreck'
 import { config } from '../../../config.js'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
 import querystring from 'node:querystring'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
@@ -68,7 +68,7 @@ export const sendExemptionToDynamics = async (
     contactid: exemption.contactId,
     projectName: exemption.projectName,
     reference: applicationReferenceNumber,
-    type: exemption.type,
+    type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
     applicationUrl: `${frontEndBaseUrl}/exemption`,
     status: EXEMPTION_STATUS.SUBMITTED
   }
