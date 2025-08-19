@@ -225,6 +225,32 @@ const config = convict({
       default: oneMinuteInMS,
       env: 'DYNAMICS_RETRY_DELAY_MS'
     }
+  },
+  notify: {
+    apiKey: {
+      doc: 'API key for Notify',
+      format: String,
+      default: '#',
+      env: 'NOTIFY_API_KEY'
+    },
+    retryIntervalSeconds: {
+      doc: 'Retry interval in seconds for Notify',
+      format: Number,
+      default: 10,
+      env: 'NOTIFY_RETRY_INTERVAL_SECONDS'
+    },
+    retries: {
+      doc: 'Number of retries for Notify',
+      format: Number,
+      default: 3,
+      env: 'NOTIFY_RETRIES'
+    },
+    notifyTemplateId: {
+      doc: 'Notify template ID',
+      format: String,
+      default: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+      env: 'NOTIFY_TEMPLATE_ID'
+    }
   }
 })
 
