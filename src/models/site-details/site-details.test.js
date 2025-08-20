@@ -95,7 +95,7 @@ describe('#siteDetails schema', () => {
 
   describe('#siteName', () => {
     describe('when coordinatesType is "coordinates" and multipleSitesEnabled is false', () => {
-      test('Should reject siteName when multipleSitesEnabled is false', () => {
+      test('Should require siteName when multipleSitesEnabled is false', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequestWithSiteName,
           multipleSiteDetails: { multipleSitesEnabled: false }
@@ -125,7 +125,7 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "coordinates" and multipleSitesEnabled is true', () => {
-      test('Should reject siteName when multipleSitesEnabled is true but siteName is missing', () => {
+      test('Should require siteName when multipleSitesEnabled is true but siteName is missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequest,
           multipleSiteDetails: { multipleSitesEnabled: true },
@@ -145,7 +145,7 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should reject siteName when coordinatesType is file', () => {
+      test('Should require siteName when coordinatesType is file', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: {
