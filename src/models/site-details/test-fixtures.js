@@ -15,10 +15,21 @@ export const mockSiteDetails = {
   circleWidth: '20'
 }
 
+export const mockSiteDetailsWithSiteName = {
+  ...mockSiteDetails,
+  siteName: 'Test Site Name'
+}
+
 export const mockSiteDetailsRequest = {
   id: mockId,
   multipleSiteDetails: mockMultipleSiteDetails,
   siteDetails: mockSiteDetails
+}
+
+export const mockSiteDetailsRequestWithSiteName = {
+  id: mockId,
+  multipleSiteDetails: { multipleSitesEnabled: true },
+  siteDetails: mockSiteDetailsWithSiteName
 }
 
 const testLatitude = 51.474968
