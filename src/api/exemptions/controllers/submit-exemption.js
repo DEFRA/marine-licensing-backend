@@ -8,6 +8,35 @@ import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
 import { config } from '../../../config.js'
+import { sendUserEmailConfirmation } from '../helpers/send-user-email-confirmation.js'
+
+const getExemptionWithId = async (db, id) => {
+  const exemption = await db
+    .collection('exemptions')
+    .findOne({ _id: ObjectId.createFromHexString(id) })
+
+  if (!exemption) {
+    throw Boom.notFound('Exemption not found')
+  }
+
+  if (exemption.applicationReference) {
+    throw Boom.conflict('Exemption has already been submitted')
+  }
+  return exemption
+}
+
+const checkForIncompleteTasks = (exemption) => {
+  const taskList = createTaskList(exemption)
+  const incompleteTasks = Object.entries(taskList)
+    .filter(([_task, status]) => status !== 'COMPLETED')
+    .map(([task]) => task)
+
+  if (incompleteTasks.length > 0) {
+    throw Boom.badRequest(
+      'Exemption is incomplete. Missing sections: ' + incompleteTasks.join(', ')
+    )
+  }
+}
 
 export const submitExemptionController = {
   options: {
@@ -23,33 +52,19 @@ export const submitExemptionController = {
   handler: async (request, h) => {
     try {
       const { payload, db, locker } = request
-      const { id, createdAt, createdBy, updatedAt, updatedBy } = payload
+      const {
+        id,
+        createdAt,
+        createdBy,
+        updatedAt,
+        updatedBy,
+        userEmail,
+        userName
+      } = payload
       const { isDynamicsEnabled } = config.get('dynamics')
-
-      const exemption = await db
-        .collection('exemptions')
-        .findOne({ _id: ObjectId.createFromHexString(id) })
-
-      if (!exemption) {
-        throw Boom.notFound('Exemption not found')
-      }
-
-      if (exemption.applicationReference) {
-        throw Boom.conflict('Exemption has already been submitted')
-      }
-
-      const taskList = createTaskList(exemption)
-
-      const incompleteTasks = Object.entries(taskList)
-        .filter(([_task, status]) => status !== 'COMPLETED')
-        .map(([task]) => task)
-
-      if (incompleteTasks.length > 0) {
-        throw Boom.badRequest(
-          'Exemption is incomplete. Missing sections: ' +
-            incompleteTasks.join(', ')
-        )
-      }
+      const frontEndBaseUrl = config.get('frontEndBaseUrl')
+      const exemption = await getExemptionWithId(db, id)
+      checkForIncompleteTasks(exemption)
 
       const applicationReference = await generateApplicationReference(
         db,
@@ -89,6 +104,16 @@ export const submitExemptionController = {
 
         await request.server.methods.processExemptionsQueue()
       }
+
+      // async; don't wait for this to complete
+      sendUserEmailConfirmation({
+        db,
+        userName,
+        userEmail,
+        applicationReference,
+        frontEndBaseUrl,
+        exemptionId: id
+      })
 
       return h
         .response({
