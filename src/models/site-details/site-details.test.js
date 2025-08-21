@@ -8,7 +8,8 @@ import {
   mockSiteDetails,
   mockSiteDetailsRequest,
   mockSiteDetailsRequestWithSiteName,
-  mockSiteDetailsWithSiteName
+  mockSiteDetailsWithSiteName,
+  mockMultipleSiteDetails
 } from './test-fixtures.js'
 
 describe('#siteDetails schema', () => {
@@ -137,7 +138,7 @@ describe('#siteDetails schema', () => {
       test('Should allow coordinates with siteName when multipleSitesEnabled is true', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequest,
-          multipleSiteDetails: { multipleSitesEnabled: true },
+          multipleSiteDetails: mockMultipleSiteDetails,
           siteDetails: { ...mockSiteDetails, siteName: 'Test Site Name' }
         })
         expect(result.error).toBeUndefined()
