@@ -3,6 +3,17 @@ import { exemptionId } from './shared-models.js'
 
 const PROJECT_NAME_MAX_LENGTH = 250
 
+const mcmsContext = {
+  mcmsContext: joi
+    .object({
+      activityType: joi.string(),
+      activitySubtype: joi.string(),
+      article: joi.string(),
+      pdfDownloadUrl: joi.string()
+    })
+    .allow(null)
+}
+
 export const projectName = joi.object({
   projectName: joi
     .string()
@@ -15,5 +26,7 @@ export const projectName = joi.object({
       'any.required': 'PROJECT_NAME_REQUIRED'
     })
 })
+
+export const createProjectName = projectName.append(mcmsContext)
 
 export const updateProjectName = projectName.append(exemptionId)
