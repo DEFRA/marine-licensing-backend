@@ -6,7 +6,9 @@ import {
   mockOsgb36MultipleCoordinatesRequest,
   mockId,
   mockSiteDetails,
-  mockSiteDetailsRequest
+  mockSiteDetailsRequest,
+  mockSiteDetailsRequestWithSiteName,
+  mockSiteDetailsWithSiteName
 } from './test-fixtures.js'
 
 describe('#siteDetails schema', () => {
@@ -88,6 +90,79 @@ describe('#siteDetails schema', () => {
         siteDetails: { ...mockSiteDetails, coordinatesType: null }
       })
       expect(result.error.message).toBe('PROVIDE_COORDINATES_CHOICE_REQUIRED')
+    })
+  })
+
+  describe('#siteName', () => {
+    describe('when coordinatesType is "coordinates" and multipleSitesEnabled is false', () => {
+      test('Should require siteName when multipleSitesEnabled is false', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockSiteDetailsRequestWithSiteName,
+          multipleSiteDetails: { multipleSitesEnabled: false }
+        })
+        expect(result.error.message).toBe(
+          '"siteDetails.siteName" is not allowed'
+        )
+      })
+
+      test('Should not fail when siteName is missing', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockSiteDetailsRequestWithSiteName,
+          siteDetails: { ...mockSiteDetails },
+          multipleSiteDetails: { multipleSitesEnabled: false }
+        })
+        expect(result.error).toBeUndefined()
+      })
+
+      test('Should not fail when siteName is undefined', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockSiteDetailsRequestWithSiteName,
+          siteDetails: { ...mockSiteDetailsWithSiteName, siteName: undefined },
+          multipleSiteDetails: { multipleSitesEnabled: false }
+        })
+        expect(result.error).toBeUndefined()
+      })
+    })
+
+    describe('when coordinatesType is "coordinates" and multipleSitesEnabled is true', () => {
+      test('Should require siteName when multipleSitesEnabled is true but siteName is missing', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockSiteDetailsRequest,
+          multipleSiteDetails: { multipleSitesEnabled: true },
+          siteDetails: { ...mockSiteDetails }
+        })
+        expect(result.error.message).toBe('SITE_NAME_REQUIRED')
+      })
+
+      test('Should allow coordinates with siteName when multipleSitesEnabled is true', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockSiteDetailsRequest,
+          multipleSiteDetails: { multipleSitesEnabled: true },
+          siteDetails: { ...mockSiteDetails, siteName: 'Test Site Name' }
+        })
+        expect(result.error).toBeUndefined()
+      })
+    })
+
+    describe('when coordinatesType is "file"', () => {
+      test('Should require siteName when coordinatesType is file', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockFileUploadSiteDetailsRequest,
+          siteDetails: {
+            ...mockFileUploadSiteDetailsRequest.siteDetails,
+            siteName: 'Test Site Name'
+          }
+        })
+        expect(result.error.message).toContain('siteName')
+        expect(result.error.message).toContain('not allowed')
+      })
+
+      test('Should allow file upload without siteName', () => {
+        const result = siteDetailsSchema.validate(
+          mockFileUploadSiteDetailsRequest
+        )
+        expect(result.error).toBeUndefined()
+      })
     })
   })
 
