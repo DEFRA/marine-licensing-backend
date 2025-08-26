@@ -1,6 +1,11 @@
 import { createProjectNameController } from './create-project-name'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import {
+  activityTypes,
+  articleCodes,
+  validActivitySubtypes
+} from '../../../common/constants/mcms-context.js'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
@@ -14,10 +19,10 @@ describe('POST /exemptions/project-name', () => {
 
   const mockMcmsContext = {
     mcmsContext: {
-      activityType: 'test-activity',
-      activitySubtype: 'test-subtype',
-      article: 'test-article',
-      pdfDownloadUrl: 'https://example.com/test.pdf'
+      activityType: activityTypes.CON,
+      article: articleCodes[0],
+      pdfDownloadUrl: 'https://example.com/test.pdf',
+      activitySubtype: validActivitySubtypes[0]
     }
   }
   const mockInsertOne = jest.fn().mockResolvedValue({
