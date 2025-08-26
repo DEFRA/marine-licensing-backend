@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom'
-import { projectName as projectNameSchema } from '../../../models/project-name.js'
+import { createProjectName } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
@@ -12,7 +12,7 @@ export const createProjectNameController = {
     },
     validate: {
       query: false,
-      payload: projectNameSchema
+      payload: createProjectName
     }
   },
   handler: async (request, h) => {
@@ -20,8 +20,14 @@ export const createProjectNameController = {
       const { payload, db, auth } = request
       const contactId = getContactId(auth)
 
-      const { projectName, createdBy, createdAt, updatedBy, updatedAt } =
-        payload
+      const {
+        projectName,
+        createdBy,
+        createdAt,
+        updatedBy,
+        updatedAt,
+        mcmsContext
+      } = payload
 
       const result = await db.collection('exemptions').insertOne({
         projectName,
@@ -30,7 +36,8 @@ export const createProjectNameController = {
         updatedBy,
         updatedAt,
         status: EXEMPTION_STATUS.DRAFT,
-        contactId
+        contactId,
+        mcmsContext
       })
 
       return h
