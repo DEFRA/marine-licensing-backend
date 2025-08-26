@@ -20,9 +20,10 @@ export const mockSiteDetails = {
   circleWidth: '20'
 }
 
-export const mockSiteDetailsWithSiteName = {
+export const mockSiteDetailsWithMultiSite = {
   ...mockSiteDetails,
-  siteName: 'Test Site Name'
+  siteName: 'Test Site Name',
+  activityDates: { start: new Date('2027-01-01'), end: new Date('2027-12-31') }
 }
 
 export const mockSiteDetailsRequest = {
@@ -31,10 +32,10 @@ export const mockSiteDetailsRequest = {
   siteDetails: mockSiteDetails
 }
 
-export const mockSiteDetailsRequestWithSiteName = {
+export const mockSiteDetailsRequestWithMultiSite = {
   id: mockId,
-  multipleSiteDetails: { multipleSitesEnabled: true },
-  siteDetails: mockSiteDetailsWithSiteName
+  multipleSiteDetails: mockMultipleSiteDetails,
+  siteDetails: mockSiteDetailsWithMultiSite
 }
 
 const testLatitude = 51.474968
