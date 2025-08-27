@@ -159,7 +159,7 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should not alloq activityDates when coordinatesType is file', () => {
+      test('Should not allow activityDates when coordinatesType is file', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: {
@@ -182,7 +182,7 @@ describe('#siteDetails schema', () => {
 
   describe('#siteName', () => {
     describe('when coordinatesType is "coordinates" and multipleSitesEnabled is false', () => {
-      test('Should require siteName when multipleSitesEnabled is false', () => {
+      test('Should not allow siteName field to be present when multipleSitesEnabled is false', () => {
         const result = siteDetailsSchema.validate({
           multipleSiteDetails: { multipleSitesEnabled: false },
           siteDetails: {
