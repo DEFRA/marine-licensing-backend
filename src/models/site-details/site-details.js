@@ -22,6 +22,7 @@ import {
 } from './file-upload.js'
 import { multipleSiteDetailsSchema } from './multiple-site-details.js'
 import { siteNameFieldSchema } from './site-name.js'
+import { activityDatesSchema } from '../activity-dates.js'
 
 export const siteDetailsSchema = joi
   .object({
@@ -32,6 +33,15 @@ export const siteDetailsSchema = joi
     }),
     siteDetails: joi
       .object({
+        activityDates: joi.when('/multipleSiteDetails.multipleSitesEnabled', {
+          is: true,
+          then: joi.when('coordinatesType', {
+            is: 'coordinates',
+            then: activityDatesSchema,
+            otherwise: joi.forbidden()
+          }),
+          otherwise: joi.forbidden()
+        }),
         coordinatesType: coordinatesTypeFieldSchema,
         siteName: joi.when('/multipleSiteDetails.multipleSitesEnabled', {
           is: true,

@@ -1,5 +1,4 @@
 import joi from 'joi'
-import { exemptionId } from './shared-models.js'
 
 const MIN_YEAR = new Date().getFullYear()
 const MAX_YEAR_OFFSET = 20
@@ -30,4 +29,7 @@ export const activityDatesSchema = joi
       'date.max': 'CUSTOM_END_DATE_INVALID'
     })
   })
-  .append(exemptionId)
+  .required()
+  .messages({
+    'any.required': 'ACTIVITY_DATES_REQUIRED'
+  })
