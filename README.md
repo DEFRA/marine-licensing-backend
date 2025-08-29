@@ -2,6 +2,12 @@
 
 Core delivery platform Node.js Backend Template.
 
+## Releases
+
+### [1.0.0](https://eaflood.atlassian.net/projects/ML/versions/23736/tab/release-report-all-issues)
+
+Initial release of the marine licensing backend platform.
+
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
 - [Local development](#local-development)
