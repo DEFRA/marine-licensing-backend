@@ -33,13 +33,9 @@ export const siteDetailsSchema = joi
     }),
     siteDetails: joi
       .object({
-        activityDates: joi.when('/multipleSiteDetails.multipleSitesEnabled', {
-          is: true,
-          then: joi.when('coordinatesType', {
-            is: 'coordinates',
-            then: activityDatesSchema,
-            otherwise: joi.forbidden()
-          }),
+        activityDates: joi.when('coordinatesType', {
+          is: 'coordinates',
+          then: activityDatesSchema,
           otherwise: joi.forbidden()
         }),
         coordinatesType: coordinatesTypeFieldSchema,
