@@ -1,8 +1,10 @@
 import Boom from '@hapi/boom'
+import joi from 'joi'
 import { activityDescriptionSchema } from '../../../models/activity-description.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { authorizeOwnership } from '../helpers/authorize-ownership.js'
+import { exemptionId } from '../../../models/shared-models.js'
 
 export const createActivityDescriptionController = {
   options: {
@@ -13,7 +15,11 @@ export const createActivityDescriptionController = {
     pre: [{ method: authorizeOwnership }],
     validate: {
       query: false,
-      payload: activityDescriptionSchema
+      payload: joi
+        .object({
+          activityDescription: activityDescriptionSchema
+        })
+        .append(exemptionId)
     }
   },
   handler: async (request, h) => {
