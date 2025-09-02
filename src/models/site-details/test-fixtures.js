@@ -5,7 +5,8 @@ const mockId = new ObjectId().toHexString()
 
 export const mockMultipleSiteDetails = {
   multipleSitesEnabled: true,
-  sameActivityDates: 'yes'
+  sameActivityDates: 'yes',
+  sameActivityDescription: 'yes'
 }
 
 export const mockMultipleSiteDetailsDisabled = {
