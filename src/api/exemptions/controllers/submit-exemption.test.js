@@ -65,6 +65,9 @@ describe('POST /exemption/submit', () => {
     }
 
     mockServer = {
+      logger: {
+        error: jest.fn()
+      },
       methods: {
         processExemptionsQueue: jest.fn().mockResolvedValue(undefined)
       }
@@ -207,6 +210,47 @@ describe('POST /exemption/submit', () => {
         retries: 0,
         ...mockAuditPayload
       })
+    })
+
+    it('should log error and continue submit request if there is an error in request queue', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        siteDetails: {
+          coordinatesType: 'point',
+          coordinates: { latitude: '54.978', longitude: '-1.617' }
+        },
+        activityDescription: 'Test marine activity'
+      }
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockDb
+        .collection()
+        .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
+
+      mockServer.methods.processExemptionsQueue.mockRejectedValueOnce(
+        'Test error'
+      )
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer
+        },
+        mockHandler
+      )
+
+      expect(mockServer.methods.processExemptionsQueue).toHaveBeenCalled()
+
+      expect(mockServer.logger.error).toHaveBeenCalledWith(
+        'Failed to process exemptions queue, but exemption submission succeeded'
+      )
+
+      expect(mockHandler.code).toHaveBeenCalledWith(200)
     })
 
     it('should not insert request queue document when dynamics is not enabled when exemption is submitted', async () => {

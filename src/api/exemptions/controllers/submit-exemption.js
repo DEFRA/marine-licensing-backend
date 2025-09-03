@@ -102,7 +102,11 @@ export const submitExemptionController = {
           updatedBy
         })
 
-        await request.server.methods.processExemptionsQueue()
+        request.server.methods.processExemptionsQueue().catch(() => {
+          request.server.logger.error(
+            'Failed to process exemptions queue, but exemption submission succeeded'
+          )
+        })
       }
 
       // async; don't wait for this to complete
