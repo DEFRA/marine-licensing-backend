@@ -12,7 +12,13 @@ export const mockMultipleSiteDetailsDisabled = {
   multipleSitesEnabled: false
 }
 
+const activityDates = {
+  start: new Date('2027-01-01'),
+  end: new Date('2027-12-31')
+}
+
 export const mockSiteDetails = {
+  activityDates,
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
   coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -22,8 +28,7 @@ export const mockSiteDetails = {
 
 export const mockSiteDetailsWithMultiSite = {
   ...mockSiteDetails,
-  siteName: 'Test Site Name',
-  activityDates: { start: new Date('2027-01-01'), end: new Date('2027-12-31') }
+  siteName: 'Test Site Name'
 }
 
 export const mockSiteDetailsRequest = {
@@ -73,6 +78,7 @@ export const mockFileUploadSiteDetailsRequest = {
 }
 
 export const mockWgs84MultipleCoordinates = {
+  activityDates,
   coordinatesType: 'coordinates',
   coordinatesEntry: 'multiple',
   coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -93,6 +99,7 @@ export const mockWgs84MultipleCoordinates = {
 }
 
 export const mockOsgb36MultipleCoordinates = {
+  activityDates,
   coordinatesType: 'coordinates',
   coordinatesEntry: 'multiple',
   coordinateSystem: COORDINATE_SYSTEMS.OSGB36,

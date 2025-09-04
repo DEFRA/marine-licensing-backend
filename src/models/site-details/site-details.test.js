@@ -95,65 +95,24 @@ describe('#siteDetails schema', () => {
   })
 
   describe('#activityDates', () => {
-    describe('when coordinatesType is "coordinates" and multipleSitesEnabled is false', () => {
-      test('Should require activityDates when multipleSitesEnabled is false', () => {
-        const result = siteDetailsSchema.validate({
-          ...mockSiteDetailsRequestWithMultiSite,
-          multipleSiteDetails: { multipleSitesEnabled: false }
-        })
-        expect(result.error.message).toBe(
-          '"siteDetails.activityDates" is not allowed'
-        )
-      })
-
-      test('Should not fail when activityDates are missing', () => {
+    describe('when coordinatesType is "coordinates"', () => {
+      test('Should fail when activityDates are missing', () => {
         const payload = {
           ...mockSiteDetailsRequest,
-          multipleSiteDetails: { multipleSitesEnabled: false }
-        }
-
-        const result = siteDetailsSchema.validate(payload)
-        expect(result.error).toBeUndefined()
-      })
-
-      test('Should not fail when activityDates are undefined', () => {
-        const result = siteDetailsSchema.validate({
-          ...mockSiteDetailsRequestWithMultiSite,
           siteDetails: {
-            ...mockSiteDetailsWithMultiSite,
-            siteName: undefined,
+            ...mockSiteDetailsRequest.siteDetails,
             activityDates: undefined
-          },
-          multipleSiteDetails: { multipleSitesEnabled: false }
-        })
-        expect(result.error).toBeUndefined()
-      })
-    })
-
-    describe('when coordinatesType is "coordinates" and multipleSitesEnabled is true', () => {
-      test('Should require activityDates when multipleSitesEnabled is true but activityDates is missing', () => {
-        const payload = {
-          ...mockSiteDetailsRequestWithMultiSite,
-          siteDetails: { ...mockSiteDetailsRequestWithMultiSite.siteDetails }
+          }
         }
 
-        delete payload.siteDetails.activityDates
-
         const result = siteDetailsSchema.validate(payload)
-        expect(result.error.message).toBe('ACTIVITY_DATES_REQUIRED')
+        expect(result.error.message).toContain('ACTIVITY_DATES_REQUIRED')
       })
 
-      test('Should allow coordinates with activityDates when multipleSitesEnabled is true', () => {
-        const result = siteDetailsSchema.validate({
-          ...mockSiteDetailsRequestWithMultiSite,
-          siteDetails: {
-            ...mockSiteDetailsRequestWithMultiSite.siteDetails,
-            activityDates: {
-              start: new Date('2027-01-01'),
-              end: new Date('2027-12-31')
-            }
-          }
-        })
+      test('Should not fail when activityDates are defined', () => {
+        const result = siteDetailsSchema.validate(
+          mockSiteDetailsRequestWithMultiSite
+        )
         expect(result.error).toBeUndefined()
       })
     })
@@ -185,10 +144,7 @@ describe('#siteDetails schema', () => {
       test('Should not allow siteName field to be present when multipleSitesEnabled is false', () => {
         const result = siteDetailsSchema.validate({
           multipleSiteDetails: { multipleSitesEnabled: false },
-          siteDetails: {
-            ...mockSiteDetailsRequestWithMultiSite.siteDetails,
-            activityDates: undefined
-          }
+          siteDetails: mockSiteDetailsRequestWithMultiSite.siteDetails
         })
         expect(result.error.message).toBe(
           '"siteDetails.siteName" is not allowed'
