@@ -39,7 +39,10 @@ describe('#siteDetails schema', () => {
       test('Should require multipleSiteDetails when coordinatesType is coordinates', () => {
         const requestWithoutMultipleSiteDetails = {
           id: mockId,
-          siteDetails: mockSiteDetails
+          siteDetails: {
+            ...mockSiteDetails,
+            activityDescription: undefined
+          }
         }
         const result = siteDetailsSchema.validate(
           requestWithoutMultipleSiteDetails
@@ -144,7 +147,10 @@ describe('#siteDetails schema', () => {
       test('Should not allow siteName field to be present when multipleSitesEnabled is false', () => {
         const result = siteDetailsSchema.validate({
           multipleSiteDetails: { multipleSitesEnabled: false },
-          siteDetails: mockSiteDetailsRequestWithMultiSite.siteDetails
+          siteDetails: {
+            ...mockSiteDetailsRequestWithMultiSite.siteDetails,
+            activityDescription: 'test description'
+          }
         })
         expect(result.error.message).toBe(
           '"siteDetails.siteName" is not allowed'
@@ -177,10 +183,14 @@ describe('#siteDetails schema', () => {
       test('Should require siteName when multipleSitesEnabled is true but siteName is missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequest,
-          multipleSiteDetails: { multipleSitesEnabled: true },
+          multipleSiteDetails: {
+            multipleSitesEnabled: true,
+            sameActivityDates: 'yes'
+          },
           siteDetails: {
-            ...mockSiteDetails,
-            activityDates: mockSiteDetailsWithMultiSite.activityDates
+            ...mockSiteDetailsWithMultiSite,
+            activityDates: mockSiteDetailsWithMultiSite.activityDates,
+            siteName: undefined
           }
         })
         expect(result.error.message).toBe('SITE_NAME_REQUIRED')

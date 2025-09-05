@@ -17,8 +17,11 @@ const activityDates = {
   end: new Date('2027-12-31')
 }
 
+const activityDescription = 'test description'
+
 export const mockSiteDetails = {
   activityDates,
+  activityDescription,
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
   coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -30,6 +33,8 @@ export const mockSiteDetailsWithMultiSite = {
   ...mockSiteDetails,
   siteName: 'Test Site Name'
 }
+
+delete mockSiteDetailsWithMultiSite.activityDescription
 
 export const mockSiteDetailsRequest = {
   id: mockId,
@@ -79,6 +84,7 @@ export const mockFileUploadSiteDetailsRequest = {
 
 export const mockWgs84MultipleCoordinates = {
   activityDates,
+  activityDescription,
   coordinatesType: 'coordinates',
   coordinatesEntry: 'multiple',
   coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -100,6 +106,7 @@ export const mockWgs84MultipleCoordinates = {
 
 export const mockOsgb36MultipleCoordinates = {
   activityDates,
+  activityDescription,
   coordinatesType: 'coordinates',
   coordinatesEntry: 'multiple',
   coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
