@@ -96,4 +96,44 @@ describe('multipleSiteDetailsSchema', () => {
       expect(result.error).toBeUndefined()
     })
   })
+  describe('#sameActivityDescription', () => {
+    it('should fail when sameActivityDescription is missing', () => {
+      const result = multipleSiteDetailsSchema.validate({
+        multipleSitesEnabled: true,
+        sameActivityDates: 'yes'
+      })
+
+      expect(result.error.message).toContain(
+        'SAME_ACTIVITY_DESCRIPTION_REQUIRED'
+      )
+    })
+
+    it('should fail when sameActivityDescription is undefined', () => {
+      const result = multipleSiteDetailsSchema.validate({
+        ...mockMultipleSiteDetails,
+        sameActivityDescription: undefined
+      })
+
+      expect(result.error.message).toContain(
+        'SAME_ACTIVITY_DESCRIPTION_REQUIRED'
+      )
+    })
+
+    it('should fail when sameActivityDescription is invalid value', () => {
+      const result = multipleSiteDetailsSchema.validate({
+        ...mockMultipleSiteDetails,
+        sameActivityDescription: 'invalid'
+      })
+
+      expect(result.error.message).toContain(
+        'SAME_ACTIVITY_DESCRIPTION_REQUIRED'
+      )
+    })
+
+    it('should validate when sameActivityDescription is valid value', () => {
+      const result = multipleSiteDetailsSchema.validate(mockMultipleSiteDetails)
+
+      expect(result.error).toBeUndefined()
+    })
+  })
 })
