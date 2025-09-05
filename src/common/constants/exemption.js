@@ -1,6 +1,13 @@
 export const EXEMPTION_STATUS = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  SUBMITTED: 'SUBMITTED'
+}
+
+export const EXEMPTION_STATUS_LABEL = {
   DRAFT: 'Draft',
-  CLOSED: 'Closed',
+  ACTIVE: 'Active',
+  Closed: 'Active',
   SUBMITTED: 'Submitted'
 }
 
