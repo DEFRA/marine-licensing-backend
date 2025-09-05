@@ -2,12 +2,17 @@ import convict from 'convict'
 import convictFormatWithValidator from 'convict-format-with-validator'
 
 import { convictValidateMongoUri } from './common/helpers/convict/validate-mongo-uri.js'
+import { configDotenv } from 'dotenv'
 
 convict.addFormat(convictValidateMongoUri)
 convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
+
+if (process.env.ENVIRONMENT === 'local') {
+  configDotenv()
+}
 
 const oneMinuteInMS = 60 * 1000
 
