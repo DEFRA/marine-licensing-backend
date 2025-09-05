@@ -38,6 +38,27 @@ const checkForIncompleteTasks = (exemption) => {
   }
 }
 
+const addToDynamics = async (request, applicationReference) => {
+  const { payload, db } = request
+  const { createdAt, createdBy, updatedAt, updatedBy } = payload
+
+  await db.collection('exemption-dynamics-queue').insertOne({
+    applicationReferenceNumber: applicationReference,
+    status: REQUEST_QUEUE_STATUS.PENDING,
+    retries: 0,
+    createdAt,
+    createdBy,
+    updatedAt,
+    updatedBy
+  })
+
+  request.server.methods.processExemptionsQueue().catch(() => {
+    request.server.logger.error(
+      'Failed to process exemptions queue, but exemption submission succeeded'
+    )
+  })
+}
+
 export const submitExemptionController = {
   options: {
     payload: {
@@ -52,15 +73,7 @@ export const submitExemptionController = {
   handler: async (request, h) => {
     try {
       const { payload, db, locker } = request
-      const {
-        id,
-        createdAt,
-        createdBy,
-        updatedAt,
-        updatedBy,
-        userEmail,
-        userName
-      } = payload
+      const { id, updatedAt, updatedBy, userEmail, userName } = payload
       const { isDynamicsEnabled } = config.get('dynamics')
       const frontEndBaseUrl = config.get('frontEndBaseUrl')
       const exemption = await getExemptionWithId(db, id)
@@ -92,17 +105,7 @@ export const submitExemptionController = {
       }
 
       if (isDynamicsEnabled) {
-        await db.collection('exemption-dynamics-queue').insertOne({
-          applicationReferenceNumber: applicationReference,
-          status: REQUEST_QUEUE_STATUS.PENDING,
-          retries: 0,
-          createdAt,
-          createdBy,
-          updatedAt,
-          updatedBy
-        })
-
-        await request.server.methods.processExemptionsQueue()
+        await addToDynamics(request, applicationReference)
       }
 
       // async; don't wait for this to complete

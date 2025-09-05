@@ -149,7 +149,7 @@ describe('#siteDetails schema', () => {
           multipleSiteDetails: { multipleSitesEnabled: false },
           siteDetails: {
             ...mockSiteDetailsRequestWithMultiSite.siteDetails,
-            activityDescription: 'test description' // Add required activityDescription
+            activityDescription: 'test description'
           }
         })
         expect(result.error.message).toBe(
