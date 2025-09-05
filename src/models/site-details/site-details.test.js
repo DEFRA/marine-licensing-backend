@@ -185,12 +185,12 @@ describe('#siteDetails schema', () => {
           ...mockSiteDetailsRequest,
           multipleSiteDetails: {
             multipleSitesEnabled: true,
-            sameActivityDates: 'yes' // Add required sameActivityDates
+            sameActivityDates: 'yes'
           },
           siteDetails: {
             ...mockSiteDetailsWithMultiSite,
             activityDates: mockSiteDetailsWithMultiSite.activityDates,
-            siteName: undefined // Explicitly remove siteName to test the requirement
+            siteName: undefined
           }
         })
         expect(result.error.message).toBe('SITE_NAME_REQUIRED')
