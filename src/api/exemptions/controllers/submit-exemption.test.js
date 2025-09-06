@@ -157,7 +157,7 @@ describe('POST /exemption/submit', () => {
           $set: {
             applicationReference: 'EXE/2025/10001',
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.CLOSED
+            status: EXEMPTION_STATUS.ACTIVE
           }
         }
       )
@@ -363,7 +363,7 @@ describe('POST /exemption/submit', () => {
         projectName: 'Test Project',
         applicationReference: 'EXE/2025/10001',
         submittedAt: new Date('2025-06-01'),
-        status: EXEMPTION_STATUS.CLOSED
+        status: EXEMPTION_STATUS.ACTIVE
       }
 
       mockDb.collection().findOne.mockResolvedValue(mockSubmittedExemption)
@@ -697,7 +697,7 @@ describe('POST /exemption/submit', () => {
           $set: {
             applicationReference: expectedReference,
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.CLOSED
+            status: EXEMPTION_STATUS.ACTIVE
           }
         }
       )
@@ -772,7 +772,7 @@ describe('POST /exemption/submit', () => {
           $set: {
             applicationReference: 'EXE/2025/10001',
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.CLOSED
+            status: EXEMPTION_STATUS.ACTIVE
           }
         }
       )

@@ -15,7 +15,7 @@ describe('getExemptionsController', () => {
   const mockExemptions = [
     {
       _id: new ObjectId('507f1f77bcf86cd799439011'),
-      status: EXEMPTION_STATUS.CLOSED,
+      status: EXEMPTION_STATUS.ACTIVE,
       applicationReference: 'EXEMPTION-2024-001',
       projectName: 'Other Project',
       contactId: 'test-contact-id',
@@ -30,6 +30,12 @@ describe('getExemptionsController', () => {
     {
       _id: new ObjectId('507f1f77bcf86cd799439013'),
       status: 'Unknown status',
+      projectName: 'Beta Project',
+      contactId: 'test-contact-id'
+    },
+    {
+      _id: new ObjectId('507f1f77bcf86cd799439013'),
+      status: 'Closed',
       projectName: 'Beta Project',
       contactId: 'test-contact-id'
     }
@@ -85,14 +91,19 @@ describe('getExemptionsController', () => {
           {
             id: '507f1f77bcf86cd799439012',
             projectName: 'Test Project',
-            status: EXEMPTION_STATUS.DRAFT
+            status: 'Draft'
           },
           {
             id: '507f1f77bcf86cd799439011',
             projectName: 'Other Project',
             applicationReference: 'EXEMPTION-2024-001',
-            status: EXEMPTION_STATUS.CLOSED,
+            status: 'Active',
             submittedAt: '2024-01-15T10:00:00.000Z'
+          },
+          {
+            id: '507f1f77bcf86cd799439013',
+            projectName: 'Beta Project',
+            status: 'Active'
           },
           {
             id: '507f1f77bcf86cd799439013',
@@ -137,16 +148,30 @@ describe('getExemptionsController', () => {
       })
     })
 
-    it('should sort exemptions by status priority (DRAFT first, then CLOSED, then others)', async () => {
+    it('should sort exemptions by status priority (DRAFT first, then ACTIVE, then others)', async () => {
       mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
       const responseValue = mockH.response.mock.calls[0][0].value
 
-      expect(responseValue[0].status).toBe(EXEMPTION_STATUS.DRAFT)
-      expect(responseValue[1].status).toBe(EXEMPTION_STATUS.CLOSED)
-      expect(responseValue[2].status).toBe('Unknown status')
+      expect(responseValue[0].status).toBe('Draft')
+      expect(responseValue[1].status).toBe('Active')
+      expect(responseValue[2].status).toBe('Active')
+      expect(responseValue[3].status).toBe('Unknown status')
+    })
+
+    it('should rename Closed status to Active', async () => {
+      mockCollection
+        .find()
+        .sort()
+        .toArray.mockResolvedValue([{ _id: 'test', status: 'Closed' }])
+
+      await getExemptionsController.handler(mockRequest, mockH)
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+
+      expect(responseValue[0].status).toBe('Active')
     })
 
     it('should handle exemptions without project names gracefully', async () => {
@@ -167,8 +192,8 @@ describe('getExemptionsController', () => {
       const responseValue = mockH.response.mock.calls[0][0].value
 
       expect(responseValue).toHaveLength(2)
-      expect(responseValue[0].status).toBe(EXEMPTION_STATUS.DRAFT)
-      expect(responseValue[1].status).toBe(EXEMPTION_STATUS.DRAFT)
+      expect(responseValue[0].status).toBe('Draft')
+      expect(responseValue[1].status).toBe('Draft')
     })
 
     it('should call sort with projectName in descending order', async () => {
@@ -186,20 +211,20 @@ describe('getExemptionsController', () => {
     it('should put DRAFTs at the top', () => {
       const exemptions = [
         { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' },
-        { status: EXEMPTION_STATUS.CLOSED, projectName: 'Closed Project' }
+        { status: EXEMPTION_STATUS.ACTIVE, projectName: 'Closed Project' }
       ]
       const result = exemptions.sort(sortByStatus)
       expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
-      expect(result[1].status).toBe(EXEMPTION_STATUS.CLOSED)
+      expect(result[1].status).toBe(EXEMPTION_STATUS.ACTIVE)
     })
 
     it('should correctly hadle unknown status', () => {
       const exemptions = [
         { status: 'UNKNOWN_STATUS', projectName: 'Unknown Project' },
-        { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' }
+        { status: 'Draft', projectName: 'Draft Project' }
       ]
       const result = exemptions.sort(sortByStatus)
-      expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
+      expect(result[0].status).toBe('Draft')
       expect(result[1].status).toBe('UNKNOWN_STATUS')
       expect(result[1].projectName).toBe('Unknown Project')
     })

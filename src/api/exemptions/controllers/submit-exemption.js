@@ -93,7 +93,7 @@ export const submitExemptionController = {
           $set: {
             applicationReference,
             submittedAt,
-            status: EXEMPTION_STATUS.CLOSED,
+            status: EXEMPTION_STATUS.ACTIVE,
             updatedAt,
             updatedBy
           }
