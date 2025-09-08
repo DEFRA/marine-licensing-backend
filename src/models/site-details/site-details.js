@@ -40,18 +40,11 @@ export const siteDetailsSchema = joi
           then: activityDatesSchema,
           otherwise: joi.forbidden()
         }),
-        activityDescription: joi.when(
-          '/multipleSiteDetails.multipleSitesEnabled',
-          {
-            is: false,
-            then: joi.when('coordinatesType', {
-              is: 'coordinates',
-              then: activityDescriptionSchema,
-              otherwise: joi.forbidden()
-            }),
-            otherwise: joi.forbidden()
-          }
-        ),
+        activityDescription: joi.when('coordinatesType', {
+          is: 'coordinates',
+          then: activityDescriptionSchema,
+          otherwise: joi.forbidden()
+        }),
         siteName: joi.when('/multipleSiteDetails.multipleSitesEnabled', {
           is: true,
           then: joi.when('coordinatesType', {

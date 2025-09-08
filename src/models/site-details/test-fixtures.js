@@ -35,8 +35,6 @@ export const mockSiteDetailsWithMultiSite = {
   siteName: 'Test Site Name'
 }
 
-delete mockSiteDetailsWithMultiSite.activityDescription
-
 export const mockSiteDetailsRequest = {
   id: mockId,
   multipleSiteDetails: mockMultipleSiteDetailsDisabled,
