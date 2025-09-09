@@ -40,8 +40,7 @@ describe('#siteDetails schema', () => {
         const requestWithoutMultipleSiteDetails = {
           id: mockId,
           siteDetails: {
-            ...mockSiteDetails,
-            activityDescription: undefined
+            ...mockSiteDetails
           }
         }
         const result = siteDetailsSchema.validate(
@@ -134,6 +133,51 @@ describe('#siteDetails schema', () => {
       })
 
       test('Should allow file upload without activityDates', () => {
+        const result = siteDetailsSchema.validate(
+          mockFileUploadSiteDetailsRequest
+        )
+        expect(result.error).toBeUndefined()
+      })
+    })
+  })
+
+  describe('#activityDescription', () => {
+    describe('when coordinatesType is "coordinates"', () => {
+      test('Should fail when activityDescription is missing', () => {
+        const payload = {
+          ...mockSiteDetailsRequest,
+          siteDetails: {
+            ...mockSiteDetailsRequest.siteDetails,
+            activityDescription: undefined
+          }
+        }
+
+        const result = siteDetailsSchema.validate(payload)
+        expect(result.error.message).toContain('ACTIVITY_DESCRIPTION_REQUIRED')
+      })
+
+      test('Should not fail when activityDescription is defined', () => {
+        const result = siteDetailsSchema.validate(
+          mockSiteDetailsRequestWithMultiSite
+        )
+        expect(result.error).toBeUndefined()
+      })
+    })
+
+    describe('when coordinatesType is "file"', () => {
+      test('Should not allow activityDescription when coordinatesType is file', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockFileUploadSiteDetailsRequest,
+          siteDetails: {
+            ...mockFileUploadSiteDetailsRequest.siteDetails,
+            activityDescription: 'Test'
+          }
+        })
+        expect(result.error.message).toContain('activityDescription')
+        expect(result.error.message).toContain('not allowed')
+      })
+
+      test('Should allow file upload without activityDescription', () => {
         const result = siteDetailsSchema.validate(
           mockFileUploadSiteDetailsRequest
         )
