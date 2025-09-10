@@ -491,7 +491,6 @@ describe('#siteDetails schema', () => {
               checksumSha256: 'test-checksum'
             },
             featureCount: 1
-            // Missing required field: geoJSON
           }
         ]
       })

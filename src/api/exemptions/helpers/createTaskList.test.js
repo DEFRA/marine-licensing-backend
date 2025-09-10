@@ -52,6 +52,48 @@ describe('createTaskList', () => {
     })
   })
 
+  it('should mark site details as COMPLETED for valid file upload', () => {
+    const exemption = {
+      publicRegister: 'Some value',
+      projectName: 'Test Project',
+      siteDetails: [
+        {
+          coordinatesType: 'file',
+          fileUploadType: 'kml',
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'test-file-key',
+            checksumSha256: 'test-checksum'
+          },
+          featureCount: 1,
+          geoJSON: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Point',
+                  coordinates: [-1.2951, 50.7602]
+                },
+                properties: {}
+              }
+            ]
+          }
+        }
+      ],
+      activityDescription: 'Test description'
+    }
+
+    const result = createTaskList(exemption)
+
+    expect(result).toEqual({
+      activityDescription: COMPLETED,
+      publicRegister: COMPLETED,
+      projectName: COMPLETED,
+      siteDetails: COMPLETED
+    })
+  })
+
   it('should mark site details as COMPLETED for valid multiple coordinates', () => {
     const exemption = {
       publicRegister: 'Some value',
