@@ -125,10 +125,12 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
-        siteDetails: {
-          coordinatesType: 'point',
-          coordinates: { latitude: '54.978', longitude: '-1.617' }
-        },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
         activityDescription: 'Test marine activity'
       }
 
@@ -180,10 +182,12 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
-        siteDetails: {
-          coordinatesType: 'point',
-          coordinates: { latitude: '54.978', longitude: '-1.617' }
-        },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
         activityDescription: 'Test marine activity'
       }
 
@@ -217,10 +221,12 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
-        siteDetails: {
-          coordinatesType: 'point',
-          coordinates: { latitude: '54.978', longitude: '-1.617' }
-        },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
         activityDescription: 'Test marine activity'
       }
 
@@ -258,10 +264,12 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
-        siteDetails: {
-          coordinatesType: 'point',
-          coordinates: { latitude: '54.978', longitude: '-1.617' }
-        },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
         activityDescription: 'Test marine activity'
       }
 
@@ -290,7 +298,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -335,7 +343,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -389,7 +397,7 @@ describe('POST /exemption/submit', () => {
       const mockIncompleteExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -491,7 +499,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -531,7 +539,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -560,7 +568,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -611,7 +619,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -642,7 +650,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -671,7 +679,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -710,7 +718,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
 
@@ -747,7 +755,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
-        siteDetails: { coordinatesType: 'point' },
+        siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity',
         status: 'draft'
       }
