@@ -63,15 +63,11 @@ const checkSiteDetails = (siteDetails) => {
 
     if (coordinatesType === 'file') {
       validationResult = checkSiteDetailsFileUpload(site)
-    } else if (
-      coordinatesEntry === 'single' &&
-      coordinatesType === 'coordinates'
-    ) {
+    }
+    if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
       validationResult = checkSiteDetailsCircle(site)
-    } else if (
-      coordinatesEntry === 'multiple' &&
-      coordinatesType === 'coordinates'
-    ) {
+    }
+    if (coordinatesEntry === 'multiple' && coordinatesType === 'coordinates') {
       validationResult = checkSiteDetailsMultiple(site)
     }
 
