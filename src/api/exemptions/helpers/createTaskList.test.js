@@ -6,13 +6,15 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'single',
-        coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-        coordinates: { latitude: '54.978252', longitude: '-1.617780' },
-        circleWidth: '100'
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'single',
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          coordinates: { latitude: '54.978252', longitude: '-1.617780' },
+          circleWidth: '100'
+        }
+      ],
       activityDescription: 'Test description'
     }
 
@@ -30,12 +32,14 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'single',
-        coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-        coordinates: { latitude: '54.978252', longitude: '-1.617780' }
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'single',
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          coordinates: { latitude: '54.978252', longitude: '-1.617780' }
+        }
+      ],
       activityDescription: 'Test description'
     }
 
@@ -52,16 +56,18 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'multiple',
-        coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-        coordinates: [
-          { latitude: '54.088594', longitude: '-0.178408' },
-          { latitude: '54.086782', longitude: '-0.177369' },
-          { latitude: '54.088057', longitude: '-0.175219' }
-        ]
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple',
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          coordinates: [
+            { latitude: '54.088594', longitude: '-0.178408' },
+            { latitude: '54.086782', longitude: '-0.177369' },
+            { latitude: '54.088057', longitude: '-0.175219' }
+          ]
+        }
+      ],
       activityDescription: 'Test description'
     }
 
@@ -79,16 +85,18 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'multiple',
-        coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
-        coordinates: [
-          { eastings: '513967', northings: '476895' },
-          { eastings: '514040', northings: '476693' },
-          { eastings: '514193', northings: '476835' }
-        ]
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple',
+          coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
+          coordinates: [
+            { eastings: '513967', northings: '476895' },
+            { eastings: '514040', northings: '476693' },
+            { eastings: '514193', northings: '476835' }
+          ]
+        }
+      ],
       activityDescription: 'Test description'
     }
 
@@ -106,15 +114,17 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'multiple',
-        coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-        coordinates: [
-          { latitude: '54.088594', longitude: '-0.178408' },
-          { latitude: '54.086782', longitude: '-0.177369' }
-        ]
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple',
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          coordinates: [
+            { latitude: '54.088594', longitude: '-0.178408' },
+            { latitude: '54.086782', longitude: '-0.177369' }
+          ]
+        }
+      ],
       activityDescription: 'Test description'
     }
 
@@ -131,11 +141,13 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'multiple',
-        coordinateSystem: COORDINATE_SYSTEMS.WGS84
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple',
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84
+        }
+      ],
       activityDescription: 'Test description'
     }
 
@@ -152,12 +164,14 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'multiple',
-        coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-        coordinates: { latitude: '54.088594', longitude: '-0.178408' }
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple',
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          coordinates: { latitude: '54.088594', longitude: '-0.178408' }
+        }
+      ],
       activityDescription: 'Test description'
     }
 
@@ -174,15 +188,17 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        coordinatesEntry: 'multiple',
-        coordinates: [
-          { latitude: '54.088594', longitude: '-0.178408' },
-          { latitude: '54.086782', longitude: '-0.177369' },
-          { latitude: '54.088057', longitude: '-0.175219' }
-        ]
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple',
+          coordinates: [
+            { latitude: '54.088594', longitude: '-0.178408' },
+            { latitude: '54.086782', longitude: '-0.177369' },
+            { latitude: '54.088057', longitude: '-0.175219' }
+          ]
+        }
+      ],
       activityDescription: 'Test description'
     }
 

@@ -53,25 +53,34 @@ const checkSiteDetailsMultiple = (siteDetails) => {
 }
 
 const checkSiteDetails = (siteDetails) => {
-  if (!siteDetails || !Object.keys(siteDetails).length) {
+  if (!siteDetails || siteDetails.length === 0) {
     return null
   }
 
-  const { coordinatesEntry, coordinatesType } = siteDetails
+  for (const site of siteDetails) {
+    const { coordinatesEntry, coordinatesType } = site
+    let validationResult = null
 
-  if (coordinatesType === 'file') {
-    return checkSiteDetailsFileUpload(siteDetails)
+    if (coordinatesType === 'file') {
+      validationResult = checkSiteDetailsFileUpload(site)
+    } else if (
+      coordinatesEntry === 'single' &&
+      coordinatesType === 'coordinates'
+    ) {
+      validationResult = checkSiteDetailsCircle(site)
+    } else if (
+      coordinatesEntry === 'multiple' &&
+      coordinatesType === 'coordinates'
+    ) {
+      validationResult = checkSiteDetailsMultiple(site)
+    }
+
+    if (validationResult === null) {
+      return null
+    }
   }
 
-  if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
-    return checkSiteDetailsCircle(siteDetails)
-  }
-
-  if (coordinatesEntry === 'multiple' && coordinatesType === 'coordinates') {
-    return checkSiteDetailsMultiple(siteDetails)
-  }
-
-  return null
+  return COMPLETED
 }
 
 export const createTaskList = (exemption) => {
