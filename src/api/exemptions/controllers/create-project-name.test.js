@@ -146,7 +146,7 @@ describe('POST /exemptions/project-name', () => {
   it('should create exemption with mcmsContext when provided', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
-      projectName: 'Test Project with MCMS',
+      projectName: '12345-_/()-MCMS',
       ...mockAuditPayload,
       ...mockMcmsContext
     }
