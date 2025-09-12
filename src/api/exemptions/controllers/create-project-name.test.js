@@ -53,39 +53,39 @@ describe('POST /exemptions/project-name', () => {
 
   it('should validate successfully with mcmsContext', () => {
     const result = payloadValidator.validate({
-      projectName: 'Test Project',
+      projectName: '1234-_/()',
       ...mockMcmsContext
     })
 
     expect(result.error).toBeUndefined()
-    expect(result.value.projectName).toBe('Test Project')
+    expect(result.value.projectName).toBe('1234-_/()')
     expect(result.value.mcmsContext).toEqual(mockMcmsContext.mcmsContext)
   })
 
   it('should validate successfully if mcmsContext is undefined', () => {
     const result = payloadValidator.validate({
-      projectName: 'Test Project'
+      projectName: '1234-_/()'
     })
 
     expect(result.error).toBeUndefined()
-    expect(result.value.projectName).toBe('Test Project')
+    expect(result.value.projectName).toBe('1234-_/()')
     expect(result.value.mcmsContext).toBeUndefined()
   })
 
   it('should validate successfully if mcmsContext is null', () => {
     const result = payloadValidator.validate({
-      projectName: 'Test Project',
+      projectName: '1234-_/()',
       mcmsContext: null
     })
 
     expect(result.error).toBeUndefined()
-    expect(result.value.projectName).toBe('Test Project')
+    expect(result.value.projectName).toBe('1234-_/()')
     expect(result.value.mcmsContext).toBeNull()
   })
 
   it('should create a new exemption with project name', async () => {
     const mockPayload = {
-      projectName: 'Project',
+      projectName: '12345-_/()',
       ...mockAuditPayload
     }
     const { mockMongo, mockHandler } = global
@@ -105,7 +105,7 @@ describe('POST /exemptions/project-name', () => {
   it('should create a new exemption with project name and mcmsContext', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
-      projectName: 'Project with MCMS',
+      projectName: '12345-_/()-MCMS',
       ...mockAuditPayload,
       ...mockMcmsContext
     }
@@ -166,7 +166,7 @@ describe('POST /exemptions/project-name', () => {
     )
 
     expect(mockInsertOne).toHaveBeenCalledWith({
-      projectName: 'Test Project with MCMS',
+      projectName: '12345-_/()-MCMS',
       status: EXEMPTION_STATUS.DRAFT,
       contactId: expect.any(String),
       mcmsContext: mockMcmsContext.mcmsContext,

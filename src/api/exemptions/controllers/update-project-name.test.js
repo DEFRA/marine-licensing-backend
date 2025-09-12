@@ -27,7 +27,7 @@ describe('PATCH /exemptions/public-register', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      projectName: 'Test project',
+      projectName: '12345-_/()',
       ...mockAuditPayload
     }
 
@@ -81,7 +81,7 @@ describe('PATCH /exemptions/public-register', () => {
           db: mockMongo,
           payload: {
             id: new ObjectId().toHexString(),
-            projectName: 'Test project'
+            projectName: '12345-_/()'
           }
         },
         mockHandler
