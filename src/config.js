@@ -80,8 +80,7 @@ const config = convict({
     jwksUri: {
       doc: 'JWKS Token validation url',
       format: String,
-      default:
-        'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/discovery/v2.0/keys',
+      default: 'https://login.microsoftonline.com/common/discovery/keys',
       env: 'ENTRA_ID_JWKS_URI'
     },
     authEnabled: {
