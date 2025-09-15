@@ -82,6 +82,25 @@ export const sendExemptionToDynamics = async (
   })
 
   if (response.res.statusCode !== StatusCodes.ACCEPTED) {
+    let responseBody
+    try {
+      if (Buffer.isBuffer(response.payload)) {
+        responseBody = response.payload.toString('utf8')
+      } else if (typeof response.payload === 'object') {
+        responseBody = JSON.stringify(response.payload)
+      } else {
+        responseBody = String(response.payload)
+      }
+    } catch {
+      responseBody = '[unreadable response payload]'
+    }
+
+    server?.logger?.error({
+      msg: 'Dynamics API returned non-202 response',
+      statusCode: response.res.statusCode,
+      responseBody,
+      requestPayload: payload
+    })
     throw Boom.badImplementation(
       `Dynamics API returned status ${response.res.statusCode}`
     )
