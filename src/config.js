@@ -10,7 +10,7 @@ convict.addFormats(convictFormatWithValidator)
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 
-if (process.env.ENVIRONMENT === 'local') {
+if (process.env.ENVIRONMENT !== 'production') {
   configDotenv()
 }
 
@@ -73,6 +73,21 @@ const config = convict({
       doc: 'DEFRA ID Auth enabled',
       format: Boolean,
       env: 'DEFRA_ID_ENABLED',
+      default: false
+    }
+  },
+  entraId: {
+    jwksUri: {
+      doc: 'JWKS Token validation url',
+      format: String,
+      default:
+        'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/discovery/v2.0/keys',
+      env: 'ENTRA_ID_JWKS_URI'
+    },
+    authEnabled: {
+      doc: 'ENTRA ID Auth enabled',
+      format: Boolean,
+      env: 'ENTRA_ID_ENABLED',
       default: false
     }
   },
