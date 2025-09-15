@@ -4,16 +4,20 @@ import { getExemption } from '../../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { authorizeOwnership } from '../helpers/authorize-ownership.js'
+import { getJwtAuthStrategy } from '../../../plugins/auth.js'
 
 export const getExemptionController = {
   options: {
-    pre: [{ method: authorizeOwnership }],
     validate: {
       params: getExemption
     }
   },
   handler: async (request, h) => {
     try {
+      const authStrategy = getJwtAuthStrategy(request.auth.artifacts.decoded)
+      if (authStrategy === 'defraId') {
+        await authorizeOwnership(request, h)
+      }
       const { params, db } = request
 
       const result = await db

@@ -3,7 +3,7 @@ import jwkToPem from 'jwk-to-pem'
 import { config } from '../config.js'
 import Boom from '@hapi/boom'
 
-const getJwtAuthStrategy = (jwt) => {
+export const getJwtAuthStrategy = (jwt) => {
   if (jwt.tid) {
     return 'entraId'
   }
@@ -35,8 +35,8 @@ export const validateToken = async (decoded) => {
   }
 
   const { contactId, email } = decoded
-
-  if (!contactId) {
+  const authStrategy = getJwtAuthStrategy(decoded)
+  if (authStrategy === 'defraId' && !contactId) {
     return { isValid: false }
   }
 
