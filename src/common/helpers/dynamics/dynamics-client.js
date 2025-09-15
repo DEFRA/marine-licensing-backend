@@ -64,47 +64,61 @@ export const sendExemptionToDynamics = async (
     }
   )
 
-  const payload = {
-    contactid: exemption.contactId,
-    projectName: exemption.projectName,
-    reference: applicationReferenceNumber,
-    type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
-    applicationUrl: `${frontEndBaseUrl}/exemption`,
-    status: EXEMPTION_STATUS.SUBMITTED
-  }
-
-  const response = await Wreck.post(`${apiUrl}/exemptions`, {
-    payload,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
+  try {
+    const payload = {
+      contactid: exemption.contactId,
+      projectName: exemption.projectName,
+      reference: applicationReferenceNumber,
+      type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
+      applicationUrl: `${frontEndBaseUrl}/exemption`,
+      status: EXEMPTION_STATUS.SUBMITTED
     }
-  })
 
-  if (response.res.statusCode !== StatusCodes.ACCEPTED) {
-    let responseBody
-    try {
-      if (Buffer.isBuffer(response.payload)) {
-        responseBody = response.payload.toString('utf8')
-      } else if (typeof response.payload === 'object') {
-        responseBody = JSON.stringify(response.payload)
-      } else {
-        responseBody = String(response.payload)
+    const response = await Wreck.post(`${apiUrl}/exemptions`, {
+      payload,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
       }
-    } catch {
-      responseBody = '[unreadable response payload]'
+    })
+
+    if (response.res.statusCode !== StatusCodes.ACCEPTED) {
+      let responseBody
+      try {
+        if (Buffer.isBuffer(response.payload)) {
+          responseBody = response.payload.toString('utf8')
+        } else if (typeof response.payload === 'object') {
+          responseBody = JSON.stringify(response.payload)
+        } else {
+          responseBody = String(response.payload)
+        }
+      } catch {
+        responseBody = '[unreadable response payload]'
+      }
+
+      server?.logger?.error({
+        msg: 'Dynamics API returned non-202 response',
+        statusCode: response.res.statusCode,
+        responseBody,
+        requestPayload: payload
+      })
+      throw Boom.badImplementation(
+        `Dynamics API returned status ${response.res.statusCode}`
+      )
     }
 
-    server?.logger?.error({
-      msg: 'Dynamics API returned non-202 response',
-      statusCode: response.res.statusCode,
-      responseBody,
-      requestPayload: payload
-    })
-    throw Boom.badImplementation(
-      `Dynamics API returned status ${response.res.statusCode}`
+    return response.payload
+  } catch (err) {
+    server?.logger?.error(`Wreck request failed with message: ${err.message}`)
+    server?.logger?.error(
+      {
+        message: err.message,
+        data: err.data,
+        payload: err.data?.payload,
+        statusCode: err.output?.statusCode
+      },
+      'Complete error log'
     )
+    throw err
   }
-
-  return response.payload
 }
