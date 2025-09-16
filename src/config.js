@@ -82,12 +82,6 @@ const config = convict({
       format: String,
       default: 'https://login.microsoftonline.com/common/discovery/keys',
       env: 'ENTRA_ID_JWKS_URI'
-    },
-    authEnabled: {
-      doc: 'ENTRA ID Auth enabled',
-      format: Boolean,
-      env: 'ENTRA_ID_ENABLED',
-      default: false
     }
   },
   log: {
