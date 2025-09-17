@@ -11,14 +11,15 @@ import {
 
 describe('Project name validation schemas', () => {
   describe('projectName schema', () => {
-    it('should validate when projectName is a valid string', () => {
-      const result = projectName.validate({ projectName: 'Valid Project Name' })
+    it('should validate when projectName contains no letters', () => {
+      const validName = '1234-_/()[]:,.&@#!?+*%$'
+      const result = projectName.validate({ projectName: validName })
       expect(result.error).toBeUndefined()
-      expect(result.value.projectName).toBe('Valid Project Name')
+      expect(result.value.projectName).toBe(validName)
     })
 
     it('should validate when projectName is exactly 250 characters', () => {
-      const maxLengthProjectName = 'a'.repeat(250)
+      const maxLengthProjectName = '1'.repeat(250)
       const result = projectName.validate({ projectName: maxLengthProjectName })
       expect(result.error).toBeUndefined()
       expect(result.value.projectName).toBe(maxLengthProjectName)
@@ -37,7 +38,7 @@ describe('Project name validation schemas', () => {
     })
 
     it('should fail when projectName is too long', () => {
-      const longProjectName = 'a'.repeat(251)
+      const longProjectName = '1'.repeat(251)
       const result = projectName.validate({ projectName: longProjectName })
       expect(result.error).toBeDefined()
       expect(result.error.message).toBe('PROJECT_NAME_MAX_LENGTH')
@@ -48,18 +49,24 @@ describe('Project name validation schemas', () => {
       expect(result.error).toBeDefined()
       expect(result.error.message).toBe('"projectName" must be a string')
     })
+
+    it('should fail when projectName contains any letters', () => {
+      const result = projectName.validate({ projectName: 'Project 123' })
+      expect(result.error).toBeDefined()
+      expect(result.error.message).toBe('PROJECT_NAME_NO_LETTERS')
+    })
   })
 
   describe('createProjectName schema', () => {
     const validPayload = {
-      projectName: 'Valid Project Name'
+      projectName: '12345-_/()[]:,'
     }
 
     describe('when mcmsContext is not provided', () => {
       it('should validate without mcmsContext', () => {
         const result = createProjectName.validate(validPayload)
         expect(result.error).toBeUndefined()
-        expect(result.value.projectName).toBe('Valid Project Name')
+        expect(result.value.projectName).toBe('12345-_/()[]:,')
       })
 
       it('should validate when mcmsContext is null', () => {
@@ -331,7 +338,7 @@ describe('Project name validation schemas', () => {
   describe('updateProjectName schema', () => {
     it('should validate with valid projectName and id', () => {
       const validPayload = {
-        projectName: 'Updated Project Name',
+        projectName: '12345-_/()',
         id: '507f1f77bcf86cd799439011'
       }
       const result = updateProjectName.validate(validPayload)
@@ -340,7 +347,7 @@ describe('Project name validation schemas', () => {
     })
 
     it('should fail when id is missing', () => {
-      const result = updateProjectName.validate({ projectName: 'Test' })
+      const result = updateProjectName.validate({ projectName: '12345-_/()' })
       expect(result.error).toBeDefined()
       expect(result.error.message).toBe('EXEMPTION_ID_REQUIRED')
     })
