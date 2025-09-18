@@ -69,7 +69,7 @@ export const sendExemptionToDynamics = async (
     projectName: exemption.projectName,
     reference: applicationReferenceNumber,
     type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
-    applicationUrl: `${frontEndBaseUrl}/exemption`,
+    applicationUrl: `${frontEndBaseUrl}/view-details/${exemption._id}`,
     status: EXEMPTION_STATUS.SUBMITTED
   }
 

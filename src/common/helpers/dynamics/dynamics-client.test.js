@@ -141,7 +141,7 @@ describe('Dynamics Client', () => {
             projectName: 'Test Project',
             reference: 'TEST-REF-001',
             type: 'EXEMPT_ACTIVITY',
-            applicationUrl: 'http://localhost/exemption',
+            applicationUrl: 'http://localhost/view-details/123',
             status: EXEMPTION_STATUS.SUBMITTED
           },
           headers: {
