@@ -1,10 +1,19 @@
 import { getExemptionController } from './get-exemption'
+import { config } from '../../../config.js'
+import { jest } from '@jest/globals'
+
+jest.mock('../../../config.js')
 
 describe('GET /exemption', () => {
   const paramsValidator = getExemptionController.options.validate.params
 
   const mockId = '123456789123456789123456'
 
+  beforeEach(() => {
+    config.get.mockReturnValue({
+      authEnabled: true
+    })
+  })
   it('should fail if fields are missing', () => {
     const result = paramsValidator.validate({})
 
@@ -137,6 +146,68 @@ describe('GET /exemption', () => {
           taskList: {
             projectName: 'COMPLETED'
           }
+        }
+      })
+    )
+  })
+
+  it('if the request is authorized by defraID, error if exemption ID does not match user contact ID', async () => {
+    const { mockMongo, mockHandler } = global
+    const userId = 'abc'
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        findOne: jest.fn().mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: 'different-user-id'
+        })
+      }
+    })
+
+    await expect(
+      getExemptionController.handler(
+        {
+          db: mockMongo,
+          params: { id: mockId },
+          auth: {
+            credentials: { contactId: userId },
+            artifacts: { decoded: {} }
+          }
+        },
+        mockHandler
+      )
+    ).rejects.toThrow('Not authorized to update this resource')
+  })
+
+  it("if there is no auth token, don't check ownership authorization", async () => {
+    const { mockMongo, mockHandler } = global
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        findOne: jest.fn().mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: 'different-user-id'
+        })
+      }
+    })
+    await getExemptionController.handler(
+      {
+        db: mockMongo,
+        params: { id: mockId },
+        auth: null
+      },
+      mockHandler
+    )
+    expect(mockHandler.response).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'success',
+        value: {
+          contactId: 'different-user-id',
+          id: '123456789123456789123456',
+          projectName: 'Test project',
+          taskList: { projectName: 'COMPLETED' }
         }
       })
     )
