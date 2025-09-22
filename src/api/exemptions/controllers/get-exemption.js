@@ -14,7 +14,7 @@ export const getExemptionController = {
   },
   handler: async (request, h) => {
     try {
-      const authStrategy = getJwtAuthStrategy(request.auth.artifacts.decoded)
+      const authStrategy = getJwtAuthStrategy(request.auth?.artifacts?.decoded)
       if (authStrategy === 'defraId') {
         await authorizeOwnership(request, h)
       }

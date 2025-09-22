@@ -4,6 +4,9 @@ import { config } from '../config.js'
 import Boom from '@hapi/boom'
 
 export const getJwtAuthStrategy = (jwt) => {
+  if (!jwt) {
+    return null
+  }
   if (jwt.tid) {
     return 'entraId'
   }
