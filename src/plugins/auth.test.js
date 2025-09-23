@@ -31,12 +31,10 @@ describe('Auth Plugin', () => {
     config.get.mockImplementation((key) => {
       return key === 'defraId'
         ? {
-            authEnabled: true,
             jwksUri:
               'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
           }
         : {
-            authEnabled: true,
             jwksUri:
               'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/discovery/v2.0/keys'
           }
@@ -75,10 +73,9 @@ describe('Auth Plugin', () => {
   })
 
   describe('Default auth mode configuration', () => {
-    test('should set default auth strategy to jwt with required mode when auth is enabled', async () => {
+    test('should set default auth strategy to jwt with required mode', async () => {
       config.get.mockImplementation(() => {
         return {
-          authEnabled: true,
           jwksUri:
             'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
         }
@@ -90,25 +87,6 @@ describe('Auth Plugin', () => {
 
       expect(testServer.auth.settings.default.strategies).toContain('jwt')
       expect(testServer.auth.settings.default.mode).toBe('required')
-
-      await testServer.stop()
-    })
-
-    test('should set default auth strategy to jwt with try mode when auth is disabled', async () => {
-      config.get.mockImplementation(() => {
-        return {
-          authEnabled: false,
-          jwksUri:
-            'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
-        }
-      })
-
-      const testServer = Hapi.server()
-      await testServer.register(hapiAuthJwt2)
-      await testServer.register(auth)
-
-      expect(testServer.auth.settings.default.strategies).toContain('jwt')
-      expect(testServer.auth.settings.default.mode).toBe('try')
 
       await testServer.stop()
     })
@@ -176,24 +154,6 @@ describe('Auth Plugin', () => {
           contactId: testId,
           email: 'test@example.com'
         }
-      })
-    })
-
-    test('should skip validation when authEnabled is false', async () => {
-      const mockDecoded = {}
-      const mockRequest = {}
-      const mockH = {}
-
-      config.get.mockImplementationOnce(() => {
-        return {
-          authEnabled: false
-        }
-      })
-
-      const result = await validateToken(mockDecoded, mockRequest, mockH)
-
-      expect(result).toEqual({
-        isValid: true
       })
     })
 

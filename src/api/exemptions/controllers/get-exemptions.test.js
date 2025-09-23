@@ -2,9 +2,6 @@ import { jest } from '@jest/globals'
 import { getExemptionsController, sortByStatus } from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
-import { config } from '../../../config.js'
-
-jest.mock('../../../config.js')
 
 describe('getExemptionsController', () => {
   let mockRequest
@@ -42,10 +39,6 @@ describe('getExemptionsController', () => {
   ]
 
   beforeEach(() => {
-    config.get.mockReturnValue({
-      authEnabled: true
-    })
-
     mockCollection = {
       find: jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
