@@ -31,12 +31,6 @@ export const getKeys = async (token) => {
 }
 
 export const validateToken = async (decoded) => {
-  const { authEnabled } = config.get('defraId')
-
-  if (!authEnabled) {
-    return { isValid: true }
-  }
-
   const { contactId, email } = decoded
   const authStrategy = getJwtAuthStrategy(decoded)
   if (authStrategy === 'defraId' && !contactId) {
@@ -56,7 +50,6 @@ const auth = {
   plugin: {
     name: 'auth',
     register: async (server) => {
-      const defraIdConfig = config.get('defraId')
       server.auth.strategy('jwt', 'jwt', {
         key: getKeys,
         validate: validateToken,
@@ -66,7 +59,7 @@ const auth = {
       })
       server.auth.default({
         strategy: 'jwt',
-        mode: defraIdConfig.authEnabled ? 'required' : 'try' //
+        mode: 'required'
       })
     }
   }

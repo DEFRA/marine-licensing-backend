@@ -1,19 +1,11 @@
 import { getExemptionController } from './get-exemption'
-import { config } from '../../../config.js'
 import { jest } from '@jest/globals'
-
-jest.mock('../../../config.js')
 
 describe('GET /exemption', () => {
   const paramsValidator = getExemptionController.options.validate.params
 
   const mockId = '123456789123456789123456'
 
-  beforeEach(() => {
-    config.get.mockReturnValue({
-      authEnabled: true
-    })
-  })
   it('should fail if fields are missing', () => {
     const result = paramsValidator.validate({})
 
