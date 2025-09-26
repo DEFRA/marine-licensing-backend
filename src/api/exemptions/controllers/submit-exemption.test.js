@@ -212,6 +212,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
+        applicantOrganisationId: null,
         ...mockAuditPayload
       })
     })
@@ -291,6 +292,52 @@ describe('POST /exemption/submit', () => {
       )
 
       expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
+    })
+
+    it('should insert request queue document with applicant organisation ID when available', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Marine Project',
+        organisations: {
+          applicant: {
+            id: 'org-123',
+            name: 'Test Organisation'
+          }
+        },
+        publicRegister: { consent: 'no' },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockDb
+        .collection()
+        .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer
+        },
+        mockHandler
+      )
+
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
+      expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'EXE/2025/10001',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0,
+        applicantOrganisationId: 'org-123',
+        ...mockAuditPayload
+      })
     })
 
     it('should validate task completion before submission', async () => {

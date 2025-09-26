@@ -257,6 +257,12 @@ const config = convict({
       format: String,
       default: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
       env: 'NOTIFY_TEMPLATE_ID'
+    },
+    notifyTemplateIdOrganisation: {
+      doc: 'Notify template ID for organisation',
+      format: String,
+      default: 'acaa23a2-a7df-4d77-be68-a37b1253d3c8',
+      env: 'NOTIFY_TEMPLATE_ID'
     }
   }
 })
