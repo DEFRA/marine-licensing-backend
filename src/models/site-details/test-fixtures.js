@@ -84,6 +84,7 @@ export const mockFileUploadSiteDetails = [
 
 export const mockFileUploadSiteDetailsRequest = {
   id: mockId,
+  multipleSiteDetails: mockMultipleSiteDetails,
   siteDetails: mockFileUploadSiteDetails
 }
 

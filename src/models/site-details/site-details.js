@@ -27,10 +27,8 @@ import { activityDatesSchema } from '../activity-dates.js'
 
 export const siteDetailsSchema = joi
   .object({
-    multipleSiteDetails: joi.when('siteDetails.0.coordinatesType', {
-      is: 'coordinates',
-      then: multipleSiteDetailsSchema.required(),
-      otherwise: multipleSiteDetailsSchema.optional()
+    multipleSiteDetails: multipleSiteDetailsSchema.required().messages({
+      'any.required': 'MULTIPLE_SITE_DETAILS_REQUIRED'
     }),
     siteDetails: joi
       .array()
