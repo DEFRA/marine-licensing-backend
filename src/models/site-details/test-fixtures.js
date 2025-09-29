@@ -56,6 +56,8 @@ const testLongitude = 1.076016
 export const mockFileUploadSiteDetails = [
   {
     coordinatesType: 'file',
+    activityDates,
+    activityDescription,
     fileUploadType: 'kml',
     geoJSON: {
       type: 'FeatureCollection',

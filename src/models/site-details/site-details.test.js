@@ -132,18 +132,17 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should not allow activityDates when coordinatesType is file', () => {
+      test('Should fail when activityDates are missinge', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: [
             {
               ...mockFileUploadSiteDetailsRequest.siteDetails[0],
-              activityDates: {}
+              activityDates: undefined
             }
           ]
         })
-        expect(result.error.message).toContain('activityDates')
-        expect(result.error.message).toContain('not allowed')
+        expect(result.error.message).toContain('ACTIVITY_DATES_REQUIRED')
       })
 
       test('Should allow file upload without activityDates', () => {
@@ -181,18 +180,17 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should not allow activityDescription when coordinatesType is file', () => {
+      test('Should fail when activityDescription is undefined', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: [
             {
               ...mockFileUploadSiteDetailsRequest.siteDetails[0],
-              activityDescription: 'Test'
+              activityDescription: undefined
             }
           ]
         })
-        expect(result.error.message).toContain('activityDescription')
-        expect(result.error.message).toContain('not allowed')
+        expect(result.error.message).toContain('ACTIVITY_DESCRIPTION_REQUIRED')
       })
 
       test('Should allow file upload without activityDescription', () => {
@@ -420,6 +418,9 @@ describe('#siteDetails schema', () => {
         siteDetails: [
           {
             coordinatesType: 'file',
+            activityDates: mockSiteDetailsWithMultiSite[0].activityDates,
+            activityDescription:
+              mockSiteDetailsWithMultiSite[0].activityDescription,
             fileUploadType: 'kml',
             geoJSON: {
               type: 'FeatureCollection',
@@ -497,6 +498,9 @@ describe('#siteDetails schema', () => {
         siteDetails: [
           {
             coordinatesType: 'file',
+            activityDates: mockSiteDetailsWithMultiSite[0].activityDates,
+            activityDescription:
+              mockSiteDetailsWithMultiSite[0].activityDescription,
             fileUploadType: 'kml',
             s3Location: {
               s3Bucket: 'mmo-uploads',
