@@ -274,7 +274,7 @@ describe('retryAsyncOperation', () => {
           retries: 2,
           intervalMs: 5
         })
-      } catch (_error) {
+      } catch (error) {
         // Expected to fail
       }
 
