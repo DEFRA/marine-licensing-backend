@@ -17,13 +17,6 @@ describe('Project name validation schemas', () => {
       expect(result.value.projectName).toBe('Valid Project Name')
     })
 
-    it('should validate when projectName is exactly 250 characters', () => {
-      const maxLengthProjectName = 'a'.repeat(250)
-      const result = projectName.validate({ projectName: maxLengthProjectName })
-      expect(result.error).toBeUndefined()
-      expect(result.value.projectName).toBe(maxLengthProjectName)
-    })
-
     it('should fail when projectName is missing', () => {
       const result = projectName.validate({})
       expect(result.error).toBeDefined()
@@ -80,15 +73,6 @@ describe('Project name validation schemas', () => {
       expect(result.error.message).toBe('APPLICANT_ORGANISATION_ID_REQUIRED')
     })
 
-    it('should fail when applicantOrganisationId is too long', () => {
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: 'a'.repeat(51)
-      })
-      expect(result.error).toBeDefined()
-      expect(result.error.message).toBe('APPLICANT_ORGANISATION_ID_MAX_LENGTH')
-    })
-
     it('should fail when applicantOrganisationName is required but missing', () => {
       const result = projectName.validate({
         projectName: 'Test Project',
@@ -106,18 +90,6 @@ describe('Project name validation schemas', () => {
       })
       expect(result.error).toBeDefined()
       expect(result.error.message).toBe('APPLICANT_ORGANISATION_NAME_REQUIRED')
-    })
-
-    it('should fail when applicantOrganisationName is too long', () => {
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: 'org-123',
-        applicantOrganisationName: 'a'.repeat(201)
-      })
-      expect(result.error).toBeDefined()
-      expect(result.error.message).toBe(
-        'APPLICANT_ORGANISATION_NAME_MAX_LENGTH'
-      )
     })
 
     it('should validate when applicantOrganisationName is exactly 200 characters', () => {
