@@ -99,7 +99,8 @@ describe('Dynamics Client', () => {
       _id: '123',
       contactId: 'test-contact-id',
       projectName: 'Test Project',
-      reference: 'TEST-REF-001'
+      reference: 'TEST-REF-001',
+      applicantOrganisationId: 'test-org-id'
     }
 
     const mockAccessToken = 'test-access-token'
@@ -142,6 +143,7 @@ describe('Dynamics Client', () => {
             reference: 'TEST-REF-001',
             type: 'EXEMPT_ACTIVITY',
             applicationUrl: 'http://localhost/view-details/123',
+            applicantOrganisationId: 'test-org-id',
             status: EXEMPTION_STATUS.SUBMITTED
           },
           headers: {
