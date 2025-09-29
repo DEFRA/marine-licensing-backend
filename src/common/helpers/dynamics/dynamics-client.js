@@ -63,6 +63,7 @@ export const sendExemptionToDynamics = async (
       }
     }
   )
+  const applicantOrganisationId = exemption.organisations?.applicant?.id
 
   const payload = {
     contactid: exemption.contactId,
@@ -70,7 +71,7 @@ export const sendExemptionToDynamics = async (
     reference: applicationReferenceNumber,
     type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
     applicationUrl: `${frontEndBaseUrl}/view-details/${exemption._id}`,
-    applicantOrganisationId: exemption.applicantOrganisationId,
+    ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
     status: EXEMPTION_STATUS.SUBMITTED
   }
 

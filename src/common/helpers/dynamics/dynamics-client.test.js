@@ -100,7 +100,12 @@ describe('Dynamics Client', () => {
       contactId: 'test-contact-id',
       projectName: 'Test Project',
       reference: 'TEST-REF-001',
-      applicantOrganisationId: 'test-org-id'
+      organisations: {
+        applicant: {
+          id: 'test-org-id',
+          name: 'Org Ltd'
+        }
+      }
     }
 
     const mockAccessToken = 'test-access-token'
@@ -152,6 +157,18 @@ describe('Dynamics Client', () => {
           }
         })
       )
+    })
+
+    it('should not send applicant organisation id if not present', async () => {
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue({ ...mockExemption, organisations: null })
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      expect(
+        mockWreckPost.mock.calls[0][1].payload.applicantOrganisationId
+      ).toBeUndefined()
     })
 
     it('should throw error if request fails', async () => {
