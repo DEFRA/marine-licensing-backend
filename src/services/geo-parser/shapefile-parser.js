@@ -104,6 +104,12 @@ export class ShapefileParser {
    * @param transformer - a proj4 transformer
    */
   transformCoordinates (coords, transformer) {
+    if (!coords || !Array.isArray(coords)) {
+      return
+    }
+    if (coords.length === 0) {
+      return
+    }
     if (typeof coords[0] === 'number') {
       // Single coordinate pair
       const [x, y] = transformer.forward(coords)
@@ -118,11 +124,12 @@ export class ShapefileParser {
   /**
    * Parse a shapefile and return GeoJSON
    * @param {string} shpPath - Path to the .shp file
-   * @param {function} transformer - a proj4 CRS transformer to convert to WSG84. Null can also mean no conversion needed.
+   * @param {function} transformer - a proj4 CRS transformer to convert to WSG84. null means no transformation will be applied
    * @returns {Promise<Object>} The parsed GeoJSON object
    */
   async parseShapefile(shpPath, transformer = null) {
     const source = await shapefile.open(shpPath)
+
     const features = []
 
     let result
@@ -178,12 +185,49 @@ export class ShapefileParser {
   async readProjectionFile(directory) {
     const projFilePath = await this.findProjectionFile(directory)
 
-    let projText = ''
+    let crsDefinition = ''
     if (projFilePath !== null) {
       // Read the .prj file to get the source CRS (Coordinate Reference System)
-      projText = await readFile(projFilePath, 'utf-8')
+      crsDefinition = await readFile(projFilePath, 'utf-8')
     }
-    return projText
+
+    if (crsDefinition.length > 10000) {
+      logger.warn('Projection file exceeds safe size limit')
+      return ''
+    }
+
+    return crsDefinition
+  }
+
+  /**
+   * Check if a CRS is WGS84 by comparing with proj4
+   * @param {string} crsWkt - WKT string of the CRS
+   * @returns {boolean} true if the CRS is equivalent to WGS84
+   */
+  isWGS84(crsWkt) {
+    if (!crsWkt || crsWkt.trim() === '') {
+      return false
+    }
+
+    try {
+      const wgs84 = proj4('EPSG:4326')
+      const sourceCrs = proj4(crsWkt)
+
+      // Compare the proj4 definitions
+      // Both should have longlat projection and WGS84 datum
+      const wgs84Def = wgs84.oProj
+      const sourceDef = sourceCrs.oProj
+
+      return (
+        sourceDef.projName === wgs84Def.projName &&
+        (sourceDef.datumCode === wgs84Def.datumCode ||
+         sourceDef.datum === wgs84Def.datum ||
+         (sourceDef.datumCode === 'WGS84' || sourceDef.datum === 'WGS84'))
+      )
+    } catch (error) {
+      logger.debug({ error: error.message }, 'Error checking if CRS is WGS84')
+      return false
+    }
   }
 
   /**
@@ -197,14 +241,9 @@ export class ShapefileParser {
 
     let transformer = null
 
-    if (!(projText.includes('GCS_WGS_1984') || projText.includes('GEOGCS["WGS 84"'))) {
+    if (!this.isWGS84(projText)) {
       // The source is not in WGS84 format - the coordinates will need converting to WGS84
-      try {
-        transformer = proj4(projText, targetCRS)
-      } catch (error) {
-        logger.error('shapefile-parser: createTransformer(): failed to create the transformer: ' + error.message)
-      }
-
+      transformer = proj4(projText, targetCRS) // can throw
     }
     return transformer
   }
