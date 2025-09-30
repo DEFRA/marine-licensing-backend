@@ -132,7 +132,7 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should fail when activityDates are missinge', () => {
+      test('Should allow activityDates to be missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: [
@@ -142,7 +142,7 @@ describe('#siteDetails schema', () => {
             }
           ]
         })
-        expect(result.error.message).toContain('ACTIVITY_DATES_REQUIRED')
+        expect(result.error).toBeUndefined()
       })
 
       test('Should allow file upload without activityDates', () => {
@@ -180,7 +180,7 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should fail when activityDescription is undefined', () => {
+      test('Should allow activityDescription to be missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: [
@@ -190,7 +190,7 @@ describe('#siteDetails schema', () => {
             }
           ]
         })
-        expect(result.error.message).toContain('ACTIVITY_DESCRIPTION_REQUIRED')
+        expect(result.error).toBeUndefined()
       })
 
       test('Should allow file upload without activityDescription', () => {
