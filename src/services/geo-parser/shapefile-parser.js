@@ -201,7 +201,7 @@ export class ShapefileParser {
   async readProjectionFile(directory) {
     const projFilePath = await this.findProjectionFile(directory)
 
-    if (projFilePath === null || projFilePath === undefined) {
+    if (!projFilePath) {
       return null
     }
 
