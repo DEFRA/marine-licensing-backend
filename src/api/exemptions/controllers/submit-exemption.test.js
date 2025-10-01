@@ -312,6 +312,7 @@ describe('POST /exemption/submit', () => {
           }
         },
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [
           {
             coordinatesType: 'point',
