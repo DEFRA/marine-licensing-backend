@@ -123,7 +123,9 @@ export class ShapefileParser {
       coords[1] = y
     } else {
       // Nested array
-      coords.forEach(c => this.transformCoordinates(c, transformer))
+      for (const c of coords) {
+        this.transformCoordinates(c, transformer)
+      }
     }
   }
 
