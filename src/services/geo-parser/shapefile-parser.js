@@ -1,5 +1,5 @@
 import * as shapefile from 'shapefile'
-import { mkdtemp, rm, glob, readFile } from 'fs/promises'
+import { glob, mkdtemp, readFile, rm, stat } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import AdmZip from 'adm-zip'
@@ -14,6 +14,8 @@ const DEFAULT_OPTIONS = {
   maxSize: 1_000_000_000, // 1 GB in bytes
   thresholdRatio: 10
 }
+
+const MAX_PROJECTION_FILE_SIZE = 10000
 
 /**
  * Shapefile parser service for zipped shapefiles
@@ -111,6 +113,10 @@ export class ShapefileParser {
       return
     }
     if (typeof coords[0] === 'number') {
+      if (coords.length < 2) {
+        logger.warn({ coords }, 'Invalid coordinate pair: insufficient elements')
+        return
+      }
       // Single coordinate pair
       const [x, y] = transformer.forward(coords)
       coords[0] = x
@@ -185,18 +191,20 @@ export class ShapefileParser {
   async readProjectionFile(directory) {
     const projFilePath = await this.findProjectionFile(directory)
 
-    let crsDefinition = ''
-    if (projFilePath !== null) {
-      // Read the .prj file to get the source CRS (Coordinate Reference System)
-      crsDefinition = await readFile(projFilePath, 'utf-8')
-    }
-
-    if (crsDefinition.length > 10000) {
-      logger.warn('Projection file exceeds safe size limit')
+    if (projFilePath === null) {
       return ''
     }
 
-    return crsDefinition
+    const stats = await stat(projFilePath)
+    if (stats.size > MAX_PROJECTION_FILE_SIZE) {
+      logger.warn(
+        { size: stats.size },
+        'Projection file exceeds safe size limit'
+      )
+      return ''
+    }
+
+    return readFile(projFilePath, 'utf-8')
   }
 
   /**
