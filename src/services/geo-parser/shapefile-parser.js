@@ -1,10 +1,10 @@
 import * as shapefile from 'shapefile'
-import { glob, mkdtemp, readFile, rm, stat } from 'fs/promises'
-import { tmpdir } from 'os'
-import { join } from 'path'
+import { glob, mkdtemp, readFile, rm, stat } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import * as path from 'node:path'
+import { join } from 'node:path'
 import AdmZip from 'adm-zip'
 import { createLogger } from '../../common/helpers/logging/logger.js'
-import * as path from 'node:path'
 import proj4 from 'proj4'
 
 const logger = createLogger()
