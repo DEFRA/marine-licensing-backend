@@ -5,7 +5,7 @@ import { geoParser } from '../api/geo-parser/index.js'
 const router = {
   plugin: {
     name: 'router',
-    register: (server, _options) => {
+    register: (server) => {
       server.route([health].concat(exemptions).concat(geoParser))
     }
   }

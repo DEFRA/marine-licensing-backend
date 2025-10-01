@@ -99,7 +99,13 @@ describe('Dynamics Client', () => {
       _id: '123',
       contactId: 'test-contact-id',
       projectName: 'Test Project',
-      reference: 'TEST-REF-001'
+      reference: 'TEST-REF-001',
+      organisations: {
+        applicant: {
+          id: 'test-org-id',
+          name: 'Org Ltd'
+        }
+      }
     }
 
     const mockAccessToken = 'test-access-token'
@@ -142,6 +148,7 @@ describe('Dynamics Client', () => {
             reference: 'TEST-REF-001',
             type: 'EXEMPT_ACTIVITY',
             applicationUrl: 'http://localhost/view-details/123',
+            applicantOrganisationId: 'test-org-id',
             status: EXEMPTION_STATUS.SUBMITTED
           },
           headers: {
@@ -150,6 +157,18 @@ describe('Dynamics Client', () => {
           }
         })
       )
+    })
+
+    it('should not send applicant organisation id if not present', async () => {
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue({ ...mockExemption, organisations: null })
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      expect(
+        mockWreckPost.mock.calls[0][1].payload.applicantOrganisationId
+      ).toBeUndefined()
     })
 
     it('should throw error if request fails', async () => {

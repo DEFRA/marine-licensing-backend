@@ -37,6 +37,8 @@ const mcmsContext = {
     .allow(null)
 }
 
+const ORG_STRING_MIN_LENGTH = 1
+
 export const projectName = joi.object({
   projectName: joi
     .string()
@@ -47,7 +49,18 @@ export const projectName = joi.object({
       'string.empty': 'PROJECT_NAME_REQUIRED',
       'string.max': 'PROJECT_NAME_MAX_LENGTH',
       'any.required': 'PROJECT_NAME_REQUIRED'
+    }),
+  applicantOrganisationId: joi.string().min(ORG_STRING_MIN_LENGTH).messages({
+    'string.empty': 'APPLICANT_ORGANISATION_ID_REQUIRED',
+    'any.required': 'APPLICANT_ORGANISATION_ID_REQUIRED'
+  }),
+  applicantOrganisationName: joi.when('applicantOrganisationId', {
+    is: joi.exist(),
+    then: joi.string().required().min(ORG_STRING_MIN_LENGTH).messages({
+      'string.empty': 'APPLICANT_ORGANISATION_NAME_REQUIRED',
+      'any.required': 'APPLICANT_ORGANISATION_NAME_REQUIRED'
     })
+  })
 })
 
 export const createProjectName = projectName.append(mcmsContext)

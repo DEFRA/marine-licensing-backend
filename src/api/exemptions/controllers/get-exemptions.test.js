@@ -2,6 +2,11 @@ import { jest } from '@jest/globals'
 import { getExemptionsController, sortByStatus } from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { getApplicantOrganisationId } from '../helpers/get-applicant-organisation.js'
+
+jest.mock('../helpers/get-applicant-organisation.js', () => ({
+  getApplicantOrganisationId: jest.fn()
+}))
 
 describe('getExemptionsController', () => {
   let mockRequest
@@ -65,6 +70,8 @@ describe('getExemptionsController', () => {
         }
       }
     }
+
+    getApplicantOrganisationId.mockReturnValue('test-org-id')
   })
 
   describe('handler', () => {
@@ -75,7 +82,8 @@ describe('getExemptionsController', () => {
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
       expect(mockCollection.find).toHaveBeenCalledWith({
-        contactId: 'test-contact-id'
+        contactId: 'test-contact-id',
+        'organisations.applicant.id': 'test-org-id'
       })
 
       expect(mockH.response).toHaveBeenCalledWith({
@@ -196,6 +204,18 @@ describe('getExemptionsController', () => {
 
       expect(mockCollection.find().sort).toHaveBeenCalledWith({
         projectName: 1
+      })
+    })
+
+    it('should query with null applicantOrganisationId when getApplicantOrganisationId returns null', async () => {
+      getApplicantOrganisationId.mockReturnValue(null)
+      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
+
+      await getExemptionsController.handler(mockRequest, mockH)
+
+      expect(mockCollection.find).toHaveBeenCalledWith({
+        contactId: 'test-contact-id',
+        'organisations.applicant.id': null
       })
     })
   })
