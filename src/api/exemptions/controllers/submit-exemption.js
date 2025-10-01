@@ -38,6 +38,16 @@ const checkForIncompleteTasks = (exemption) => {
   }
 }
 
+const updateMultiSiteEnabled = (exemption) => {
+  const { multipleSiteDetails, siteDetails } = exemption
+
+  if (multipleSiteDetails.multipleSitesEnabled && siteDetails.length === 1) {
+    return { ...multipleSiteDetails, multipleSitesEnabled: false }
+  }
+
+  return multipleSiteDetails
+}
+
 const addToDynamics = async (
   request,
   applicationReference,
@@ -97,6 +107,7 @@ export const submitExemptionController = {
         {
           $set: {
             applicationReference,
+            multipleSiteDetails: updateMultiSiteEnabled(exemption),
             submittedAt,
             status: EXEMPTION_STATUS.ACTIVE,
             updatedAt,
