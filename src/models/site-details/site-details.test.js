@@ -39,10 +39,11 @@ describe('#siteDetails schema', () => {
       test('Should require multipleSiteDetails when coordinatesType is coordinates', () => {
         const requestWithoutMultipleSiteDetails = {
           id: mockId,
-          siteDetails: {
-            ...mockSiteDetails,
-            activityDescription: undefined
-          }
+          siteDetails: [
+            {
+              ...mockSiteDetails[0]
+            }
+          ]
         }
         const result = siteDetailsSchema.validate(
           requestWithoutMultipleSiteDetails
@@ -65,7 +66,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on invalid data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, coordinatesEntry: 'invalid' }
+        siteDetails: [{ ...mockSiteDetails[0], coordinatesEntry: 'invalid' }]
       })
       expect(result.error.message).toBe('COORDINATES_ENTRY_REQUIRED')
     })
@@ -73,7 +74,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on empty data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, coordinatesEntry: null }
+        siteDetails: [{ ...mockSiteDetails[0], coordinatesEntry: null }]
       })
       expect(result.error.message).toBe('COORDINATES_ENTRY_REQUIRED')
     })
@@ -83,7 +84,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on invalid data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, coordinatesType: 'invalid' }
+        siteDetails: [{ ...mockSiteDetails[0], coordinatesType: 'invalid' }]
       })
       expect(result.error.message).toBe('PROVIDE_COORDINATES_CHOICE_REQUIRED')
     })
@@ -91,7 +92,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on empty data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, coordinatesType: null }
+        siteDetails: [{ ...mockSiteDetails[0], coordinatesType: null }]
       })
       expect(result.error.message).toBe('PROVIDE_COORDINATES_CHOICE_REQUIRED')
     })
@@ -102,10 +103,12 @@ describe('#siteDetails schema', () => {
       test('Should fail when activityDates are missing', () => {
         const payload = {
           ...mockSiteDetailsRequest,
-          siteDetails: {
-            ...mockSiteDetailsRequest.siteDetails,
-            activityDates: undefined
-          }
+          siteDetails: [
+            {
+              ...mockSiteDetailsRequest.siteDetails[0],
+              activityDates: undefined
+            }
+          ]
         }
 
         const result = siteDetailsSchema.validate(payload)
@@ -124,10 +127,12 @@ describe('#siteDetails schema', () => {
       test('Should not allow activityDates when coordinatesType is file', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
-          siteDetails: {
-            ...mockFileUploadSiteDetailsRequest.siteDetails,
-            activityDates: {}
-          }
+          siteDetails: [
+            {
+              ...mockFileUploadSiteDetailsRequest.siteDetails[0],
+              activityDates: {}
+            }
+          ]
         })
         expect(result.error.message).toContain('activityDates')
         expect(result.error.message).toContain('not allowed')
@@ -142,25 +147,76 @@ describe('#siteDetails schema', () => {
     })
   })
 
+  describe('#activityDescription', () => {
+    describe('when coordinatesType is "coordinates"', () => {
+      test('Should fail when activityDescription is missing', () => {
+        const payload = {
+          ...mockSiteDetailsRequest,
+          siteDetails: [
+            {
+              ...mockSiteDetailsRequest.siteDetails[0],
+              activityDescription: undefined
+            }
+          ]
+        }
+
+        const result = siteDetailsSchema.validate(payload)
+        expect(result.error.message).toContain('ACTIVITY_DESCRIPTION_REQUIRED')
+      })
+
+      test('Should not fail when activityDescription is defined', () => {
+        const result = siteDetailsSchema.validate(
+          mockSiteDetailsRequestWithMultiSite
+        )
+        expect(result.error).toBeUndefined()
+      })
+    })
+
+    describe('when coordinatesType is "file"', () => {
+      test('Should not allow activityDescription when coordinatesType is file', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockFileUploadSiteDetailsRequest,
+          siteDetails: [
+            {
+              ...mockFileUploadSiteDetailsRequest.siteDetails[0],
+              activityDescription: 'Test'
+            }
+          ]
+        })
+        expect(result.error.message).toContain('activityDescription')
+        expect(result.error.message).toContain('not allowed')
+      })
+
+      test('Should allow file upload without activityDescription', () => {
+        const result = siteDetailsSchema.validate(
+          mockFileUploadSiteDetailsRequest
+        )
+        expect(result.error).toBeUndefined()
+      })
+    })
+  })
+
   describe('#siteName', () => {
     describe('when coordinatesType is "coordinates" and multipleSitesEnabled is false', () => {
       test('Should not allow siteName field to be present when multipleSitesEnabled is false', () => {
         const result = siteDetailsSchema.validate({
           multipleSiteDetails: { multipleSitesEnabled: false },
-          siteDetails: {
-            ...mockSiteDetailsRequestWithMultiSite.siteDetails,
-            activityDescription: 'test description'
-          }
+          siteDetails: [
+            {
+              ...mockSiteDetailsRequestWithMultiSite.siteDetails[0],
+              activityDescription: 'test description'
+            }
+          ]
         })
         expect(result.error.message).toBe(
-          '"siteDetails.siteName" is not allowed'
+          '"siteDetails[0].siteName" is not allowed'
         )
       })
 
       test('Should not fail when siteName is missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequestWithMultiSite,
-          siteDetails: { ...mockSiteDetails },
+          siteDetails: [...mockSiteDetails],
           multipleSiteDetails: { multipleSitesEnabled: false }
         })
         expect(result.error).toBeUndefined()
@@ -169,10 +225,12 @@ describe('#siteDetails schema', () => {
       test('Should not fail when siteName is undefined', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequestWithMultiSite,
-          siteDetails: {
-            ...mockSiteDetails,
-            siteName: undefined
-          },
+          siteDetails: [
+            {
+              ...mockSiteDetails[0],
+              siteName: undefined
+            }
+          ],
           multipleSiteDetails: { multipleSitesEnabled: false }
         })
         expect(result.error).toBeUndefined()
@@ -187,11 +245,13 @@ describe('#siteDetails schema', () => {
             multipleSitesEnabled: true,
             sameActivityDates: 'yes'
           },
-          siteDetails: {
-            ...mockSiteDetailsWithMultiSite,
-            activityDates: mockSiteDetailsWithMultiSite.activityDates,
-            siteName: undefined
-          }
+          siteDetails: [
+            {
+              ...mockSiteDetailsWithMultiSite[0],
+              activityDates: mockSiteDetailsWithMultiSite[0].activityDates,
+              siteName: undefined
+            }
+          ]
         })
         expect(result.error.message).toBe('SITE_NAME_REQUIRED')
       })
@@ -200,10 +260,12 @@ describe('#siteDetails schema', () => {
         const result = siteDetailsSchema.validate({
           ...mockSiteDetailsRequestWithMultiSite,
           multipleSiteDetails: mockMultipleSiteDetails,
-          siteDetails: {
-            ...mockSiteDetailsRequestWithMultiSite.siteDetails,
-            siteName: 'Test Site Name'
-          }
+          siteDetails: [
+            {
+              ...mockSiteDetailsRequestWithMultiSite.siteDetails[0],
+              siteName: 'Test Site Name'
+            }
+          ]
         })
         expect(result.error).toBeUndefined()
       })
@@ -213,10 +275,12 @@ describe('#siteDetails schema', () => {
       test('Should require siteName when coordinatesType is file', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
-          siteDetails: {
-            ...mockFileUploadSiteDetailsRequest.siteDetails,
-            siteName: 'Test Site Name'
-          }
+          siteDetails: [
+            {
+              ...mockFileUploadSiteDetailsRequest.siteDetails[0],
+              siteName: 'Test Site Name'
+            }
+          ]
         })
         expect(result.error.message).toContain('siteName')
         expect(result.error.message).toContain('not allowed')
@@ -235,7 +299,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on invalid data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, coordinateSystem: 'invalid' }
+        siteDetails: [{ ...mockSiteDetails[0], coordinateSystem: 'invalid' }]
       })
       expect(result.error.message).toBe('COORDINATE_SYSTEM_REQUIRED')
     })
@@ -243,7 +307,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on empty data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, coordinateSystem: null }
+        siteDetails: [{ ...mockSiteDetails[0], coordinateSystem: null }]
       })
       expect(result.error.message).toBe('COORDINATE_SYSTEM_REQUIRED')
     })
@@ -253,7 +317,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on invalid data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, circleWidth: 'invalid' }
+        siteDetails: [{ ...mockSiteDetails[0], circleWidth: 'invalid' }]
       })
       expect(result.error.message).toBe('WIDTH_INVALID')
     })
@@ -261,7 +325,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate on empty data', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, circleWidth: null }
+        siteDetails: [{ ...mockSiteDetails[0], circleWidth: null }]
       })
 
       expect(result.error.message).toBe('WIDTH_REQUIRED')
@@ -270,7 +334,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate when width is below minimum allowed value', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, circleWidth: '0' }
+        siteDetails: [{ ...mockSiteDetails[0], circleWidth: '0' }]
       })
 
       expect(result.error.message).toBe('WIDTH_MIN')
@@ -279,7 +343,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate when width is a negative number', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, circleWidth: '-5' }
+        siteDetails: [{ ...mockSiteDetails[0], circleWidth: '-5' }]
       })
 
       expect(result.error.message).toBe('WIDTH_MIN')
@@ -288,7 +352,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate when width contains incorrect characters', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, circleWidth: 'test' }
+        siteDetails: [{ ...mockSiteDetails[0], circleWidth: 'test' }]
       })
 
       expect(result.error.message).toBe('WIDTH_INVALID')
@@ -297,7 +361,7 @@ describe('#siteDetails schema', () => {
     test('Should correctly validate when width is not an integer', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: { ...mockSiteDetails, circleWidth: '12.2' }
+        siteDetails: [{ ...mockSiteDetails[0], circleWidth: '12.2' }]
       })
 
       expect(result.error.message).toBe('WIDTH_NON_INTEGER')
@@ -308,10 +372,12 @@ describe('#siteDetails schema', () => {
     test('Should correctly errors when incorrect coordinates OSGB36', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: {
-          ...mockSiteDetails,
-          coordinateSystem: COORDINATE_SYSTEMS.OSGB36
-        }
+        siteDetails: [
+          {
+            ...mockSiteDetails[0],
+            coordinateSystem: COORDINATE_SYSTEMS.OSGB36
+          }
+        ]
       })
       expect(result.error.message).toBe('EASTINGS_REQUIRED')
     })
@@ -319,10 +385,12 @@ describe('#siteDetails schema', () => {
     test('Should correctly errors when incorrect coordinates WGS84', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: {
-          ...mockSiteDetails,
-          coordinates: { eastings: '123456', northings: '123456' }
-        }
+        siteDetails: [
+          {
+            ...mockSiteDetails[0],
+            coordinates: { eastings: '123456', northings: '123456' }
+          }
+        ]
       })
       expect(result.error.message).toBe('LATITUDE_REQUIRED')
     })
@@ -338,39 +406,41 @@ describe('#siteDetails schema', () => {
 
     test('Should correctly validate the exact data structure from production error', () => {
       const productionData = {
-        siteDetails: {
-          coordinatesType: 'file',
-          fileUploadType: 'kml',
-          geoJSON: {
-            type: 'FeatureCollection',
-            features: [
-              {
-                type: 'Feature',
-                geometry: {
-                  type: 'LineString',
-                  coordinates: [
-                    [-1.6037083838360786, 55.08150239432132],
-                    [-1.7930481641727738, 54.95753857504246],
-                    [-1.4723509092498546, 54.93725630538344],
-                    [-1.4910720035708493, 55.09085853021563],
-                    [-1.642244053697766, 55.08009968965797]
-                  ]
-                },
-                properties: {}
-              }
-            ]
-          },
-          featureCount: 1,
-          uploadedFile: {
-            filename: 'la Garde côtière.kml'
-          },
-          s3Location: {
-            s3Bucket: 'mmo-uploads',
-            s3Key:
-              'exemptions/cc8986fd-586a-4b27-988c-43d6d9c2306a/26e258bb-f6ef-43cf-b102-80f9195014c8',
-            checksumSha256: 'edpLwm1vcMM2G5PzuyLr4hlxdLxHcjTjXFye3X3WGXo='
+        siteDetails: [
+          {
+            coordinatesType: 'file',
+            fileUploadType: 'kml',
+            geoJSON: {
+              type: 'FeatureCollection',
+              features: [
+                {
+                  type: 'Feature',
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: [
+                      [-1.6037083838360786, 55.08150239432132],
+                      [-1.7930481641727738, 54.95753857504246],
+                      [-1.4723509092498546, 54.93725630538344],
+                      [-1.4910720035708493, 55.09085853021563],
+                      [-1.642244053697766, 55.08009968965797]
+                    ]
+                  },
+                  properties: {}
+                }
+              ]
+            },
+            featureCount: 1,
+            uploadedFile: {
+              filename: 'la Garde côtière.kml'
+            },
+            s3Location: {
+              s3Bucket: 'mmo-uploads',
+              s3Key:
+                'exemptions/cc8986fd-586a-4b27-988c-43d6d9c2306a/26e258bb-f6ef-43cf-b102-80f9195014c8',
+              checksumSha256: 'edpLwm1vcMM2G5PzuyLr4hlxdLxHcjTjXFye3X3WGXo='
+            }
           }
-        },
+        ],
         id: '68811d2a64a5901f5ea56cb5'
       }
 
@@ -381,11 +451,13 @@ describe('#siteDetails schema', () => {
     test('Should reject manual coordinate fields when coordinatesType is file', () => {
       const result = siteDetailsSchema.validate({
         ...mockFileUploadSiteDetailsRequest,
-        siteDetails: {
-          ...mockFileUploadSiteDetailsRequest.siteDetails,
-          coordinatesEntry: 'single', // This should be forbidden for file uploads
-          coordinateSystem: 'wgs84'
-        }
+        siteDetails: [
+          {
+            ...mockFileUploadSiteDetailsRequest.siteDetails[0],
+            coordinatesEntry: 'single', // This should be forbidden for file uploads
+            coordinateSystem: 'wgs84'
+          }
+        ]
       })
       expect(result.error.message).toContain('coordinatesEntry')
       expect(result.error.message).toContain('not allowed')
@@ -394,11 +466,13 @@ describe('#siteDetails schema', () => {
     test('Should reject file upload fields when coordinatesType is coordinates', () => {
       const result = siteDetailsSchema.validate({
         ...mockSiteDetailsRequest,
-        siteDetails: {
-          ...mockSiteDetails,
-          fileUploadType: 'kml', // This should be forbidden for manual coordinates
-          geoJSON: { type: 'FeatureCollection', features: [] }
-        }
+        siteDetails: [
+          {
+            ...mockSiteDetails[0],
+            fileUploadType: 'kml', // This should be forbidden for manual coordinates
+            geoJSON: { type: 'FeatureCollection', features: [] }
+          }
+        ]
       })
       expect(result.error.message).toContain('fileUploadType')
       expect(result.error.message).toContain('not allowed')
@@ -407,40 +481,43 @@ describe('#siteDetails schema', () => {
     test('Should require all file upload fields when coordinatesType is file', () => {
       const result = siteDetailsSchema.validate({
         id: mockId,
-        siteDetails: {
-          coordinatesType: 'file',
-          fileUploadType: 'kml',
-          s3Location: {
-            s3Bucket: 'mmo-uploads',
-            s3Key: 'test-file-key',
-            checksumSha256: 'test-checksum'
-          },
-          featureCount: 1
-          // Missing required field: geoJSON
-        }
+        siteDetails: [
+          {
+            coordinatesType: 'file',
+            fileUploadType: 'kml',
+            s3Location: {
+              s3Bucket: 'mmo-uploads',
+              s3Key: 'test-file-key',
+              checksumSha256: 'test-checksum'
+            },
+            featureCount: 1
+          }
+        ]
       })
       expect(result.error.message).toBe('GEO_JSON_REQUIRED')
     })
 
     const createGeoJSONFeatureTest = (featureOverrides = {}) => ({
       id: mockId,
-      siteDetails: {
-        ...mockFileUploadSiteDetailsRequest.siteDetails,
-        geoJSON: {
-          type: 'FeatureCollection',
-          features: [
-            {
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: [-1.2951, 50.7602]
-              },
-              properties: {},
-              ...featureOverrides
-            }
-          ]
+      siteDetails: [
+        {
+          ...mockFileUploadSiteDetailsRequest.siteDetails[0],
+          geoJSON: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Point',
+                  coordinates: [-1.2951, 50.7602]
+                },
+                properties: {},
+                ...featureOverrides
+              }
+            ]
+          }
         }
-      }
+      ]
     })
 
     test('Should accept GeoJSON features with string id properties', () => {
@@ -489,13 +566,15 @@ describe('#siteDetails schema', () => {
     test('Should reject multiple coordinates with fewer than 3 points', () => {
       const invalidRequest = {
         ...mockWgs84MultipleCoordinatesRequest,
-        siteDetails: {
-          ...mockWgs84MultipleCoordinatesRequest.siteDetails,
-          coordinates: [
-            { latitude: '54.088594', longitude: '-0.178408' },
-            { latitude: '54.086782', longitude: '-0.177369' }
-          ]
-        }
+        siteDetails: [
+          {
+            ...mockWgs84MultipleCoordinatesRequest.siteDetails[0],
+            coordinates: [
+              { latitude: '54.088594', longitude: '-0.178408' },
+              { latitude: '54.086782', longitude: '-0.177369' }
+            ]
+          }
+        ]
       }
       const result = siteDetailsSchema.validate(invalidRequest)
       expect(result.error.message).toBe('COORDINATES_MINIMUM_REQUIRED')
@@ -504,14 +583,16 @@ describe('#siteDetails schema', () => {
     test('Should reject multiple coordinates with invalid coordinate format', () => {
       const invalidRequest = {
         ...mockWgs84MultipleCoordinatesRequest,
-        siteDetails: {
-          ...mockWgs84MultipleCoordinatesRequest.siteDetails,
-          coordinates: [
-            { latitude: 'invalid', longitude: '-0.178408' },
-            { latitude: '54.086782', longitude: '-0.177369' },
-            { latitude: '54.088057', longitude: '-0.175219' }
-          ]
-        }
+        siteDetails: [
+          {
+            ...mockWgs84MultipleCoordinatesRequest.siteDetails[0],
+            coordinates: [
+              { latitude: 'invalid', longitude: '-0.178408' },
+              { latitude: '54.086782', longitude: '-0.177369' },
+              { latitude: '54.088057', longitude: '-0.175219' }
+            ]
+          }
+        ]
       }
       const result = siteDetailsSchema.validate(invalidRequest)
       expect(result.error.message).toBe('LATITUDE_NON_NUMERIC')
@@ -520,14 +601,16 @@ describe('#siteDetails schema', () => {
     test('Should reject OSGB36 multiple coordinates with invalid values', () => {
       const invalidRequest = {
         ...mockOsgb36MultipleCoordinatesRequest,
-        siteDetails: {
-          ...mockOsgb36MultipleCoordinatesRequest.siteDetails,
-          coordinates: [
-            { eastings: '50000', northings: '476895' }, // Below minimum
-            { eastings: '514040', northings: '476693' },
-            { eastings: '514193', northings: '476835' }
-          ]
-        }
+        siteDetails: [
+          {
+            ...mockOsgb36MultipleCoordinatesRequest.siteDetails[0],
+            coordinates: [
+              { eastings: '50000', northings: '476895' }, // Below minimum
+              { eastings: '514040', northings: '476693' },
+              { eastings: '514193', northings: '476835' }
+            ]
+          }
+        ]
       }
       const result = siteDetailsSchema.validate(invalidRequest)
       expect(result.error.message).toBe('EASTINGS_LENGTH')
@@ -536,25 +619,29 @@ describe('#siteDetails schema', () => {
     test('Should reject multiple coordinates when circleWidth is provided', () => {
       const invalidRequest = {
         ...mockWgs84MultipleCoordinatesRequest,
-        siteDetails: {
-          ...mockWgs84MultipleCoordinatesRequest.siteDetails,
-          circleWidth: '20' // Should be forbidden for multiple coordinates
-        }
+        siteDetails: [
+          {
+            ...mockWgs84MultipleCoordinatesRequest.siteDetails[0],
+            circleWidth: '20' // Should be forbidden for multiple coordinates
+          }
+        ]
       }
       const result = siteDetailsSchema.validate(invalidRequest)
       expect(result.error.message).toBe(
-        '"siteDetails.circleWidth" is not allowed'
+        '"siteDetails[0].circleWidth" is not allowed'
       )
     })
 
     test('Should still require circleWidth for single coordinates', () => {
       const invalidRequest = {
         ...mockSiteDetailsRequest,
-        siteDetails: {
-          ...mockSiteDetails,
-          // circleWidth is missing but required for single coordinates
-          circleWidth: undefined
-        }
+        siteDetails: [
+          {
+            ...mockSiteDetails[0],
+            // circleWidth is missing but required for single coordinates
+            circleWidth: undefined
+          }
+        ]
       }
       const result = siteDetailsSchema.validate(invalidRequest)
       expect(result.error.message).toBe('WIDTH_REQUIRED')

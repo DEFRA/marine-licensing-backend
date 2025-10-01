@@ -21,14 +21,16 @@ describe('PATCH /exemptions/site-details', () => {
     const mockPayload = {
       id: new ObjectId().toHexString(),
       multipleSiteDetails: mockMultipleSiteDetails,
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        siteName: 'Test Site Name',
-        coordinatesEntry: 'single',
-        coordinateSystem: 'wgs84',
-        coordinates: { latitude: '51.489676', longitude: '-0.231530' },
-        circleWidth: '20'
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          siteName: 'Test Site Name',
+          coordinatesEntry: 'single',
+          coordinateSystem: 'wgs84',
+          coordinates: { latitude: '51.489676', longitude: '-0.231530' },
+          circleWidth: '20'
+        }
+      ],
       ...mockAuditPayload
     }
 
@@ -69,14 +71,16 @@ describe('PATCH /exemptions/site-details', () => {
     const mockPayload = {
       id: new ObjectId().toHexString(),
       multipleSiteDetails: mockMultipleSiteDetails,
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        siteName: 'Test Site Name',
-        coordinatesEntry: 'single',
-        coordinateSystem: 'wgs84',
-        coordinates: { latitude: '51.489676', longitude: '-0.231530' },
-        circleWidth: '20'
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          siteName: 'Test Site Name',
+          coordinatesEntry: 'single',
+          coordinateSystem: 'wgs84',
+          coordinates: { latitude: '51.489676', longitude: '-0.231530' },
+          circleWidth: '20'
+        }
+      ],
       ...mockAuditPayload
     }
 
@@ -104,14 +108,16 @@ describe('PATCH /exemptions/site-details', () => {
     const mockPayload = {
       id: new ObjectId().toHexString(),
       multipleSiteDetails: mockMultipleSiteDetails,
-      siteDetails: {
-        coordinatesType: 'coordinates',
-        siteName: 'Test Site Name',
-        coordinatesEntry: 'single',
-        coordinateSystem: 'wgs84',
-        coordinates: { latitude: '51.489676', longitude: '-0.231530' },
-        circleWidth: '20'
-      },
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          siteName: 'Test Site Name',
+          coordinatesEntry: 'single',
+          coordinateSystem: 'wgs84',
+          coordinates: { latitude: '51.489676', longitude: '-0.231530' },
+          circleWidth: '20'
+        }
+      ],
       ...mockAuditPayload
     }
 

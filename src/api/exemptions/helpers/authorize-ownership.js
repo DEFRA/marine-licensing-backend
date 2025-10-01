@@ -1,15 +1,8 @@
 import Boom from '@hapi/boom'
 import { ObjectId } from 'mongodb'
 import { getContactId } from './get-contact-id.js'
-import { config } from '../../../config.js'
 
 export const authorizeOwnership = async (request, h) => {
-  const { authEnabled } = config.get('defraId')
-
-  if (!authEnabled) {
-    return h.continue
-  }
-
   const { payload, params, db, auth } = request
   const contactId = getContactId(auth)
 

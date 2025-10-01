@@ -3,7 +3,7 @@ import hapiAuthJwt2 from 'hapi-auth-jwt2'
 import Wreck from '@hapi/wreck'
 import jwkToPem from 'jwk-to-pem'
 import Boom from '@hapi/boom'
-import { auth, getKey, validateToken } from './auth.js'
+import { auth, getKeys, validateToken } from './auth.js'
 import { config } from '../config.js'
 
 jest.mock('@hapi/wreck')
@@ -18,6 +18,9 @@ describe('Auth Plugin', () => {
   const testId = '123e4567-e89b-12d3-a456-426614174000'
   const testKey =
     '-----BEGIN PUBLIC KEY-----\ntest-pem-key\n-----END PUBLIC KEY-----'
+  const jwt = {
+    tid: 'abc'
+  }
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -25,11 +28,16 @@ describe('Auth Plugin', () => {
     mockWreckGet = jest.mocked(Wreck.get)
     mockJwkToPem = jest.mocked(jwkToPem)
 
-    config.get.mockImplementation(() => {
-      return {
-        authEnabled: true,
-        jwksUri: 'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
-      }
+    config.get.mockImplementation((key) => {
+      return key === 'defraId'
+        ? {
+            jwksUri:
+              'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
+          }
+        : {
+            jwksUri:
+              'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/discovery/v2.0/keys'
+          }
     })
 
     mockWreckGet.mockResolvedValue({
@@ -38,6 +46,11 @@ describe('Auth Plugin', () => {
           {
             kty: 'RSA',
             n: 'test-n',
+            e: 'AQAB'
+          },
+          {
+            kty: 'RSA',
+            n: 'test-o',
             e: 'AQAB'
           }
         ]
@@ -60,10 +73,9 @@ describe('Auth Plugin', () => {
   })
 
   describe('Default auth mode configuration', () => {
-    test('should set default auth strategy to jwt with required mode when auth is enabled', async () => {
+    test('should set default auth strategy to jwt with required mode', async () => {
       config.get.mockImplementation(() => {
         return {
-          authEnabled: true,
           jwksUri:
             'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
         }
@@ -78,33 +90,14 @@ describe('Auth Plugin', () => {
 
       await testServer.stop()
     })
-
-    test('should set default auth strategy to jwt with try mode when auth is disabled', async () => {
-      config.get.mockImplementation(() => {
-        return {
-          authEnabled: false,
-          jwksUri:
-            'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
-        }
-      })
-
-      const testServer = Hapi.server()
-      await testServer.register(hapiAuthJwt2)
-      await testServer.register(auth)
-
-      expect(testServer.auth.settings.default.strategies).toContain('jwt')
-      expect(testServer.auth.settings.default.mode).toBe('try')
-
-      await testServer.stop()
-    })
   })
 
   describe('Key Function', () => {
-    test('should return key function that provides PEM key', async () => {
-      const result = await getKey()
+    test('should return key function that provides PEM keys', async () => {
+      const result = await getKeys(jwt)
 
       expect(result).toEqual({
-        key: testKey
+        key: [testKey, testKey]
       })
     })
 
@@ -115,15 +108,31 @@ describe('Auth Plugin', () => {
         }
       })
 
-      const result = await getKey()
+      const result = await getKeys(jwt)
 
       expect(result).toEqual({ key: null })
     })
 
     test('should handle JWKS fetch errors gracefully', async () => {
       mockWreckGet.mockRejectedValue(new Error('Network error'))
-      await expect(getKey()).rejects.toThrow(
-        Boom.internal('Cannot verify auth token: Network error')
+      await expect(getKeys(jwt)).rejects.toThrow(
+        Boom.internal('Cannot get JWT validation keys: Network error')
+      )
+    })
+
+    test('should use config for defra ID', async () => {
+      await getKeys({})
+      expect(mockWreckGet).toHaveBeenCalledWith(
+        'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json',
+        { json: true }
+      )
+    })
+
+    test('should use config for entra ID', async () => {
+      await getKeys({ tid: 'abc' })
+      expect(mockWreckGet).toHaveBeenCalledWith(
+        'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/discovery/v2.0/keys',
+        { json: true }
       )
     })
   })
@@ -145,24 +154,6 @@ describe('Auth Plugin', () => {
           contactId: testId,
           email: 'test@example.com'
         }
-      })
-    })
-
-    test('should skip validation when authEnabled is false', async () => {
-      const mockDecoded = {}
-      const mockRequest = {}
-      const mockH = {}
-
-      config.get.mockImplementationOnce(() => {
-        return {
-          authEnabled: false
-        }
-      })
-
-      const result = await validateToken(mockDecoded, mockRequest, mockH)
-
-      expect(result).toEqual({
-        isValid: true
       })
     })
 

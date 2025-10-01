@@ -27,31 +27,25 @@ import { activityDatesSchema } from '../activity-dates.js'
 
 export const siteDetailsSchema = joi
   .object({
-    multipleSiteDetails: joi.when('siteDetails.coordinatesType', {
+    multipleSiteDetails: joi.when('siteDetails.0.coordinatesType', {
       is: 'coordinates',
       then: multipleSiteDetailsSchema.required(),
       otherwise: multipleSiteDetailsSchema.optional()
     }),
     siteDetails: joi
-      .object({
+      .array()
+      .items({
         coordinatesType: coordinatesTypeFieldSchema,
         activityDates: joi.when('coordinatesType', {
           is: 'coordinates',
           then: activityDatesSchema,
           otherwise: joi.forbidden()
         }),
-        activityDescription: joi.when(
-          '/multipleSiteDetails.multipleSitesEnabled',
-          {
-            is: false,
-            then: joi.when('coordinatesType', {
-              is: 'coordinates',
-              then: activityDescriptionSchema,
-              otherwise: joi.forbidden()
-            }),
-            otherwise: joi.forbidden()
-          }
-        ),
+        activityDescription: joi.when('coordinatesType', {
+          is: 'coordinates',
+          then: activityDescriptionSchema,
+          otherwise: joi.forbidden()
+        }),
         siteName: joi.when('/multipleSiteDetails.multipleSitesEnabled', {
           is: true,
           then: joi.when('coordinatesType', {

@@ -3,9 +3,19 @@ import jwkToPem from 'jwk-to-pem'
 import { config } from '../config.js'
 import Boom from '@hapi/boom'
 
-export const getKey = async () => {
-  const { jwksUri } = config.get('defraId')
+export const getJwtAuthStrategy = (jwt) => {
+  if (!jwt) {
+    return null
+  }
+  if (jwt.tid) {
+    return 'entraId'
+  }
+  return 'defraId'
+}
 
+export const getKeys = async (token) => {
+  const authStrategy = getJwtAuthStrategy(token)
+  const { jwksUri } = config.get(authStrategy)
   try {
     const { payload } = await Wreck.get(jwksUri, { json: true })
     const { keys } = payload
@@ -13,23 +23,17 @@ export const getKey = async () => {
       console.error('No keys found in JWKS response')
       return { key: null }
     }
-    const pem = jwkToPem(keys[0])
-    return { key: pem }
+    const pems = keys.map((key) => jwkToPem(key))
+    return { key: pems }
   } catch (e) {
-    throw Boom.internal('Cannot verify auth token', e)
+    throw Boom.internal('Cannot get JWT validation keys', e)
   }
 }
 
 export const validateToken = async (decoded) => {
-  const { authEnabled } = config.get('defraId')
-
-  if (!authEnabled) {
-    return { isValid: true }
-  }
-
   const { contactId, email } = decoded
-
-  if (!contactId) {
+  const authStrategy = getJwtAuthStrategy(decoded)
+  if (authStrategy === 'defraId' && !contactId) {
     return { isValid: false }
   }
 
@@ -46,10 +50,8 @@ const auth = {
   plugin: {
     name: 'auth',
     register: async (server) => {
-      const { authEnabled } = config.get('defraId')
-
       server.auth.strategy('jwt', 'jwt', {
-        key: getKey,
+        key: getKeys,
         validate: validateToken,
         verifyOptions: {
           algorithms: ['RS256']
@@ -57,7 +59,7 @@ const auth = {
       })
       server.auth.default({
         strategy: 'jwt',
-        mode: authEnabled ? 'required' : 'try'
+        mode: 'required'
       })
     }
   }

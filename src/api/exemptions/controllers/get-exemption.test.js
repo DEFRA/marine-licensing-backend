@@ -1,4 +1,5 @@
 import { getExemptionController } from './get-exemption'
+import { jest } from '@jest/globals'
 
 describe('GET /exemption', () => {
   const paramsValidator = getExemptionController.options.validate.params
@@ -35,7 +36,11 @@ describe('GET /exemption', () => {
     })
 
     await getExemptionController.handler(
-      { db: mockMongo, params: { id: mockId } },
+      {
+        db: mockMongo,
+        params: { id: mockId },
+        auth: { artifacts: { decoded: { tid: 'abc' } } }
+      },
       mockHandler
     )
 
@@ -64,7 +69,11 @@ describe('GET /exemption', () => {
 
     await expect(
       getExemptionController.handler(
-        { db: mockMongo, params: { id: mockId } },
+        {
+          db: mockMongo,
+          params: { id: mockId },
+          auth: { artifacts: { decoded: { tid: 'abc' } } }
+        },
         mockHandler
       )
     ).rejects.toThrow('Exemption not found')
@@ -83,9 +92,116 @@ describe('GET /exemption', () => {
 
     expect(() =>
       getExemptionController.handler(
-        { db: mockMongo, params: { id: mockId } },
+        {
+          db: mockMongo,
+          params: { id: mockId },
+          auth: {
+            credentials: { contactId: 'abc' },
+            artifacts: { decoded: {} }
+          }
+        },
         mockHandler
       )
     ).rejects.toThrow(`Error retrieving exemption: ${mockError}`)
+  })
+
+  it('if the request is authorized by defraID, should check exemption ID matches user contact ID', async () => {
+    const { mockMongo, mockHandler } = global
+    const userId = 'abc'
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        findOne: jest.fn().mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: userId
+        })
+      }
+    })
+
+    await getExemptionController.handler(
+      {
+        db: mockMongo,
+        params: { id: mockId },
+        auth: { credentials: { contactId: userId }, artifacts: { decoded: {} } }
+      },
+      mockHandler
+    )
+
+    expect(mockHandler.response).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'success',
+        value: {
+          id: mockId,
+          contactId: userId,
+          projectName: 'Test project',
+          taskList: {
+            projectName: 'COMPLETED'
+          }
+        }
+      })
+    )
+  })
+
+  it('if the request is authorized by defraID, error if exemption ID does not match user contact ID', async () => {
+    const { mockMongo, mockHandler } = global
+    const userId = 'abc'
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        findOne: jest.fn().mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: 'different-user-id'
+        })
+      }
+    })
+
+    await expect(
+      getExemptionController.handler(
+        {
+          db: mockMongo,
+          params: { id: mockId },
+          auth: {
+            credentials: { contactId: userId },
+            artifacts: { decoded: {} }
+          }
+        },
+        mockHandler
+      )
+    ).rejects.toThrow('Not authorized to update this resource')
+  })
+
+  it("if there is no auth token, don't check ownership authorization", async () => {
+    const { mockMongo, mockHandler } = global
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        findOne: jest.fn().mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: 'different-user-id'
+        })
+      }
+    })
+    await getExemptionController.handler(
+      {
+        db: mockMongo,
+        params: { id: mockId },
+        auth: null
+      },
+      mockHandler
+    )
+    expect(mockHandler.response).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'success',
+        value: {
+          contactId: 'different-user-id',
+          id: '123456789123456789123456',
+          projectName: 'Test project',
+          taskList: { projectName: 'COMPLETED' }
+        }
+      })
+    )
   })
 })

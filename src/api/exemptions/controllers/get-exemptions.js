@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
-import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { EXEMPTION_STATUS_LABEL } from '../../../common/constants/exemption.js'
 
 const transformedExemptions = (exemptions) =>
   exemptions.map((exemption) => {
@@ -9,7 +9,7 @@ const transformedExemptions = (exemptions) =>
 
     return {
       id: _id.toString(),
-      ...(status && { status }),
+      ...(status && { status: EXEMPTION_STATUS_LABEL[status] || status }),
       ...(projectName && { projectName }),
       ...(applicationReference && { applicationReference }),
       ...(submittedAt && { submittedAt })
@@ -17,7 +17,10 @@ const transformedExemptions = (exemptions) =>
   })
 
 export const sortByStatus = (a, b) => {
-  const statusOrder = [EXEMPTION_STATUS.DRAFT, EXEMPTION_STATUS.CLOSED]
+  const statusOrder = [
+    EXEMPTION_STATUS_LABEL.DRAFT,
+    EXEMPTION_STATUS_LABEL.ACTIVE
+  ]
 
   const firstExemptionStatus = statusOrder.indexOf(a.status)
   const comparisonExemptionStatus = statusOrder.indexOf(b.status)
