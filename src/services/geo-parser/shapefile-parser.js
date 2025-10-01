@@ -1,7 +1,6 @@
 import * as shapefile from 'shapefile'
 import { glob, mkdtemp, readFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import * as path from 'node:path'
 import { join } from 'node:path'
 import AdmZip from 'adm-zip'
 import { createLogger } from '../../common/helpers/logging/logger.js'
@@ -89,7 +88,7 @@ export class ShapefileParser {
           cwd: directory
         })
       )
-      return files.map((file) => path.join(directory, file))
+      return files.map((file) => join(directory, file))
     } catch (error) {
       logger.error(
         { directory, error: error.message },
@@ -105,7 +104,7 @@ export class ShapefileParser {
    * @param {Array} coords - a pair of coordinates in [long, lat] format
    * @param transformer - a proj4 transformer
    */
-  transformCoordinates (coords, transformer) {
+  transformCoordinates(coords, transformer) {
     if (!coords || !Array.isArray(coords)) {
       return
     }
@@ -114,11 +113,19 @@ export class ShapefileParser {
     }
     if (typeof coords[0] === 'number') {
       if (coords.length < 2) {
-        logger.warn({ coords }, 'Invalid coordinate pair: insufficient elements')
+        logger.warn(
+          { coords },
+          'Invalid coordinate pair: insufficient elements'
+        )
         return
       }
       // Single coordinate pair
       const [x, y] = transformer.forward(coords)
+      // proj4 can return Infinity or NaN for invalid transformations
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        logger.warn({ original: coords, transformed: [x, y] }, 'Invalid transformation result')
+        return
+      }
       coords[0] = x
       coords[1] = y
     } else {
@@ -172,12 +179,11 @@ export class ShapefileParser {
           cwd: directory
         })
       )
-      const paths = files.map((file) => path.join(directory, file))
-      if (paths.length === 0) {
-        return null
-      } else {
-        return paths[0]
+      const paths = files.map((file) => join(directory, file))
+      if (paths.length > 1) {
+        logger.warn({ paths }, 'Multiple projection files found, using first')
       }
+      return paths[0] ?? null
     } catch (error) {
       logger.error(
         { directory, error: error.message },
@@ -188,15 +194,15 @@ export class ShapefileParser {
   }
 
   /**
-   * Return the content of the *.prj file or '' if it doesn't exist
+   * Return the content of the *.prj file or null if it doesn't exist
    * @param directory - the dir with individual *.shp and *.prj files
-   * @returns {Promise<string>}
+   * @returns {Promise<string|null>}
    */
   async readProjectionFile(directory) {
     const projFilePath = await this.findProjectionFile(directory)
 
-    if (projFilePath === null) {
-      return ''
+    if (projFilePath === null || projFilePath === undefined) {
+      return null
     }
 
     const stats = await stat(projFilePath)
@@ -205,59 +211,28 @@ export class ShapefileParser {
         { size: stats.size },
         'Projection file exceeds safe size limit'
       )
-      return ''
+      return null
     }
 
     return readFile(projFilePath, 'utf-8')
   }
 
   /**
-   * Check if a CRS is WGS84 by comparing with proj4
-   * @param {string} crsWkt - WKT string of the CRS
-   * @returns {boolean} true if the CRS is equivalent to WGS84
-   */
-  isWGS84(crsWkt) {
-    if (!crsWkt || crsWkt.trim() === '') {
-      return false
-    }
-
-    try {
-      const wgs84 = proj4('EPSG:4326')
-      const sourceCrs = proj4(crsWkt)
-
-      // Compare the proj4 definitions
-      // Both should have longlat projection and WGS84 datum
-      const wgs84Def = wgs84.oProj
-      const sourceDef = sourceCrs.oProj
-
-      return (
-        sourceDef.projName === wgs84Def.projName &&
-        (sourceDef.datumCode === wgs84Def.datumCode ||
-         sourceDef.datum === wgs84Def.datum ||
-         (sourceDef.datumCode === 'WGS84' || sourceDef.datum === 'WGS84'))
-      )
-    } catch (error) {
-      logger.debug({ error: error.message }, 'Error checking if CRS is WGS84')
-      return false
-    }
-  }
-
-  /**
    * Create a Proj4 CRS transformer
-   * @param {string} projText - the content of the shapefile *.prj file or an empty string
-   * @returns {function|null}
+   * @param {string|null} projText - the content of the shapefile *.prj file or null if it was missing
+   * @returns {Object}
    */
-  createTransformer (projText) {
-    // Define target CRS (WGS84)
-    const targetCRS = 'EPSG:4326'
-
-    let transformer = null
-
-    if (!this.isWGS84(projText)) {
-      // The source is not in WGS84 format - the coordinates will need converting to WGS84
-      transformer = proj4(projText, targetCRS) // can throw
+  createTransformer(projText) {
+    if (projText === null) {
+      return null
     }
-    return transformer
+    const targetCRS = 'EPSG:4326'
+    try {
+      return proj4(projText, targetCRS)
+    } catch (error) {
+      logger.error({ error: error.message, projText }, 'Failed to create proj4 transformer')
+      return null
+    }
   }
 
   /**
@@ -274,8 +249,6 @@ export class ShapefileParser {
         const shapefiles = await this.findShapefiles(extractDir)
         const projText = await this.readProjectionFile(extractDir)
         const transformer = this.createTransformer(projText)
-        logger.debug({ projText }, 'Proj file content')
-        logger.debug({ transformer }, 'Transformer created')
 
         logger.debug(
           {
