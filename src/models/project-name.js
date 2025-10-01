@@ -42,10 +42,12 @@ export const projectName = joi.object({
     .string()
     .min(1)
     .max(PROJECT_NAME_MAX_LENGTH)
+    .pattern(/^[^A-Za-z]+$/)
     .required()
     .messages({
       'string.empty': 'PROJECT_NAME_REQUIRED',
       'string.max': 'PROJECT_NAME_MAX_LENGTH',
+      'string.pattern.base': 'PROJECT_NAME_NO_LETTERS',
       'any.required': 'PROJECT_NAME_REQUIRED'
     })
 })
