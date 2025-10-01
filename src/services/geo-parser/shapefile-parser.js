@@ -140,8 +140,8 @@ export class ShapefileParser {
 
     const features = []
 
-    let result
-    while (!(result = await source.read()).done) {
+    let result = await source.read()
+    while (!result.done) {
       const feature = result.value
 
       // Transform coordinates recursively
@@ -149,6 +149,8 @@ export class ShapefileParser {
         this.transformCoordinates(feature.geometry.coordinates, transformer)
       }
       features.push(feature)
+
+      result = await source.read()
     }
 
     return {
