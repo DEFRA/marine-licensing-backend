@@ -125,6 +125,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [
           {
             coordinatesType: 'point',
@@ -158,6 +159,9 @@ describe('POST /exemption/submit', () => {
         {
           $set: {
             applicationReference: 'EXE/2025/10001',
+            multipleSiteDetails: {
+              multipleSitesEnabled: false
+            },
             submittedAt: mockDate,
             status: EXEMPTION_STATUS.ACTIVE
           }
@@ -182,6 +186,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [
           {
             coordinatesType: 'point',
@@ -212,6 +217,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
+        applicantOrganisationId: null,
         ...mockAuditPayload
       })
     })
@@ -221,6 +227,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [
           {
             coordinatesType: 'point',
@@ -264,6 +271,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [
           {
             coordinatesType: 'point',
@@ -293,11 +301,59 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
     })
 
+    it('should insert request queue document with applicant organisation ID when available', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Marine Project',
+        organisations: {
+          applicant: {
+            id: 'org-123',
+            name: 'Test Organisation'
+          }
+        },
+        publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockDb
+        .collection()
+        .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer
+        },
+        mockHandler
+      )
+
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
+      expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'EXE/2025/10001',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0,
+        applicantOrganisationId: 'org-123',
+        ...mockAuditPayload
+      })
+    })
+
     it('should validate task completion before submission', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -343,6 +399,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -397,6 +454,7 @@ describe('POST /exemption/submit', () => {
       const mockIncompleteExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -499,6 +557,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -539,6 +598,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -568,6 +628,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -619,6 +680,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -650,6 +712,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -679,6 +742,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -704,6 +768,9 @@ describe('POST /exemption/submit', () => {
         {
           $set: {
             applicationReference: expectedReference,
+            multipleSiteDetails: {
+              multipleSitesEnabled: false
+            },
             submittedAt: mockDate,
             status: EXEMPTION_STATUS.ACTIVE
           }
@@ -718,6 +785,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity'
       }
@@ -755,6 +823,7 @@ describe('POST /exemption/submit', () => {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
         activityDescription: 'Test activity',
         status: 'draft'
@@ -779,6 +848,51 @@ describe('POST /exemption/submit', () => {
         {
           $set: {
             applicationReference: 'EXE/2025/10001',
+            multipleSiteDetails: {
+              multipleSitesEnabled: false
+            },
+            submittedAt: mockDate,
+            status: EXEMPTION_STATUS.ACTIVE
+          }
+        }
+      )
+    })
+  })
+
+  describe('Business Rules - Change multi site choice when one site', () => {
+    it('Change multi site choice when one site', async () => {
+      const mockDraftExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        projectName: 'Test Project',
+        publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: true },
+        siteDetails: [{ coordinatesType: 'point' }],
+        activityDescription: 'Test activity',
+        status: 'draft'
+      }
+
+      mockDb.collection().findOne.mockResolvedValue(mockDraftExemption)
+      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer
+        },
+        mockHandler
+      )
+
+      expect(generateApplicationReference).toHaveBeenCalled()
+      expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
+        { _id: ObjectId.createFromHexString(mockExemptionId) },
+        {
+          $set: {
+            applicationReference: 'EXE/2025/10001',
+            multipleSiteDetails: {
+              multipleSitesEnabled: false
+            },
             submittedAt: mockDate,
             status: EXEMPTION_STATUS.ACTIVE
           }

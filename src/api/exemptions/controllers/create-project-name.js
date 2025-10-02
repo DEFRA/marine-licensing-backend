@@ -26,7 +26,9 @@ export const createProjectNameController = {
         createdAt,
         updatedBy,
         updatedAt,
-        mcmsContext
+        mcmsContext,
+        applicantOrganisationId,
+        applicantOrganisationName
       } = payload
 
       const result = await db.collection('exemptions').insertOne({
@@ -37,7 +39,15 @@ export const createProjectNameController = {
         updatedAt,
         status: EXEMPTION_STATUS.DRAFT,
         contactId,
-        mcmsContext
+        mcmsContext,
+        organisations: applicantOrganisationId
+          ? {
+              applicant: {
+                id: applicantOrganisationId,
+                name: applicantOrganisationName
+              }
+            }
+          : null
       })
 
       return h
