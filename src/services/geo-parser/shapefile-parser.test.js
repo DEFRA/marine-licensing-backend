@@ -618,7 +618,6 @@ describe('ShapefileParser class', () => {
         features: [pointFeature, polygonFeature]
       })
       const result = await sut.parseFile(filename)
-      console.log(JSON.stringify(result, null, 2))
       expect(result.type).toBe('FeatureCollection')
       expect(result.features.length).toBe(2)
       expect(result.features[0]).toEqual(pointFeature)
