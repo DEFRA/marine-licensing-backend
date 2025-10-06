@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
 import { EXEMPTION_STATUS_LABEL } from '../../../common/constants/exemption.js'
+import { getApplicantOrganisationId } from '../helpers/get-applicant-organisation.js'
 
 const transformedExemptions = (exemptions) =>
   exemptions.map((exemption) => {
@@ -43,10 +44,16 @@ export const getExemptionsController = {
   handler: async (request, h) => {
     const { db, auth } = request
     const contactId = getContactId(auth)
+    const applicantOrganisationId = getApplicantOrganisationId(auth)
 
     const exemptions = await db
       .collection('exemptions')
-      .find({ contactId })
+      .find({
+        contactId,
+        ...(applicantOrganisationId
+          ? { 'organisations.applicant.id': applicantOrganisationId }
+          : {})
+      })
       .sort({ projectName: 1 })
       .toArray()
 

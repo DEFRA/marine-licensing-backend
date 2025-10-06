@@ -139,6 +139,7 @@ describe('POST /exemptions/project-name', () => {
       status: EXEMPTION_STATUS.DRAFT,
       contactId: expect.any(String),
       mcmsContext: undefined,
+      organisations: null,
       ...mockAuditPayload
     })
   })
@@ -170,6 +171,76 @@ describe('POST /exemptions/project-name', () => {
       status: EXEMPTION_STATUS.DRAFT,
       contactId: expect.any(String),
       mcmsContext: mockMcmsContext.mcmsContext,
+      organisations: null,
+      ...mockAuditPayload
+    })
+  })
+
+  it('should create exemption with applicant organisation when provided', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Test Project with Organisation',
+      applicantOrganisationId: 'org-123',
+      applicantOrganisationName: 'Test Organisation',
+      ...mockAuditPayload
+    }
+    const mockInsertOne = jest.fn().mockResolvedValue({
+      insertedId: new ObjectId()
+    })
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        insertOne: mockInsertOne
+      }
+    })
+
+    await createProjectNameController.handler(
+      { db: mockMongo, payload: mockPayload, auth },
+      mockHandler
+    )
+
+    expect(mockInsertOne).toHaveBeenCalledWith({
+      projectName: 'Test Project with Organisation',
+      status: EXEMPTION_STATUS.DRAFT,
+      contactId: expect.any(String),
+      mcmsContext: undefined,
+      organisations: {
+        applicant: {
+          id: 'org-123',
+          name: 'Test Organisation'
+        }
+      },
+      ...mockAuditPayload
+    })
+  })
+
+  it('should create exemption with organisations as null when no applicant organisation provided', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Test Project without Organisation',
+      ...mockAuditPayload
+    }
+    const mockInsertOne = jest.fn().mockResolvedValue({
+      insertedId: new ObjectId()
+    })
+
+    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      return {
+        insertOne: mockInsertOne
+      }
+    })
+
+    await createProjectNameController.handler(
+      { db: mockMongo, payload: mockPayload, auth },
+      mockHandler
+    )
+
+    expect(mockInsertOne).toHaveBeenCalledWith({
+      projectName: 'Test Project without Organisation',
+      status: EXEMPTION_STATUS.DRAFT,
+      contactId: expect.any(String),
+      mcmsContext: undefined,
+      organisations: null,
       ...mockAuditPayload
     })
   })

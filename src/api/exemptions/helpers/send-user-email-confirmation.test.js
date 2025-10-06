@@ -38,7 +38,8 @@ describe('sendUserEmailConfirmation', () => {
       apiKey: 'test-api-key',
       retryIntervalSeconds: 1,
       retries: 1,
-      notifyTemplateId: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12'
+      notifyTemplateId: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+      notifyTemplateIdOrganisation: 'b8e9507b-2b2c-4d5a-98d1-c371935e3f23'
     }
 
     config.get.mockReturnValue(mockConfig)
@@ -79,7 +80,8 @@ describe('sendUserEmailConfirmation', () => {
             name: 'John Doe',
             reference: 'EXE/2025/10001',
             viewDetailsUrl:
-              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439011'
+              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439011',
+            applicantOrganisationName: null
           },
           reference: 'EXE/2025/10001'
         }
@@ -118,6 +120,43 @@ describe('sendUserEmailConfirmation', () => {
         expect.anything(),
         'jose.garcia@example.com',
         expect.anything()
+      )
+    })
+
+    it('should send email successfully with applicant organisation name', async () => {
+      const mockEmailResponse = {
+        data: {
+          id: 'notification-id-with-org'
+        }
+      }
+
+      mockNotifyClient.sendEmail.mockResolvedValue(mockEmailResponse)
+
+      const params = {
+        db: mockDb,
+        userName: 'Jane Doe',
+        userEmail: 'jane.doe@example.com',
+        applicantOrganisationName: 'Test Organisation Ltd',
+        applicationReference: 'EXE/2025/10099',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439099'
+      }
+
+      await sendUserEmailConfirmation(params)
+
+      expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
+        'b8e9507b-2b2c-4d5a-98d1-c371935e3f23',
+        'jane.doe@example.com',
+        {
+          personalisation: {
+            name: 'Jane Doe',
+            reference: 'EXE/2025/10099',
+            viewDetailsUrl:
+              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439099',
+            applicantOrganisationName: 'Test Organisation Ltd'
+          },
+          reference: 'EXE/2025/10099'
+        }
       )
     })
   })
@@ -283,7 +322,7 @@ describe('sendUserEmailConfirmation', () => {
   })
 
   describe('Configuration and Initialization', () => {
-    it('should use correct notify template ID', async () => {
+    it('should use individual notify template ID when no organisation name provided', async () => {
       const mockEmailResponse = {
         data: { id: 'template-test-id' }
       }
@@ -303,6 +342,32 @@ describe('sendUserEmailConfirmation', () => {
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
         'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        expect.anything(),
+        expect.anything()
+      )
+    })
+
+    it('should use organisation notify template ID when organisation name provided', async () => {
+      const mockEmailResponse = {
+        data: { id: 'org-template-test-id' }
+      }
+
+      mockNotifyClient.sendEmail.mockResolvedValue(mockEmailResponse)
+
+      const params = {
+        db: mockDb,
+        userName: 'Org Template Test',
+        userEmail: 'orgtemplate@example.com',
+        applicantOrganisationName: 'Test Org Ltd',
+        applicationReference: 'EXE/2025/10015',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439025'
+      }
+
+      await sendUserEmailConfirmation(params)
+
+      expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
+        'b8e9507b-2b2c-4d5a-98d1-c371935e3f23',
         expect.anything(),
         expect.anything()
       )
@@ -361,7 +426,8 @@ describe('sendUserEmailConfirmation', () => {
             name: 'Base URL Test',
             reference: 'EXE/2025/10014',
             viewDetailsUrl:
-              'http://localhost:3000/exemption/view-details/64a1b2c3d4e5f6789abcdef1'
+              'http://localhost:3000/exemption/view-details/64a1b2c3d4e5f6789abcdef1',
+            applicantOrganisationName: null
           },
           reference: 'EXE/2025/10014'
         })
@@ -396,7 +462,8 @@ describe('sendUserEmailConfirmation', () => {
             name: '',
             reference: 'EXE/2025/10009',
             viewDetailsUrl:
-              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439019'
+              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439019',
+            applicantOrganisationName: null
           }
         })
       )
@@ -429,7 +496,8 @@ describe('sendUserEmailConfirmation', () => {
             name: 'Long Reference User',
             reference: longReference,
             viewDetailsUrl:
-              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439020'
+              'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439020',
+            applicantOrganisationName: null
           },
           reference: longReference
         })

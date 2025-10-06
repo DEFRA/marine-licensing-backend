@@ -7,13 +7,19 @@ import { ErrorWithData } from '../../../common/helpers/error-with-data.js'
 const sendEmail = async ({
   userName,
   userEmail,
+  applicantOrganisationName,
   applicationReference,
   frontEndBaseUrl,
   exemptionId
 }) => {
   const logger = createLogger()
-  const { apiKey, retryIntervalSeconds, retries, notifyTemplateId } =
-    config.get('notify')
+  const {
+    apiKey,
+    retryIntervalSeconds,
+    retries,
+    notifyTemplateId,
+    notifyTemplateIdOrganisation
+  } = config.get('notify')
   if (!apiKey) {
     throw new Error('Notify API key is not set')
   }
@@ -24,7 +30,8 @@ const sendEmail = async ({
     personalisation: {
       name: userName,
       reference: applicationReference,
-      viewDetailsUrl
+      viewDetailsUrl,
+      applicantOrganisationName
     },
     reference: emailSendReference
   }
@@ -32,8 +39,11 @@ const sendEmail = async ({
     const result = await retryAsyncOperation({
       operation: async () => {
         try {
+          const templateId = applicantOrganisationName
+            ? notifyTemplateIdOrganisation
+            : notifyTemplateId
           const response = await notifyClient.sendEmail(
-            notifyTemplateId,
+            templateId,
             userEmail,
             options
           )
@@ -68,6 +78,7 @@ export const sendUserEmailConfirmation = async ({
   db,
   userName,
   userEmail,
+  applicantOrganisationName = null,
   applicationReference,
   frontEndBaseUrl,
   exemptionId
@@ -75,6 +86,7 @@ export const sendUserEmailConfirmation = async ({
   const result = await sendEmail({
     userName,
     userEmail,
+    applicantOrganisationName,
     applicationReference,
     frontEndBaseUrl,
     exemptionId
