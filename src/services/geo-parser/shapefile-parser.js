@@ -1,5 +1,5 @@
 import * as shapefile from 'shapefile'
-import { glob, mkdtemp, readFile, rm, stat } from 'node:fs/promises'
+import * as fs from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import AdmZip from 'adm-zip'
@@ -14,7 +14,7 @@ const DEFAULT_OPTIONS = {
   thresholdRatio: 10
 }
 
-const MAX_PROJECTION_FILE_SIZE = 10000
+export const MAX_PROJECTION_FILE_SIZE = 10000
 
 /**
  * Shapefile parser service for zipped shapefiles
@@ -47,7 +47,7 @@ export class ShapefileParser {
   async extractZip(zipPath) {
     let fileCount = 0
     let totalSize = 0
-    const tempDir = await mkdtemp(join(tmpdir(), 'shapefile-'))
+    const tempDir = await fs.mkdtemp(join(tmpdir(), 'shapefile-'))
     const zip = new AdmZip(zipPath)
     const zipEntries = zip.getEntries()
     zipEntries.forEach((zipEntry) => {
@@ -84,7 +84,7 @@ export class ShapefileParser {
 
     try {
       const files = await Array.fromAsync(
-        glob('**/*.[sS][hH][pP]', {
+        fs.glob('**/*.[sS][hH][pP]', {
           cwd: directory
         })
       )
@@ -123,7 +123,10 @@ export class ShapefileParser {
       const [x, y] = transformer.forward(coords)
       // proj4 can return Infinity or NaN for invalid transformations
       if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        logger.warn({ original: coords, transformed: [x, y] }, 'Invalid transformation result')
+        logger.warn(
+          { original: coords, transformed: [x, y] },
+          'Invalid transformation result'
+        )
         return
       }
       coords[0] = x
@@ -175,7 +178,7 @@ export class ShapefileParser {
     logger.debug({ directory }, 'Searching for projection file in directory')
     try {
       const files = await Array.fromAsync(
-        glob('**/*.[pP][rR][jJ]', {
+        fs.glob('**/*.[pP][rR][jJ]', {
           cwd: directory
         })
       )
@@ -205,7 +208,7 @@ export class ShapefileParser {
       return null
     }
 
-    const stats = await stat(projFilePath)
+    const stats = await fs.stat(projFilePath)
     if (stats.size > MAX_PROJECTION_FILE_SIZE) {
       logger.warn(
         { size: stats.size },
@@ -214,7 +217,7 @@ export class ShapefileParser {
       return null
     }
 
-    return readFile(projFilePath, 'utf-8')
+    return fs.readFile(projFilePath, 'utf-8')
   }
 
   /**
@@ -230,7 +233,10 @@ export class ShapefileParser {
     try {
       return proj4(projText, targetCRS)
     } catch (error) {
-      logger.error({ error: error.message, projText }, 'Failed to create proj4 transformer')
+      logger.error(
+        { error: error.message, projText },
+        'Failed to create proj4 transformer'
+      )
       return null
     }
   }
@@ -244,7 +250,6 @@ export class ShapefileParser {
     try {
       const extractDir = await this.extractZip(filename)
       logger.debug({ extractDir }, 'Extracting zip')
-
       try {
         const shapefiles = await this.findShapefiles(extractDir)
         const projText = await this.readProjectionFile(extractDir)
@@ -253,9 +258,7 @@ export class ShapefileParser {
         logger.debug(
           {
             shapefiles,
-            type: typeof shapefiles,
-            isArray: Array.isArray(shapefiles),
-            length: shapefiles?.length
+            type: typeof shapefiles
           },
           'Shapefiles found before iteration'
         )
@@ -286,7 +289,7 @@ export class ShapefileParser {
 
   async cleanupTempDirectory(tempDir) {
     try {
-      await rm(tempDir, { recursive: true, force: true })
+      await fs.rm(tempDir, { recursive: true, force: true })
       logger.debug({ tempDir }, 'Cleaned up temp directory')
     } catch (error) {
       logger.error(
