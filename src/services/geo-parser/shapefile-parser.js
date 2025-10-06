@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import AdmZip from 'adm-zip'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 import proj4 from 'proj4'
+import * as path from 'node:path'
 
 const logger = createLogger()
 
@@ -170,15 +171,27 @@ export class ShapefileParser {
   }
 
   /**
-   * Find the *.prj file and return a path to it, if it exists, or null if it doesn't
+   * Find the *.prj file and return a path to it, if it exists, or null if it doesn't.
+   *
+   * There is a *very* *strong* convention that the projection file has the same basename as the
+   * *.shp file.  Most software packages apparently treat it as a requirement.  This is required
+   * for interoperability and is strongly implied by the Shapefile spec.
+   *
    * @param {string} directory where the Shapefile zip was extracted
+   * @param {string} basename - the basename of the *.shp file.  A shp file called 'project-a.shp' will have a basename of 'project-a'.
    * @returns {Promise<string|null>}
    */
-  async findProjectionFile(directory) {
-    logger.debug({ directory }, 'Searching for projection file in directory')
+  async findProjectionFile(directory, basename) {
+    logger.debug(
+      { directory },
+      `Searching for projection file in directory with basename ${basename}`
+    )
+    if (!basename) {
+      return null
+    }
     try {
       const files = await Array.fromAsync(
-        fs.glob('**/*.[pP][rR][jJ]', {
+        fs.glob(`**/${basename}.[pP][rR][jJ]`, {
           cwd: directory
         })
       )
@@ -199,10 +212,11 @@ export class ShapefileParser {
   /**
    * Return the content of the *.prj file or null if it doesn't exist
    * @param directory - the dir with individual *.shp and *.prj files
+   * @param basename - the basename of the .shp file
    * @returns {Promise<string|null>}
    */
-  async readProjectionFile(directory) {
-    const projFilePath = await this.findProjectionFile(directory)
+  async readProjectionFile(directory, basename) {
+    const projFilePath = await this.findProjectionFile(directory, basename)
 
     if (!projFilePath) {
       return null
@@ -252,8 +266,6 @@ export class ShapefileParser {
       logger.debug({ extractDir }, 'Extracting zip')
       try {
         const shapefiles = await this.findShapefiles(extractDir)
-        const projText = await this.readProjectionFile(extractDir)
-        const transformer = this.createTransformer(projText)
 
         logger.debug(
           {
@@ -269,6 +281,9 @@ export class ShapefileParser {
 
         const allFeatures = []
         for (const shpPath of shapefiles) {
+          const basename = path.basename(shpPath, path.extname(shpPath))
+          const projText = await this.readProjectionFile(extractDir, basename)
+          const transformer = this.createTransformer(projText)
           const geoJson = await this.parseShapefile(shpPath, transformer)
           allFeatures.push(...geoJson.features)
         }

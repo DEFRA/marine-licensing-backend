@@ -458,16 +458,22 @@ describe('ShapefileParser class', () => {
     const directory = '/tmp/mock-dir-567'
     let sut
     const mockFiles = ['mock.prj']
+    const basename = 'mock'
 
     beforeEach(() => {
       fs.glob.mockImplementation(() => createAsyncIterable(mockFiles))
       sut = new ShapefileParser()
     })
 
-    it('calls glob look for *.prj files', async () => {
+    it('returns null if basename is not provided', async () => {
       const result = await sut.findProjectionFile(directory)
+      expect(result).toBeNull()
+    })
+
+    it('calls glob look for *.prj files', async () => {
+      const result = await sut.findProjectionFile(directory, basename)
       expect(result).toEqual('/tmp/mock-dir-567/mock.prj')
-      expect(fs.glob).toHaveBeenCalledWith('**/*.[pP][rR][jJ]', {
+      expect(fs.glob).toHaveBeenCalledWith('**/mock.[pP][rR][jJ]', {
         cwd: directory
       })
     })
@@ -487,15 +493,15 @@ describe('ShapefileParser class', () => {
     })
 
     it('returns the first projection file if there is more than one', async () => {
-      const mockMultipleFiles = ['project1.prj', 'project2.prj']
+      const mockMultipleFiles = ['project1.prj', 'project1.PRJ']
       fs.glob.mockImplementation(() => createAsyncIterable(mockMultipleFiles))
-      const result = await sut.findProjectionFile(directory)
+      const result = await sut.findProjectionFile(directory, 'project1')
       expect(result).toBe('/tmp/mock-dir-567/project1.prj')
       expect(logger.warn).toHaveBeenCalledWith(
         {
           paths: [
             '/tmp/mock-dir-567/project1.prj',
-            '/tmp/mock-dir-567/project2.prj'
+            '/tmp/mock-dir-567/project1.PRJ'
           ]
         },
         'Multiple projection files found, using first'
