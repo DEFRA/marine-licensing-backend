@@ -7,7 +7,7 @@ import * as shapefile from 'shapefile'
 
 import {
   ShapefileParser,
-  MAX_PROJECTION_FILE_SIZE
+  MAX_PROJECTION_FILE_SIZE_BYTES
 } from './shapefile-parser.js'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 
@@ -479,8 +479,8 @@ describe('ShapefileParser class', () => {
     })
 
     it('should return null when no *.prj found', async () => {
-      fs.glob.mockImplementation(() => createAsyncIterable([]))
-      const result = await sut.findProjectionFile(directory)
+      fs.glob.mockImplementationOnce(() => createAsyncIterable([]))
+      const result = await sut.findProjectionFile(directory, 'proj-not-found')
       expect(result).toBeNull()
     })
 
@@ -488,7 +488,7 @@ describe('ShapefileParser class', () => {
       fs.glob.mockImplementation(() => {
         throw new Error('Glob error')
       })
-      const result = await sut.findProjectionFile(directory)
+      const result = await sut.findProjectionFile(directory, 'mock')
       expect(result).toBe(null)
     })
 
@@ -531,7 +531,7 @@ describe('ShapefileParser class', () => {
       expect(result).toEqual(mockPrjFileContent)
     })
 
-    it('returns null a proj file is not found in the given directory', async () => {
+    it('returns null when the proj file is not found in the given directory', async () => {
       jest.spyOn(sut, 'findProjectionFile').mockResolvedValue(null)
       const result = await sut.readProjectionFile(directory)
       expect(result).toBeNull()
@@ -539,7 +539,7 @@ describe('ShapefileParser class', () => {
 
     it('returns null if the content of the proj file is is too large to read', async () => {
       fs.stat.mockResolvedValue({
-        size: MAX_PROJECTION_FILE_SIZE + 1
+        size: MAX_PROJECTION_FILE_SIZE_BYTES + 1
       })
       const result = await sut.readProjectionFile(directory)
       expect(result).toBeNull()
@@ -547,7 +547,7 @@ describe('ShapefileParser class', () => {
 
     it('reads the proj file if it is exactly at the max size', async () => {
       fs.stat.mockResolvedValue({
-        size: MAX_PROJECTION_FILE_SIZE
+        size: MAX_PROJECTION_FILE_SIZE_BYTES
       })
       const result = await sut.readProjectionFile(directory)
       expect(result).toBe(mockPrjFileContent)

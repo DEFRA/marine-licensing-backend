@@ -15,7 +15,7 @@ const DEFAULT_OPTIONS = {
   thresholdRatio: 10
 }
 
-export const MAX_PROJECTION_FILE_SIZE = 10000
+export const MAX_PROJECTION_FILE_SIZE_BYTES = 50_000
 
 /**
  * Shapefile parser service for zipped shapefiles
@@ -101,7 +101,7 @@ export class ShapefileParser {
 
   /**
    * Transform coordinates from an unknown CRS to WGS84 using a proj4 transform function
-   * *NB* Mutates input coordinates!
+   * *NB* Mutates input coordinates for efficiency when reading large Shapefiles
    * @param {Array} coords - a pair of coordinates in [long, lat] format
    * @param transformer - a proj4 transformer
    */
@@ -124,9 +124,9 @@ export class ShapefileParser {
       const [x, y] = transformer.forward(coords)
       // proj4 can return Infinity or NaN for invalid transformations
       if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        logger.warn(
+        logger.error(
           { original: coords, transformed: [x, y] },
-          'Invalid transformation result'
+          'Invalid transformation result - no transformation has taken place'
         )
         return
       }
@@ -199,7 +199,17 @@ export class ShapefileParser {
       if (paths.length > 1) {
         logger.warn({ paths }, 'Multiple projection files found, using first')
       }
-      return paths[0] ?? null
+      if (paths[0]) {
+        logger.debug({ paths }, 'Found projection file')
+        return paths[0]
+      } else {
+        logger.error(
+          { paths },
+          'No projection file found - coordinates will not be transformed'
+        )
+        // JMS: consider if we want to throw and reject the upload with a user message
+        return null
+      }
     } catch (error) {
       logger.error(
         { directory, error: error.message },
@@ -219,15 +229,17 @@ export class ShapefileParser {
     const projFilePath = await this.findProjectionFile(directory, basename)
 
     if (!projFilePath) {
+      logger.error()
       return null
     }
 
     const stats = await fs.stat(projFilePath)
-    if (stats.size > MAX_PROJECTION_FILE_SIZE) {
-      logger.warn(
+    if (stats.size > MAX_PROJECTION_FILE_SIZE_BYTES) {
+      logger.error(
         { size: stats.size },
-        'Projection file exceeds safe size limit'
+        `Projection file size ${stats.size} exceeds safe size limit ${MAX_PROJECTION_FILE_SIZE_BYTES} : no transformation will take place`
       )
+      // JMS: consider whether we want to throw instead - and reject the upload
       return null
     }
 
