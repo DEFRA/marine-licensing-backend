@@ -50,7 +50,9 @@ export const getExemptionsController = {
       .collection('exemptions')
       .find({
         contactId,
-        'organisations.applicant.id': applicantOrganisationId
+        ...(applicantOrganisationId
+          ? { 'organisations.applicant.id': applicantOrganisationId }
+          : {})
       })
       .sort({ projectName: 1 })
       .toArray()

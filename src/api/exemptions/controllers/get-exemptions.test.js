@@ -207,15 +207,14 @@ describe('getExemptionsController', () => {
       })
     })
 
-    it('should query with null applicantOrganisationId when getApplicantOrganisationId returns null', async () => {
+    it('should query without applicantOrganisationId when getApplicantOrganisationId returns null', async () => {
       getApplicantOrganisationId.mockReturnValue(null)
       mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
       expect(mockCollection.find).toHaveBeenCalledWith({
-        contactId: 'test-contact-id',
-        'organisations.applicant.id': null
+        contactId: 'test-contact-id'
       })
     })
   })

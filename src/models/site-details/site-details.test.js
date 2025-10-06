@@ -25,11 +25,15 @@ describe('#siteDetails schema', () => {
 
     test('Should correctly validate on empty data', () => {
       const result = siteDetailsSchema.validate({})
-      expect(result.error.message).toBe('SITE_DETAILS_REQUIRED')
+      expect(result.error.message).toBe('MULTIPLE_SITE_DETAILS_REQUIRED')
     })
 
     test('Should correctly validate on invalid data', () => {
-      const result = siteDetailsSchema.validate({ id: mockId })
+      const result = siteDetailsSchema.validate({
+        id: mockId,
+        multipleSiteDetails:
+          mockFileUploadSiteDetailsRequest.multipleSiteDetails
+      })
       expect(result.error.message).toBe('SITE_DETAILS_REQUIRED')
     })
   })
@@ -48,16 +52,20 @@ describe('#siteDetails schema', () => {
         const result = siteDetailsSchema.validate(
           requestWithoutMultipleSiteDetails
         )
-        expect(result.error.message).toBe('"multipleSiteDetails" is required')
+        expect(result.error.message).toBe('MULTIPLE_SITE_DETAILS_REQUIRED')
       })
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should allow multipleSiteDetails to be optional when coordinatesType is file', () => {
+      test('Should require multipleSiteDetails when coordinatesType is file', () => {
+        const requestWithoutMultipleSiteDetails = {
+          id: mockId,
+          siteDetails: mockFileUploadSiteDetailsRequest.siteDetails
+        }
         const result = siteDetailsSchema.validate(
-          mockFileUploadSiteDetailsRequest
+          requestWithoutMultipleSiteDetails
         )
-        expect(result.error).toBeUndefined()
+        expect(result.error.message).toBe('MULTIPLE_SITE_DETAILS_REQUIRED')
       })
     })
   })
@@ -124,18 +132,17 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should not allow activityDates when coordinatesType is file', () => {
+      test('Should allow activityDates to be missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: [
             {
               ...mockFileUploadSiteDetailsRequest.siteDetails[0],
-              activityDates: {}
+              activityDates: undefined
             }
           ]
         })
-        expect(result.error.message).toContain('activityDates')
-        expect(result.error.message).toContain('not allowed')
+        expect(result.error).toBeUndefined()
       })
 
       test('Should allow file upload without activityDates', () => {
@@ -173,18 +180,17 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should not allow activityDescription when coordinatesType is file', () => {
+      test('Should allow activityDescription to be missing', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: [
             {
               ...mockFileUploadSiteDetailsRequest.siteDetails[0],
-              activityDescription: 'Test'
+              activityDescription: undefined
             }
           ]
         })
-        expect(result.error.message).toContain('activityDescription')
-        expect(result.error.message).toContain('not allowed')
+        expect(result.error).toBeUndefined()
       })
 
       test('Should allow file upload without activityDescription', () => {
@@ -243,7 +249,8 @@ describe('#siteDetails schema', () => {
           ...mockSiteDetailsRequest,
           multipleSiteDetails: {
             multipleSitesEnabled: true,
-            sameActivityDates: 'yes'
+            sameActivityDates: 'yes',
+            sameActivityDescription: 'yes'
           },
           siteDetails: [
             {
@@ -406,9 +413,14 @@ describe('#siteDetails schema', () => {
 
     test('Should correctly validate the exact data structure from production error', () => {
       const productionData = {
+        multipleSiteDetails:
+          mockFileUploadSiteDetailsRequest.multipleSiteDetails,
         siteDetails: [
           {
             coordinatesType: 'file',
+            activityDates: mockSiteDetailsWithMultiSite[0].activityDates,
+            activityDescription:
+              mockSiteDetailsWithMultiSite[0].activityDescription,
             fileUploadType: 'kml',
             geoJSON: {
               type: 'FeatureCollection',
@@ -481,9 +493,14 @@ describe('#siteDetails schema', () => {
     test('Should require all file upload fields when coordinatesType is file', () => {
       const result = siteDetailsSchema.validate({
         id: mockId,
+        multipleSiteDetails:
+          mockFileUploadSiteDetailsRequest.multipleSiteDetails,
         siteDetails: [
           {
             coordinatesType: 'file',
+            activityDates: mockSiteDetailsWithMultiSite[0].activityDates,
+            activityDescription:
+              mockSiteDetailsWithMultiSite[0].activityDescription,
             fileUploadType: 'kml',
             s3Location: {
               s3Bucket: 'mmo-uploads',
@@ -499,6 +516,7 @@ describe('#siteDetails schema', () => {
 
     const createGeoJSONFeatureTest = (featureOverrides = {}) => ({
       id: mockId,
+      multipleSiteDetails: mockFileUploadSiteDetailsRequest.multipleSiteDetails,
       siteDetails: [
         {
           ...mockFileUploadSiteDetailsRequest.siteDetails[0],
