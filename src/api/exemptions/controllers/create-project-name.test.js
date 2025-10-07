@@ -6,6 +6,7 @@ import {
   articleCodes,
   validActivitySubtypes
 } from '../../../common/constants/mcms-context.js'
+import { expect } from '@jest/globals'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
@@ -21,7 +22,8 @@ describe('POST /exemptions/project-name', () => {
     mcmsContext: {
       activityType: activityTypes.CON,
       article: articleCodes[0],
-      pdfDownloadUrl: 'https://example.com/test.pdf',
+      pdfDownloadUrl:
+        'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
       activitySubtype: validActivitySubtypes[0]
     }
   }
