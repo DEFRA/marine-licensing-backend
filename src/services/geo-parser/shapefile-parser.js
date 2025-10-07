@@ -15,6 +15,11 @@ const DEFAULT_OPTIONS = {
   thresholdRatio: 10
 }
 
+const LONGITUDE_MIN = -180
+const LONGITUDE_MAX = 180
+const LATITUDE_MIN = -90
+const LATITUDE_MAX = 90
+
 export const MAX_PROJECTION_FILE_SIZE_BYTES = 50_000
 
 /**
@@ -51,7 +56,7 @@ export class ShapefileParser {
     const tempDir = await fs.mkdtemp(join(tmpdir(), 'shapefile-'))
     const zip = new AdmZip(zipPath)
     const zipEntries = zip.getEntries()
-    zipEntries.forEach((zipEntry) => {
+    for (const zipEntry of zipEntries) {
       fileCount++
       if (fileCount > this.options.maxFiles) {
         throw new Error('Reached max number of files')
@@ -63,6 +68,12 @@ export class ShapefileParser {
         throw new Error('Reached max size')
       }
 
+      // Prevent directory traversal attacks
+      const normalisedPath = path.normalize(zipEntry.entryName)
+      if (normalisedPath.startsWith('..')) {
+        throw new Error('Invalid zip entry path')
+      }
+
       const compressionRatio = entrySize / zipEntry.header.compressedSize
       if (compressionRatio > this.options.thresholdRatio) {
         throw new Error('Reached max compression ratio')
@@ -71,7 +82,7 @@ export class ShapefileParser {
       if (!zipEntry.isDirectory) {
         zip.extractEntryTo(zipEntry.entryName, tempDir)
       }
-    })
+    }
     return tempDir
   }
 
@@ -96,6 +107,25 @@ export class ShapefileParser {
         'Error during glob search'
       )
       return []
+    }
+  }
+
+  /**
+   * Validate WGS84 coordinates - throws when validation fails
+   * @param {number} x - longitude
+   * @param {number } y - latitude
+   * @throws
+   */
+  validateCoordinates(x, y) {
+    if (x < LONGITUDE_MIN || x > LONGITUDE_MAX) {
+      throw new Error(
+        `Invalid longitude received: ${x} from proj4 transformation`
+      )
+    }
+    if (y < LATITUDE_MIN || y > LATITUDE_MAX) {
+      throw new Error(
+        `Invalid latitude received: ${y} from proj4 transformation`
+      )
     }
   }
 
@@ -130,6 +160,7 @@ export class ShapefileParser {
         )
         return
       }
+      this.validateCoordinates(x, y) // throws if invalid
       coords[0] = x
       coords[1] = y
     } else {
@@ -196,11 +227,8 @@ export class ShapefileParser {
         })
       )
       const paths = files.map((file) => join(directory, file))
-      if (paths.length > 1) {
-        logger.warn({ paths }, 'Multiple projection files found, using first')
-      }
       if (paths[0]) {
-        logger.debug({ paths }, 'Found projection file')
+        logger.debug({ paths }, `Found projection file: ${paths[0]}`)
         return paths[0]
       } else {
         logger.error(
@@ -229,7 +257,9 @@ export class ShapefileParser {
     const projFilePath = await this.findProjectionFile(directory, basename)
 
     if (!projFilePath) {
-      logger.error()
+      logger.error(
+        'Projection file not found in Shapefile .zip - no coordinate transformation will take place'
+      )
       return null
     }
 
@@ -249,7 +279,7 @@ export class ShapefileParser {
   /**
    * Create a Proj4 CRS transformer
    * @param {string|null} projText - the content of the shapefile *.prj file or null if it was missing
-   * @returns {Object}
+   * @returns {proj4.Converter | null}
    */
   createTransformer(projText) {
     if (projText === null) {
@@ -281,8 +311,7 @@ export class ShapefileParser {
 
         logger.debug(
           {
-            shapefiles,
-            type: typeof shapefiles
+            shapefiles
           },
           'Shapefiles found before iteration'
         )

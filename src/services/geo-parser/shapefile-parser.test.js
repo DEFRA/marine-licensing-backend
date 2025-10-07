@@ -272,6 +272,27 @@ describe('ShapefileParser class', () => {
       await sut.extractZip(zipPath)
       expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(2)
     })
+
+    it('should throw an error if a directory traversal is attempted', async () => {
+      const pathTraversalEntries = [
+        {
+          entryName: '../../../../../etc/passwd',
+          isDirectory: false,
+          getData: () => Buffer.alloc(100),
+          header: { compressedSize: 50 }
+        },
+        {
+          entryName: 'test.shp',
+          isDirectory: false,
+          getData: () => Buffer.alloc(1000),
+          header: { compressedSize: 500 }
+        }
+      ]
+      mockAdmZip.getEntries.mockReturnValue(pathTraversalEntries)
+      await expect(sut.extractZip(zipPath)).rejects.toThrow(
+        'Invalid zip entry path'
+      )
+    })
   })
 
   describe('findShapefiles', () => {
@@ -394,6 +415,54 @@ describe('ShapefileParser class', () => {
       expect(coords[0]).toBe(-0.255485)
       expect(coords[1]).toBeUndefined()
     })
+
+    it('throws an error if the transformed longitude coordinates are less than -180', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [-181, 0]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid longitude received: -181 from proj4 transformation'
+      )
+    })
+
+    it('throws an error if the transformed longitude coordinates are greater than 180', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [181, 0]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid longitude received: 181 from proj4 transformation'
+      )
+    })
+
+    it('throws an error if the transformed latitude coordinates are less than 90', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [0, -90.01]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid latitude received: -90.01 from proj4 transformation'
+      )
+    })
+
+    it('throws an error if the transformed latitude coordinates are greater than 90', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [0, 90.01]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid latitude received: 90.01 from proj4 transformation'
+      )
+    })
   })
 
   describe('parseShapefile', () => {
@@ -497,15 +566,6 @@ describe('ShapefileParser class', () => {
       fs.glob.mockImplementation(() => createAsyncIterable(mockMultipleFiles))
       const result = await sut.findProjectionFile(directory, 'project1')
       expect(result).toBe('/tmp/mock-dir-567/project1.prj')
-      expect(logger.warn).toHaveBeenCalledWith(
-        {
-          paths: [
-            '/tmp/mock-dir-567/project1.prj',
-            '/tmp/mock-dir-567/project1.PRJ'
-          ]
-        },
-        'Multiple projection files found, using first'
-      )
     })
   })
 
