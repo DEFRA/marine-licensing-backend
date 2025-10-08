@@ -130,7 +130,8 @@ describe('Project name validation schemas', () => {
       const validMcmsContext = {
         activityType: activityTypes.CON,
         article: articleCodes[0],
-        pdfDownloadUrl: 'https://example.com/test.pdf',
+        pdfDownloadUrl:
+          'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         activitySubtype: validActivitySubtypes[0]
       }
 
@@ -278,11 +279,10 @@ describe('Project name validation schemas', () => {
           )
         })
 
-        it('should validate with different URL formats', () => {
+        it('should validate with different valid URL formats', () => {
           const urls = [
-            'https://example.com/test.pdf',
-            'http://example.com/test.pdf',
-            'https://subdomain.example.com/path/to/file.pdf'
+            'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
+            'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123'
           ]
 
           urls.forEach((url) => {
@@ -296,6 +296,21 @@ describe('Project name validation schemas', () => {
             })
             expect(result.error).toBeUndefined()
           })
+        })
+
+        it('should fail with invalid URL format', () => {
+          const contextWithInvalidUrl = {
+            ...validMcmsContext,
+            pdfDownloadUrl: 'https://test.com/test.pdf'
+          }
+          const result = createProjectName.validate({
+            ...validPayload,
+            mcmsContext: contextWithInvalidUrl
+          })
+          expect(result.error).toBeDefined()
+          expect(result.error.message).toContain(
+            '"mcmsContext.pdfDownloadUrl" with value "https://test.com/test.pdf" fails to match the required pattern: /^https:\\/\\/[^/]+\\.marinemanagement\\.org\\.uk\\/[^/]+\\/journey\\/self-service\\/outcome-document\\/[a-zA-Z0-9-]+$/'
+          )
         })
       })
 
@@ -399,7 +414,8 @@ describe('Project name validation schemas', () => {
         const validMcmsContext = {
           activityType: activityTypes.CON,
           article: articleCodes[0],
-          pdfDownloadUrl: 'https://example.com/test.pdf',
+          pdfDownloadUrl:
+            'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
           activitySubtype: validActivitySubtypes[0]
         }
 
