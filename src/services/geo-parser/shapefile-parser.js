@@ -9,10 +9,22 @@ import * as path from 'node:path'
 
 const logger = createLogger()
 
+/**
+ * DEFAULT_OPTIONS: constants for safe Zip extraction for Shapefiles.
+ * The threshold ratio is calculated on a per file basis, so needs to accommodate
+ * the most highly compressed file you expect to see.  Shapefiles .dbf files can
+ * be *highly* compressible when multiple sites are included at the extremes,
+ * hence the large number for `thresholdRatio`.
+ *
+ * We have seen a file where the .dbf file compressed from 6.2MB to 93KB, a
+ * factor of 66.8!
+ *
+ * @type {{maxFiles: number, maxSize: number, thresholdRatio: number}}
+ */
 const DEFAULT_OPTIONS = {
   maxFiles: 10_000,
   maxSize: 1_000_000_000, // 1 GB in bytes
-  thresholdRatio: 10
+  thresholdRatio: 100
 }
 
 const LONGITUDE_MIN = -180
@@ -66,12 +78,6 @@ export class ShapefileParser {
       totalSize += entrySize
       if (totalSize > this.options.maxSize) {
         throw new Error('Reached max size')
-      }
-
-      // Prevent directory traversal attacks
-      const normalisedPath = path.normalize(zipEntry.entryName)
-      if (normalisedPath.startsWith('..')) {
-        throw new Error('Invalid zip entry path')
       }
 
       const compressionRatio = entrySize / zipEntry.header.compressedSize

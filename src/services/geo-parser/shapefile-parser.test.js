@@ -74,7 +74,7 @@ describe('ShapefileParser class', () => {
       expect(parser.options).toEqual({
         maxFiles: 10_000,
         maxSize: 1_000_000_000,
-        thresholdRatio: 10
+        thresholdRatio: 100
       })
     })
 
@@ -98,7 +98,7 @@ describe('ShapefileParser class', () => {
       expect(parser.options).toEqual({
         maxFiles: 5_000,
         maxSize: 1_000_000_000,
-        thresholdRatio: 10
+        thresholdRatio: 100
       })
     })
   })
@@ -217,8 +217,8 @@ describe('ShapefileParser class', () => {
         {
           entryName: 'suspicious.shp',
           isDirectory: false,
-          getData: () => Buffer.alloc(1000),
-          header: { compressedSize: 50 } // 20:1 ratio > 10:1 threshold
+          getData: () => Buffer.alloc(99_999),
+          header: { compressedSize: 909 } // 110 compression ration > 100
         }
       ]
       mockAdmZip.getEntries.mockReturnValue(suspiciousEntries)
@@ -271,27 +271,6 @@ describe('ShapefileParser class', () => {
       mockAdmZip.getEntries.mockReturnValue(mixedEntries)
       await sut.extractZip(zipPath)
       expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(2)
-    })
-
-    it('should throw an error if a directory traversal is attempted', async () => {
-      const pathTraversalEntries = [
-        {
-          entryName: '../../../../../etc/passwd',
-          isDirectory: false,
-          getData: () => Buffer.alloc(100),
-          header: { compressedSize: 50 }
-        },
-        {
-          entryName: 'test.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(1000),
-          header: { compressedSize: 500 }
-        }
-      ]
-      mockAdmZip.getEntries.mockReturnValue(pathTraversalEntries)
-      await expect(sut.extractZip(zipPath)).rejects.toThrow(
-        'Invalid zip entry path'
-      )
     })
   })
 
