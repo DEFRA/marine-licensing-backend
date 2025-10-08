@@ -49,7 +49,7 @@ export const siteDetailsSchema = joi
           then: joi.when('coordinatesType', {
             is: 'coordinates',
             then: siteNameFieldSchema,
-            otherwise: joi.forbidden()
+            otherwise: siteNameFieldSchema.optional()
           }),
           otherwise: joi.forbidden()
         }),
