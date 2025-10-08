@@ -8,7 +8,6 @@ import {
   articleCodes,
   validActivitySubtypes
 } from '../common/constants/mcms-context.js'
-import { expect } from '@jest/globals'
 
 describe('Project name validation schemas', () => {
   describe('projectName schema', () => {

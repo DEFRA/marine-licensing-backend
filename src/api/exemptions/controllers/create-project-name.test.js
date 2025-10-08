@@ -6,7 +6,6 @@ import {
   articleCodes,
   validActivitySubtypes
 } from '../../../common/constants/mcms-context.js'
-import { expect } from '@jest/globals'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
