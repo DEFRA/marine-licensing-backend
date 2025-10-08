@@ -19,7 +19,12 @@ const mcmsContext = {
         .string()
         .valid(...articleCodes)
         .required(),
-      pdfDownloadUrl: joi.string().required(),
+      pdfDownloadUrl: joi
+        .string()
+        .pattern(
+          /^https:\/\/[^/]+\.marinemanagement\.org\.uk\/[^/]+\/journey\/self-service\/outcome-document\/[a-zA-Z0-9-]+$/
+        )
+        .required(),
       activitySubtype: joi.when('activityType', {
         is: [
           activityTypes.CON,
