@@ -1,26 +1,35 @@
+import { vi } from 'vitest'
 import hapi from '@hapi/hapi'
 
 import { secureContext } from './index.js'
 import { requestLogger } from '../logging/request-logger.js'
 import { config } from '../../../config.js'
 
-const mockAddCACert = jest.fn()
-const mockTlsCreateSecureContext = jest
+const mockAddCACert = vi.fn()
+const mockTlsCreateSecureContext = vi
   .fn()
   .mockReturnValue({ context: { addCACert: mockAddCACert } })
 
-jest.mock('hapi-pino', () => ({
-  register: (server) => {
-    server.decorate('server', 'logger', {
-      info: jest.fn(),
-      error: jest.fn()
-    })
-  },
-  name: 'mock-hapi-pino'
+const mockHapiLoggerInfo = vi.fn()
+const mockHapiLoggerError = vi.fn()
+
+vi.mock('hapi-pino', () => ({
+  default: {
+    register: (server) => {
+      server.decorate('server', 'logger', {
+        info: mockHapiLoggerInfo,
+        error: mockHapiLoggerError
+      })
+    },
+    name: 'mock-hapi-pino',
+    version: '1.0.0'
+  }
 }))
-jest.mock('node:tls', () => ({
-  ...jest.requireActual('node:tls'),
-  createSecureContext: (...args) => mockTlsCreateSecureContext(...args)
+
+vi.mock('node:tls', () => ({
+  default: {
+    createSecureContext: (...args) => mockTlsCreateSecureContext(...args)
+  }
 }))
 
 describe('#secureContext', () => {
@@ -35,7 +44,7 @@ describe('#secureContext', () => {
 
     afterEach(async () => {
       config.set('isSecureContextEnabled', false)
-      await server.stop({ timeout: 0 })
+      await server?.stop({ timeout: 0 })
     })
 
     test('secureContext decorator should not be available', () => {
@@ -58,6 +67,8 @@ describe('#secureContext', () => {
     })
 
     beforeEach(async () => {
+      mockTlsCreateSecureContext.mockClear()
+      mockAddCACert.mockClear()
       config.set('isSecureContextEnabled', true)
       server = hapi.server()
       await server.register([requestLogger, secureContext])
@@ -65,7 +76,7 @@ describe('#secureContext', () => {
 
     afterEach(async () => {
       config.set('isSecureContextEnabled', false)
-      await server.stop({ timeout: 0 })
+      await server?.stop({ timeout: 0 })
     })
 
     afterAll(() => {
@@ -81,7 +92,7 @@ describe('#secureContext', () => {
     })
 
     test('secureContext decorator should be available', () => {
-      expect(server.secureContext).toEqual({
+      expect(server.secureContext).toMatchObject({
         context: { addCACert: expect.any(Function) }
       })
     })
@@ -96,7 +107,7 @@ describe('#secureContext', () => {
 
     afterEach(async () => {
       config.set('isSecureContextEnabled', false)
-      await server.stop({ timeout: 0 })
+      await server?.stop({ timeout: 0 })
     })
 
     test('Should log about not finding any TRUSTSTORE_ certs', () => {

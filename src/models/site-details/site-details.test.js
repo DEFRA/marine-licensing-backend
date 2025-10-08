@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 import { siteDetailsSchema } from './site-details.js'
 import {
@@ -14,7 +15,7 @@ import {
 
 describe('#siteDetails schema', () => {
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('#siteDetails', () => {

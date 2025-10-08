@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import Hapi from '@hapi/hapi'
 import hapiAuthJwt2 from 'hapi-auth-jwt2'
 import Wreck from '@hapi/wreck'
@@ -6,9 +7,9 @@ import Boom from '@hapi/boom'
 import { auth, getKeys, validateToken } from './auth.js'
 import { config } from '../config.js'
 
-jest.mock('@hapi/wreck')
-jest.mock('jwk-to-pem')
-jest.mock('../config.js')
+vi.mock('@hapi/wreck')
+vi.mock('jwk-to-pem')
+vi.mock('../config.js')
 
 describe('Auth Plugin', () => {
   let server
@@ -23,10 +24,8 @@ describe('Auth Plugin', () => {
   }
 
   beforeEach(async () => {
-    jest.clearAllMocks()
-
-    mockWreckGet = jest.mocked(Wreck.get)
-    mockJwkToPem = jest.mocked(jwkToPem)
+    mockWreckGet = vi.mocked(Wreck.get)
+    mockJwkToPem = vi.mocked(jwkToPem)
 
     config.get.mockImplementation((key) => {
       return key === 'defraId'
@@ -65,7 +64,7 @@ describe('Auth Plugin', () => {
   })
 
   afterEach(async () => {
-    await server.stop()
+    await server?.stop()
   })
 
   test('should register JWT strategy', () => {

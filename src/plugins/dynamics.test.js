@@ -1,6 +1,4 @@
-import { jest } from '@jest/globals'
-import { createServer } from '../server.js'
-
+import { vi } from 'vitest'
 import {
   startExemptionsQueuePolling,
   stopExemptionsQueuePolling,
@@ -10,44 +8,28 @@ import {
 import { processExemptionsQueuePlugin } from './dynamics.js'
 import { config } from '../config.js'
 
-jest.mock('../common/helpers/dynamics/index.js')
+vi.mock('../common/helpers/dynamics/index.js')
 
 describe('processExemptionsQueue Plugin', () => {
-  let server
-
   const mockServer = {
-    ext: jest.fn(),
-    logger: { info: jest.fn() },
+    ext: vi.fn(),
+    logger: { info: vi.fn() },
     app: {},
-    method: jest.fn()
+    method: vi.fn()
   }
 
-  const mockedStartExemptionsQueuePolling = jest.mocked(
+  const mockedStartExemptionsQueuePolling = vi.mocked(
     startExemptionsQueuePolling
   )
-  const mockedStopExemptionsQueuePolling = jest.mocked(
-    stopExemptionsQueuePolling
-  )
-
-  beforeAll(async () => {
-    server = await createServer()
-    await server.initialize()
-  })
-
-  afterAll(async () => {
-    await server.stop({ timeout: 0 })
-  })
+  const mockedStopExemptionsQueuePolling = vi.mocked(stopExemptionsQueuePolling)
 
   beforeEach(() => {
     mockedStartExemptionsQueuePolling.mockClear()
     mockedStopExemptionsQueuePolling.mockClear()
-
-    server.logger.info = jest.fn()
-    server.logger.error = jest.fn()
   })
 
   it('should register hooks and log when enabled', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
+    vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     await processExemptionsQueuePlugin.plugin.register(mockServer, {})
 
@@ -77,7 +59,7 @@ describe('processExemptionsQueue Plugin', () => {
   })
 
   it('should work with defaults without config', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
+    vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     await processExemptionsQueuePlugin.plugin.register(mockServer)
 
@@ -87,13 +69,13 @@ describe('processExemptionsQueue Plugin', () => {
   })
 
   it('should register the processExemptionsQueue server method', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
+    vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     const mockServer = {
-      ext: jest.fn(),
-      logger: { info: jest.fn() },
+      ext: vi.fn(),
+      logger: { info: vi.fn() },
       app: {},
-      method: jest.fn()
+      method: vi.fn()
     }
 
     await processExemptionsQueuePlugin.plugin.register(mockServer, {})
@@ -106,18 +88,16 @@ describe('processExemptionsQueue Plugin', () => {
   })
 
   it('should register the processExemptionsQueue server method with correct implementation', async () => {
-    jest.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
+    vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     const mockServer = {
-      ext: jest.fn(),
-      logger: { info: jest.fn() },
+      ext: vi.fn(),
+      logger: { info: vi.fn() },
       app: {},
-      method: jest.fn()
+      method: vi.fn()
     }
 
-    const processExemptionsQueueSpy = jest
-      .spyOn({ processExemptionsQueue }, 'processExemptionsQueue')
-      .mockResolvedValue('processed')
+    vi.mocked(processExemptionsQueue).mockResolvedValue('processed')
 
     await processExemptionsQueuePlugin.plugin.register(mockServer, {})
 
@@ -128,7 +108,7 @@ describe('processExemptionsQueue Plugin', () => {
 
     const result = await registeredFunction()
 
-    expect(processExemptionsQueueSpy).toHaveBeenCalledWith(mockServer)
+    expect(processExemptionsQueue).toHaveBeenCalledWith(mockServer)
     expect(result).toBe('processed')
   })
 })

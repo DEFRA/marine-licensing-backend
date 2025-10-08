@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { createActivityDatesController } from './update-activity-dates.js'
 import { ObjectId } from 'mongodb'
 
@@ -62,9 +63,9 @@ describe('PATCH /exemptions/activity-dates', () => {
       ...mockAuditPayload
     }
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({ matchedCount: 0 })
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }
     })
 
@@ -90,9 +91,9 @@ describe('PATCH /exemptions/activity-dates', () => {
 
     const mockError = 'Database failed'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
+        updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
@@ -116,8 +117,8 @@ describe('PATCH /exemptions/activity-dates', () => {
       ...mockAuditPayload
     }
 
-    const mockUpdateOne = jest.fn().mockResolvedValueOnce({})
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    const mockUpdateOne = vi.fn().mockResolvedValueOnce({})
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
         updateOne: mockUpdateOne
       }

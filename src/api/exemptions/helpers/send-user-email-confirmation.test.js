@@ -1,11 +1,12 @@
+import { vi } from 'vitest'
 import { sendUserEmailConfirmation } from './send-user-email-confirmation.js'
 import { config } from '../../../config.js'
 import { NotifyClient } from 'notifications-node-client'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 
-jest.mock('../../../config.js')
-jest.mock('notifications-node-client')
-jest.mock('../../../common/helpers/logging/logger.js')
+vi.mock('../../../config.js')
+vi.mock('notifications-node-client')
+vi.mock('../../../common/helpers/logging/logger.js')
 
 describe('sendUserEmailConfirmation', () => {
   let mockDb
@@ -15,23 +16,21 @@ describe('sendUserEmailConfirmation', () => {
   let mockConfig
 
   beforeEach(() => {
-    jest.clearAllMocks()
-
     mockCollection = {
-      insertOne: jest.fn().mockResolvedValue({ insertedId: 'mock-id' })
+      insertOne: vi.fn().mockResolvedValue({ insertedId: 'mock-id' })
     }
 
     mockDb = {
-      collection: jest.fn().mockReturnValue(mockCollection)
+      collection: vi.fn().mockReturnValue(mockCollection)
     }
 
     mockNotifyClient = {
-      sendEmail: jest.fn()
+      sendEmail: vi.fn()
     }
 
     mockLogger = {
-      info: jest.fn(),
-      error: jest.fn()
+      info: vi.fn(),
+      error: vi.fn()
     }
 
     mockConfig = {

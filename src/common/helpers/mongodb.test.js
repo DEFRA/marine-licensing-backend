@@ -1,23 +1,24 @@
+import { vi } from 'vitest'
 import { Db, MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
-
-import { createServer } from '../../server.js'
 import { addAuditFields } from './mongodb.js'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 
-jest.mock('./mongo-audit.js')
+vi.mock('./mongo-audit.js')
 
 describe('#mongoDb', () => {
   let server
 
   describe('Set up', () => {
     beforeAll(async () => {
+      // Dynamic import needed due to config being updated by vitest-mongodb
+      const { createServer } = await import('../../server.js')
       server = await createServer()
       await server.initialize()
     })
 
     afterAll(async () => {
-      await server.stop({ timeout: 0 })
+      await server?.stop({ timeout: 0 })
     })
 
     test('Server should have expected MongoDb decorators', () => {
@@ -36,12 +37,8 @@ describe('#mongoDb', () => {
   })
 
   describe('addAuditFields extension', () => {
-    const mockedAddCreateAuditFields = jest.mocked(addCreateAuditFields)
-    const mockedAddUpdateAuditFields = jest.mocked(addUpdateAuditFields)
-
-    beforeEach(() => {
-      jest.clearAllMocks()
-    })
+    const mockedAddCreateAuditFields = vi.mocked(addCreateAuditFields)
+    const mockedAddUpdateAuditFields = vi.mocked(addUpdateAuditFields)
 
     test('should add create audit fields for POST requests with auth and payload', async () => {
       const mockPayload = { name: 'Test Project' }
@@ -160,13 +157,15 @@ describe('#mongoDb', () => {
 
   describe('Shut down', () => {
     beforeAll(async () => {
+      // Dynamic import needed due to config being updated by vitest-mongodb
+      const { createServer } = await import('../../server.js')
       server = await createServer()
       await server.initialize()
     })
 
     test('Should close Mongo client on server stop', async () => {
-      const closeSpy = jest.spyOn(server.mongoClient, 'close')
-      await server.stop({ timeout: 0 })
+      const closeSpy = vi.spyOn(server.mongoClient, 'close')
+      await server?.stop({ timeout: 0 })
 
       expect(closeSpy).toHaveBeenCalledWith(true)
     })

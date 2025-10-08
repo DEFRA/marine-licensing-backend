@@ -1,26 +1,27 @@
+import { vi } from 'vitest'
 import { extractController } from './extract-controller.js'
 import { geoParser } from '../../../services/geo-parser/geo-parser.js'
 import { config } from '../../../config.js'
 import { StatusCodes } from 'http-status-codes'
 import Boom from '@hapi/boom'
 
-jest.mock('../../../services/geo-parser/geo-parser.js', () => ({
+vi.mock('../../../services/geo-parser/geo-parser.js', () => ({
   geoParser: {
-    extract: jest.fn()
+    extract: vi.fn()
   }
 }))
 
-jest.mock('../../../config.js', () => ({
+vi.mock('../../../config.js', () => ({
   config: {
-    get: jest.fn()
+    get: vi.fn()
   }
 }))
 
-jest.mock('../../../common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn()
+vi.mock('../../../common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn()
   }))
 }))
 
@@ -28,7 +29,6 @@ describe('Extract Controller', () => {
   const payloadValidator = extractController.options.validate.payload
 
   beforeEach(() => {
-    jest.clearAllMocks()
     config.get.mockReturnValue('mmo-uploads')
   })
 

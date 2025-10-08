@@ -1,10 +1,7 @@
 import { MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
 
-import { config } from '../../config.js'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
-
-const mongoConfig = config.get('mongo')
 
 export const addAuditFields = (request, h) => {
   const requestMethod = request.method.toUpperCase()
@@ -38,10 +35,9 @@ export const mongoDb = {
     register: async function (server, options) {
       server.logger.info('Setting up MongoDb')
 
-      const client = await MongoClient.connect(options.mongoUri, {
-        retryWrites: options.retryWrites,
-        readPreference: options.readPreference,
-        ...(server.secureContext && { secureContext: server.secureContext })
+      const client = await MongoClient.connect(options.mongoUrl, {
+        ...options.mongoOptions,
+        ...(server?.secureContext && { secureContext: server.secureContext })
       })
 
       const databaseName = options.databaseName
@@ -65,12 +61,6 @@ export const mongoDb = {
         await client.close(true)
       })
     }
-  },
-  options: {
-    mongoUri: mongoConfig.uri,
-    databaseName: mongoConfig.databaseName,
-    retryWrites: false,
-    readPreference: 'secondary'
   }
 }
 

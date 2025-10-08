@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateProjectNameController } from './update-project-name.js'
 
@@ -31,8 +32,8 @@ describe('PATCH /exemptions/public-register', () => {
       ...mockAuditPayload
     }
 
-    const mockUpdateOne = jest.fn().mockResolvedValueOnce({})
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    const mockUpdateOne = vi.fn().mockResolvedValueOnce({})
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
         updateOne: mockUpdateOne
       }
@@ -69,13 +70,13 @@ describe('PATCH /exemptions/public-register', () => {
 
     const mockError = 'Database failed'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
+        updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
-    expect(() =>
+    await expect(() =>
       updateProjectNameController.handler(
         {
           db: mockMongo,
@@ -92,13 +93,13 @@ describe('PATCH /exemptions/public-register', () => {
   it('should return a  404 if id is not correct', async () => {
     const { mockMongo, mockHandler } = global
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({ matchedCount: 0 })
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }
     })
 
-    expect(() =>
+    await expect(() =>
       updateProjectNameController.handler(
         {
           db: mockMongo,

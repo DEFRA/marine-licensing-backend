@@ -1,14 +1,14 @@
-import { createServer } from '../server'
-
 describe('Health Endpoint', () => {
   let server
   beforeAll(async () => {
+    // Dynamic import needed due to config being updated by vitest-mongodb
+    const { createServer } = await import('../server.js')
     server = await createServer()
     await server.initialize()
   })
 
   afterAll(async () => {
-    await server.stop({ timeout: 0 })
+    await server?.stop({ timeout: 0 })
   })
 
   test('GET /health returns success message', async () => {

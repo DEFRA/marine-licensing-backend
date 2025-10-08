@@ -1,4 +1,4 @@
-import { expect, jest } from '@jest/globals'
+import { expect, vi } from 'vitest'
 import * as dynamicsModule from './dynamics-processor.js'
 import { getDynamicsAccessToken } from './dynamics-client.js'
 
@@ -6,36 +6,36 @@ import { config } from '../../../config.js'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import Boom from '@hapi/boom'
 
-jest.mock('../../../config.js')
-jest.mock('./dynamics-client.js')
+vi.mock('../../../config.js')
+vi.mock('./dynamics-client.js')
 
 describe('Dynamics Processor', () => {
   let mockServer
   let mockDb
-  const mockGetDynamicsAccessToken = jest.mocked(getDynamicsAccessToken)
+  const mockGetDynamicsAccessToken = vi.mocked(getDynamicsAccessToken)
 
   const mockItem = { _id: 'abc123' }
 
-  jest.useFakeTimers()
+  vi.useFakeTimers()
 
   beforeEach(() => {
     mockGetDynamicsAccessToken.mockReturnValue('test_token')
 
     mockDb = {
-      collection: jest.fn().mockReturnValue({
-        find: jest.fn().mockReturnValue({
-          toArray: jest.fn().mockResolvedValue([])
+      collection: vi.fn().mockReturnValue({
+        find: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue([])
         }),
-        updateOne: jest.fn().mockResolvedValue({})
+        updateOne: vi.fn().mockResolvedValue({})
       })
     }
 
     mockServer = {
       app: {},
       logger: {
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn()
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn()
       },
       db: mockDb
     }
@@ -49,17 +49,16 @@ describe('Dynamics Processor', () => {
       tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
     })
 
-    jest.clearAllMocks()
-    jest.clearAllTimers()
+    vi.clearAllTimers()
   })
 
   describe('startExemptionsQueuePolling', () => {
     it('should start polling with the specified interval', () => {
       const intervalMs = 5000
-      const setIntervalSpy = jest.spyOn(global, 'setInterval')
+      const setIntervalSpy = vi.spyOn(global, 'setInterval')
 
       dynamicsModule.startExemptionsQueuePolling(mockServer, intervalMs)
-      jest.advanceTimersByTime(intervalMs)
+      vi.advanceTimersByTime(intervalMs)
 
       expect(setIntervalSpy).toHaveBeenCalledWith(
         expect.any(Function),
@@ -126,8 +125,8 @@ describe('Dynamics Processor', () => {
     })
 
     it('should move to dead letter queue if retries hit the maximum', async () => {
-      const insertOne = jest.fn().mockResolvedValue({})
-      const deleteOne = jest.fn().mockResolvedValue({})
+      const insertOne = vi.fn().mockResolvedValue({})
+      const deleteOne = vi.fn().mockResolvedValue({})
       mockServer.db.collection.mockImplementation((name) => {
         if (name === 'exemption-dynamics-queue') return { deleteOne }
         if (name === 'exemption-dynamics-queue-failed') return { insertOne }
@@ -161,7 +160,7 @@ describe('Dynamics Processor', () => {
       ]
 
       mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: jest.fn().mockResolvedValue(mockQueueItems)
+        toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
 
       mockServer.db.collection().updateOne.mockResolvedValue({})
@@ -194,7 +193,7 @@ describe('Dynamics Processor', () => {
         throw new Error('Database error')
       })
 
-      const boomSpy = jest.spyOn(Boom, 'badImplementation')
+      const boomSpy = vi.spyOn(Boom, 'badImplementation')
 
       await expect(
         dynamicsModule.processExemptionsQueue(mockServer)
@@ -212,7 +211,7 @@ describe('Dynamics Processor', () => {
       ]
 
       mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: jest.fn().mockResolvedValue(mockQueueItems)
+        toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
 
       mockServer.db
@@ -238,7 +237,7 @@ describe('Dynamics Processor', () => {
         { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 }
       ]
       mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: jest.fn().mockResolvedValue(mockQueueItems)
+        toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
 
       mockServer.db.collection().updateOne.mockResolvedValue({})

@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { ShapefileParser } from './shapefile-parser.js'
 import * as shapefile from 'shapefile'
 import { mkdtemp, rm, glob } from 'fs/promises'
@@ -6,39 +7,39 @@ import { join } from 'path'
 import AdmZip from 'adm-zip'
 import * as path from 'node:path'
 
-jest.mock('shapefile', () => ({
-  read: jest.fn()
+vi.mock('shapefile', () => ({
+  read: vi.fn()
 }))
 
-jest.mock('fs/promises', () => ({
-  mkdtemp: jest.fn(),
-  rm: jest.fn(),
-  glob: jest.fn()
+vi.mock('fs/promises', () => ({
+  mkdtemp: vi.fn(),
+  rm: vi.fn(),
+  glob: vi.fn()
 }))
 
-jest.mock('os', () => ({
-  tmpdir: jest.fn()
+vi.mock('os', () => ({
+  tmpdir: vi.fn()
 }))
 
-jest.mock('path', () => ({
-  join: jest.fn()
+vi.mock('path', () => ({
+  join: vi.fn()
 }))
 
-jest.mock('node:path', () => ({
-  join: jest.fn()
+vi.mock('node:path', () => ({
+  join: vi.fn()
 }))
 
-jest.mock('adm-zip', () => {
-  return jest.fn().mockImplementation(() => ({
-    getEntries: jest.fn(),
-    extractEntryTo: jest.fn()
+vi.mock('adm-zip', () => ({
+  default: vi.fn().mockImplementation(() => ({
+    getEntries: vi.fn(),
+    extractEntryTo: vi.fn()
   }))
-})
+}))
 
-jest.mock('../../common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    debug: jest.fn(),
-    error: jest.fn()
+vi.mock('../../common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(() => ({
+    debug: vi.fn(),
+    error: vi.fn()
   }))
 }))
 
@@ -48,8 +49,6 @@ describe('ShapefileParser', () => {
   let mockZipEntries
 
   beforeEach(() => {
-    jest.clearAllMocks()
-
     tmpdir.mockReturnValue('/tmp')
 
     join.mockImplementation((dir, file) => {
@@ -64,8 +63,8 @@ describe('ShapefileParser', () => {
 
     mockZipEntries = []
     mockAdmZip = {
-      getEntries: jest.fn(() => mockZipEntries),
-      extractEntryTo: jest.fn()
+      getEntries: vi.fn(() => mockZipEntries),
+      extractEntryTo: vi.fn()
     }
     AdmZip.mockImplementation(() => mockAdmZip)
 
@@ -295,7 +294,7 @@ describe('ShapefileParser', () => {
 
     beforeEach(() => {
       // Mock Array.fromAsync
-      global.Array.fromAsync = jest.fn()
+      global.Array.fromAsync = vi.fn()
     })
 
     it('should find shapefiles in directory', async () => {
@@ -501,19 +500,17 @@ describe('ShapefileParser', () => {
 
     beforeEach(() => {
       // Mock setImmediate to execute synchronously
-      global.setImmediate = jest.fn((cb) => cb())
+      global.setImmediate = vi.fn((cb) => cb())
 
       // Mock successful extraction
-      jest
-        .spyOn(shapefileParser, 'extractZip')
-        .mockResolvedValue('/tmp/extract-dir')
-      jest
-        .spyOn(shapefileParser, 'findShapefiles')
-        .mockResolvedValue(['/tmp/extract-dir/test.shp'])
-      jest
-        .spyOn(shapefileParser, 'parseShapefile')
-        .mockResolvedValue(mockGeoJSON)
-      jest.spyOn(shapefileParser, 'cleanupTempDirectory').mockResolvedValue()
+      vi.spyOn(shapefileParser, 'extractZip').mockResolvedValue(
+        '/tmp/extract-dir'
+      )
+      vi.spyOn(shapefileParser, 'findShapefiles').mockResolvedValue([
+        '/tmp/extract-dir/test.shp'
+      ])
+      vi.spyOn(shapefileParser, 'parseShapefile').mockResolvedValue(mockGeoJSON)
+      vi.spyOn(shapefileParser, 'cleanupTempDirectory').mockResolvedValue()
     })
 
     it('should successfully parse zip file with single shapefile', async () => {

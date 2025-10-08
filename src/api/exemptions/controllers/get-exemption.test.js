@@ -1,5 +1,5 @@
 import { getExemptionController } from './get-exemption'
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 
 describe('GET /exemption', () => {
   const paramsValidator = getExemptionController.options.validate.params
@@ -27,9 +27,9 @@ describe('GET /exemption', () => {
   it('should get exemption by id', async () => {
     const { mockMongo, mockHandler } = global
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest
+        findOne: vi
           .fn()
           .mockResolvedValue({ _id: mockId, projectName: 'Test project' })
       }
@@ -61,9 +61,9 @@ describe('GET /exemption', () => {
   it('should return 404 if ID does not exist', async () => {
     const { mockMongo, mockHandler } = global
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue(null)
+        findOne: vi.fn().mockResolvedValue(null)
       }
     })
 
@@ -84,13 +84,13 @@ describe('GET /exemption', () => {
 
     const mockError = 'Database failed'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
+        findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
-    expect(() =>
+    await expect(() =>
       getExemptionController.handler(
         {
           db: mockMongo,
@@ -109,9 +109,9 @@ describe('GET /exemption', () => {
     const { mockMongo, mockHandler } = global
     const userId = 'abc'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue({
+        findOne: vi.fn().mockResolvedValue({
           _id: mockId,
           projectName: 'Test project',
           contactId: userId
@@ -147,9 +147,9 @@ describe('GET /exemption', () => {
     const { mockMongo, mockHandler } = global
     const userId = 'abc'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue({
+        findOne: vi.fn().mockResolvedValue({
           _id: mockId,
           projectName: 'Test project',
           contactId: 'different-user-id'
@@ -175,9 +175,9 @@ describe('GET /exemption', () => {
   it("if there is no auth token, don't check ownership authorization", async () => {
     const { mockMongo, mockHandler } = global
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue({
+        findOne: vi.fn().mockResolvedValue({
           _id: mockId,
           projectName: 'Test project',
           contactId: 'different-user-id'

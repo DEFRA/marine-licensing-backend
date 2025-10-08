@@ -55,7 +55,10 @@ async function createServer() {
     requestTracing,
     secureContext,
     pulse,
-    mongoDb,
+    {
+      plugin: mongoDb,
+      options: config.get('mongo')
+    },
     hapiAuthJwt2,
     auth,
     router,
