@@ -5,10 +5,10 @@
   "main": "src/index.js",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.20.0"
   },
   "scripts": {
-    "docker:dev": "NODE_ENV=development npm run server:watch",
+    "docker:dev": "npm run dev",
     "dev": "NODE_ENV=development npm run server:watch",
     "dev:debug": "NODE_ENV=development npm run server:debug",
     "format": "prettier --write \"**/*.{cjs,js,json,md}\"",
