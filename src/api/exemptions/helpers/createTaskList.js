@@ -1,5 +1,8 @@
 import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../../common/constants/coordinates.js'
+
 export const COMPLETED = 'COMPLETED'
+export const IN_PROGRESS = 'IN_PROGRESS'
+export const INCOMPLETE = 'INCOMPLETE'
 
 const checkSiteDetailsCircle = (siteDetails) => {
   const requiredValues = [
@@ -11,7 +14,15 @@ const checkSiteDetailsCircle = (siteDetails) => {
   ]
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
-  return missingKeys.length === 0 ? COMPLETED : null
+  if (missingKeys.length === 0) {
+    return COMPLETED
+  }
+
+  if (missingKeys.length === requiredValues.length) {
+    return INCOMPLETE
+  }
+
+  return IN_PROGRESS
 }
 
 const checkSiteDetailsFileUpload = (siteDetails) => {
@@ -24,7 +35,15 @@ const checkSiteDetailsFileUpload = (siteDetails) => {
   ]
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
-  return missingKeys.length === 0 ? COMPLETED : null
+  if (missingKeys.length === 0) {
+    return COMPLETED
+  }
+
+  if (missingKeys.length === requiredValues.length) {
+    return INCOMPLETE
+  }
+
+  return IN_PROGRESS
 }
 
 const checkSiteDetailsMultiple = (siteDetails) => {
@@ -36,8 +55,12 @@ const checkSiteDetailsMultiple = (siteDetails) => {
   ]
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
+  if (missingKeys.length === requiredValues.length) {
+    return INCOMPLETE
+  }
+
   if (missingKeys.length > 0) {
-    return null
+    return IN_PROGRESS
   }
 
   // Validate coordinates array has at least 3 points (minimum for polygon)
@@ -46,7 +69,7 @@ const checkSiteDetailsMultiple = (siteDetails) => {
     !Array.isArray(coordinates) ||
     coordinates.length < MIN_POINTS_MULTIPLE_COORDINATES
   ) {
-    return null
+    return IN_PROGRESS
   }
 
   return COMPLETED
@@ -54,12 +77,14 @@ const checkSiteDetailsMultiple = (siteDetails) => {
 
 const checkSiteDetails = (siteDetails) => {
   if (!siteDetails || siteDetails.length === 0) {
-    return null
+    return INCOMPLETE
   }
+
+  let hasInProgress = false
 
   for (const site of siteDetails) {
     const { coordinatesEntry, coordinatesType } = site
-    let validationResult = null
+    let validationResult = INCOMPLETE
 
     if (coordinatesType === 'file') {
       validationResult = checkSiteDetailsFileUpload(site)
@@ -71,28 +96,32 @@ const checkSiteDetails = (siteDetails) => {
       validationResult = checkSiteDetailsMultiple(site)
     }
 
-    if (validationResult === null) {
-      return null
+    if (validationResult === INCOMPLETE) {
+      return INCOMPLETE
+    }
+
+    if (validationResult === IN_PROGRESS) {
+      hasInProgress = true
     }
   }
 
-  return COMPLETED
+  return hasInProgress ? IN_PROGRESS : COMPLETED
 }
 
 export const createTaskList = (exemption) => {
   const tasks = {
-    publicRegister: (value) => (value ? COMPLETED : null),
-    activityDates: (value) => (value ? COMPLETED : null),
-    projectName: (value) => (value ? COMPLETED : null),
+    publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
+    activityDates: (value) => (value ? COMPLETED : INCOMPLETE),
+    projectName: (value) => (value ? COMPLETED : INCOMPLETE),
     siteDetails: (value) => checkSiteDetails(value),
-    activityDescription: (value) => (value ? COMPLETED : null)
+    activityDescription: (value) => (value ? COMPLETED : INCOMPLETE)
   }
 
   const taskList = {}
 
   Object.entries(tasks).forEach(([taskName, decideStatus]) => {
     const status = decideStatus(exemption[taskName])
-    if (status) {
+    if (status && status !== INCOMPLETE) {
       taskList[taskName] = status
     }
   })
