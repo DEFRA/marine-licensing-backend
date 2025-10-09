@@ -2,6 +2,7 @@ import Wreck from '@hapi/wreck'
 import jwkToPem from 'jwk-to-pem'
 import { config } from '../config.js'
 import Boom from '@hapi/boom'
+import { createLogger } from '../common/helpers/logging/logger.js'
 
 export const getJwtAuthStrategy = (jwt) => {
   if (!jwt) {
@@ -16,11 +17,12 @@ export const getJwtAuthStrategy = (jwt) => {
 export const getKeys = async (token) => {
   const authStrategy = getJwtAuthStrategy(token)
   const { jwksUri } = config.get(authStrategy)
+  const logger = createLogger()
   try {
     const { payload } = await Wreck.get(jwksUri, { json: true })
     const { keys } = payload
     if (!keys?.length) {
-      console.error('No keys found in JWKS response')
+      logger.error('No keys found in JWKS response')
       return { key: null }
     }
     const pems = keys.map((key) => jwkToPem(key))
