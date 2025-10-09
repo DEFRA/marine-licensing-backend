@@ -1,87 +1,80 @@
-import { ShapefileParser } from './shapefile-parser.js'
-import * as shapefile from 'shapefile'
-import { mkdtemp, rm, glob } from 'fs/promises'
-import { tmpdir } from 'os'
-import { join } from 'path'
+import { expect, jest } from '@jest/globals'
+import { join } from 'node:path'
+import * as fs from 'node:fs/promises'
 import AdmZip from 'adm-zip'
-import * as path from 'node:path'
+import proj4 from 'proj4'
+import * as shapefile from 'shapefile'
 
-jest.mock('shapefile', () => ({
-  read: jest.fn()
-}))
+import {
+  ShapefileParser,
+  MAX_PROJECTION_FILE_SIZE_BYTES
+} from './shapefile-parser.js'
+import { createLogger } from '../../common/helpers/logging/logger.js'
 
-jest.mock('fs/promises', () => ({
-  mkdtemp: jest.fn(),
-  rm: jest.fn(),
-  glob: jest.fn()
-}))
-
-jest.mock('os', () => ({
-  tmpdir: jest.fn()
-}))
-
-jest.mock('path', () => ({
-  join: jest.fn()
-}))
-
-jest.mock('node:path', () => ({
-  join: jest.fn()
-}))
-
-jest.mock('adm-zip', () => {
-  return jest.fn().mockImplementation(() => ({
-    getEntries: jest.fn(),
-    extractEntryTo: jest.fn()
-  }))
+jest.mock('node:fs/promises')
+jest.mock('../../common/helpers/logging/logger.js', () => {
+  const logger = {
+    debug: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn()
+  }
+  return {
+    createLogger: jest.fn(() => logger)
+  }
 })
 
-jest.mock('../../common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    debug: jest.fn(),
-    error: jest.fn()
-  }))
-}))
+jest.mock('adm-zip')
+jest.mock('shapefile')
 
-describe('ShapefileParser', () => {
-  let shapefileParser
-  let mockAdmZip
-  let mockZipEntries
+const logger = createLogger()
 
+const pointFeature = {
+  type: 'Feature',
+  geometry: {
+    type: 'Point',
+    coordinates: [-0.1, 51.5]
+  },
+  properties: {}
+}
+
+const polygonFeature = {
+  type: 'Feature',
+  geometry: {
+    type: 'Polygon',
+    coordinates: [
+      [
+        [-0.1, 51.5],
+        [-0.2, 51.5],
+        [-0.2, 51.6],
+        [-0.1, 51.6],
+        [-0.1, 51.5]
+      ]
+    ]
+  },
+  properties: {}
+}
+
+async function* createAsyncIterable(array) {
+  yield* array
+}
+
+describe('ShapefileParser class', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-
-    tmpdir.mockReturnValue('/tmp')
-
-    join.mockImplementation((dir, file) => {
-      if (file === 'shapefile-') return '/tmp/shapefile-'
-      return `${dir}/${file}`
-    })
-    path.join.mockImplementation((dir, file) => `${dir}/${file}`)
-
-    mkdtemp.mockResolvedValue('/tmp/shapefile-test')
-
-    rm.mockResolvedValue()
-
-    mockZipEntries = []
-    mockAdmZip = {
-      getEntries: jest.fn(() => mockZipEntries),
-      extractEntryTo: jest.fn()
-    }
-    AdmZip.mockImplementation(() => mockAdmZip)
-
-    glob.mockResolvedValue([])
-
-    shapefileParser = new ShapefileParser()
   })
 
-  describe('Constructor', () => {
+  afterEach(() => {
+    jest.restoreAllMocks()
+  })
+
+  describe('constructor', () => {
     it('should initialize with default options', () => {
       const parser = new ShapefileParser()
 
       expect(parser.options).toEqual({
         maxFiles: 10_000,
         maxSize: 1_000_000_000,
-        thresholdRatio: 10
+        thresholdRatio: 100
       })
     })
 
@@ -91,9 +84,7 @@ describe('ShapefileParser', () => {
         maxSize: 500_000_000,
         thresholdRatio: 5
       }
-
       const parser = new ShapefileParser(customOptions)
-
       expect(parser.options).toEqual(customOptions)
     })
 
@@ -107,7 +98,7 @@ describe('ShapefileParser', () => {
       expect(parser.options).toEqual({
         maxFiles: 5_000,
         maxSize: 1_000_000_000,
-        thresholdRatio: 10
+        thresholdRatio: 100
       })
     })
   })
@@ -116,7 +107,6 @@ describe('ShapefileParser', () => {
     it('should return current safety options', () => {
       const parser = new ShapefileParser()
       const options = parser.getSafeOptions()
-
       expect(options).toEqual(parser.options)
       expect(options).not.toBe(parser.options) // Should be a copy
     })
@@ -129,44 +119,56 @@ describe('ShapefileParser', () => {
       }
       const parser = new ShapefileParser(customOptions)
       const options = parser.getSafeOptions()
-
       expect(options).toEqual(customOptions)
     })
   })
 
   describe('extractZip', () => {
     const zipPath = '/tmp/test.zip'
+    let sut
+    let mockAdmZip
+    const mockZipEntries = [
+      {
+        entryName: 'test.shp',
+        isDirectory: false,
+        getData: () => Buffer.alloc(1000),
+        header: { compressedSize: 500 }
+      },
+      {
+        entryName: 'test.shx',
+        isDirectory: false,
+        getData: () => Buffer.alloc(100),
+        header: { compressedSize: 50 }
+      },
+      {
+        entryName: 'test.dbf',
+        isDirectory: false,
+        getData: () => Buffer.alloc(200),
+        header: { compressedSize: 100 }
+      }
+    ]
 
     beforeEach(() => {
-      mockZipEntries = [
-        {
-          entryName: 'test.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(1000),
-          header: { compressedSize: 500 }
-        },
-        {
-          entryName: 'test.shx',
-          isDirectory: false,
-          getData: () => Buffer.alloc(100),
-          header: { compressedSize: 50 }
-        },
-        {
-          entryName: 'test.dbf',
-          isDirectory: false,
-          getData: () => Buffer.alloc(200),
-          header: { compressedSize: 100 }
-        }
-      ]
-      mockAdmZip.getEntries.mockReturnValue(mockZipEntries)
+      mockAdmZip = {
+        getEntries: jest.fn().mockReturnValue(mockZipEntries),
+        extractEntryTo: jest.fn()
+      }
+      AdmZip.mockImplementation(() => mockAdmZip)
+      fs.mkdtemp.mockResolvedValue('/tmp/mock-dir-123')
+      sut = new ShapefileParser()
+    })
+
+    it('should construct a new Adm-Zip instance', async () => {
+      await sut.extractZip(zipPath)
+      expect(AdmZip).toHaveBeenCalledTimes(1)
     })
 
     it('should successfully extract zip file', async () => {
-      const result = await shapefileParser.extractZip(zipPath)
-
-      expect(result).toBe('/tmp/shapefile-test')
-      expect(mkdtemp).toHaveBeenCalledWith('/tmp/shapefile-')
-      expect(AdmZip).toHaveBeenCalledWith(zipPath)
+      const result = await sut.extractZip(zipPath)
+      expect(result).toBe('/tmp/mock-dir-123')
+      expect(fs.mkdtemp).toHaveBeenCalledWith(
+        expect.stringMatching(/shapefile-$/)
+      )
       expect(mockAdmZip.getEntries).toHaveBeenCalled()
       expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(3)
     })
@@ -178,9 +180,7 @@ describe('ShapefileParser', () => {
         getData: () => Buffer.alloc(0),
         header: { compressedSize: 0 }
       })
-
-      await shapefileParser.extractZip(zipPath)
-
+      await sut.extractZip(zipPath)
       expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(3) // Still only 3 files
     })
 
@@ -193,7 +193,7 @@ describe('ShapefileParser', () => {
       })
       mockAdmZip.getEntries.mockReturnValue(manyEntries)
 
-      await expect(shapefileParser.extractZip(zipPath)).rejects.toThrow(
+      await expect(sut.extractZip(zipPath)).rejects.toThrow(
         'Reached max number of files'
       )
     })
@@ -209,9 +209,7 @@ describe('ShapefileParser', () => {
       ]
       mockAdmZip.getEntries.mockReturnValue(largeEntries)
 
-      await expect(shapefileParser.extractZip(zipPath)).rejects.toThrow(
-        'Reached max size'
-      )
+      await expect(sut.extractZip(zipPath)).rejects.toThrow('Reached max size')
     })
 
     it('should throw error when exceeding compression ratio limit', async () => {
@@ -219,13 +217,12 @@ describe('ShapefileParser', () => {
         {
           entryName: 'suspicious.shp',
           isDirectory: false,
-          getData: () => Buffer.alloc(1000),
-          header: { compressedSize: 50 } // 20:1 ratio > 10:1 threshold
+          getData: () => Buffer.alloc(99_999),
+          header: { compressedSize: 909 } // 110 compression ration > 100
         }
       ]
       mockAdmZip.getEntries.mockReturnValue(suspiciousEntries)
-
-      await expect(shapefileParser.extractZip(zipPath)).rejects.toThrow(
+      await expect(sut.extractZip(zipPath)).rejects.toThrow(
         'Reached max compression ratio'
       )
     })
@@ -234,36 +231,25 @@ describe('ShapefileParser', () => {
       AdmZip.mockImplementation(() => {
         throw new Error('Invalid zip file')
       })
-
-      await expect(shapefileParser.extractZip(zipPath)).rejects.toThrow(
-        'Invalid zip file'
-      )
+      await expect(sut.extractZip(zipPath)).rejects.toThrow('Invalid zip file')
     })
 
     it('should handle mkdtemp errors', async () => {
-      mkdtemp.mockRejectedValue(new Error('Permission denied'))
-
-      await expect(shapefileParser.extractZip(zipPath)).rejects.toThrow(
-        'Permission denied'
-      )
+      fs.mkdtemp.mockRejectedValue(new Error('Permission denied'))
+      await expect(sut.extractZip(zipPath)).rejects.toThrow('Permission denied')
     })
 
     it('should handle extraction errors', async () => {
       mockAdmZip.extractEntryTo.mockImplementation(() => {
         throw new Error('Extraction failed')
       })
-
-      await expect(shapefileParser.extractZip(zipPath)).rejects.toThrow(
-        'Extraction failed'
-      )
+      await expect(sut.extractZip(zipPath)).rejects.toThrow('Extraction failed')
     })
 
     it('should handle empty zip file', async () => {
       mockAdmZip.getEntries.mockReturnValue([])
-
-      const result = await shapefileParser.extractZip(zipPath)
-
-      expect(result).toBe('/tmp/shapefile-test')
+      const result = await sut.extractZip(zipPath)
+      expect(result).toBe('/tmp/mock-dir-123')
       expect(mockAdmZip.extractEntryTo).not.toHaveBeenCalled()
     })
 
@@ -283,479 +269,455 @@ describe('ShapefileParser', () => {
         }
       ]
       mockAdmZip.getEntries.mockReturnValue(mixedEntries)
-
-      await shapefileParser.extractZip(zipPath)
-
+      await sut.extractZip(zipPath)
       expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('findShapefiles', () => {
-    const directory = '/tmp/shapefile-test'
+    const directory = '/tmp/mock-dir-234'
+    let sut
+    const mockFiles = ['mock.shp', 'mock.prj', 'mock.dbf']
 
     beforeEach(() => {
-      // Mock Array.fromAsync
-      global.Array.fromAsync = jest.fn()
+      fs.glob.mockImplementation(() => createAsyncIterable(mockFiles))
+      sut = new ShapefileParser()
     })
 
-    it('should find shapefiles in directory', async () => {
-      const mockFiles = ['test.shp', 'subfolder/another.shp']
-      Array.fromAsync.mockResolvedValue(mockFiles)
-      path.join.mockImplementation((dir, file) => `${dir}/${file}`)
-
-      const result = await shapefileParser.findShapefiles(directory)
-
+    it('calls glob look for *.shp files', async () => {
+      const result = await sut.findShapefiles(directory)
       expect(result).toEqual([
-        '/tmp/shapefile-test/test.shp',
-        '/tmp/shapefile-test/subfolder/another.shp'
+        '/tmp/mock-dir-234/mock.shp',
+        '/tmp/mock-dir-234/mock.prj',
+        '/tmp/mock-dir-234/mock.dbf'
       ])
-      expect(glob).toHaveBeenCalledWith('**/*.[sS][hH][pP]', { cwd: directory })
-      expect(Array.fromAsync).toHaveBeenCalledTimes(1)
-    })
-
-    it('should handle case-insensitive search', async () => {
-      const mockFiles = ['TEST.SHP', 'lower.shp', 'Mixed.Shp']
-      Array.fromAsync.mockResolvedValue(mockFiles)
-      path.join.mockImplementation((dir, file) => `${dir}/${file}`)
-
-      const result = await shapefileParser.findShapefiles(directory)
-
-      expect(result).toHaveLength(3)
-      expect(result).toEqual([
-        '/tmp/shapefile-test/TEST.SHP',
-        '/tmp/shapefile-test/lower.shp',
-        '/tmp/shapefile-test/Mixed.Shp'
-      ])
+      expect(fs.glob).toHaveBeenCalledWith('**/*.[sS][hH][pP]', {
+        cwd: directory
+      })
     })
 
     it('should return empty array when no shapefiles found', async () => {
-      Array.fromAsync.mockResolvedValue([])
-
-      const result = await shapefileParser.findShapefiles(directory)
-
+      fs.glob.mockImplementation(() => createAsyncIterable([]))
+      const result = await sut.findShapefiles(directory)
       expect(result).toEqual([])
     })
 
     it('should handle glob errors', async () => {
-      Array.fromAsync.mockRejectedValue(new Error('Glob error'))
-
-      const result = await shapefileParser.findShapefiles(directory)
-
+      fs.glob.mockImplementation(() => {
+        throw new Error('Glob error')
+      })
+      const result = await sut.findShapefiles(directory)
       expect(result).toEqual([])
     })
+  })
 
-    it('should handle nested directories', async () => {
-      const mockFiles = [
-        'level1/level2/test.shp',
-        'level1/another.shp',
-        'root.shp'
-      ]
-      Array.fromAsync.mockResolvedValue(mockFiles)
-      path.join.mockImplementation((dir, file) => `${dir}/${file}`)
+  describe('transformCoordinates', () => {
+    const crsOsgb34 =
+      'PROJCS["British_National_Grid",GEOGCS["GCS_OSGB_1936",DATUM["D_OSGB_1936",SPHEROID["Airy_1830",6377563.396,299.3249646]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",400000.0],PARAMETER["False_Northing",-100000.0],PARAMETER["Central_Meridian",-2.0],PARAMETER["Scale_Factor",0.9996012717],PARAMETER["Latitude_Of_Origin",49.0],UNIT["Meter",1.0]]'
+    const crsWgs84 =
+      'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]'
+    const targetCRS = 'EPSG:4326'
+    let sut
 
-      const result = await shapefileParser.findShapefiles(directory)
-
-      expect(result).toHaveLength(3)
-      expect(result).toContain('/tmp/shapefile-test/level1/level2/test.shp')
+    beforeEach(() => {
+      sut = new ShapefileParser()
     })
 
-    it('should handle directory with special characters', async () => {
-      const specialDir = '/tmp/test-dir with spaces'
-      const mockFiles = ['test.shp']
-      Array.fromAsync.mockResolvedValue(mockFiles)
-      path.join.mockImplementation((dir, file) => `${dir}/${file}`)
+    it('transforms OSGB34 to WGS84 CRS', () => {
+      const transformer = proj4(crsOsgb34, targetCRS)
+      const coords = [513967, 476895]
+      sut.transformCoordinates(coords, transformer)
+      expect(coords[0]).toBe(-0.25548579983960573)
+      expect(coords[1]).toBe(54.17519536505793)
+    })
 
-      const result = await shapefileParser.findShapefiles(specialDir)
+    it('no-ops WGS84 sources', () => {
+      const transformer = proj4(crsWgs84, targetCRS)
+      const coords = [-0.255485, 54.175195]
+      sut.transformCoordinates(coords, transformer)
+      expect(coords[0]).toBe(-0.255485)
+      expect(coords[1]).toBe(54.175195)
+    })
 
-      expect(result).toEqual(['/tmp/test-dir with spaces/test.shp'])
+    it('short circuits when no coordinates are given', async () => {
+      const transformer = proj4(crsOsgb34, targetCRS)
+      const coords = null
+      sut.transformCoordinates(coords, transformer)
+      expect(coords).toBe(null)
+    })
+
+    it('short circuits when coordinates are not an array', async () => {
+      const transformer = proj4(crsOsgb34, targetCRS)
+      const coords = {}
+      sut.transformCoordinates(coords, transformer)
+      expect(coords).toStrictEqual({})
+    })
+
+    it('short circuits when coordinates are an empty array', async () => {
+      const transformer = proj4(crsOsgb34, targetCRS)
+      const coords = []
+      sut.transformCoordinates(coords, transformer)
+      expect(coords).toStrictEqual([])
+    })
+
+    it('transforms nested coordinates', async () => {
+      const transformer = proj4(crsOsgb34, targetCRS)
+      const coords = [
+        [513967, 476895],
+        [514040, 476693],
+        [514193, 476835]
+      ]
+      sut.transformCoordinates(coords, transformer)
+      expect(coords).toStrictEqual([
+        [-0.25548579983960573, 54.17519536505793],
+        [-0.25444440662018697, 54.17336455859773],
+        [-0.2520479149715545, 54.17460619526199]
+      ])
+    })
+
+    it('ignores infinities', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY]
+        }
+      }
+      const coords = [1, 2]
+      sut.transformCoordinates(coords, mockTransformer)
+      expect(coords[0]).toBe(1) // untouched by infinity
+      expect(coords[1]).toBe(2)
+    })
+
+    it('no-ops when there are not enough coordinates to transform', () => {
+      const transformer = proj4(crsWgs84, targetCRS)
+      const coords = [-0.255485] // missing a coordinate
+      sut.transformCoordinates(coords, transformer)
+      expect(coords[0]).toBe(-0.255485)
+      expect(coords[1]).toBeUndefined()
+    })
+
+    it('throws an error if the transformed longitude coordinates are less than -180', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [-181, 0]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid longitude received: -181 from proj4 transformation'
+      )
+    })
+
+    it('throws an error if the transformed longitude coordinates are greater than 180', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [181, 0]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid longitude received: 181 from proj4 transformation'
+      )
+    })
+
+    it('throws an error if the transformed latitude coordinates are less than 90', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [0, -90.01]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid latitude received: -90.01 from proj4 transformation'
+      )
+    })
+
+    it('throws an error if the transformed latitude coordinates are greater than 90', () => {
+      const mockTransformer = {
+        forward: () => {
+          return [0, 90.01]
+        }
+      }
+      const coords = [1, 2]
+      expect(() => sut.transformCoordinates(coords, mockTransformer)).toThrow(
+        'Invalid latitude received: 90.01 from proj4 transformation'
+      )
     })
   })
 
   describe('parseShapefile', () => {
-    const shpPath = '/tmp/test.shp'
+    const shpPath = '/tmp/mock-dir-345/test.shp'
     const mockGeoJSON = {
       type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [-0.1, 51.5]
-          },
-          properties: {
-            name: 'Test Point'
-          }
-        }
-      ]
+      features: [pointFeature]
     }
+    let sut
+    const nullTransformer = null
+    const mockRealTransformer = 'mocked'
 
     beforeEach(() => {
-      shapefile.read.mockResolvedValue(mockGeoJSON)
+      const mockRead = jest
+        .fn()
+        .mockResolvedValueOnce({ done: false, value: pointFeature })
+        .mockResolvedValueOnce({ done: true, value: undefined })
+
+      shapefile.open.mockResolvedValue({
+        read: mockRead
+      })
+      sut = new ShapefileParser()
     })
 
-    it('should successfully parse shapefile', async () => {
-      const result = await shapefileParser.parseShapefile(shpPath)
-
+    it('should successfully parse a valid shapefile', async () => {
+      const result = await sut.parseShapefile(shpPath, nullTransformer)
       expect(result).toEqual(mockGeoJSON)
-      expect(shapefile.read).toHaveBeenCalledWith(shpPath)
+      expect(shapefile.open).toHaveBeenCalledWith(shpPath)
     })
 
-    it('should handle shapefile parsing errors', async () => {
-      const error = new Error('Invalid shapefile')
-      shapefile.read.mockRejectedValue(error)
+    it('should transform the coordinated if a real transformer is given', async () => {
+      jest.spyOn(sut, 'transformCoordinates').mockResolvedValue(pointFeature)
+      const result = await sut.parseShapefile(shpPath, mockRealTransformer)
+      expect(sut.transformCoordinates).toHaveBeenCalledTimes(1)
+      expect(result).toEqual(mockGeoJSON)
+    })
 
-      await expect(shapefileParser.parseShapefile(shpPath)).rejects.toThrow(
+    it('should parse multiple features in the shapefile', async () => {
+      const multipleMockRead = jest
+        .fn()
+        .mockResolvedValueOnce({ done: false, value: pointFeature })
+        .mockResolvedValueOnce({ done: false, value: polygonFeature })
+        .mockResolvedValueOnce({ done: true, value: undefined })
+
+      shapefile.open.mockResolvedValue({
+        read: multipleMockRead
+      })
+      const result = await sut.parseShapefile(shpPath, null)
+      expect(result.features).toHaveLength(2)
+    })
+
+    it('should throw shapefile parsing errors', async () => {
+      const error = new Error('Invalid shapefile')
+      shapefile.open.mockRejectedValue(error)
+      await expect(sut.parseShapefile(shpPath)).rejects.toThrow(
         'Invalid shapefile'
       )
     })
+  })
 
-    it('should handle empty shapefile', async () => {
-      const emptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: []
-      }
-      shapefile.read.mockResolvedValue(emptyGeoJSON)
+  describe('findProjectionFile', () => {
+    const directory = '/tmp/mock-dir-567'
+    let sut
+    const mockFiles = ['mock.prj']
+    const basename = 'mock'
 
-      const result = await shapefileParser.parseShapefile(shpPath)
-
-      expect(result).toEqual(emptyGeoJSON)
+    beforeEach(() => {
+      fs.glob.mockImplementation(() => createAsyncIterable(mockFiles))
+      sut = new ShapefileParser()
     })
 
-    it('should handle large shapefile', async () => {
-      const largeGeoJSON = {
-        type: 'FeatureCollection',
-        features: Array(1000).fill({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [-0.1, 51.5]
-          },
-          properties: {
-            name: 'Point'
-          }
-        })
-      }
-      shapefile.read.mockResolvedValue(largeGeoJSON)
-
-      const result = await shapefileParser.parseShapefile(shpPath)
-
-      expect(result).toEqual(largeGeoJSON)
-      expect(result.features).toHaveLength(1000)
+    it('returns null if basename is not provided', async () => {
+      const result = await sut.findProjectionFile(directory)
+      expect(result).toBeNull()
     })
 
-    it('should handle different geometry types', async () => {
-      const mixedGeoJSON = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [-0.1, 51.5]
-            },
-            properties: {}
-          },
-          {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [-0.1, 51.5],
-                  [-0.2, 51.5],
-                  [-0.2, 51.6],
-                  [-0.1, 51.6],
-                  [-0.1, 51.5]
-                ]
-              ]
-            },
-            properties: {}
-          }
-        ]
-      }
-      shapefile.read.mockResolvedValue(mixedGeoJSON)
+    it('calls glob look for *.prj files', async () => {
+      const result = await sut.findProjectionFile(directory, basename)
+      expect(result).toEqual('/tmp/mock-dir-567/mock.prj')
+      expect(fs.glob).toHaveBeenCalledWith('**/mock.[pP][rR][jJ]', {
+        cwd: directory
+      })
+    })
 
-      const result = await shapefileParser.parseShapefile(shpPath)
+    it('should return null when no *.prj found', async () => {
+      fs.glob.mockImplementationOnce(() => createAsyncIterable([]))
+      const result = await sut.findProjectionFile(directory, 'proj-not-found')
+      expect(result).toBeNull()
+    })
 
-      expect(result).toEqual(mixedGeoJSON)
-      expect(result.features[0].geometry.type).toBe('Point')
-      expect(result.features[1].geometry.type).toBe('Polygon')
+    it('should handle glob errors', async () => {
+      fs.glob.mockImplementation(() => {
+        throw new Error('Glob error')
+      })
+      const result = await sut.findProjectionFile(directory, 'mock')
+      expect(result).toBe(null)
+    })
+
+    it('returns the first projection file if there is more than one', async () => {
+      const mockMultipleFiles = ['project1.prj', 'project1.PRJ']
+      fs.glob.mockImplementation(() => createAsyncIterable(mockMultipleFiles))
+      const result = await sut.findProjectionFile(directory, 'project1')
+      expect(result).toBe('/tmp/mock-dir-567/project1.prj')
+    })
+  })
+
+  describe('readProjectionFile', () => {
+    let sut
+    const directory = '/tmp/mock-dir-789'
+    const mockPrjFileContent = 'MOCK:PROJFILE'
+    beforeEach(() => {
+      fs.stat.mockResolvedValue({
+        size: 100
+      })
+      fs.readFile.mockResolvedValue(mockPrjFileContent)
+      sut = new ShapefileParser()
+      jest
+        .spyOn(sut, 'findProjectionFile')
+        .mockResolvedValue(`${directory}/project1.prj`)
+    })
+
+    it('calls findProjectionFile to find the path to the projection file', async () => {
+      const result = await sut.readProjectionFile(
+        '/tmp/mock-dir-789/project.prj'
+      )
+      expect(result).toEqual(mockPrjFileContent)
+    })
+
+    it('returns null when the proj file is not found in the given directory', async () => {
+      jest.spyOn(sut, 'findProjectionFile').mockResolvedValue(null)
+      const result = await sut.readProjectionFile(directory)
+      expect(result).toBeNull()
+    })
+
+    it('returns null if the content of the proj file is is too large to read', async () => {
+      fs.stat.mockResolvedValue({
+        size: MAX_PROJECTION_FILE_SIZE_BYTES + 1
+      })
+      const result = await sut.readProjectionFile(directory)
+      expect(result).toBeNull()
+    })
+
+    it('reads the proj file if it is exactly at the max size', async () => {
+      fs.stat.mockResolvedValue({
+        size: MAX_PROJECTION_FILE_SIZE_BYTES
+      })
+      const result = await sut.readProjectionFile(directory)
+      expect(result).toBe(mockPrjFileContent)
+    })
+  })
+
+  describe('createTransformer', () => {
+    let sut
+    const crsOsgb34 =
+      'PROJCS["British_National_Grid",GEOGCS["GCS_OSGB_1936",DATUM["D_OSGB_1936",SPHEROID["Airy_1830",6377563.396,299.3249646]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",400000.0],PARAMETER["False_Northing",-100000.0],PARAMETER["Central_Meridian",-2.0],PARAMETER["Scale_Factor",0.9996012717],PARAMETER["Latitude_Of_Origin",49.0],UNIT["Meter",1.0]]'
+    beforeEach(() => {
+      sut = new ShapefileParser()
+    })
+
+    it('returns null if the CRS WKT content was null', () => {
+      expect(sut.createTransformer(null)).toBeNull()
+    })
+
+    it('creates a transformer with target CRS as WGS84', () => {
+      const transformer = sut.createTransformer(crsOsgb34)
+      expect(transformer).not.toBeNull()
+      expect(transformer).toHaveProperty('forward')
+      expect(transformer).toHaveProperty('inverse')
+      const testCoord = [513967, 476895]
+      const result = transformer.forward(testCoord)
+      expect(result[0]).toBeCloseTo(-0.255, 2)
+      expect(result[1]).toBeCloseTo(54.175, 2)
+    })
+
+    it('returns null if the proj4 call errors out', () => {
+      const invalidCRS = 'INVALID_CRS_STRING'
+      const result = sut.createTransformer(invalidCRS)
+      expect(result).toBeNull()
+      expect(logger.error).toHaveBeenCalled()
     })
   })
 
   describe('parseFile', () => {
     const filename = '/tmp/test.zip'
-    const mockGeoJSON = {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [-0.1, 51.5]
-          },
-          properties: {}
-        }
-      ]
-    }
+
+    const mockTmpDir = '/tmp/mock-extract-dir'
+    const mockShapefileA = join(mockTmpDir, 'project-a-name.shp')
+    const mockShapefileB = join(mockTmpDir, 'project-b-name.shp')
+    let sut
 
     beforeEach(() => {
-      // Mock setImmediate to execute synchronously
-      global.setImmediate = jest.fn((cb) => cb())
-
-      // Mock successful extraction
-      jest
-        .spyOn(shapefileParser, 'extractZip')
-        .mockResolvedValue('/tmp/extract-dir')
-      jest
-        .spyOn(shapefileParser, 'findShapefiles')
-        .mockResolvedValue(['/tmp/extract-dir/test.shp'])
-      jest
-        .spyOn(shapefileParser, 'parseShapefile')
-        .mockResolvedValue(mockGeoJSON)
-      jest.spyOn(shapefileParser, 'cleanupTempDirectory').mockResolvedValue()
-    })
-
-    it('should successfully parse zip file with single shapefile', async () => {
-      const result = await shapefileParser.parseFile(filename)
-
-      expect(result).toEqual(mockGeoJSON)
-      expect(shapefileParser.extractZip).toHaveBeenCalledWith(filename)
-      expect(shapefileParser.findShapefiles).toHaveBeenCalledWith(
-        '/tmp/extract-dir'
-      )
-      expect(shapefileParser.parseShapefile).toHaveBeenCalledWith(
-        '/tmp/extract-dir/test.shp'
-      )
-      expect(shapefileParser.cleanupTempDirectory).toHaveBeenCalledWith(
-        '/tmp/extract-dir'
-      )
-    })
-
-    it('should successfully parse zip file with multiple shapefiles', async () => {
-      const shapefilePaths = [
-        '/tmp/extract-dir/test1.shp',
-        '/tmp/extract-dir/test2.shp'
-      ]
-      const geoJSON1 = {
+      const wsg84Projection = 'MOCK:WSG84:CRS'
+      sut = new ShapefileParser()
+      jest.spyOn(sut, 'extractZip').mockResolvedValue(mockTmpDir)
+      jest.spyOn(sut, 'findShapefiles').mockResolvedValue([mockShapefileA])
+      jest.spyOn(sut, 'readProjectionFile').mockResolvedValue(wsg84Projection)
+      jest.spyOn(sut, 'createTransformer').mockReturnValue(null)
+      jest.spyOn(sut, 'parseShapefile').mockResolvedValue({
         type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [-0.1, 51.5] },
-            properties: { name: 'Point 1' }
-          }
-        ]
-      }
-      const geoJSON2 = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [-0.2, 51.6] },
-            properties: { name: 'Point 2' }
-          }
-        ]
-      }
-
-      shapefileParser.findShapefiles.mockResolvedValue(shapefilePaths)
-      shapefileParser.parseShapefile
-        .mockResolvedValueOnce(geoJSON1)
-        .mockResolvedValueOnce(geoJSON2)
-
-      const result = await shapefileParser.parseFile(filename)
-
-      expect(result).toEqual({
-        type: 'FeatureCollection',
-        features: [...geoJSON1.features, ...geoJSON2.features]
+        features: [pointFeature]
       })
-      expect(shapefileParser.parseShapefile).toHaveBeenCalledTimes(2)
+      jest.spyOn(sut, 'cleanupTempDirectory').mockResolvedValue()
     })
 
-    it('should throw error when no shapefiles found', async () => {
-      shapefileParser.findShapefiles.mockResolvedValue([])
-
-      await expect(shapefileParser.parseFile(filename)).rejects.toThrow(
-        'No shapefiles found in zip archive'
-      )
+    it('should decompress the zip file', async () => {
+      await sut.parseFile(filename)
+      expect(sut.extractZip).toHaveBeenCalledTimes(1)
     })
 
-    it('should handle extraction errors', async () => {
-      shapefileParser.extractZip.mockRejectedValue(
-        new Error('Extraction failed')
-      )
-
-      await expect(shapefileParser.parseFile(filename)).rejects.toThrow(
-        'Failed to parse shapefile: Extraction failed'
-      )
-    })
-
-    it('should handle shapefile parsing errors', async () => {
-      shapefileParser.parseShapefile.mockRejectedValue(
-        new Error('Parse failed')
-      )
-
-      await expect(shapefileParser.parseFile(filename)).rejects.toThrow(
-        'Failed to parse shapefile: Parse failed'
-      )
-    })
-
-    it('should cleanup temp directory even on error', async () => {
-      shapefileParser.parseShapefile.mockRejectedValue(
-        new Error('Parse failed')
-      )
-
-      await expect(shapefileParser.parseFile(filename)).rejects.toThrow()
-
-      expect(shapefileParser.cleanupTempDirectory).toHaveBeenCalledWith(
-        '/tmp/extract-dir'
-      )
-    })
-
-    it('should handle empty shapefiles', async () => {
-      const emptyGeoJSON = {
+    it('it assembles all features into a feature collection', async () => {
+      jest.spyOn(sut, 'parseShapefile').mockResolvedValue({
         type: 'FeatureCollection',
-        features: []
-      }
-      shapefileParser.parseShapefile.mockResolvedValue(emptyGeoJSON)
-
-      const result = await shapefileParser.parseFile(filename)
-
-      expect(result).toEqual({
-        type: 'FeatureCollection',
-        features: []
+        features: [pointFeature, polygonFeature]
       })
+      const result = await sut.parseFile(filename)
+      expect(result.type).toBe('FeatureCollection')
+      expect(result.features.length).toBe(2)
+      expect(result.features[0]).toEqual(pointFeature)
+      expect(result.features[1]).toEqual(polygonFeature)
     })
 
-    it('should handle mixed empty and non-empty shapefiles', async () => {
-      const shapefilePaths = [
-        '/tmp/extract-dir/empty.shp',
-        '/tmp/extract-dir/nonempty.shp'
-      ]
-      const emptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: []
-      }
-      const nonEmptyGeoJSON = {
-        type: 'FeatureCollection',
-        features: [
-          {
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [-0.1, 51.5] },
-            properties: {}
-          }
-        ]
-      }
+    it('edge case: it should find multiple shapefiles', async () => {
+      jest
+        .spyOn(sut, 'findShapefiles')
+        .mockResolvedValue([mockShapefileA, mockShapefileB])
+      await sut.parseFile(filename)
+      expect(sut.parseShapefile).toHaveBeenCalledTimes(2)
+    })
 
-      shapefileParser.findShapefiles.mockResolvedValue(shapefilePaths)
-      shapefileParser.parseShapefile
-        .mockResolvedValueOnce(emptyGeoJSON)
-        .mockResolvedValueOnce(nonEmptyGeoJSON)
+    it('throws an error if no shapefile was found', async () => {
+      jest.spyOn(sut, 'findShapefiles').mockResolvedValue([])
+      await expect(sut.parseFile(filename)).rejects.toThrow(
+        'Failed to parse shapefile: No shapefiles found in zip archive'
+      )
+    })
 
-      const result = await shapefileParser.parseFile(filename)
-
-      expect(result).toEqual(nonEmptyGeoJSON)
+    it('it cleans up the zip extract directory', async () => {
+      await sut.parseFile(filename)
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(sut.cleanupTempDirectory).toHaveBeenCalledTimes(1)
+      expect(sut.cleanupTempDirectory).toHaveBeenCalledWith(mockTmpDir)
     })
   })
 
   describe('cleanupTempDirectory', () => {
-    const tempDir = '/tmp/test-dir'
+    let sut
 
-    it('should successfully cleanup temp directory', async () => {
-      await shapefileParser.cleanupTempDirectory(tempDir)
-
-      expect(rm).toHaveBeenCalledWith(tempDir, { recursive: true, force: true })
+    beforeEach(() => {
+      sut = new ShapefileParser()
     })
 
-    it('should handle cleanup errors gracefully', async () => {
-      rm.mockRejectedValue(new Error('Permission denied'))
-
-      await expect(
-        shapefileParser.cleanupTempDirectory(tempDir)
-      ).resolves.not.toThrow()
-
-      expect(rm).toHaveBeenCalledWith(tempDir, { recursive: true, force: true })
-    })
-
-    it('should handle non-existent directory', async () => {
-      const error = new Error('Directory not found')
-      error.code = 'ENOENT'
-      rm.mockRejectedValue(error)
-
-      await expect(
-        shapefileParser.cleanupTempDirectory(tempDir)
-      ).resolves.not.toThrow()
-
-      expect(rm).toHaveBeenCalledWith(tempDir, { recursive: true, force: true })
-    })
-  })
-
-  describe('Security features', () => {
-    it('should prevent zip bomb attacks', async () => {
-      const suspiciousEntries = [
-        {
-          entryName: 'bomb.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(1_000_000), // 1MB uncompressed
-          header: { compressedSize: 1000 } // 1KB compressed = 1000:1 ratio
-        }
-      ]
-      mockAdmZip.getEntries.mockReturnValue(suspiciousEntries)
-
-      await expect(shapefileParser.extractZip('/tmp/test.zip')).rejects.toThrow(
-        'Reached max compression ratio'
-      )
-    })
-
-    it('should prevent directory traversal attacks', async () => {
-      const maliciousEntries = [
-        {
-          entryName: '../../../etc/passwd',
-          isDirectory: false,
-          getData: () => Buffer.alloc(100),
-          header: { compressedSize: 50 }
-        }
-      ]
-      mockAdmZip.getEntries.mockReturnValue(maliciousEntries)
-
-      await shapefileParser.extractZip('/tmp/test.zip')
-
-      expect(mockAdmZip.extractEntryTo).toHaveBeenCalledWith(
-        '../../../etc/passwd',
-        '/tmp/shapefile-test'
-      )
-    })
-
-    it('should limit number of files extracted', async () => {
-      const restrictiveParser = new ShapefileParser({ maxFiles: 2 })
-      const manyEntries = Array(3).fill({
-        entryName: 'test.shp',
-        isDirectory: false,
-        getData: () => Buffer.alloc(100),
-        header: { compressedSize: 50 }
+    it('should call rm to remove the directory', async () => {
+      const tempDir = '/tmp/mock-dir'
+      await sut.cleanupTempDirectory(tempDir)
+      expect(fs.rm).toHaveBeenCalledTimes(1)
+      expect(fs.rm).toHaveBeenCalledWith(tempDir, {
+        recursive: true,
+        force: true
       })
-      mockAdmZip.getEntries.mockReturnValue(manyEntries)
-
-      await expect(
-        restrictiveParser.extractZip('/tmp/test.zip')
-      ).rejects.toThrow('Reached max number of files')
     })
 
-    it('should limit total extracted size', async () => {
-      const restrictiveParser = new ShapefileParser({ maxSize: 1000 })
-      const largeEntries = [
-        {
-          entryName: 'large.shp',
-          isDirectory: false,
-          getData: () => Buffer.alloc(2000),
-          header: { compressedSize: 1000 }
-        }
-      ]
-      mockAdmZip.getEntries.mockReturnValue(largeEntries)
-
+    it('should not throw when cleanup fails', async () => {
+      fs.rm.mockRejectedValue(new Error('Failed to cleanup'))
+      const invalidPath = '/invalid/path/that/does/not/exist'
+      // Should not throw even if rm fails
       await expect(
-        restrictiveParser.extractZip('/tmp/test.zip')
-      ).rejects.toThrow('Reached max size')
+        sut.cleanupTempDirectory(invalidPath)
+      ).resolves.toBeUndefined()
+      expect(logger.error).toHaveBeenCalledTimes(1)
+      expect(logger.error).toHaveBeenCalledWith(
+        {
+          tempDir: invalidPath,
+          error: 'Failed to cleanup'
+        },
+        'Failed to clean up temporary directory'
+      )
     })
   })
 })
