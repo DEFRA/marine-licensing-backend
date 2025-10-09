@@ -22,16 +22,21 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v5
+      
+      - name: Test code and Create Test Coverage Reports
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: |
+          npm ci
+          npm test
 
       - name: Build and Publish
         uses: DEFRA/cdp-build-action/build@main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Test Coverage Reports
-        run: |
-          npm ci
-          npm test
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6

@@ -33,7 +33,7 @@ jobs:
           npm run format:check
           npm run lint
           npm test
-
+          
       - name: Test Docker Image Build
         run: |
           set +e
