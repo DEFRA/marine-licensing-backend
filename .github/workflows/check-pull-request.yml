@@ -23,11 +23,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Create Test Coverage Reports
-        run: |
+      - name: Test code and Create Test Coverage Reports
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: |
           npm ci
+          npm run format:check
+          npm run lint
           npm test
-
+          
       - name: Test Docker Image Build
         run: |
           set +e
