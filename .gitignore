@@ -8,6 +8,6 @@ npm-debug.log
 coverage
 .cache
 .eslintcache
-.env
+.env*
 /.envrc
 .claude/settings.local.json

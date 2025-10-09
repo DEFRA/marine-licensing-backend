@@ -56,6 +56,7 @@
     "notifications-node-client": "8.2.1",
     "pino": "9.12.0",
     "pino-pretty": "13.1.1",
+    "proj4": "2.19.10",
     "shapefile": "^0.6.6",
     "undici": "7.5.0"
   },
