@@ -279,18 +279,17 @@ describe('#siteDetails schema', () => {
     })
 
     describe('when coordinatesType is "file"', () => {
-      test('Should require siteName when coordinatesType is file', () => {
+      test('Should validate siteName when it is present', () => {
         const result = siteDetailsSchema.validate({
           ...mockFileUploadSiteDetailsRequest,
           siteDetails: [
             {
               ...mockFileUploadSiteDetailsRequest.siteDetails[0],
-              siteName: 'Test Site Name'
+              siteName: ''
             }
           ]
         })
-        expect(result.error.message).toContain('siteName')
-        expect(result.error.message).toContain('not allowed')
+        expect(result.error.message).toBe('SITE_NAME_REQUIRED')
       })
 
       test('Should allow file upload without siteName', () => {
