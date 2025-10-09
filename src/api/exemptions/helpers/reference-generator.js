@@ -9,10 +9,6 @@ const SEQUENCE_DIGITS = 5
 
 /**
  * Generates a unique application reference in the format: PREFIX/YYYY/NNNNN
- * @param {Object} db - MongoDB database instance
- * @param {Object} locker - MongoDB locker instance
- * @param {string} applicationType - Type of application (defaults to EXEMPTION)
- * @returns {Promise<string>} - Generated reference string
  */
 export async function generateApplicationReference(
   db,

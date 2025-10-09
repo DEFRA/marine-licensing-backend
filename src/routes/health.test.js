@@ -8,7 +8,7 @@ describe('Health Endpoint', () => {
   })
 
   afterAll(async () => {
-    await server?.stop({ timeout: 0 })
+    await server?.stop({ timeout: 1000 })
   })
 
   test('GET /health returns success message', async () => {
