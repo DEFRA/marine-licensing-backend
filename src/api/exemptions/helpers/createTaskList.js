@@ -4,14 +4,33 @@ export const COMPLETED = 'COMPLETED'
 export const IN_PROGRESS = 'IN_PROGRESS'
 export const INCOMPLETE = 'INCOMPLETE'
 
-const checkSiteDetailsCircle = (siteDetails) => {
+const addConditionalRequiredFields = (
+  baseRequiredValues,
+  multipleSitesEnabled
+) => {
   const requiredValues = [
-    'coordinatesType',
-    'coordinatesEntry',
-    'coordinateSystem',
-    'coordinates',
-    'circleWidth'
+    ...baseRequiredValues,
+    'activityDates',
+    'activityDescription'
   ]
+  if (multipleSitesEnabled) {
+    requiredValues.push('siteName')
+  }
+  return requiredValues
+}
+
+const checkSiteDetailsCircle = (siteDetails, multipleSitesEnabled) => {
+  const requiredValues = addConditionalRequiredFields(
+    [
+      'coordinatesType',
+      'coordinatesEntry',
+      'coordinateSystem',
+      'coordinates',
+      'circleWidth'
+    ],
+    multipleSitesEnabled
+  )
+
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
   if (missingKeys.length === 0) {
@@ -25,14 +44,18 @@ const checkSiteDetailsCircle = (siteDetails) => {
   return IN_PROGRESS
 }
 
-const checkSiteDetailsFileUpload = (siteDetails) => {
-  const requiredValues = [
-    'coordinatesType',
-    'fileUploadType',
-    'geoJSON',
-    'featureCount',
-    's3Location'
-  ]
+const checkSiteDetailsFileUpload = (siteDetails, multipleSitesEnabled) => {
+  const requiredValues = addConditionalRequiredFields(
+    [
+      'coordinatesType',
+      'fileUploadType',
+      'geoJSON',
+      'featureCount',
+      's3Location'
+    ],
+    multipleSitesEnabled
+  )
+
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
   if (missingKeys.length === 0) {
@@ -46,13 +69,12 @@ const checkSiteDetailsFileUpload = (siteDetails) => {
   return IN_PROGRESS
 }
 
-const checkSiteDetailsMultiple = (siteDetails) => {
-  const requiredValues = [
-    'coordinatesType',
-    'coordinatesEntry',
-    'coordinateSystem',
-    'coordinates'
-  ]
+const checkSiteDetailsMultiple = (siteDetails, multipleSitesEnabled) => {
+  const requiredValues = addConditionalRequiredFields(
+    ['coordinatesType', 'coordinatesEntry', 'coordinateSystem', 'coordinates'],
+    multipleSitesEnabled
+  )
+
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
   if (missingKeys.length === requiredValues.length) {
@@ -75,7 +97,7 @@ const checkSiteDetailsMultiple = (siteDetails) => {
   return COMPLETED
 }
 
-const checkSiteDetails = (siteDetails) => {
+const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
   if (!siteDetails || siteDetails.length === 0) {
     return INCOMPLETE
   }
@@ -87,13 +109,13 @@ const checkSiteDetails = (siteDetails) => {
     let validationResult = INCOMPLETE
 
     if (coordinatesType === 'file') {
-      validationResult = checkSiteDetailsFileUpload(site)
+      validationResult = checkSiteDetailsFileUpload(site, multipleSitesEnabled)
     }
     if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
-      validationResult = checkSiteDetailsCircle(site)
+      validationResult = checkSiteDetailsCircle(site, multipleSitesEnabled)
     }
     if (coordinatesEntry === 'multiple' && coordinatesType === 'coordinates') {
-      validationResult = checkSiteDetailsMultiple(site)
+      validationResult = checkSiteDetailsMultiple(site, multipleSitesEnabled)
     }
 
     if (validationResult === INCOMPLETE) {
@@ -113,7 +135,11 @@ export const createTaskList = (exemption) => {
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
     activityDates: (value) => (value ? COMPLETED : INCOMPLETE),
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
-    siteDetails: (value) => checkSiteDetails(value),
+    siteDetails: (value) =>
+      checkSiteDetails(
+        value,
+        exemption.multipleSiteDetails?.multipleSitesEnabled
+      ),
     activityDescription: (value) => (value ? COMPLETED : INCOMPLETE)
   }
 

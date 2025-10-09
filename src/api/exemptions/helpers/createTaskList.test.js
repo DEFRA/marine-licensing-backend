@@ -8,6 +8,9 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
+          siteName: 'Test Site',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test site description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -59,6 +62,9 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
+          siteName: 'File Upload Site',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'File upload site description',
           coordinatesType: 'file',
           fileUploadType: 'kml',
           s3Location: {
@@ -101,6 +107,9 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
+          siteName: 'Multiple Coordinates Site',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Multiple coordinates site description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'multiple',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -130,6 +139,9 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
+          siteName: 'OSGB36 Site',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'OSGB36 site description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'multiple',
           coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
@@ -368,6 +380,9 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
+          siteName: 'Complete Site 1',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Complete site 1 description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -375,6 +390,9 @@ describe('createTaskList', () => {
           circleWidth: '100'
         },
         {
+          siteName: 'Complete Site 2',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Complete site 2 description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
