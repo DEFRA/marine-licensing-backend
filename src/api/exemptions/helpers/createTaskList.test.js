@@ -378,6 +378,9 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
+      multipleSiteDetails: {
+        multipleSitesEnabled: true
+      },
       siteDetails: [
         {
           siteName: 'Complete Site 1',
