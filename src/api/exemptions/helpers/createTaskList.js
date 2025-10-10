@@ -97,6 +97,37 @@ const checkSiteDetailsMultiple = (siteDetails, multipleSitesEnabled) => {
   return COMPLETED
 }
 
+const getValidationStrategy = (coordinatesType, coordinatesEntry) => {
+  if (coordinatesType === 'file') {
+    return 'fileUpload'
+  }
+  if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
+    return 'circle'
+  }
+  if (coordinatesType === 'coordinates' && coordinatesEntry === 'multiple') {
+    return 'multiple'
+  }
+  return null
+}
+
+const validateSite = (site, multipleSitesEnabled) => {
+  const { coordinatesEntry, coordinatesType } = site
+  const strategy = getValidationStrategy(coordinatesType, coordinatesEntry)
+
+  if (!strategy) {
+    return INCOMPLETE
+  }
+
+  const validationStrategies = {
+    fileUpload: checkSiteDetailsFileUpload,
+    circle: checkSiteDetailsCircle,
+    multiple: checkSiteDetailsMultiple
+  }
+
+  const validator = validationStrategies[strategy]
+  return validator(site, multipleSitesEnabled)
+}
+
 const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
   if (!siteDetails || siteDetails.length === 0) {
     return INCOMPLETE
@@ -105,18 +136,7 @@ const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
   let hasInProgress = false
 
   for (const site of siteDetails) {
-    const { coordinatesEntry, coordinatesType } = site
-    let validationResult = INCOMPLETE
-
-    if (coordinatesType === 'file') {
-      validationResult = checkSiteDetailsFileUpload(site, multipleSitesEnabled)
-    }
-    if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
-      validationResult = checkSiteDetailsCircle(site, multipleSitesEnabled)
-    }
-    if (coordinatesEntry === 'multiple' && coordinatesType === 'coordinates') {
-      validationResult = checkSiteDetailsMultiple(site, multipleSitesEnabled)
-    }
+    const validationResult = validateSite(site, multipleSitesEnabled)
 
     if (validationResult === INCOMPLETE) {
       return INCOMPLETE
