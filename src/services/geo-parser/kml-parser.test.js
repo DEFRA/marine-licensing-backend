@@ -1,25 +1,26 @@
+import { vi } from 'vitest'
 import { KmlParser } from './kml-parser.js'
 import { readFile } from 'fs/promises'
 import { JSDOM } from 'jsdom'
 import * as togeojson from '@tmcw/togeojson'
 import Boom from '@hapi/boom'
 
-jest.mock('fs/promises', () => ({
-  readFile: jest.fn()
+vi.mock('fs/promises', () => ({
+  readFile: vi.fn()
 }))
 
-jest.mock('jsdom', () => ({
-  JSDOM: jest.fn()
+vi.mock('jsdom', () => ({
+  JSDOM: vi.fn()
 }))
 
-jest.mock('@tmcw/togeojson', () => ({
-  kml: jest.fn()
+vi.mock('@tmcw/togeojson', () => ({
+  kml: vi.fn()
 }))
 
-jest.mock('../../common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    debug: jest.fn(),
-    error: jest.fn()
+vi.mock('../../common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(() => ({
+    debug: vi.fn(),
+    error: vi.fn()
   }))
 }))
 
@@ -29,10 +30,8 @@ describe('KmlParser', () => {
   let mockWindow
 
   beforeEach(() => {
-    jest.clearAllMocks()
-
     mockDocument = {
-      createElement: jest.fn(),
+      createElement: vi.fn(),
       documentElement: {}
     }
 

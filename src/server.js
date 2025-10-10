@@ -7,7 +7,7 @@ import { processExemptionsQueuePlugin } from './plugins/dynamics.js'
 import { requestLogger } from './common/helpers/logging/request-logger.js'
 import { mongoDb } from './common/helpers/mongodb.js'
 import { failAction } from './common/helpers/fail-action.js'
-import { secureContext } from './common/helpers/secure-context/index.js'
+import { secureContext } from '@defra/hapi-secure-context'
 import { pulse } from './common/helpers/pulse.js'
 import { requestTracing } from './common/helpers/request-tracing.js'
 import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
@@ -55,7 +55,10 @@ async function createServer() {
     requestTracing,
     secureContext,
     pulse,
-    mongoDb,
+    {
+      plugin: mongoDb,
+      options: config.get('mongo')
+    },
     hapiAuthJwt2,
     auth,
     router,

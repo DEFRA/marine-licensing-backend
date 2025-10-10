@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import Boom from '@hapi/boom'
 import { deleteExemptionController } from './delete-exemption'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
@@ -28,13 +29,13 @@ describe('DELETE /exemption', () => {
   it('should delete exemption by id when status is DRAFT', async () => {
     const { mockMongo, mockHandler } = global
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue({
+        findOne: vi.fn().mockResolvedValue({
           _id: mockId,
           status: EXEMPTION_STATUS.DRAFT
         }),
-        deleteOne: jest.fn().mockResolvedValue({ deletedCount: 1 })
+        deleteOne: vi.fn().mockResolvedValue({ deletedCount: 1 })
       }
     })
 
@@ -53,9 +54,9 @@ describe('DELETE /exemption', () => {
   it('should return 400 if exemption status is not DRAFT', async () => {
     const { mockMongo, mockHandler } = global
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue({
+        findOne: vi.fn().mockResolvedValue({
           _id: mockId,
           status: EXEMPTION_STATUS.SUBMITTED
         })
@@ -77,9 +78,9 @@ describe('DELETE /exemption', () => {
   it('should return 404 if ID does not exist', async () => {
     const { mockMongo, mockHandler } = global
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockResolvedValue(null)
+        findOne: vi.fn().mockResolvedValue(null)
       }
     })
 
@@ -96,13 +97,13 @@ describe('DELETE /exemption', () => {
 
     const mockError = 'Database failed'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
+        findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
-    expect(() =>
+    await expect(() =>
       deleteExemptionController.handler(
         { db: mockMongo, params: { id: mockId } },
         mockHandler

@@ -1,6 +1,6 @@
 ---
 description: javascript
-globs: 
+globs:
 alwaysApply: false
 ---
 ---
@@ -16,7 +16,7 @@ globs: *.js
 
 ## Tech Stack
 - Hapi.js v21 for API framework
-- Jest for testing
+- Vitest for testing
 - Neostandard for linting
 - Prettier for formatting
 - Convict for configuration

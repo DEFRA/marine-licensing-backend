@@ -1,9 +1,10 @@
+import { vi } from 'vitest'
 import { mockSiteDetails } from './test-fixtures.js'
 import { wgs84ValidationSchema } from './wgs84.js'
 
 describe('#centreCoordinate models', () => {
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('#wgs84ValidationSchema model', () => {

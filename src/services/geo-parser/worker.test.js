@@ -1,16 +1,17 @@
+import { vi } from 'vitest'
 import { processFile } from './worker.js'
 import { kmlParser } from './kml-parser.js'
 import { shapefileParser } from './shapefile-parser.js'
 
-jest.mock('./kml-parser.js', () => ({
+vi.mock('./kml-parser.js', () => ({
   kmlParser: {
-    parseFile: jest.fn()
+    parseFile: vi.fn()
   }
 }))
 
-jest.mock('./shapefile-parser.js', () => ({
+vi.mock('./shapefile-parser.js', () => ({
   shapefileParser: {
-    parseFile: jest.fn()
+    parseFile: vi.fn()
   }
 }))
 
@@ -18,10 +19,8 @@ describe('Worker', () => {
   let mockMessagePort
 
   beforeEach(() => {
-    jest.clearAllMocks()
-
     mockMessagePort = {
-      postMessage: jest.fn()
+      postMessage: vi.fn()
     }
   })
 
@@ -238,7 +237,7 @@ describe('Worker', () => {
       await processFile(undefined, mockMessagePort)
 
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
-        error: "Cannot read properties of null (reading 'filePath')"
+        error: "Cannot destructure property 'filePath' of 'data' as it is null."
       })
     })
 
@@ -246,7 +245,7 @@ describe('Worker', () => {
       await processFile(null, mockMessagePort)
 
       expect(mockMessagePort.postMessage).toHaveBeenCalledWith({
-        error: "Cannot read properties of null (reading 'filePath')"
+        error: "Cannot destructure property 'filePath' of 'data' as it is null."
       })
     })
 

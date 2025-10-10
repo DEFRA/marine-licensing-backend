@@ -51,7 +51,6 @@ export class ShapefileParser {
 
   /**
    * Get the safe options for zip extraction
-   * @returns {Object} The current safety options
    */
   getSafeOptions() {
     return { ...this.options }
@@ -59,8 +58,6 @@ export class ShapefileParser {
 
   /**
    * Safely extract a zip file to a temporary directory
-   * @param {string} zipPath - Path to the zip file
-   * @returns {Promise<string>} Path to the temporary directory containing extracted files
    */
   async extractZip(zipPath) {
     let fileCount = 0
@@ -94,8 +91,6 @@ export class ShapefileParser {
 
   /**
    * Find all .shp files in a directory
-   * @param {string} directory - Directory to search in
-   * @returns {Promise<string[]>} Array of paths to .shp files
    */
   async findShapefiles(directory) {
     logger.debug({ directory }, 'Searching for shapefiles in directory')
@@ -179,9 +174,6 @@ export class ShapefileParser {
 
   /**
    * Parse a shapefile and return GeoJSON
-   * @param {string} shpPath - Path to the .shp file
-   * @param {function} transformer - a proj4 CRS transformer to convert to WSG84. null means no transformation will be applied
-   * @returns {Promise<Object>} The parsed GeoJSON object
    */
   async parseShapefile(shpPath, transformer = null) {
     const source = await shapefile.open(shpPath)
@@ -305,8 +297,6 @@ export class ShapefileParser {
 
   /**
    * Parse a zip file containing shapefiles and return GeoJSON
-   * @param {string} filename - Path to the zip file
-   * @returns {Promise<Object>} The parsed GeoJSON object containing all features from all shapefiles
    */
   async parseFile(filename) {
     try {

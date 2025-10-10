@@ -106,10 +106,10 @@ const config = convict({
     }
   },
   mongo: {
-    uri: {
+    mongoUrl: {
       doc: 'URI for mongodb',
       format: String,
-      default: 'mongodb://127.0.0.1:27017',
+      default: 'mongodb://127.0.0.1:27017/',
       env: 'MONGO_URI'
     },
     databaseName: {
@@ -117,6 +117,28 @@ const config = convict({
       format: String,
       default: 'marine-licensing-backend',
       env: 'MONGO_DATABASE'
+    },
+    mongoOptions: {
+      retryWrites: {
+        doc: 'Enable Mongo write retries, overrides mongo URI when set.',
+        format: Boolean,
+        default: null,
+        nullable: true,
+        env: 'MONGO_RETRY_WRITES'
+      },
+      readPreference: {
+        doc: 'Mongo read preference, overrides mongo URI when set.',
+        format: [
+          'primary',
+          'primaryPreferred',
+          'secondary',
+          'secondaryPreferred',
+          'nearest'
+        ],
+        default: null,
+        nullable: true,
+        env: 'MONGO_READ_PREFERENCE'
+      }
     }
   },
   httpProxy: {
@@ -125,12 +147,6 @@ const config = convict({
     nullable: true,
     default: null,
     env: 'HTTP_PROXY'
-  },
-  isSecureContextEnabled: {
-    doc: 'Enable Secure Context',
-    format: Boolean,
-    default: isProduction,
-    env: 'ENABLE_SECURE_CONTEXT'
   },
   isMetricsEnabled: {
     doc: 'Enable metrics reporting',
