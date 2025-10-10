@@ -22,6 +22,8 @@ export async function processFile(data = workerData, messagePort = parentPort) {
 }
 
 // Run automatically when loaded as a worker thread (not in test/import context)
-if (parentPort && workerData) {
-  processFile()
-}
+try {
+  if (parentPort && workerData) {
+    await processFile()
+  }
+} catch {}
