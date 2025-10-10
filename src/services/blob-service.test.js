@@ -4,10 +4,10 @@ import {
   HeadObjectCommand,
   GetObjectCommand
 } from '@aws-sdk/client-s3'
-import { createWriteStream } from 'fs'
-import { mkdir, rm } from 'fs/promises'
-import { pipeline } from 'stream/promises'
-import { Readable } from 'stream'
+import { createWriteStream } from 'node:fs'
+import { mkdir, rm } from 'node:fs/promises'
+import { pipeline } from 'node:stream/promises'
+import { Readable } from 'node:stream'
 import { config } from '../config.js'
 import Boom from '@hapi/boom'
 
@@ -46,16 +46,16 @@ vi.mock('@aws-sdk/client-s3', () => ({
   GetObjectCommand: vi.fn()
 }))
 
-vi.mock('fs', () => ({
+vi.mock('node:fs', () => ({
   createWriteStream: vi.fn()
 }))
 
-vi.mock('fs/promises', () => ({
+vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(),
   rm: vi.fn()
 }))
 
-vi.mock('stream/promises', () => ({
+vi.mock('node:stream/promises', () => ({
   pipeline: vi.fn()
 }))
 

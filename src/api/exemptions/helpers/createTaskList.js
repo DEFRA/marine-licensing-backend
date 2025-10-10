@@ -90,12 +90,12 @@ export const createTaskList = (exemption) => {
 
   const taskList = {}
 
-  Object.entries(tasks).forEach(([taskName, decideStatus]) => {
+  for (const [taskName, decideStatus] of Object.entries(tasks)) {
     const status = decideStatus(exemption[taskName])
     if (status) {
       taskList[taskName] = status
     }
-  })
+  }
 
   return taskList
 }

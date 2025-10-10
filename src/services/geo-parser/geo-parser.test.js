@@ -1,11 +1,11 @@
 import { vi } from 'vitest'
 import { GeoParser } from './geo-parser.js'
-import { Worker } from 'worker_threads'
+import { Worker } from 'node:worker_threads'
 import { blobService } from '../blob-service.js'
 import Boom from '@hapi/boom'
-import { join } from 'path'
+import { join } from 'node:path'
 
-vi.mock('worker_threads', () => ({
+vi.mock('node:worker_threads', () => ({
   Worker: vi.fn()
 }))
 
@@ -27,7 +27,7 @@ vi.mock('../../common/helpers/logging/logger.js', () => ({
   }))
 }))
 
-vi.mock('path', () => ({
+vi.mock('node:path', () => ({
   join: vi.fn()
 }))
 

@@ -1,4 +1,4 @@
-import { readFile } from 'fs/promises'
+import { readFile } from 'node:fs/promises'
 import { JSDOM } from 'jsdom'
 import * as togeojson from '@tmcw/togeojson'
 import { createLogger } from '../../common/helpers/logging/logger.js'
