@@ -1,19 +1,19 @@
+import { vi } from 'vitest'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import { getContactId } from '../../api/exemptions/helpers/get-contact-id.js'
 
-jest.mock('../../api/exemptions/helpers/get-contact-id.js')
+vi.mock('../../api/exemptions/helpers/get-contact-id.js')
 
 describe('mongo-audit', () => {
-  const mockedGetContactId = jest.mocked(getContactId)
+  const mockedGetContactId = vi.mocked(getContactId)
 
   beforeEach(() => {
-    jest.clearAllMocks()
-    jest.useFakeTimers()
-    jest.setSystemTime(new Date('2023-01-01T12:00:00.000Z'))
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2023-01-01T12:00:00.000Z'))
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    vi.useRealTimers()
   })
 
   describe('addCreateAuditFields', () => {

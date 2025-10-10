@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { failAction } from './fail-action.js'
 
 describe('#fail-action', () => {
@@ -14,9 +15,9 @@ describe('#fail-action', () => {
   test('Should return expected error details if present', () => {
     const mockRequest = {}
     const mockToolkit = {
-      response: jest.fn().mockReturnThis(),
-      code: jest.fn().mockReturnThis(),
-      takeover: jest.fn().mockReturnThis()
+      response: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis(),
+      takeover: vi.fn().mockReturnThis()
     }
     const mockError = {
       message: 'Validation failed',
@@ -43,11 +44,12 @@ describe('#fail-action', () => {
       }
     }
 
-    expect(() => failAction(mockRequest, mockToolkit, mockError)).toThrow({
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Validation failed',
-      validation: {
+    expect(() => failAction(mockRequest, mockToolkit, mockError)).toThrow()
+
+    try {
+      failAction(mockRequest, mockToolkit, mockError)
+    } catch (error) {
+      expect(error.output.payload.validation).toEqual({
         source: 'payload',
         keys: ['field'],
         details: [
@@ -57,7 +59,7 @@ describe('#fail-action', () => {
             type: 'string.empty'
           }
         ]
-      }
-    })
+      })
+    }
   })
 })

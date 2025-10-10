@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import {
   S3Client,
   HeadObjectCommand,
@@ -11,19 +12,19 @@ import { config } from '../config.js'
 import Boom from '@hapi/boom'
 
 const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn()
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn()
 }
 
-jest.mock('../common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn().mockReturnValue(mockLogger)
+vi.mock('../common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn().mockReturnValue(mockLogger)
 }))
 
-jest.mock('../config.js', () => ({
+vi.mock('../config.js', () => ({
   config: {
-    get: jest.fn((key) => {
+    get: vi.fn((key) => {
       const configs = {
         aws: {
           region: 'eu-west-2',
@@ -39,23 +40,23 @@ jest.mock('../config.js', () => ({
   }
 }))
 
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn(),
-  HeadObjectCommand: jest.fn(),
-  GetObjectCommand: jest.fn()
+vi.mock('@aws-sdk/client-s3', () => ({
+  S3Client: vi.fn(),
+  HeadObjectCommand: vi.fn(),
+  GetObjectCommand: vi.fn()
 }))
 
-jest.mock('fs', () => ({
-  createWriteStream: jest.fn()
+vi.mock('fs', () => ({
+  createWriteStream: vi.fn()
 }))
 
-jest.mock('fs/promises', () => ({
-  mkdir: jest.fn(),
-  rm: jest.fn()
+vi.mock('fs/promises', () => ({
+  mkdir: vi.fn(),
+  rm: vi.fn()
 }))
 
-jest.mock('stream/promises', () => ({
-  pipeline: jest.fn()
+vi.mock('stream/promises', () => ({
+  pipeline: vi.fn()
 }))
 
 let BlobService
@@ -72,14 +73,12 @@ describe('BlobService', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
-
     mockLogger.info.mockReset()
     mockLogger.warn.mockReset()
     mockLogger.error.mockReset()
     mockLogger.debug.mockReset()
 
-    mockSend = jest.fn()
+    mockSend = vi.fn()
     mockS3Client = {
       send: mockSend
     }
@@ -118,7 +117,7 @@ describe('BlobService', () => {
     })
 
     it('should create S3Client with custom endpoint for localstack', () => {
-      const customMockS3Client = { send: jest.fn() }
+      const customMockS3Client = { send: vi.fn() }
       S3Client.mockReturnValue(customMockS3Client)
 
       const service = new BlobService()
@@ -142,7 +141,7 @@ describe('BlobService', () => {
     })
 
     it('should accept custom S3Client', () => {
-      const customClient = { send: jest.fn() }
+      const customClient = { send: vi.fn() }
 
       const service = new BlobService(customClient)
 
@@ -235,8 +234,8 @@ describe('BlobService', () => {
 
     beforeEach(() => {
       const mockWriteStream = {
-        write: jest.fn(),
-        end: jest.fn()
+        write: vi.fn(),
+        end: vi.fn()
       }
       createWriteStream.mockReturnValue(mockWriteStream)
 
@@ -339,7 +338,7 @@ describe('BlobService', () => {
         contentType: 'application/vnd.google-earth.kml+xml',
         etag: '"abc123"'
       }
-      jest.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
+      vi.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
 
       const result = await blobService.validateFileSize(s3Bucket, s3Key)
 
@@ -354,7 +353,7 @@ describe('BlobService', () => {
         contentType: 'application/vnd.google-earth.kml+xml',
         etag: '"abc123"'
       }
-      jest.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
+      vi.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
 
       await expect(
         blobService.validateFileSize(s3Bucket, s3Key)
@@ -372,7 +371,7 @@ describe('BlobService', () => {
         contentType: 'application/vnd.google-earth.kml+xml',
         etag: '"abc123"'
       }
-      jest.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
+      vi.spyOn(blobService, 'getMetadata').mockResolvedValue(mockMetadata)
 
       const result = await blobService.validateFileSize(s3Bucket, s3Key)
 
@@ -383,7 +382,7 @@ describe('BlobService', () => {
 
     it('should propagate getMetadata errors', async () => {
       const error = Boom.notFound('File not found')
-      jest.spyOn(blobService, 'getMetadata').mockRejectedValue(error)
+      vi.spyOn(blobService, 'getMetadata').mockRejectedValue(error)
 
       await expect(
         blobService.validateFileSize(s3Bucket, s3Key)
@@ -515,7 +514,7 @@ describe('BlobService', () => {
         contentType: 'application/vnd.google-earth.kml+xml',
         etag: '"abc123"'
       }
-      jest.spyOn(service, 'getMetadata').mockResolvedValue(mockMetadata)
+      vi.spyOn(service, 'getMetadata').mockResolvedValue(mockMetadata)
 
       const result = await service.validateFileSize('bucket', 'key')
 

@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { createProjectNameController } from './create-project-name'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
@@ -26,12 +27,12 @@ describe('POST /exemptions/project-name', () => {
       activitySubtype: validActivitySubtypes[0]
     }
   }
-  const mockInsertOne = jest.fn().mockResolvedValue({
+  const mockInsertOne = vi.fn().mockResolvedValue({
     insertedId: new ObjectId()
   })
 
   beforeEach(() => {
-    jest.spyOn(global.mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(global.mockMongo, 'collection').mockImplementation(() => {
       return {
         insertOne: mockInsertOne
       }
@@ -152,11 +153,11 @@ describe('POST /exemptions/project-name', () => {
       ...mockAuditPayload,
       ...mockMcmsContext
     }
-    const mockInsertOne = jest.fn().mockResolvedValue({
+    const mockInsertOne = vi.fn().mockResolvedValue({
       insertedId: new ObjectId()
     })
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
         insertOne: mockInsertOne
       }
@@ -185,11 +186,11 @@ describe('POST /exemptions/project-name', () => {
       applicantOrganisationName: 'Test Organisation',
       ...mockAuditPayload
     }
-    const mockInsertOne = jest.fn().mockResolvedValue({
+    const mockInsertOne = vi.fn().mockResolvedValue({
       insertedId: new ObjectId()
     })
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
         insertOne: mockInsertOne
       }
@@ -221,11 +222,11 @@ describe('POST /exemptions/project-name', () => {
       projectName: 'Test Project without Organisation',
       ...mockAuditPayload
     }
-    const mockInsertOne = jest.fn().mockResolvedValue({
+    const mockInsertOne = vi.fn().mockResolvedValue({
       insertedId: new ObjectId()
     })
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
         insertOne: mockInsertOne
       }
@@ -255,9 +256,9 @@ describe('POST /exemptions/project-name', () => {
 
     const mockError = 'Database failed'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        insertOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
+        insertOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 

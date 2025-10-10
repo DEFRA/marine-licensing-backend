@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { COORDINATE_SYSTEMS } from '../../common/constants/coordinates.js'
 import { osgb36ValidationSchema } from './osgb36.js'
 
@@ -7,7 +8,7 @@ const mockCoordinates = {
 
 describe('#osgb36ValidationSchema model', () => {
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test('Should correctly validate on valid data', () => {

@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { submitExemptionController } from './submit-exemption.js'
 import { generateApplicationReference } from '../helpers/reference-generator.js'
 import { createTaskList } from '../helpers/createTaskList.js'
@@ -7,14 +8,14 @@ import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
 import { config } from '../../../config.js'
 
-jest.mock('notifications-node-client', () => ({
-  NotifyClient: jest.fn().mockImplementation(() => ({
-    sendEmail: jest.fn()
+vi.mock('notifications-node-client', () => ({
+  NotifyClient: vi.fn().mockImplementation(() => ({
+    sendEmail: vi.fn()
   }))
 }))
-jest.mock('../helpers/reference-generator.js')
-jest.mock('../helpers/createTaskList.js')
-jest.mock('../../../config.js')
+vi.mock('../helpers/reference-generator.js')
+vi.mock('../helpers/createTaskList.js')
+vi.mock('../../../config.js')
 
 describe('POST /exemption/submit', () => {
   let mockDb
@@ -32,7 +33,7 @@ describe('POST /exemption/submit', () => {
   }
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
 
     config.get.mockReturnValue({
       isDynamicsEnabled: true,
@@ -42,34 +43,34 @@ describe('POST /exemption/submit', () => {
     })
 
     mockDate = new Date('2025-06-15T10:30:00Z')
-    jest.spyOn(global, 'Date').mockImplementation(() => mockDate)
-    Date.now = jest.fn(() => mockDate.getTime())
+    vi.spyOn(global, 'Date').mockImplementation(() => mockDate)
+    Date.now = vi.fn(() => mockDate.getTime())
 
     mockExemptionId = new ObjectId().toHexString()
 
     mockHandler = {
-      response: jest.fn().mockReturnThis(),
-      code: jest.fn().mockReturnThis()
+      response: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis()
     }
 
     mockDb = {
-      collection: jest.fn().mockReturnValue({
-        findOne: jest.fn(),
-        updateOne: jest.fn(),
-        insertOne: jest.fn()
+      collection: vi.fn().mockReturnValue({
+        findOne: vi.fn(),
+        updateOne: vi.fn(),
+        insertOne: vi.fn()
       })
     }
 
     mockLocker = {
-      lock: jest.fn()
+      lock: vi.fn()
     }
 
     mockServer = {
       logger: {
-        error: jest.fn()
+        error: vi.fn()
       },
       methods: {
-        processExemptionsQueue: jest.fn().mockResolvedValue(undefined)
+        processExemptionsQueue: vi.fn().mockResolvedValue(undefined)
       }
     }
 
@@ -83,7 +84,7 @@ describe('POST /exemption/submit', () => {
   })
 
   afterEach(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   describe('Payload Validation', () => {

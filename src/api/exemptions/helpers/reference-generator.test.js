@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { generateApplicationReference } from './reference-generator.js'
 import Boom from '@hapi/boom'
 
@@ -8,36 +9,36 @@ describe('generateApplicationReference', () => {
   let mockDate
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
 
     mockDate = new Date('2025-06-15T10:30:00Z')
     const OriginalDate = Date
-    jest.spyOn(global, 'Date').mockImplementation((...args) => {
+    vi.spyOn(global, 'Date').mockImplementation((...args) => {
       if (args.length === 0) {
         return mockDate
       }
       return new OriginalDate(...args)
     })
-    Date.now = jest.fn(() => mockDate.getTime())
+    Date.now = vi.fn(() => mockDate.getTime())
 
     mockLock = {
-      free: jest.fn().mockResolvedValue()
+      free: vi.fn().mockResolvedValue()
     }
 
     mockLocker = {
-      lock: jest.fn().mockResolvedValue(mockLock)
+      lock: vi.fn().mockResolvedValue(mockLock)
     }
 
     mockDb = {
-      collection: jest.fn().mockReturnValue({
-        findOneAndUpdate: jest.fn(),
-        updateOne: jest.fn()
+      collection: vi.fn().mockReturnValue({
+        findOneAndUpdate: vi.fn(),
+        updateOne: vi.fn()
       })
     }
   })
 
   afterEach(() => {
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   describe('Happy Path - Reference Generation', () => {
@@ -86,13 +87,13 @@ describe('generateApplicationReference', () => {
     it('should reset sequence to seed for new year', async () => {
       const mockNewYearDate = new Date('2026-01-01T10:30:00Z')
       const OriginalDate = Date
-      jest.spyOn(global, 'Date').mockImplementation((...args) => {
+      vi.spyOn(global, 'Date').mockImplementation((...args) => {
         if (args.length === 0) {
           return mockNewYearDate
         }
         return new OriginalDate(...args)
       })
-      Date.now = jest.fn(() => mockNewYearDate.getTime())
+      Date.now = vi.fn(() => mockNewYearDate.getTime())
 
       const mockSequenceDoc = { currentSequence: 10001 }
       mockDb.collection().findOneAndUpdate.mockResolvedValue(mockSequenceDoc)
@@ -290,13 +291,13 @@ describe('generateApplicationReference', () => {
 
       const mockNewYearDate = new Date('2026-01-01T10:30:00Z')
       const OriginalDate = Date
-      jest.spyOn(global, 'Date').mockImplementation((...args) => {
+      vi.spyOn(global, 'Date').mockImplementation((...args) => {
         if (args.length === 0) {
           return mockNewYearDate
         }
         return new OriginalDate(...args)
       })
-      Date.now = jest.fn(() => mockNewYearDate.getTime())
+      Date.now = vi.fn(() => mockNewYearDate.getTime())
 
       mockDb.collection().findOneAndUpdate.mockResolvedValueOnce(year2026Doc)
 

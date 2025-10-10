@@ -1,4 +1,4 @@
-import { expect, jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { join } from 'node:path'
 import * as fs from 'node:fs/promises'
 import AdmZip from 'adm-zip'
@@ -11,20 +11,20 @@ import {
 } from './shapefile-parser.js'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 
-jest.mock('node:fs/promises')
-jest.mock('../../common/helpers/logging/logger.js', () => {
+vi.mock('node:fs/promises')
+vi.mock('../../common/helpers/logging/logger.js', () => {
   const logger = {
-    debug: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn()
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn()
   }
   return {
-    createLogger: jest.fn(() => logger)
+    createLogger: vi.fn(() => logger)
   }
 })
 
-jest.mock('adm-zip')
-jest.mock('shapefile')
+vi.mock('adm-zip')
+vi.mock('shapefile')
 
 const logger = createLogger()
 
@@ -59,14 +59,6 @@ async function* createAsyncIterable(array) {
 }
 
 describe('ShapefileParser class', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
-  afterEach(() => {
-    jest.restoreAllMocks()
-  })
-
   describe('constructor', () => {
     it('should initialize with default options', () => {
       const parser = new ShapefileParser()
@@ -150,8 +142,8 @@ describe('ShapefileParser class', () => {
 
     beforeEach(() => {
       mockAdmZip = {
-        getEntries: jest.fn().mockReturnValue(mockZipEntries),
-        extractEntryTo: jest.fn()
+        getEntries: vi.fn().mockReturnValue(mockZipEntries),
+        extractEntryTo: vi.fn()
       }
       AdmZip.mockImplementation(() => mockAdmZip)
       fs.mkdtemp.mockResolvedValue('/tmp/mock-dir-123')
@@ -455,7 +447,7 @@ describe('ShapefileParser class', () => {
     const mockRealTransformer = 'mocked'
 
     beforeEach(() => {
-      const mockRead = jest
+      const mockRead = vi
         .fn()
         .mockResolvedValueOnce({ done: false, value: pointFeature })
         .mockResolvedValueOnce({ done: true, value: undefined })
@@ -473,14 +465,14 @@ describe('ShapefileParser class', () => {
     })
 
     it('should transform the coordinated if a real transformer is given', async () => {
-      jest.spyOn(sut, 'transformCoordinates').mockResolvedValue(pointFeature)
+      vi.spyOn(sut, 'transformCoordinates').mockResolvedValue(pointFeature)
       const result = await sut.parseShapefile(shpPath, mockRealTransformer)
       expect(sut.transformCoordinates).toHaveBeenCalledTimes(1)
       expect(result).toEqual(mockGeoJSON)
     })
 
     it('should parse multiple features in the shapefile', async () => {
-      const multipleMockRead = jest
+      const multipleMockRead = vi
         .fn()
         .mockResolvedValueOnce({ done: false, value: pointFeature })
         .mockResolvedValueOnce({ done: false, value: polygonFeature })
@@ -558,9 +550,9 @@ describe('ShapefileParser class', () => {
       })
       fs.readFile.mockResolvedValue(mockPrjFileContent)
       sut = new ShapefileParser()
-      jest
-        .spyOn(sut, 'findProjectionFile')
-        .mockResolvedValue(`${directory}/project1.prj`)
+      vi.spyOn(sut, 'findProjectionFile').mockResolvedValue(
+        `${directory}/project1.prj`
+      )
     })
 
     it('calls findProjectionFile to find the path to the projection file', async () => {
@@ -571,7 +563,7 @@ describe('ShapefileParser class', () => {
     })
 
     it('returns null when the proj file is not found in the given directory', async () => {
-      jest.spyOn(sut, 'findProjectionFile').mockResolvedValue(null)
+      vi.spyOn(sut, 'findProjectionFile').mockResolvedValue(null)
       const result = await sut.readProjectionFile(directory)
       expect(result).toBeNull()
     })
@@ -635,15 +627,15 @@ describe('ShapefileParser class', () => {
     beforeEach(() => {
       const wsg84Projection = 'MOCK:WSG84:CRS'
       sut = new ShapefileParser()
-      jest.spyOn(sut, 'extractZip').mockResolvedValue(mockTmpDir)
-      jest.spyOn(sut, 'findShapefiles').mockResolvedValue([mockShapefileA])
-      jest.spyOn(sut, 'readProjectionFile').mockResolvedValue(wsg84Projection)
-      jest.spyOn(sut, 'createTransformer').mockReturnValue(null)
-      jest.spyOn(sut, 'parseShapefile').mockResolvedValue({
+      vi.spyOn(sut, 'extractZip').mockResolvedValue(mockTmpDir)
+      vi.spyOn(sut, 'findShapefiles').mockResolvedValue([mockShapefileA])
+      vi.spyOn(sut, 'readProjectionFile').mockResolvedValue(wsg84Projection)
+      vi.spyOn(sut, 'createTransformer').mockReturnValue(null)
+      vi.spyOn(sut, 'parseShapefile').mockResolvedValue({
         type: 'FeatureCollection',
         features: [pointFeature]
       })
-      jest.spyOn(sut, 'cleanupTempDirectory').mockResolvedValue()
+      vi.spyOn(sut, 'cleanupTempDirectory').mockResolvedValue()
     })
 
     it('should decompress the zip file', async () => {
@@ -652,7 +644,7 @@ describe('ShapefileParser class', () => {
     })
 
     it('it assembles all features into a feature collection', async () => {
-      jest.spyOn(sut, 'parseShapefile').mockResolvedValue({
+      vi.spyOn(sut, 'parseShapefile').mockResolvedValue({
         type: 'FeatureCollection',
         features: [pointFeature, polygonFeature]
       })
@@ -664,15 +656,16 @@ describe('ShapefileParser class', () => {
     })
 
     it('edge case: it should find multiple shapefiles', async () => {
-      jest
-        .spyOn(sut, 'findShapefiles')
-        .mockResolvedValue([mockShapefileA, mockShapefileB])
+      vi.spyOn(sut, 'findShapefiles').mockResolvedValue([
+        mockShapefileA,
+        mockShapefileB
+      ])
       await sut.parseFile(filename)
       expect(sut.parseShapefile).toHaveBeenCalledTimes(2)
     })
 
     it('throws an error if no shapefile was found', async () => {
-      jest.spyOn(sut, 'findShapefiles').mockResolvedValue([])
+      vi.spyOn(sut, 'findShapefiles').mockResolvedValue([])
       await expect(sut.parseFile(filename)).rejects.toThrow(
         'Failed to parse shapefile: No shapefiles found in zip archive'
       )

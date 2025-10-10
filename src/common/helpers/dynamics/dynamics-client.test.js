@@ -1,4 +1,4 @@
-import { expect, jest } from '@jest/globals'
+import { expect, vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 
 import { config } from '../../../config.js'
@@ -8,21 +8,21 @@ import {
 } from './dynamics-client.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 
-jest.mock('../../../config.js')
-jest.mock('@hapi/wreck')
+vi.mock('../../../config.js')
+vi.mock('@hapi/wreck')
 
 describe('Dynamics Client', () => {
   let mockServer
-  const mockWreckPost = jest.mocked(Wreck.post).mockResolvedValue({
+  const mockWreckPost = vi.mocked(Wreck.post).mockResolvedValue({
     payload: Buffer.from(JSON.stringify({ access_token: 'test_token' }))
   })
 
   beforeEach(() => {
     mockServer = {
       db: {
-        collection: jest.fn().mockReturnValue({
-          findOne: jest.fn(),
-          updateOne: jest.fn()
+        collection: vi.fn().mockReturnValue({
+          findOne: vi.fn(),
+          updateOne: vi.fn()
         })
       }
     }
@@ -39,8 +39,6 @@ describe('Dynamics Client', () => {
           }
         : 'http://localhost'
     )
-
-    jest.clearAllMocks()
   })
 
   describe('getDynamicsAccessToken', () => {
