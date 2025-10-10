@@ -7,10 +7,8 @@ import Boom from '@hapi/boom'
 const logger = createLogger()
 
 export class GeoParser {
-  constructor() {
-    this.processingTimeout = 30_000 // 30 seconds
-    this.memoryLimit = 524_288_000 // 500MB in bytes
-  }
+  processingTimeout = 30_000 // 30 seconds
+  memoryLimit = 524_288_000 // 500MB in bytes
 
   async extract(s3Bucket, s3Key, fileType) {
     logger.info({ s3Bucket, s3Key, fileType }, 'Starting geo-parser extraction')
