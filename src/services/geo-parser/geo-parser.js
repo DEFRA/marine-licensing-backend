@@ -1,5 +1,5 @@
-import { Worker } from 'worker_threads'
-import { join } from 'path'
+import { Worker } from 'node:worker_threads'
+import { join } from 'node:path'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 import { blobService } from '../blob-service.js'
 import Boom from '@hapi/boom'
