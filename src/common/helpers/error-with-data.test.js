@@ -1,10 +1,7 @@
+import { vi } from 'vitest'
 import { ErrorWithData } from './error-with-data.js'
 
 describe('ErrorWithData (custom Error class)', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   describe('Constructor - Basic Functionality', () => {
     it('should create an instance with message and data', () => {
       const message = 'Test error message'
@@ -142,7 +139,7 @@ describe('ErrorWithData (custom Error class)', () => {
     it('should capture stack trace when Error.captureStackTrace is available', () => {
       // Mock Error.captureStackTrace
       const originalCaptureStackTrace = Error.captureStackTrace
-      const mockCaptureStackTrace = jest.fn()
+      const mockCaptureStackTrace = vi.fn()
       Error.captureStackTrace = mockCaptureStackTrace
 
       const error = new ErrorWithData('Stack trace test')

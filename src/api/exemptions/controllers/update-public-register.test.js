@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updatePublicRegisterController } from './update-public-register.js'
 import Boom from '@hapi/boom'
@@ -40,8 +41,8 @@ describe('PATCH /exemptions/public-register', () => {
       ...mockAuditPayload
     }
 
-    const mockUpdateOne = jest.fn().mockResolvedValueOnce({})
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    const mockUpdateOne = vi.fn().mockResolvedValueOnce({})
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
         updateOne: mockUpdateOne
       }
@@ -86,13 +87,13 @@ describe('PATCH /exemptions/public-register', () => {
 
     const mockError = 'Database failed'
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockRejectedValueOnce(new Error(mockError))
+        updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
-    expect(() =>
+    await expect(() =>
       updatePublicRegisterController.handler(
         {
           db: mockMongo,
@@ -111,15 +112,15 @@ describe('PATCH /exemptions/public-register', () => {
       ...mockAuditPayload
     }
 
-    jest.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        updateOne: jest.fn().mockResolvedValueOnce({ matchedCount: 0 })
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }
     })
 
-    jest.spyOn(Boom, 'notFound')
+    vi.spyOn(Boom, 'notFound')
 
-    expect(() =>
+    await expect(() =>
       updatePublicRegisterController.handler(
         {
           db: mockMongo,

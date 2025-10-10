@@ -1,11 +1,11 @@
-import { jest } from '@jest/globals'
+import { vi } from 'vitest'
 import { getExemptionsController, sortByStatus } from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { getApplicantOrganisationId } from '../helpers/get-applicant-organisation.js'
 
-jest.mock('../helpers/get-applicant-organisation.js', () => ({
-  getApplicantOrganisationId: jest.fn()
+vi.mock('../helpers/get-applicant-organisation.js', () => ({
+  getApplicantOrganisationId: vi.fn()
 }))
 
 describe('getExemptionsController', () => {
@@ -45,21 +45,21 @@ describe('getExemptionsController', () => {
 
   beforeEach(() => {
     mockCollection = {
-      find: jest.fn().mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          toArray: jest.fn()
+      find: vi.fn().mockReturnValue({
+        sort: vi.fn().mockReturnValue({
+          toArray: vi.fn()
         }),
-        toArray: jest.fn()
+        toArray: vi.fn()
       })
     }
 
     mockDb = {
-      collection: jest.fn().mockReturnValue(mockCollection)
+      collection: vi.fn().mockReturnValue(mockCollection)
     }
 
     mockH = {
-      response: jest.fn().mockReturnThis(),
-      code: jest.fn().mockReturnThis()
+      response: vi.fn().mockReturnThis(),
+      code: vi.fn().mockReturnThis()
     }
 
     mockRequest = {

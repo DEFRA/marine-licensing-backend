@@ -1,33 +1,34 @@
+import { vi } from 'vitest'
 import { GeoParser } from './geo-parser.js'
 import { Worker } from 'worker_threads'
 import { blobService } from '../blob-service.js'
 import Boom from '@hapi/boom'
 import { join } from 'path'
 
-jest.mock('worker_threads', () => ({
-  Worker: jest.fn()
+vi.mock('worker_threads', () => ({
+  Worker: vi.fn()
 }))
 
-jest.mock('../blob-service.js', () => ({
+vi.mock('../blob-service.js', () => ({
   blobService: {
-    createTempDirectory: jest.fn(),
-    validateFileSize: jest.fn(),
-    downloadFile: jest.fn(),
-    cleanupTempDirectory: jest.fn()
+    createTempDirectory: vi.fn(),
+    validateFileSize: vi.fn(),
+    downloadFile: vi.fn(),
+    cleanupTempDirectory: vi.fn()
   }
 }))
 
-jest.mock('../../common/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn(() => ({
-    info: jest.fn(),
-    debug: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn()
+vi.mock('../../common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(() => ({
+    info: vi.fn(),
+    debug: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn()
   }))
 }))
 
-jest.mock('path', () => ({
-  join: jest.fn()
+vi.mock('path', () => ({
+  join: vi.fn()
 }))
 
 describe('GeoParser', () => {
@@ -35,14 +36,12 @@ describe('GeoParser', () => {
   let mockWorker
 
   beforeEach(() => {
-    jest.clearAllMocks()
-
     // Mock setImmediate to execute synchronously
-    global.setImmediate = jest.fn((cb) => cb())
+    global.setImmediate = vi.fn((cb) => cb())
 
     mockWorker = {
-      on: jest.fn(),
-      terminate: jest.fn()
+      on: vi.fn(),
+      terminate: vi.fn()
     }
     Worker.mockReturnValue(mockWorker)
 
@@ -88,8 +87,8 @@ describe('GeoParser', () => {
       blobService.downloadFile.mockResolvedValue(tempFilePath)
       blobService.cleanupTempDirectory.mockResolvedValue()
 
-      jest.spyOn(geoParser, 'parseFile').mockResolvedValue(mockGeoJSON)
-      jest.spyOn(geoParser, 'validateGeoJSON').mockReturnValue(true)
+      vi.spyOn(geoParser, 'parseFile').mockResolvedValue(mockGeoJSON)
+      vi.spyOn(geoParser, 'validateGeoJSON').mockReturnValue(true)
     })
 
     it('should successfully extract GeoJSON from KML file', async () => {
@@ -209,10 +208,10 @@ describe('GeoParser', () => {
 
     beforeEach(() => {
       // Reset worker mock
-      jest.clearAllMocks()
+
       mockWorker = {
-        on: jest.fn(),
-        terminate: jest.fn()
+        on: vi.fn(),
+        terminate: vi.fn()
       }
       Worker.mockReturnValue(mockWorker)
     })
@@ -437,14 +436,14 @@ describe('GeoParser', () => {
     it('should throw error when GeoJSON exceeds memory limit', () => {
       // Mock JSON.stringify to return a large size
       const originalStringify = JSON.stringify
-      JSON.stringify = jest.fn(() => {
+      JSON.stringify = vi.fn(() => {
         // Return a string that simulates large size calculation
         return 'x'.repeat(1000) // Small actual string
       })
 
       // Mock Buffer.byteLength to return a size that exceeds the limit
       const originalByteLength = Buffer.byteLength
-      Buffer.byteLength = jest.fn(() => 600_000_000) // 600MB > 500MB limit
+      Buffer.byteLength = vi.fn(() => 600_000_000) // 600MB > 500MB limit
 
       const geoJSON = {
         type: 'FeatureCollection',

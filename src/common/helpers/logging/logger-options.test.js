@@ -1,23 +1,22 @@
+import { vi } from 'vitest'
 import { loggerOptions } from './logger-options.js'
 import { getTraceId } from '@defra/hapi-tracing'
 
-jest.mock('@defra/hapi-tracing', () => ({
-  getTraceId: jest.fn()
+vi.mock('@defra/hapi-tracing', () => ({
+  getTraceId: vi.fn()
 }))
 
-jest.mock('@elastic/ecs-pino-format', () => ({
-  ecsFormat: jest
-    .fn()
-    .mockImplementation(({ serviceVersion, serviceName }) => ({
-      formatCalled: true,
-      serviceVersion,
-      serviceName
-    }))
+vi.mock('@elastic/ecs-pino-format', () => ({
+  ecsFormat: vi.fn().mockImplementation(({ serviceVersion, serviceName }) => ({
+    formatCalled: true,
+    serviceVersion,
+    serviceName
+  }))
 }))
 
-jest.mock('../../../config.js', () => ({
+vi.mock('../../../config.js', () => ({
   config: {
-    get: jest.fn((key) => {
+    get: vi.fn((key) => {
       if (key === 'log') {
         return {
           isEnabled: true,
@@ -33,10 +32,6 @@ jest.mock('../../../config.js', () => ({
 }))
 
 describe('loggerOptions', () => {
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   it('should have the correct properties based on config and ecsFormat', () => {
     expect(loggerOptions.enabled).toBe(true)
     expect(loggerOptions.ignorePaths).toEqual(['/health'])

@@ -1,6 +1,6 @@
 ---
 description: testing
-globs: 
+globs:
 alwaysApply: false
 ---
 ---
@@ -10,7 +10,7 @@ globs: tests/*.js
 # API Testing Standards
 
 ## Test Framework
-- Jest with @shelf/jest-mongodb
+- Vitest
 - MongoDB in-memory for database testing
 - Babel for ES modules transformation
 - Coverage reporting enabled
@@ -21,7 +21,7 @@ import { createServer } from '../server.js'
 
 describe('Route Tests', () => {
   let server
-  
+
   beforeAll(async () => {
     server = await createServer()
     await server.initialize()
@@ -46,7 +46,7 @@ describe('Route Tests', () => {
 ## Testing Patterns
 - Co-locate tests with source files (*.test.js)
 - Use `server.inject()` for API testing
-- Mock database operations with Jest mocks
+- Mock database operations with Vitest mocks
 - Mock handlers with predefined responses
 - Test both success and error scenarios
 - Use `describe` for grouping and `it`/`test` for cases
@@ -55,7 +55,7 @@ describe('Route Tests', () => {
 ```javascript
 describe('service function', () => {
   it('should return expected result', async () => {
-    const mockDb = { collection: jest.fn() }
+    const mockDb = { collection: vi.fn() }
     const result = await serviceFunction(mockDb)
     expect(result).toEqual(expectedData)
   })
@@ -65,25 +65,24 @@ describe('service function', () => {
 ## Route Handler Testing
 ```javascript
 const mockReq = { db: {}, params: { id: '1' } }
-const mockH = { response: jest.fn(result => result) }
+const mockH = { response: vi.fn(result => result) }
 const result = await handler(mockReq, mockH)
 expect(mockH.response).toHaveBeenCalledWith(expectedResponse)
 ```
 
 ## Database Testing
-- MongoDB in-memory via @shelf/jest-mongodb
-- Global setup in `.jest/setup-files-after-env.js`
+- Global setup in `.vitest/setup-files-after-env.js`
 - Mock database operations for unit tests
 - Access via `global.mockMongo` in tests
 
 ```javascript
-jest.spyOn(mockMongo, 'collection').mockImplementation(() => ({
-  updateOne: jest.fn().mockResolvedValue({ matchedCount: 1 })
+vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+  updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 })
 }))
-``` 
+```
 
 ## Mocking
-- Mock external dependencies with `jest.spyOn()`
+- Mock external dependencies with `vi.spyOn()`
 - Mock database collections and operations
 - Mock Hapi response toolkit (`h.response`)
 - Use `mockResolvedValue()` for async mocks

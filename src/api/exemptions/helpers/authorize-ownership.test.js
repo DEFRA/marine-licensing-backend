@@ -1,9 +1,10 @@
+import { vi } from 'vitest'
 import { authorizeOwnership } from './authorize-ownership.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { getContactId } from './get-contact-id.js'
 
-jest.mock('./get-contact-id.js')
+vi.mock('./get-contact-id.js')
 
 describe('authorizeOwnership', () => {
   let mockRequest
@@ -11,17 +12,15 @@ describe('authorizeOwnership', () => {
   let mockDb
   let mockCollection
 
-  const mockgetContactId = jest.mocked(getContactId).mockReturnValue('user123')
+  const mockgetContactId = vi.mocked(getContactId).mockReturnValue('user123')
 
   beforeEach(() => {
-    jest.clearAllMocks()
-
     mockCollection = {
-      findOne: jest.fn()
+      findOne: vi.fn()
     }
 
     mockDb = {
-      collection: jest.fn().mockReturnValue(mockCollection)
+      collection: vi.fn().mockReturnValue(mockCollection)
     }
 
     mockH = {
@@ -87,7 +86,7 @@ describe('authorizeOwnership', () => {
     it('should throw 404 when document is not found', async () => {
       mockCollection.findOne.mockResolvedValue(null)
 
-      const boomSpy = jest.spyOn(Boom, 'notFound')
+      const boomSpy = vi.spyOn(Boom, 'notFound')
 
       await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow()
 
@@ -110,7 +109,7 @@ describe('authorizeOwnership', () => {
 
       mockCollection.findOne.mockResolvedValue(document)
 
-      const boomSpy = jest.spyOn(Boom, 'notFound')
+      const boomSpy = vi.spyOn(Boom, 'notFound')
 
       await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow()
 
