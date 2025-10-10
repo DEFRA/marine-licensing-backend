@@ -21,7 +21,7 @@ const validateDecimals = (value, helpers) => {
 
 const validateCoordinates = (value, helpers, type) => {
   const coordinate = Number(value)
-  if (isNaN(coordinate)) {
+  if (Number.isNaN(coordinate)) {
     return helpers.error('number.base')
   }
 
