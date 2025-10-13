@@ -21,13 +21,7 @@ const addConditionalRequiredFields = (
 
 const checkSiteDetailsCircle = (siteDetails, multipleSitesEnabled) => {
   const requiredValues = addConditionalRequiredFields(
-    [
-      'coordinatesType',
-      'coordinatesEntry',
-      'coordinateSystem',
-      'coordinates',
-      'circleWidth'
-    ],
+    ['coordinateSystem', 'coordinates', 'circleWidth'],
     multipleSitesEnabled
   )
 
@@ -46,13 +40,7 @@ const checkSiteDetailsCircle = (siteDetails, multipleSitesEnabled) => {
 
 const checkSiteDetailsFileUpload = (siteDetails, multipleSitesEnabled) => {
   const requiredValues = addConditionalRequiredFields(
-    [
-      'coordinatesType',
-      'fileUploadType',
-      'geoJSON',
-      'featureCount',
-      's3Location'
-    ],
+    ['fileUploadType', 'geoJSON', 'featureCount', 's3Location'],
     multipleSitesEnabled
   )
 
@@ -71,7 +59,7 @@ const checkSiteDetailsFileUpload = (siteDetails, multipleSitesEnabled) => {
 
 const checkSiteDetailsMultiple = (siteDetails, multipleSitesEnabled) => {
   const requiredValues = addConditionalRequiredFields(
-    ['coordinatesType', 'coordinatesEntry', 'coordinateSystem', 'coordinates'],
+    ['coordinateSystem', 'coordinates'],
     multipleSitesEnabled
   )
 
@@ -167,7 +155,7 @@ export const createTaskList = (exemption) => {
 
   Object.entries(tasks).forEach(([taskName, decideStatus]) => {
     const status = decideStatus(exemption[taskName])
-    if (status && status !== INCOMPLETE) {
+    if (status) {
       taskList[taskName] = status
     }
   })

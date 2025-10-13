@@ -1,4 +1,9 @@
-import { createTaskList, COMPLETED, IN_PROGRESS } from './createTaskList'
+import {
+  createTaskList,
+  COMPLETED,
+  IN_PROGRESS,
+  INCOMPLETE
+} from './createTaskList'
 import { COORDINATE_SYSTEMS } from '../../../common/constants/coordinates.js'
 
 describe('createTaskList', () => {
@@ -8,22 +13,23 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
-          siteName: 'Test Site',
-          activityDates: { start: '2024-01-01', end: '2024-12-31' },
-          activityDescription: 'Test site description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
           coordinates: { latitude: '54.978252', longitude: '-1.617780' },
-          circleWidth: '100'
+          circleWidth: '100',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -31,7 +37,7 @@ describe('createTaskList', () => {
     })
   })
 
-  it('should mark site details as IN_PROGRESS when not all properties present in the single coordinate journey', () => {
+  it('should mark site details as IN_PROGRESS when not all properties present in the single coordinate circular journey', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
@@ -40,15 +46,72 @@ describe('createTaskList', () => {
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-          coordinates: { latitude: '54.978252', longitude: '-1.617780' }
+          coordinates: { latitude: '54.978252', longitude: '-1.617780' },
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
+      activityDescription: COMPLETED,
+      publicRegister: COMPLETED,
+      projectName: COMPLETED,
+      siteDetails: IN_PROGRESS
+    })
+  })
+
+  it('should mark site details as IN_PROGRESS when not all properties present in the manual polygon journey', () => {
+    const exemption = {
+      publicRegister: 'Some value',
+      projectName: 'Test Project',
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple',
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
+        }
+      ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
+      activityDescription: 'Test description'
+    }
+
+    const result = createTaskList(exemption)
+
+    expect(result).toEqual({
+      activityDates: COMPLETED,
+      activityDescription: COMPLETED,
+      publicRegister: COMPLETED,
+      projectName: COMPLETED,
+      siteDetails: IN_PROGRESS
+    })
+  })
+
+  it('should mark site details as IN_PROGRESS when not all properties present in the file journey', () => {
+    const exemption = {
+      publicRegister: 'Some value',
+      projectName: 'Test Project',
+      siteDetails: [
+        {
+          coordinatesType: 'file',
+          fileUploadType: 'kml'
+        }
+      ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
+      activityDescription: 'Test description'
+    }
+
+    const result = createTaskList(exemption)
+
+    expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -62,9 +125,6 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
-          siteName: 'File Upload Site',
-          activityDates: { start: '2024-01-01', end: '2024-12-31' },
-          activityDescription: 'File upload site description',
           coordinatesType: 'file',
           fileUploadType: 'kml',
           s3Location: {
@@ -85,15 +145,19 @@ describe('createTaskList', () => {
                 properties: {}
               }
             ]
-          }
+          },
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -107,9 +171,6 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
-          siteName: 'Multiple Coordinates Site',
-          activityDates: { start: '2024-01-01', end: '2024-12-31' },
-          activityDescription: 'Multiple coordinates site description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'multiple',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
@@ -117,15 +178,19 @@ describe('createTaskList', () => {
             { latitude: '54.088594', longitude: '-0.178408' },
             { latitude: '54.086782', longitude: '-0.177369' },
             { latitude: '54.088057', longitude: '-0.175219' }
-          ]
+          ],
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -139,9 +204,6 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [
         {
-          siteName: 'OSGB36 Site',
-          activityDates: { start: '2024-01-01', end: '2024-12-31' },
-          activityDescription: 'OSGB36 site description',
           coordinatesType: 'coordinates',
           coordinatesEntry: 'multiple',
           coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
@@ -149,15 +211,19 @@ describe('createTaskList', () => {
             { eastings: '513967', northings: '476895' },
             { eastings: '514040', northings: '476693' },
             { eastings: '514193', northings: '476835' }
-          ]
+          ],
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -177,15 +243,19 @@ describe('createTaskList', () => {
           coordinates: [
             { latitude: '54.088594', longitude: '-0.178408' },
             { latitude: '54.086782', longitude: '-0.177369' }
-          ]
+          ],
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -201,15 +271,19 @@ describe('createTaskList', () => {
         {
           coordinatesType: 'coordinates',
           coordinatesEntry: 'multiple',
-          coordinateSystem: COORDINATE_SYSTEMS.WGS84
+          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -226,15 +300,19 @@ describe('createTaskList', () => {
           coordinatesType: 'coordinates',
           coordinatesEntry: 'multiple',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-          coordinates: { latitude: '54.088594', longitude: '-0.178408' }
+          coordinates: { latitude: '54.088594', longitude: '-0.178408' },
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -254,15 +332,19 @@ describe('createTaskList', () => {
             { latitude: '54.088594', longitude: '-0.178408' },
             { latitude: '54.086782', longitude: '-0.177369' },
             { latitude: '54.088057', longitude: '-0.175219' }
-          ]
+          ],
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
@@ -270,26 +352,21 @@ describe('createTaskList', () => {
     })
   })
 
-  it('should not return tasks when corresponding exemption properties do not exist', () => {
-    const exemption = {
-      publicRegister: '',
-      projectName: null
-    }
-
-    const result = createTaskList(exemption)
-
-    expect(result).toEqual({})
-  })
-
-  it('should not return tasks when corresponding exemption properties are missing', () => {
+  it('should return tasks as INCOMPLETE when corresponding exemption properties are missing', () => {
     const exemption = {}
 
     const result = createTaskList(exemption)
 
-    expect(result).toEqual({})
+    expect(result).toEqual({
+      activityDates: 'INCOMPLETE',
+      activityDescription: 'INCOMPLETE',
+      projectName: 'INCOMPLETE',
+      publicRegister: 'INCOMPLETE',
+      siteDetails: 'INCOMPLETE'
+    })
   })
 
-  it('should mark siteDetails as IN_PROGRESS when some required fields are missing', () => {
+  it('should mark site details as INCOMPLETE when all properties present in the single coordinate circular journey', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
@@ -299,120 +376,123 @@ describe('createTaskList', () => {
           coordinatesEntry: 'single'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
-      siteDetails: IN_PROGRESS
+      siteDetails: INCOMPLETE
     })
   })
 
-  it('should mark siteDetails as IN_PROGRESS when one site is complete and one has data missing', () => {
+  it('should mark site details as INCOMPLETE when all properties not present in the manual polygon journey', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'multiple'
+        }
+      ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
+      activityDescription: 'Test description'
+    }
+
+    const result = createTaskList(exemption)
+
+    expect(result).toEqual({
+      activityDates: COMPLETED,
+      activityDescription: COMPLETED,
+      publicRegister: COMPLETED,
+      projectName: COMPLETED,
+      siteDetails: INCOMPLETE
+    })
+  })
+
+  it('should mark site details as INCOMPLETE when all properties NOT present in the file journey', () => {
+    const exemption = {
+      publicRegister: 'Some value',
+      projectName: 'Test Project',
+      siteDetails: [
+        {
+          coordinatesType: 'file'
+        }
+      ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
+      activityDescription: 'Test description'
+    }
+
+    const result = createTaskList(exemption)
+
+    expect(result).toEqual({
+      activityDates: COMPLETED,
+      activityDescription: COMPLETED,
+      publicRegister: COMPLETED,
+      projectName: COMPLETED,
+      siteDetails: INCOMPLETE
+    })
+  })
+
+  it('should mark site details as INCOMPLETE when one site is complete but another is not ', () => {
+    const exemption = {
+      publicRegister: 'Some value',
+      projectName: 'Test Project',
+      multipleSiteDetails: { multipleSitesEnabled: true },
       siteDetails: [
         {
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single',
           coordinateSystem: COORDINATE_SYSTEMS.WGS84,
           coordinates: { latitude: '54.978252', longitude: '-1.617780' },
-          circleWidth: '100'
+          circleWidth: '100',
+          activityDates: { start: '2024-01-01', end: '2024-12-31' },
+          activityDescription: 'Test description',
+          siteName: 'test'
         },
         {
           coordinatesType: 'coordinates',
-          coordinatesEntry: 'single',
-          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-          coordinates: { latitude: '54.978252', longitude: '-1.617780' }
+          coordinatesEntry: 'single'
         }
       ],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
-      siteDetails: IN_PROGRESS
+      siteDetails: INCOMPLETE
     })
   })
 
-  it('should mark siteDetails as IN_PROGRESS when both sites have data missing', () => {
+  it('should correctly handle an empty object', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: [
-        {
-          coordinatesType: 'coordinates',
-          coordinatesEntry: 'single',
-          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-          coordinates: { latitude: '54.978252', longitude: '-1.617780' }
-        },
-        {
-          coordinatesType: 'coordinates',
-          coordinatesEntry: 'single',
-          coordinates: { latitude: '54.978252', longitude: '-1.617780' }
-        }
-      ],
+      siteDetails: [{}],
+      activityDates: { start: '2024-01-01', end: '2024-12-31' },
       activityDescription: 'Test description'
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
+      activityDates: COMPLETED,
       activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
-      siteDetails: IN_PROGRESS
-    })
-  })
-
-  it('should mark siteDetails as COMPLETED when both sites are complete', () => {
-    const exemption = {
-      publicRegister: 'Some value',
-      projectName: 'Test Project',
-      multipleSiteDetails: {
-        multipleSitesEnabled: true
-      },
-      siteDetails: [
-        {
-          siteName: 'Complete Site 1',
-          activityDates: { start: '2024-01-01', end: '2024-12-31' },
-          activityDescription: 'Complete site 1 description',
-          coordinatesType: 'coordinates',
-          coordinatesEntry: 'single',
-          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-          coordinates: { latitude: '54.978252', longitude: '-1.617780' },
-          circleWidth: '100'
-        },
-        {
-          siteName: 'Complete Site 2',
-          activityDates: { start: '2024-01-01', end: '2024-12-31' },
-          activityDescription: 'Complete site 2 description',
-          coordinatesType: 'coordinates',
-          coordinatesEntry: 'single',
-          coordinateSystem: COORDINATE_SYSTEMS.WGS84,
-          coordinates: { latitude: '55.123456', longitude: '-1.654321' },
-          circleWidth: '200'
-        }
-      ],
-      activityDescription: 'Test description'
-    }
-
-    const result = createTaskList(exemption)
-
-    expect(result).toEqual({
-      activityDescription: COMPLETED,
-      publicRegister: COMPLETED,
-      projectName: COMPLETED,
-      siteDetails: COMPLETED
+      siteDetails: INCOMPLETE
     })
   })
 })
