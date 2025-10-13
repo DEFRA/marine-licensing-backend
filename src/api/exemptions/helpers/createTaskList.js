@@ -87,33 +87,29 @@ const checkSiteDetailsMultiple = (siteDetails, multipleSitesEnabled) => {
 
 const getValidationStrategy = (coordinatesType, coordinatesEntry) => {
   if (coordinatesType === 'file') {
-    return 'fileUpload'
+    return checkSiteDetailsFileUpload
   }
   if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
-    return 'circle'
+    return checkSiteDetailsCircle
   }
   if (coordinatesType === 'coordinates' && coordinatesEntry === 'multiple') {
-    return 'multiple'
+    return checkSiteDetailsMultiple
   }
   return null
 }
 
 const validateSite = (site, multipleSitesEnabled) => {
   const { coordinatesEntry, coordinatesType } = site
-  const strategy = getValidationStrategy(coordinatesType, coordinatesEntry)
+  const validationStrategy = getValidationStrategy(
+    coordinatesType,
+    coordinatesEntry
+  )
 
-  if (!strategy) {
+  if (!validationStrategy) {
     return INCOMPLETE
   }
 
-  const validationStrategies = {
-    fileUpload: checkSiteDetailsFileUpload,
-    circle: checkSiteDetailsCircle,
-    multiple: checkSiteDetailsMultiple
-  }
-
-  const validator = validationStrategies[strategy]
-  return validator(site, multipleSitesEnabled)
+  return validationStrategy(site, multipleSitesEnabled)
 }
 
 const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
