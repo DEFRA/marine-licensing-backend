@@ -1,43 +1,76 @@
 import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../../common/constants/coordinates.js'
+
 export const COMPLETED = 'COMPLETED'
+export const IN_PROGRESS = 'IN_PROGRESS'
+export const INCOMPLETE = 'INCOMPLETE'
 
-const checkSiteDetailsCircle = (siteDetails) => {
+const addConditionalRequiredFields = (
+  baseRequiredValues,
+  multipleSitesEnabled
+) => {
   const requiredValues = [
-    'coordinatesType',
-    'coordinatesEntry',
-    'coordinateSystem',
-    'coordinates',
-    'circleWidth'
+    ...baseRequiredValues,
+    'activityDates',
+    'activityDescription'
   ]
-  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
-
-  return missingKeys.length === 0 ? COMPLETED : null
+  if (multipleSitesEnabled) {
+    requiredValues.push('siteName')
+  }
+  return requiredValues
 }
 
-const checkSiteDetailsFileUpload = (siteDetails) => {
-  const requiredValues = [
-    'coordinatesType',
-    'fileUploadType',
-    'geoJSON',
-    'featureCount',
-    's3Location'
-  ]
+const checkSiteDetailsCircle = (siteDetails, multipleSitesEnabled) => {
+  const requiredValues = addConditionalRequiredFields(
+    ['coordinateSystem', 'coordinates', 'circleWidth'],
+    multipleSitesEnabled
+  )
+
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
 
-  return missingKeys.length === 0 ? COMPLETED : null
+  if (missingKeys.length === 0) {
+    return COMPLETED
+  }
+
+  if (missingKeys.length === requiredValues.length) {
+    return INCOMPLETE
+  }
+
+  return IN_PROGRESS
 }
 
-const checkSiteDetailsMultiple = (siteDetails) => {
-  const requiredValues = [
-    'coordinatesType',
-    'coordinatesEntry',
-    'coordinateSystem',
-    'coordinates'
-  ]
+const checkSiteDetailsFileUpload = (siteDetails, multipleSitesEnabled) => {
+  const requiredValues = addConditionalRequiredFields(
+    ['fileUploadType', 'geoJSON', 'featureCount', 's3Location'],
+    multipleSitesEnabled
+  )
+
   const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
+
+  if (missingKeys.length === 0) {
+    return COMPLETED
+  }
+
+  if (missingKeys.length === requiredValues.length) {
+    return INCOMPLETE
+  }
+
+  return IN_PROGRESS
+}
+
+const checkSiteDetailsMultiple = (siteDetails, multipleSitesEnabled) => {
+  const requiredValues = addConditionalRequiredFields(
+    ['coordinateSystem', 'coordinates'],
+    multipleSitesEnabled
+  )
+
+  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
+
+  if (missingKeys.length === requiredValues.length) {
+    return INCOMPLETE
+  }
 
   if (missingKeys.length > 0) {
-    return null
+    return IN_PROGRESS
   }
 
   // Validate coordinates array has at least 3 points (minimum for polygon)
@@ -46,46 +79,72 @@ const checkSiteDetailsMultiple = (siteDetails) => {
     !Array.isArray(coordinates) ||
     coordinates.length < MIN_POINTS_MULTIPLE_COORDINATES
   ) {
-    return null
+    return IN_PROGRESS
   }
 
   return COMPLETED
 }
 
-const checkSiteDetails = (siteDetails) => {
-  if (!siteDetails || siteDetails.length === 0) {
-    return null
+const getValidationStrategy = (coordinatesType, coordinatesEntry) => {
+  if (coordinatesType === 'file') {
+    return checkSiteDetailsFileUpload
   }
+  if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
+    return checkSiteDetailsCircle
+  }
+  if (coordinatesType === 'coordinates' && coordinatesEntry === 'multiple') {
+    return checkSiteDetailsMultiple
+  }
+  return null
+}
+
+const validateSite = (site, multipleSitesEnabled) => {
+  const { coordinatesEntry, coordinatesType } = site
+  const validationStrategy = getValidationStrategy(
+    coordinatesType,
+    coordinatesEntry
+  )
+
+  if (!validationStrategy) {
+    return INCOMPLETE
+  }
+
+  return validationStrategy(site, multipleSitesEnabled)
+}
+
+const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
+  if (!siteDetails || siteDetails.length === 0) {
+    return INCOMPLETE
+  }
+
+  let hasInProgress = false
 
   for (const site of siteDetails) {
-    const { coordinatesEntry, coordinatesType } = site
-    let validationResult = null
+    const validationResult = validateSite(site, multipleSitesEnabled)
 
-    if (coordinatesType === 'file') {
-      validationResult = checkSiteDetailsFileUpload(site)
-    }
-    if (coordinatesEntry === 'single' && coordinatesType === 'coordinates') {
-      validationResult = checkSiteDetailsCircle(site)
-    }
-    if (coordinatesEntry === 'multiple' && coordinatesType === 'coordinates') {
-      validationResult = checkSiteDetailsMultiple(site)
+    if (validationResult === INCOMPLETE) {
+      return INCOMPLETE
     }
 
-    if (validationResult === null) {
-      return null
+    if (validationResult === IN_PROGRESS) {
+      hasInProgress = true
     }
   }
 
-  return COMPLETED
+  return hasInProgress ? IN_PROGRESS : COMPLETED
 }
 
 export const createTaskList = (exemption) => {
   const tasks = {
-    publicRegister: (value) => (value ? COMPLETED : null),
-    activityDates: (value) => (value ? COMPLETED : null),
-    projectName: (value) => (value ? COMPLETED : null),
-    siteDetails: (value) => checkSiteDetails(value),
-    activityDescription: (value) => (value ? COMPLETED : null)
+    publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
+    activityDates: (value) => (value ? COMPLETED : INCOMPLETE),
+    projectName: (value) => (value ? COMPLETED : INCOMPLETE),
+    siteDetails: (value) =>
+      checkSiteDetails(
+        value,
+        exemption.multipleSiteDetails?.multipleSitesEnabled
+      ),
+    activityDescription: (value) => (value ? COMPLETED : INCOMPLETE)
   }
 
   const taskList = {}

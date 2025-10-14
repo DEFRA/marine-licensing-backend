@@ -51,7 +51,11 @@ describe('GET /exemption', () => {
           id: mockId,
           projectName: 'Test project',
           taskList: {
-            projectName: 'COMPLETED'
+            activityDates: 'INCOMPLETE',
+            activityDescription: 'INCOMPLETE',
+            publicRegister: 'INCOMPLETE',
+            projectName: 'COMPLETED',
+            siteDetails: 'INCOMPLETE'
           }
         }
       })
@@ -136,7 +140,11 @@ describe('GET /exemption', () => {
           contactId: userId,
           projectName: 'Test project',
           taskList: {
-            projectName: 'COMPLETED'
+            activityDates: 'INCOMPLETE',
+            activityDescription: 'INCOMPLETE',
+            publicRegister: 'INCOMPLETE',
+            projectName: 'COMPLETED',
+            siteDetails: 'INCOMPLETE'
           }
         }
       })
@@ -199,7 +207,13 @@ describe('GET /exemption', () => {
           contactId: 'different-user-id',
           id: '123456789123456789123456',
           projectName: 'Test project',
-          taskList: { projectName: 'COMPLETED' }
+          taskList: {
+            activityDates: 'INCOMPLETE',
+            activityDescription: 'INCOMPLETE',
+            publicRegister: 'INCOMPLETE',
+            projectName: 'COMPLETED',
+            siteDetails: 'INCOMPLETE'
+          }
         }
       })
     )
