@@ -8,14 +8,14 @@ let client
 
 beforeAll(async () => {
   fetchMock.enableMocks()
-  global.fetch = fetchMock
-  global.fetchMock = fetchMock
-  global.mockHandler = {
+  globalThis.fetch = fetchMock
+  globalThis.fetchMock = fetchMock
+  globalThis.mockHandler = {
     response: vi.fn().mockReturnThis(),
     code: vi.fn().mockReturnThis()
   }
-  client = await MongoClient.connect(global.__MONGO_URI__)
-  global.mockMongo = client.db('marine-licensing-backend')
+  client = await MongoClient.connect(globalThis.__MONGO_URI__)
+  globalThis.mockMongo = client.db('marine-licensing-backend')
 })
 
 afterAll(async () => {

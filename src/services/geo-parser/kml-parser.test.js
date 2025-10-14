@@ -1,11 +1,11 @@
 import { vi } from 'vitest'
 import { KmlParser } from './kml-parser.js'
-import { readFile } from 'fs/promises'
+import { readFile } from 'node:fs/promises'
 import { JSDOM } from 'jsdom'
 import * as togeojson from '@tmcw/togeojson'
 import Boom from '@hapi/boom'
 
-vi.mock('fs/promises', () => ({
+vi.mock('node:fs/promises', () => ({
   readFile: vi.fn()
 }))
 

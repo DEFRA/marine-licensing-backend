@@ -3,12 +3,12 @@ import {
   HeadObjectCommand,
   GetObjectCommand
 } from '@aws-sdk/client-s3'
-import { createWriteStream } from 'fs'
-import { mkdir, rm } from 'fs/promises'
-import { join } from 'path'
-import { tmpdir } from 'os'
-import { randomUUID } from 'crypto'
-import { pipeline } from 'stream/promises'
+import { createWriteStream } from 'node:fs'
+import { mkdir, rm } from 'node:fs/promises'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { randomUUID } from 'node:crypto'
+import { pipeline } from 'node:stream/promises'
 import { config } from '../config.js'
 import { createLogger } from '../common/helpers/logging/logger.js'
 import Boom from '@hapi/boom'
