@@ -8,7 +8,7 @@ const MAX_NORTHINGS_LENGTH = 9999999
 
 const validateCoordinates = (value, helpers, type) => {
   const coordinate = Number(value)
-  if (isNaN(coordinate)) {
+  if (Number.isNaN(coordinate)) {
     return helpers.error('number.base')
   }
 
