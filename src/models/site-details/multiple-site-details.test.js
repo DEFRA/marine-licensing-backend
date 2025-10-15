@@ -30,9 +30,7 @@ describe('multipleSiteDetailsSchema', () => {
         const result = multipleSiteDetailsSchema.validate({})
 
         expect(result.error).toBeUndefined()
-        expect(result.value).toEqual({
-          multipleSitesEnabled: false
-        })
+        expect(result.value).toEqual({})
       })
     })
 
