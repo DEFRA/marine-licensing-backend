@@ -7,8 +7,10 @@ import Boom from '@hapi/boom'
 const logger = createLogger()
 
 export class KmlParser {
+  logSystem = 'FileUpload:KmlParser'
+
   async parseFile(filePath) {
-    logger.info({ filePath }, 'Parsing KML file')
+    logger.info({ filePath }, `${this.logSystem}: Parsing KML file`)
 
     try {
       const kmlContent = await readFile(filePath, 'utf-8')
@@ -19,12 +21,12 @@ export class KmlParser {
 
       const geoJSON = togeojson.kml(dom.window.document)
 
-      logger.debug(
+      logger.info(
         {
           filePath,
           featureCount: geoJSON.features?.length || 0
         },
-        'Successfully parsed KML file'
+        `${this.logSystem}: Successfully parsed KML file`
       )
 
       return geoJSON
@@ -32,9 +34,9 @@ export class KmlParser {
       logger.error(
         {
           filePath,
-          error: error.message
+          error
         },
-        'KmlParser: Failed to parse KML file'
+        `${this.logSystem}: Failed to parse KML file`
       )
 
       if (error.message.includes('Invalid XML')) {

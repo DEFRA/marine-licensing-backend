@@ -708,9 +708,9 @@ describe('ShapefileParser class', () => {
       expect(logger.error).toHaveBeenCalledWith(
         {
           tempDir: invalidPath,
-          error: 'Failed to cleanup'
+          error: new Error('Failed to cleanup')
         },
-        'Failed to clean up temporary directory'
+        'FileUpload:ShapefileParser: ERROR: Failed to clean up temporary directory'
       )
     })
   })

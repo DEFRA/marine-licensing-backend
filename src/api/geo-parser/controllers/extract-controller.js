@@ -22,7 +22,7 @@ export const extractController = {
 
     logger.info(
       { s3Bucket, s3Key, fileType },
-      'Processing geo-parser extract request'
+      `FileUpload: Processing geo-parser extract request`
     )
 
     try {
@@ -49,7 +49,7 @@ export const extractController = {
           fileType,
           featureCount: geoJSON.features?.length || 0
         },
-        'Successfully processed geo-parser extract request'
+        'FileUpload: Successfully processed geo-parser extract request'
       )
 
       return h
@@ -64,9 +64,9 @@ export const extractController = {
           s3Bucket,
           s3Key,
           fileType,
-          error: error.message
+          error
         },
-        'Failed to process geo-parser extract request'
+        `FileUpload: Failed to process geo-parser extract request`
       )
 
       if (error.isBoom) {

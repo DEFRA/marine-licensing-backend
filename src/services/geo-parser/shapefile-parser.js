@@ -45,6 +45,8 @@ export const MAX_PROJECTION_FILE_SIZE_BYTES = 50_000
  *
  */
 export class ShapefileParser {
+  logSystem = 'FileUpload:ShapefileParser'
+
   constructor(options = {}) {
     this.options = { ...DEFAULT_OPTIONS, ...options }
   }
@@ -60,7 +62,7 @@ export class ShapefileParser {
    * Safely extract a zip file to a temporary directory
    */
   async extractZip(zipPath) {
-    logger.info(`Extracting Zip file from ${zipPath}`)
+    logger.info(`${this.logSystem}: Extracting Zip file from ${zipPath}`)
     let fileCount = 0
     let totalSize = 0
     const tempDir = await fs.mkdtemp(join(tmpdir(), 'shapefile-'))
@@ -87,7 +89,9 @@ export class ShapefileParser {
         zip.extractEntryTo(zipEntry.entryName, tempDir)
       }
     }
-    logger.info(`Successfully extracted zip file from: ${zipPath}`)
+    logger.info(
+      `${this.logSystem}: Successfully extracted zip file from: ${zipPath}`
+    )
     return tempDir
   }
 
@@ -95,7 +99,10 @@ export class ShapefileParser {
    * Find all .shp files in a directory
    */
   async findShapefiles(directory) {
-    logger.info({ directory }, 'Searching for shapefiles in directory')
+    logger.info(
+      { directory },
+      `${this.logSystem}: Searching for shapefiles in directory`
+    )
 
     try {
       const files = await Array.fromAsync(
@@ -104,12 +111,15 @@ export class ShapefileParser {
         })
       )
       const found = files.map((file) => join(directory, file))
-      logger.info({ found, directory }, 'Found shapefiles in directory')
+      logger.info(
+        { found, directory },
+        `${this.logSystem}: Found shapefiles in directory`
+      )
       return found
     } catch (error) {
       logger.error(
-        { directory, error: error.message },
-        'Error during glob search'
+        { directory, error },
+        `${this.logSystem}: Error during glob search`
       )
       return []
     }
@@ -151,7 +161,7 @@ export class ShapefileParser {
       if (coords.length < 2) {
         logger.warn(
           { coords },
-          'Invalid coordinate pair: insufficient elements'
+          `${this.logSystem}: Invalid coordinate pair: insufficient elements`
         )
         return
       }
@@ -161,7 +171,7 @@ export class ShapefileParser {
       if (!Number.isFinite(x) || !Number.isFinite(y)) {
         logger.error(
           { original: coords, transformed: [x, y] },
-          'Invalid transformation result - no transformation has taken place'
+          `${this.logSystem}: Invalid transformation result - no transformation has taken place`
         )
         return
       }
@@ -217,12 +227,12 @@ export class ShapefileParser {
   async findProjectionFile(directory, basename) {
     logger.info(
       { directory, basename },
-      `Searching for projection file in directory with basename ${basename}`
+      `${this.logSystem}: Searching for projection file in directory with basename ${basename}`
     )
     if (!basename) {
       logger.error(
         { directory, basename },
-        `findProjectionFile: basename arg not provided`
+        `${this.logSystem}: findProjectionFile: basename arg not provided`
       )
       return null
     }
@@ -234,20 +244,23 @@ export class ShapefileParser {
       )
       const paths = files.map((file) => join(directory, file))
       if (paths[0]) {
-        logger.info({ paths }, `Found projection file: ${paths[0]}`)
+        logger.info(
+          { paths },
+          `${this.logSystem}: Found projection file: ${paths[0]}`
+        )
         return paths[0]
       } else {
         logger.error(
           { paths },
-          'No projection file found - coordinates will not be transformed'
+          `${this.logSystem}: No projection file found - coordinates will not be transformed`
         )
         // JMS: consider if we want to throw and reject the upload with a user message
         return null
       }
     } catch (error) {
       logger.error(
-        { directory, error: error.message },
-        'Error during glob search for prj file'
+        { directory, error },
+        `${this.logSystem}: Error during glob search for prj file`
       )
       return null
     }
@@ -264,7 +277,7 @@ export class ShapefileParser {
 
     if (!projFilePath) {
       logger.error(
-        'Error: Projection file not found in Shapefile .zip - no coordinate transformation will take place'
+        `${this.logSystem}: ERROR: Projection file not found in Shapefile .zip - no coordinate transformation will take place`
       )
       return null
     }
@@ -273,7 +286,7 @@ export class ShapefileParser {
     if (stats.size > MAX_PROJECTION_FILE_SIZE_BYTES) {
       logger.error(
         { size: stats.size },
-        `Projection file size ${stats.size} exceeds safe size limit ${MAX_PROJECTION_FILE_SIZE_BYTES} : no transformation will take place`
+        `${this.logSystem}: Projection file size ${stats.size} exceeds safe size limit ${MAX_PROJECTION_FILE_SIZE_BYTES} : no transformation will take place`
       )
       // JMS: consider whether we want to throw instead - and reject the upload
       return null
@@ -297,7 +310,7 @@ export class ShapefileParser {
     } catch (error) {
       logger.error(
         { error: error.message, projText },
-        'Failed to create proj4 transformer'
+        `${this.logSystem}: Failed to create proj4 transformer`
       )
       return null
     }
@@ -309,7 +322,7 @@ export class ShapefileParser {
   async parseFile(filename) {
     try {
       const extractDir = await this.extractZip(filename)
-      logger.debug({ extractDir }, 'Extracting zip')
+      logger.debug({ extractDir }, `${this.logSystem}: Extracting zip`)
       try {
         const shapefiles = await this.findShapefiles(extractDir)
 
@@ -317,7 +330,7 @@ export class ShapefileParser {
           {
             shapefiles
           },
-          'Shapefiles found before iteration'
+          `${this.logSystem}: Shapefiles found before iteration`
         )
 
         if (shapefiles.length === 0) {
@@ -350,14 +363,14 @@ export class ShapefileParser {
   async cleanupTempDirectory(tempDir) {
     try {
       await fs.rm(tempDir, { recursive: true, force: true })
-      logger.debug({ tempDir }, 'Cleaned up temp directory')
+      logger.debug({ tempDir }, `${this.logSystem}: Cleaned up temp directory`)
     } catch (error) {
       logger.error(
         {
           tempDir,
-          error: error.message
+          error
         },
-        'Failed to clean up temporary directory'
+        `${this.logSystem}: ERROR: Failed to clean up temporary directory`
       )
     }
   }

@@ -9,9 +9,13 @@ const logger = createLogger()
 export class GeoParser {
   processingTimeout = 30_000 // 30 seconds
   memoryLimit = 524_288_000 // 500MB in bytes
+  logSystem = 'FileUpload:GeoParser'
 
   async extract(s3Bucket, s3Key, fileType) {
-    logger.info({ s3Bucket, s3Key, fileType }, 'Starting geo-parser extraction')
+    logger.info(
+      { s3Bucket, s3Key, fileType },
+      `${this.logSystem}: Starting geo-parser extraction`
+    )
 
     let tempDir = null
 
@@ -33,7 +37,7 @@ export class GeoParser {
           fileType,
           featureCount: geoJSON.features?.length || 0
         },
-        'Successfully extracted GeoJSON'
+        `${this.logSystem}: Successfully extracted GeoJSON`
       )
 
       return geoJSON
@@ -43,9 +47,9 @@ export class GeoParser {
           s3Bucket,
           s3Key,
           fileType,
-          error: error.message
+          error
         },
-        'Failed to extract GeoJSON'
+        `${this.logSystem}: ERROR: Failed to extract GeoJSON`
       )
 
       if (error.isBoom) {
@@ -63,7 +67,7 @@ export class GeoParser {
   }
 
   async parseFile(filePath, fileType) {
-    logger.info({ filePath, fileType }, 'Parsing file')
+    logger.info({ filePath, fileType }, `${this.logSystem}: Parsing file`)
 
     // Use worker threads for CPU-intensive parsing to prevent blocking
     return new Promise((resolve, reject) => {
@@ -71,7 +75,7 @@ export class GeoParser {
         worker.terminate()
         logger.error(
           { filePath, fileType },
-          'Processing timeout exceeded: worker terminated'
+          `${this.logSystem}: Processing timeout exceeded: worker terminated`
         )
         reject(new Error('Processing timeout exceeded'))
       }, this.processingTimeout)
@@ -86,12 +90,15 @@ export class GeoParser {
 
         if (result.error) {
           logger.error(
-            { filePath, fileType },
-            `Failed to parse file: ${result.error}`
+            { filePath, fileType, error: result.error },
+            `${this.logSystem}: Failed to parse file`
           )
           reject(new Error(result.error))
         } else {
-          logger.info({ filePath, fileType }, 'File parsed successfully')
+          logger.info(
+            { filePath, fileType },
+            `${this.logSystem}: File parsed successfully`
+          )
           resolve(result.geoJSON)
         }
       })
@@ -102,9 +109,9 @@ export class GeoParser {
           {
             filePath,
             fileType,
-            error: error.message
+            error
           },
-          'Worker error during parsing'
+          `${this.logSystem}: Worker error during parsing`
         )
         reject(new Error(`Worker error: ${error.message}`))
       })
@@ -133,7 +140,7 @@ export class GeoParser {
       }
 
       if (geoJSON.features.length === 0) {
-        logger.warn('GeoJSON contains no features')
+        logger.warn(`${this.logSystem}: GeoJSON contains no features`)
       }
     }
 
@@ -153,7 +160,7 @@ export class GeoParser {
         featureCount: geoJSON.features?.length || 0,
         memoryUsage
       },
-      'GeoJSON validation passed'
+      `${this.logSystem}: validation passed`
     )
 
     return true
