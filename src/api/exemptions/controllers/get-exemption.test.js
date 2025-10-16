@@ -51,8 +51,6 @@ describe('GET /exemption', () => {
           id: mockId,
           projectName: 'Test project',
           taskList: {
-            activityDates: 'INCOMPLETE',
-            activityDescription: 'INCOMPLETE',
             publicRegister: 'INCOMPLETE',
             projectName: 'COMPLETED',
             siteDetails: 'INCOMPLETE'
@@ -140,8 +138,6 @@ describe('GET /exemption', () => {
           contactId: userId,
           projectName: 'Test project',
           taskList: {
-            activityDates: 'INCOMPLETE',
-            activityDescription: 'INCOMPLETE',
             publicRegister: 'INCOMPLETE',
             projectName: 'COMPLETED',
             siteDetails: 'INCOMPLETE'
@@ -208,8 +204,6 @@ describe('GET /exemption', () => {
           id: '123456789123456789123456',
           projectName: 'Test project',
           taskList: {
-            activityDates: 'INCOMPLETE',
-            activityDescription: 'INCOMPLETE',
             publicRegister: 'INCOMPLETE',
             projectName: 'COMPLETED',
             siteDetails: 'INCOMPLETE'

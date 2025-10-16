@@ -21,16 +21,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: COMPLETED
@@ -50,16 +46,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS
@@ -78,16 +70,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS
@@ -103,16 +91,12 @@ describe('createTaskList', () => {
           coordinatesType: 'file',
           fileUploadType: 'kml'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS
@@ -149,16 +133,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: COMPLETED
@@ -182,16 +162,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: COMPLETED
@@ -215,16 +191,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: COMPLETED
@@ -247,16 +219,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS
@@ -275,16 +243,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS
@@ -304,16 +268,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS
@@ -336,16 +296,12 @@ describe('createTaskList', () => {
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS
@@ -358,8 +314,6 @@ describe('createTaskList', () => {
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: 'INCOMPLETE',
-      activityDescription: 'INCOMPLETE',
       projectName: 'INCOMPLETE',
       publicRegister: 'INCOMPLETE',
       siteDetails: 'INCOMPLETE'
@@ -375,16 +329,12 @@ describe('createTaskList', () => {
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: INCOMPLETE
@@ -400,16 +350,12 @@ describe('createTaskList', () => {
           coordinatesType: 'coordinates',
           coordinatesEntry: 'multiple'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: INCOMPLETE
@@ -424,16 +370,12 @@ describe('createTaskList', () => {
         {
           coordinatesType: 'file'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: INCOMPLETE
@@ -460,16 +402,12 @@ describe('createTaskList', () => {
           coordinatesType: 'coordinates',
           coordinatesEntry: 'single'
         }
-      ],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      ]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: INCOMPLETE
@@ -480,16 +418,12 @@ describe('createTaskList', () => {
     const exemption = {
       publicRegister: 'Some value',
       projectName: 'Test Project',
-      siteDetails: [{}],
-      activityDates: { start: '2024-01-01', end: '2024-12-31' },
-      activityDescription: 'Test description'
+      siteDetails: [{}]
     }
 
     const result = createTaskList(exemption)
 
     expect(result).toEqual({
-      activityDates: COMPLETED,
-      activityDescription: COMPLETED,
       publicRegister: COMPLETED,
       projectName: COMPLETED,
       siteDetails: INCOMPLETE

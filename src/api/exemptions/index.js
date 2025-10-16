@@ -4,8 +4,6 @@ import { createProjectNameController } from './controllers/create-project-name.j
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
-import { createActivityDescriptionController } from './controllers/create-activity-description.js'
-import { createActivityDatesController } from './controllers/update-activity-dates.js'
 import { submitExemptionController } from './controllers/submit-exemption.js'
 import { deleteExemptionController } from './controllers/delete-exemption.js'
 
@@ -39,16 +37,6 @@ export const exemptions = [
     method: 'PATCH',
     path: '/exemption/site-details',
     ...updateSiteDetailsController
-  },
-  {
-    method: 'PATCH',
-    path: '/exemption/activity-description',
-    ...createActivityDescriptionController
-  },
-  {
-    method: 'PATCH',
-    path: '/exemption/activity-dates',
-    ...createActivityDatesController
   },
   {
     method: 'POST',
