@@ -27,7 +27,7 @@ export const updateSiteDetailsController = {
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            ...(multipleSiteDetails && { multipleSiteDetails }),
+            multipleSiteDetails,
             siteDetails,
             updatedAt,
             updatedBy

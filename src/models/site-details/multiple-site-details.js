@@ -1,7 +1,7 @@
 import joi from 'joi'
 
 export const multipleSiteDetailsSchema = joi.object({
-  multipleSitesEnabled: joi.boolean().default(false).messages({
+  multipleSitesEnabled: joi.boolean().messages({
     'boolean.base': 'MULTIPLE_SITES_REQUIRED'
   }),
   sameActivityDates: joi.when('multipleSitesEnabled', {
