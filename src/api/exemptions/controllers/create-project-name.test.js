@@ -262,8 +262,8 @@ describe('POST /exemptions/project-name', () => {
       }
     })
 
-    expect(() =>
-      createProjectNameController.handler(
+    await expect(async () =>
+      await createProjectNameController.handler(
         { db: mockMongo, payload: mockPayload, auth },
         mockHandler
       )

@@ -60,6 +60,7 @@ export class ShapefileParser {
    * Safely extract a zip file to a temporary directory
    */
   async extractZip(zipPath) {
+    logger.info(`Extracting Zip file from ${zipPath}`)
     let fileCount = 0
     let totalSize = 0
     const tempDir = await fs.mkdtemp(join(tmpdir(), 'shapefile-'))
@@ -86,6 +87,7 @@ export class ShapefileParser {
         zip.extractEntryTo(zipEntry.entryName, tempDir)
       }
     }
+    logger.info(`Successfully extracted zip file from: ${zipPath}`)
     return tempDir
   }
 
@@ -93,7 +95,7 @@ export class ShapefileParser {
    * Find all .shp files in a directory
    */
   async findShapefiles(directory) {
-    logger.debug({ directory }, 'Searching for shapefiles in directory')
+    logger.info({ directory }, 'Searching for shapefiles in directory')
 
     try {
       const files = await Array.fromAsync(
@@ -101,7 +103,9 @@ export class ShapefileParser {
           cwd: directory
         })
       )
-      return files.map((file) => join(directory, file))
+      const found = files.map((file) => join(directory, file))
+      logger.info({ found, directory }, 'Found shapefiles in directory')
+      return found
     } catch (error) {
       logger.error(
         { directory, error: error.message },
@@ -211,11 +215,15 @@ export class ShapefileParser {
    * @returns {Promise<string|null>}
    */
   async findProjectionFile(directory, basename) {
-    logger.debug(
-      { directory },
+    logger.info(
+      { directory, basename },
       `Searching for projection file in directory with basename ${basename}`
     )
     if (!basename) {
+      logger.error(
+        { directory, basename },
+        `findProjectionFile: basename arg not provided`
+      )
       return null
     }
     try {
@@ -226,7 +234,7 @@ export class ShapefileParser {
       )
       const paths = files.map((file) => join(directory, file))
       if (paths[0]) {
-        logger.debug({ paths }, `Found projection file: ${paths[0]}`)
+        logger.info({ paths }, `Found projection file: ${paths[0]}`)
         return paths[0]
       } else {
         logger.error(
@@ -256,7 +264,7 @@ export class ShapefileParser {
 
     if (!projFilePath) {
       logger.error(
-        'Projection file not found in Shapefile .zip - no coordinate transformation will take place'
+        'Error: Projection file not found in Shapefile .zip - no coordinate transformation will take place'
       )
       return null
     }

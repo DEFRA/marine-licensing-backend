@@ -16,7 +16,8 @@ vi.mock('../../common/helpers/logging/logger.js', () => {
   const logger = {
     debug: vi.fn(),
     error: vi.fn(),
-    warn: vi.fn()
+    warn: vi.fn(),
+    info: vi.fn()
   }
   return {
     createLogger: vi.fn(() => logger)

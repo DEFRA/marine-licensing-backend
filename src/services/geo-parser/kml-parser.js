@@ -8,7 +8,7 @@ const logger = createLogger()
 
 export class KmlParser {
   async parseFile(filePath) {
-    logger.debug({ filePath }, 'Parsing KML file')
+    logger.info({ filePath }, 'Parsing KML file')
 
     try {
       const kmlContent = await readFile(filePath, 'utf-8')
@@ -34,7 +34,7 @@ export class KmlParser {
           filePath,
           error: error.message
         },
-        'Failed to parse KML file'
+        'KmlParser: Failed to parse KML file'
       )
 
       if (error.message.includes('Invalid XML')) {

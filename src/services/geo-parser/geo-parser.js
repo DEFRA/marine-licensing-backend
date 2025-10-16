@@ -69,6 +69,10 @@ export class GeoParser {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         worker.terminate()
+        logger.error(
+          { filePath, fileType },
+          'Processing timeout exceeded: worker terminated'
+        )
         reject(new Error('Processing timeout exceeded'))
       }, this.processingTimeout)
 
@@ -81,8 +85,13 @@ export class GeoParser {
         clearTimeout(timeout)
 
         if (result.error) {
+          logger.error(
+            { filePath, fileType },
+            `Failed to parse file: ${result.error}`
+          )
           reject(new Error(result.error))
         } else {
+          logger.info({ filePath, fileType }, 'File parsed successfully')
           resolve(result.geoJSON)
         }
       })

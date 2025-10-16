@@ -103,7 +103,15 @@ class BlobService {
       const response = await this.client.send(command)
 
       if (!response.Body) {
-        throw new Error('No response body received from S3')
+        logger.error(
+          {
+            s3Bucket,
+            s3Key,
+            tempPath
+          },
+          'Error downloading file: no response body received from S3'
+        )
+        throw new Error(`No response body received from S3`)
       }
 
       const writeStream = createWriteStream(tempPath)
@@ -172,7 +180,7 @@ class BlobService {
     const maxFileSize = config.get('cdp.maxFileSize')
 
     if (metadata.size > maxFileSize) {
-      logger.warn(
+      logger.error(
         {
           s3Bucket,
           s3Key,
