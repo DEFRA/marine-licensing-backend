@@ -16,7 +16,8 @@ vi.mock('../../common/helpers/logging/logger.js', () => {
   const logger = {
     debug: vi.fn(),
     error: vi.fn(),
-    warn: vi.fn()
+    warn: vi.fn(),
+    info: vi.fn()
   }
   return {
     createLogger: vi.fn(() => logger)
@@ -703,13 +704,13 @@ describe('ShapefileParser class', () => {
       await expect(
         sut.cleanupTempDirectory(invalidPath)
       ).resolves.toBeUndefined()
-      expect(logger.error).toHaveBeenCalledTimes(1)
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledTimes(1)
+      expect(logger.warn).toHaveBeenCalledWith(
         {
           tempDir: invalidPath,
-          error: 'Failed to cleanup'
+          error: new Error('Failed to cleanup')
         },
-        'Failed to clean up temporary directory'
+        'FileUpload:ShapefileParser: ERROR: Failed to clean up temporary directory'
       )
     })
   })

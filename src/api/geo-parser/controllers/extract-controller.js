@@ -6,6 +6,7 @@ import { config } from '../../../config.js'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 
 const logger = createLogger()
+const logSystem = 'FileUpload:Extract Controller'
 
 export const extractController = {
   options: {
@@ -22,7 +23,7 @@ export const extractController = {
 
     logger.info(
       { s3Bucket, s3Key, fileType },
-      'Processing geo-parser extract request'
+      `${logSystem}: Processing geo-parser extract request`
     )
 
     try {
@@ -34,7 +35,7 @@ export const extractController = {
             s3Bucket,
             allowedBucket
           },
-          'S3 bucket validation failed'
+          `${logSystem}: S3 bucket validation failed`
         )
 
         throw Boom.forbidden('Invalid S3 bucket')
@@ -49,7 +50,7 @@ export const extractController = {
           fileType,
           featureCount: geoJSON.features?.length || 0
         },
-        'Successfully processed geo-parser extract request'
+        `${logSystem}: Successfully processed geo-parser extract request`
       )
 
       return h
@@ -64,9 +65,9 @@ export const extractController = {
           s3Bucket,
           s3Key,
           fileType,
-          error: error.message
+          error
         },
-        'Failed to process geo-parser extract request'
+        `${logSystem}: Failed to process geo-parser extract request`
       )
 
       if (error.isBoom) {

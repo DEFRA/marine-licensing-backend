@@ -275,7 +275,9 @@ describe('BlobService', () => {
       await expect(
         blobService.downloadFile(s3Bucket, s3Key, tempPath)
       ).rejects.toThrow(
-        Boom.internal('S3 download failed: No response body received from S3')
+        Boom.internal(
+          'S3 download failed: No response body received from S3: bucket=test-bucket, key=test-key.kml'
+        )
       )
     })
 
