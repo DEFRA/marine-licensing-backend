@@ -115,15 +115,16 @@ class BlobService {
       const response = await this.client.send(command)
 
       if (!response.Body) {
+        const errorMessage = `No response body received from S3: bucket=${s3Bucket}, key=${s3Key}`
         logger.error(
           {
             s3Bucket,
             s3Key,
             tempPath
           },
-          `${this.logSystem}: Error downloading file: no response body received from S3`
+          `${this.logSystem}: ${errorMessage}`
         )
-        throw new Error(`No response body received from S3`)
+        throw new Error(errorMessage)
       }
 
       const writeStream = createWriteStream(tempPath)
