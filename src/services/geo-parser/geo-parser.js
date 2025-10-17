@@ -74,7 +74,7 @@ export class GeoParser {
       const timeout = setTimeout(() => {
         worker.terminate()
         logger.error(
-          { filePath, fileType },
+          { filePath, fileType, timeout: this.processingTimeout },
           `${this.logSystem}: Processing timeout exceeded: worker terminated`
         )
         reject(new Error('Processing timeout exceeded'))

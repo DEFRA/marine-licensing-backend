@@ -704,8 +704,8 @@ describe('ShapefileParser class', () => {
       await expect(
         sut.cleanupTempDirectory(invalidPath)
       ).resolves.toBeUndefined()
-      expect(logger.error).toHaveBeenCalledTimes(1)
-      expect(logger.error).toHaveBeenCalledWith(
+      expect(logger.warn).toHaveBeenCalledTimes(1)
+      expect(logger.warn).toHaveBeenCalledWith(
         {
           tempDir: invalidPath,
           error: new Error('Failed to cleanup')

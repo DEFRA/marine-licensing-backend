@@ -231,8 +231,7 @@ export class ShapefileParser {
     )
     if (!basename) {
       logger.error(
-        { directory, basename },
-        `${this.logSystem}: findProjectionFile: basename arg not provided`
+        `${this.logSystem}: findProjectionFile: basename arg not provided - no transformation will take place`
       )
       return null
     }
@@ -365,7 +364,7 @@ export class ShapefileParser {
       await fs.rm(tempDir, { recursive: true, force: true })
       logger.debug({ tempDir }, `${this.logSystem}: Cleaned up temp directory`)
     } catch (error) {
-      logger.error(
+      logger.warn(
         {
           tempDir,
           error
