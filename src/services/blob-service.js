@@ -18,6 +18,7 @@ const awsConfig = config.get('aws')
 const cdpEnvironment = config.get('cdpEnvironment')
 
 class BlobService {
+  logSystem = 'FileUpload:BlobService'
   constructor(s3Client) {
     if (s3Client === undefined) {
       const options = {
@@ -32,8 +33,13 @@ class BlobService {
         options.forcePathStyle = true
       }
 
-      logger.info(options, 'BlobService: constructor(): S3 client options')
-      logger.info(`config: cdpEnvironment is [${cdpEnvironment}]`)
+      logger.info(
+        options,
+        `${this.logSystem}: constructor(): S3 client options`
+      )
+      logger.info(
+        `${this.logSystem}: config: cdpEnvironment is [${cdpEnvironment}]`
+      )
 
       this.client = new S3Client(options)
     } else {
@@ -43,7 +49,10 @@ class BlobService {
   }
 
   async getMetadata(s3Bucket, s3Key) {
-    logger.info({ s3Bucket, s3Key }, 'Retrieving S3 object metadata')
+    logger.info(
+      { s3Bucket, s3Key },
+      `${this.logSystem}: Retrieving S3 object metadata`
+    )
 
     try {
       const command = new HeadObjectCommand({
@@ -60,7 +69,7 @@ class BlobService {
           contentLength: response.ContentLength,
           lastModified: response.LastModified
         },
-        'Successfully retrieved S3 object metadata'
+        `${this.logSystem}: Successfully retrieved S3 object metadata`
       )
 
       return {
@@ -74,9 +83,9 @@ class BlobService {
         {
           s3Bucket,
           s3Key,
-          error: error.message
+          error
         },
-        'Failed to retrieve S3 object metadata'
+        `${this.logSystem}: Failed to retrieve S3 object metadata`
       )
 
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
@@ -92,7 +101,10 @@ class BlobService {
   }
 
   async downloadFile(s3Bucket, s3Key, tempPath) {
-    logger.info({ s3Bucket, s3Key, tempPath }, 'Downloading file from S3')
+    logger.info(
+      { s3Bucket, s3Key, tempPath },
+      `${this.logSystem}: Downloading file from S3`
+    )
 
     try {
       const command = new GetObjectCommand({
@@ -103,7 +115,16 @@ class BlobService {
       const response = await this.client.send(command)
 
       if (!response.Body) {
-        throw new Error('No response body received from S3')
+        const errorMessage = `No response body received from S3: bucket=${s3Bucket}, key=${s3Key}`
+        logger.error(
+          {
+            s3Bucket,
+            s3Key,
+            tempPath
+          },
+          `${this.logSystem}: ${errorMessage}`
+        )
+        throw new Error(errorMessage)
       }
 
       const writeStream = createWriteStream(tempPath)
@@ -117,7 +138,7 @@ class BlobService {
           s3Key,
           tempPath
         },
-        'Successfully downloaded file from S3'
+        `${this.logSystem}: Successfully downloaded file from S3`
       )
 
       return tempPath
@@ -127,9 +148,9 @@ class BlobService {
           s3Bucket,
           s3Key,
           tempPath,
-          error: error.message
+          error
         },
-        'Failed to download file from S3'
+        `${this.logSystem}: ERROR: Failed to download file from S3`
       )
 
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
@@ -148,21 +169,24 @@ class BlobService {
     const tempDir = join(tmpdir(), 'geo-parser', randomUUID())
     await mkdir(tempDir, { recursive: true })
 
-    logger.debug({ tempDir }, 'Created temporary directory')
+    logger.debug({ tempDir }, `${this.logSystem}: Created temporary directory`)
     return tempDir
   }
 
   async cleanupTempDirectory(tempDir) {
     try {
       await rm(tempDir, { recursive: true, force: true })
-      logger.debug({ tempDir }, 'Cleaned up temporary directory')
+      logger.debug(
+        { tempDir },
+        `${this.logSystem}: Cleaned up temporary directory`
+      )
     } catch (error) {
-      logger.error(
+      logger.warn(
         {
           tempDir,
-          error: error.message
+          error
         },
-        'Failed to clean up temporary directory'
+        `${this.logSystem}: Failed to clean up temporary directory`
       )
     }
   }
@@ -172,14 +196,14 @@ class BlobService {
     const maxFileSize = config.get('cdp.maxFileSize')
 
     if (metadata.size > maxFileSize) {
-      logger.warn(
+      logger.error(
         {
           s3Bucket,
           s3Key,
           fileSize: metadata.size,
           maxFileSize
         },
-        'File size exceeds maximum allowed size'
+        `${this.logSystem}: File size exceeds maximum allowed size`
       )
 
       throw Boom.entityTooLarge(
