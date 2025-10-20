@@ -20,7 +20,8 @@ vi.mock('@tmcw/togeojson', () => ({
 vi.mock('../../common/helpers/logging/logger.js', () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
-    error: vi.fn()
+    error: vi.fn(),
+    info: vi.fn()
   }))
 }))
 
