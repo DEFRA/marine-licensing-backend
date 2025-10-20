@@ -15,6 +15,7 @@ vi.mock('notifications-node-client', () => ({
 }))
 vi.mock('../helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
+vi.mock('../helpers/send-user-email-confirmation.js')
 vi.mock('../../../config.js')
 
 describe('POST /exemption/submit', () => {
@@ -35,11 +36,19 @@ describe('POST /exemption/submit', () => {
   beforeEach(() => {
     vi.resetAllMocks()
 
-    config.get.mockReturnValue({
-      isDynamicsEnabled: true,
-      apiKey: 'test-api-key',
-      retryIntervalSeconds: 1,
-      retries: 1
+    config.get.mockImplementation((key) => {
+      if (key === 'dynamics') {
+        return {
+          isDynamicsEnabled: true,
+          apiKey: 'test-api-key',
+          retryIntervalSeconds: 1,
+          retries: 1
+        }
+      }
+      if (key === 'frontEndBaseUrl') {
+        return 'http://localhost:3000'
+      }
+      return {}
     })
 
     mockDate = new Date('2025-06-15T10:30:00Z')
@@ -218,7 +227,6 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
-        applicantOrganisationId: null,
         ...mockAuditPayload
       })
     })
@@ -302,15 +310,14 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
     })
 
-    it('should insert request queue document with applicant organisation ID when available', async () => {
+    it('should insert request queue document regardless of organisation', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
-        organisations: {
-          applicant: {
-            id: 'org-123',
-            name: 'Test Organisation'
-          }
+        organisation: {
+          id: 'org-123',
+          name: 'Test Organisation',
+          userRelationshipType: 'Employee'
         },
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -344,7 +351,6 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
-        applicantOrganisationId: 'org-123',
         ...mockAuditPayload
       })
     })

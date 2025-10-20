@@ -1,18 +1,43 @@
 import { vi } from 'vitest'
 import { getExemptionsController, sortByStatus } from './get-exemptions.js'
 import { ObjectId } from 'mongodb'
-import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
-import { getApplicantOrganisationId } from '../helpers/get-applicant-organisation.js'
-
-vi.mock('../helpers/get-applicant-organisation.js', () => ({
-  getApplicantOrganisationId: vi.fn()
-}))
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_STATUS_LABEL
+} from '../../../common/constants/exemption.js'
 
 describe('getExemptionsController', () => {
   let mockRequest
   let mockH
   let mockDb
   let mockCollection
+  const testContactId = 'contact-123-abc'
+  const testOrgId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
+
+  const createAuthWithOrg = (organisationId = testOrgId) => ({
+    credentials: {
+      contactId: testContactId
+    },
+    artifacts: {
+      decoded: {
+        currentRelationshipId: '81d48d6c-6e94-f011-b4cc-000d3ac28f39',
+        relationships: [
+          `81d48d6c-6e94-f011-b4cc-000d3ac28f39:${organisationId}:CDP Child Org 1:0:Employee:0`
+        ]
+      }
+    }
+  })
+
+  const createAuthWithoutOrg = () => ({
+    credentials: {
+      contactId: testContactId
+    },
+    artifacts: {
+      decoded: {
+        relationships: []
+      }
+    }
+  })
 
   const mockExemptions = [
     {
@@ -20,36 +45,35 @@ describe('getExemptionsController', () => {
       status: EXEMPTION_STATUS.ACTIVE,
       applicationReference: 'EXEMPTION-2024-001',
       projectName: 'Other Project',
-      contactId: 'test-contact-id',
+      contactId: testContactId,
       submittedAt: '2024-01-15T10:00:00.000Z'
     },
     {
       _id: new ObjectId('507f1f77bcf86cd799439012'),
       status: EXEMPTION_STATUS.DRAFT,
       projectName: 'Test Project',
-      contactId: 'test-contact-id'
+      contactId: testContactId
     },
     {
       _id: new ObjectId('507f1f77bcf86cd799439013'),
       status: 'Unknown status',
       projectName: 'Beta Project',
-      contactId: 'test-contact-id'
+      contactId: testContactId
     },
     {
       _id: new ObjectId('507f1f77bcf86cd799439013'),
-      status: 'Closed',
+      status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Beta Project',
-      contactId: 'test-contact-id'
+      contactId: testContactId
     }
   ]
 
-  beforeEach(() => {
+  const setupMocks = () => {
     mockCollection = {
       find: vi.fn().mockReturnValue({
         sort: vi.fn().mockReturnValue({
           toArray: vi.fn()
-        }),
-        toArray: vi.fn()
+        })
       })
     }
 
@@ -64,26 +88,22 @@ describe('getExemptionsController', () => {
 
     mockRequest = {
       db: mockDb,
-      auth: {
-        credentials: {
-          contactId: 'test-contact-id'
-        }
-      }
+      auth: createAuthWithOrg()
     }
+  }
 
-    getApplicantOrganisationId.mockReturnValue('test-org-id')
-  })
+  beforeEach(() => setupMocks())
 
   describe('handler', () => {
-    it('should return all exemptions for a user with correct format', async () => {
+    it('should return all exemptions for a user with correct format when organisation id present', async () => {
       mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
       expect(mockCollection.find).toHaveBeenCalledWith({
-        contactId: 'test-contact-id',
-        'organisations.applicant.id': 'test-org-id'
+        contactId: testContactId,
+        'organisation.id': testOrgId
       })
 
       expect(mockH.response).toHaveBeenCalledWith({
@@ -92,19 +112,19 @@ describe('getExemptionsController', () => {
           {
             id: '507f1f77bcf86cd799439012',
             projectName: 'Test Project',
-            status: 'Draft'
+            status: EXEMPTION_STATUS_LABEL.DRAFT
           },
           {
             id: '507f1f77bcf86cd799439011',
             projectName: 'Other Project',
             applicationReference: 'EXEMPTION-2024-001',
-            status: 'Active',
+            status: EXEMPTION_STATUS_LABEL.ACTIVE,
             submittedAt: '2024-01-15T10:00:00.000Z'
           },
           {
             id: '507f1f77bcf86cd799439013',
             projectName: 'Beta Project',
-            status: 'Active'
+            status: EXEMPTION_STATUS_LABEL.ACTIVE
           },
           {
             id: '507f1f77bcf86cd799439013',
@@ -156,9 +176,9 @@ describe('getExemptionsController', () => {
 
       const responseValue = mockH.response.mock.calls[0][0].value
 
-      expect(responseValue[0].status).toBe('Draft')
-      expect(responseValue[1].status).toBe('Active')
-      expect(responseValue[2].status).toBe('Active')
+      expect(responseValue[0].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
+      expect(responseValue[1].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
+      expect(responseValue[2].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
       expect(responseValue[3].status).toBe('Unknown status')
     })
 
@@ -166,13 +186,15 @@ describe('getExemptionsController', () => {
       mockCollection
         .find()
         .sort()
-        .toArray.mockResolvedValue([{ _id: 'test', status: 'Closed' }])
+        .toArray.mockResolvedValue([
+          { _id: 'test', status: EXEMPTION_STATUS.ACTIVE }
+        ])
 
       await getExemptionsController.handler(mockRequest, mockH)
 
       const responseValue = mockH.response.mock.calls[0][0].value
 
-      expect(responseValue[0].status).toBe('Active')
+      expect(responseValue[0].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
     })
 
     it('should handle exemptions without project names gracefully', async () => {
@@ -183,7 +205,7 @@ describe('getExemptionsController', () => {
           {
             _id: new ObjectId('507f1f77bcf86cd799439011'),
             status: EXEMPTION_STATUS.DRAFT,
-            contactId: 'test-contact-id'
+            contactId: testContactId
           },
           mockExemptions[1]
         ])
@@ -193,8 +215,8 @@ describe('getExemptionsController', () => {
       const responseValue = mockH.response.mock.calls[0][0].value
 
       expect(responseValue).toHaveLength(2)
-      expect(responseValue[0].status).toBe('Draft')
-      expect(responseValue[1].status).toBe('Draft')
+      expect(responseValue[0].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
+      expect(responseValue[1].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
     })
 
     it('should call sort with projectName in descending order', async () => {
@@ -207,38 +229,91 @@ describe('getExemptionsController', () => {
       })
     })
 
-    it('should query without applicantOrganisationId when getApplicantOrganisationId returns null', async () => {
-      getApplicantOrganisationId.mockReturnValue(null)
+    it('should exclude exemptions with beneficiary organisation when user has no relationships', async () => {
+      mockRequest.auth = createAuthWithoutOrg()
       mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
       expect(mockCollection.find).toHaveBeenCalledWith({
-        contactId: 'test-contact-id'
+        contactId: testContactId,
+        'organisation.id': { $exists: false }
       })
+    })
+
+    it('should throw error when user is not authenticated (no contactId)', async () => {
+      mockRequest.auth = {
+        credentials: {},
+        artifacts: {
+          decoded: {
+            relationships: []
+          }
+        }
+      }
+
+      await expect(
+        getExemptionsController.handler(mockRequest, mockH)
+      ).rejects.toThrow('User not authenticated')
+    })
+
+    it('should return OK status code', async () => {
+      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
+
+      await getExemptionsController.handler(mockRequest, mockH)
+
+      expect(mockH.code).toHaveBeenCalledWith(200)
     })
   })
 
   describe('sortByStatus', () => {
-    it('should put DRAFTs at the top', () => {
+    it('should put DRAFT status at the top', () => {
       const exemptions = [
-        { status: EXEMPTION_STATUS.DRAFT, projectName: 'Draft Project' },
-        { status: EXEMPTION_STATUS.ACTIVE, projectName: 'Closed Project' }
+        {
+          status: EXEMPTION_STATUS_LABEL.ACTIVE,
+          projectName: 'Active Project'
+        },
+        { status: EXEMPTION_STATUS_LABEL.DRAFT, projectName: 'Draft Project' }
       ]
       const result = exemptions.sort(sortByStatus)
-      expect(result[0].status).toBe(EXEMPTION_STATUS.DRAFT)
-      expect(result[1].status).toBe(EXEMPTION_STATUS.ACTIVE)
+      expect(result[0].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
+      expect(result[1].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
     })
 
-    it('should correctly hadle unknown status', () => {
+    it('should put ACTIVE status second', () => {
       const exemptions = [
-        { status: 'UNKNOWN_STATUS', projectName: 'Unknown Project' },
-        { status: 'Draft', projectName: 'Draft Project' }
+        { status: 'Unknown', projectName: 'Unknown Project' },
+        {
+          status: EXEMPTION_STATUS_LABEL.ACTIVE,
+          projectName: 'Active Project'
+        },
+        { status: EXEMPTION_STATUS_LABEL.DRAFT, projectName: 'Draft Project' }
       ]
       const result = exemptions.sort(sortByStatus)
-      expect(result[0].status).toBe('Draft')
+      expect(result[0].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
+      expect(result[1].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
+      expect(result[2].status).toBe('Unknown')
+    })
+
+    it('should handle unknown status by placing it last', () => {
+      const exemptions = [
+        { status: 'UNKNOWN_STATUS', projectName: 'Unknown Project' },
+        { status: EXEMPTION_STATUS_LABEL.DRAFT, projectName: 'Draft Project' }
+      ]
+      const result = exemptions.sort(sortByStatus)
+      expect(result[0].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
       expect(result[1].status).toBe('UNKNOWN_STATUS')
       expect(result[1].projectName).toBe('Unknown Project')
+    })
+
+    it('should preserve order for multiple items with same status', () => {
+      const exemptions = [
+        { status: EXEMPTION_STATUS_LABEL.ACTIVE, projectName: 'Active 1' },
+        { status: EXEMPTION_STATUS_LABEL.ACTIVE, projectName: 'Active 2' }
+      ]
+      const result = exemptions.sort(sortByStatus)
+      expect(result).toHaveLength(2)
+      expect(result[0].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
+      expect(result[1].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
     })
   })
 })

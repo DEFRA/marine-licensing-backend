@@ -55,17 +55,31 @@ export const projectName = joi.object({
       'string.max': 'PROJECT_NAME_MAX_LENGTH',
       'any.required': 'PROJECT_NAME_REQUIRED'
     }),
-  applicantOrganisationId: joi.string().min(ORG_STRING_MIN_LENGTH).messages({
-    'string.empty': 'APPLICANT_ORGANISATION_ID_REQUIRED',
-    'any.required': 'APPLICANT_ORGANISATION_ID_REQUIRED'
-  }),
-  applicantOrganisationName: joi.when('applicantOrganisationId', {
+  organisationId: joi
+    .string()
+    .min(ORG_STRING_MIN_LENGTH)
+    .messages({
+      'string.empty': '' + 'ORGANISATION_ID_REQUIRED',
+      'any.required': '' + 'ORGANISATION_ID_REQUIRED'
+    }),
+  organisationName: joi.when('organisationId', {
     is: joi.exist(),
-    then: joi.string().required().min(ORG_STRING_MIN_LENGTH).messages({
-      'string.empty': 'APPLICANT_ORGANISATION_NAME_REQUIRED',
-      'any.required': 'APPLICANT_ORGANISATION_NAME_REQUIRED'
+    then: joi
+      .string()
+      .required()
+      .min(ORG_STRING_MIN_LENGTH)
+      .messages({
+        'string.empty': '' + 'ORGANISATION_NAME_REQUIRED',
+        'any.required': '' + 'ORGANISATION_NAME_REQUIRED'
+      })
+  }),
+  userRelationshipType: joi
+    .string()
+    .valid('Employee', 'Agent', 'Citizen')
+    .messages({
+      'string.empty': '' + 'USER_RELATIONSHIP_TYPE_REQUIRED',
+      'any.required': '' + 'USER_RELATIONSHIP_TYPE_REQUIRED'
     })
-  })
 })
 
 export const createProjectName = projectName.append(mcmsContext)
