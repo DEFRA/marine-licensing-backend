@@ -58,6 +58,7 @@ describe('POST /exemptions/project-name', () => {
     it('should validate successfully with mcmsContext', () => {
       const result = payloadValidator.validate({
         projectName: 'Test Project',
+        userRelationshipType: 'Citizen',
         ...mockMcmsContext
       })
 
@@ -68,7 +69,8 @@ describe('POST /exemptions/project-name', () => {
 
     it('should validate successfully if mcmsContext is undefined', () => {
       const result = payloadValidator.validate({
-        projectName: 'Test Project'
+        projectName: 'Test Project',
+        userRelationshipType: 'Citizen'
       })
 
       expect(result.error).toBeUndefined()
@@ -79,6 +81,7 @@ describe('POST /exemptions/project-name', () => {
     it('should validate successfully if mcmsContext is null', () => {
       const result = payloadValidator.validate({
         projectName: 'Test Project',
+        userRelationshipType: 'Citizen',
         mcmsContext: null
       })
 

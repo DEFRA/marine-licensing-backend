@@ -44,17 +44,7 @@ const mcmsContext = {
 
 const ORG_STRING_MIN_LENGTH = 1
 
-export const projectName = joi.object({
-  projectName: joi
-    .string()
-    .min(1)
-    .max(PROJECT_NAME_MAX_LENGTH)
-    .required()
-    .messages({
-      'string.empty': 'PROJECT_NAME_REQUIRED',
-      'string.max': 'PROJECT_NAME_MAX_LENGTH',
-      'any.required': 'PROJECT_NAME_REQUIRED'
-    }),
+const organisation = {
   organisationId: joi.string().min(ORG_STRING_MIN_LENGTH).messages({
     'string.empty': 'ORGANISATION_ID_REQUIRED',
     'any.required': 'ORGANISATION_ID_REQUIRED'
@@ -68,13 +58,29 @@ export const projectName = joi.object({
   }),
   userRelationshipType: joi
     .string()
+    .required()
     .valid('Employee', 'Agent', 'Citizen')
     .messages({
       'string.empty': 'USER_RELATIONSHIP_TYPE_REQUIRED',
       'any.required': 'USER_RELATIONSHIP_TYPE_REQUIRED'
     })
+}
+
+export const projectName = joi.object({
+  projectName: joi
+    .string()
+    .min(1)
+    .max(PROJECT_NAME_MAX_LENGTH)
+    .required()
+    .messages({
+      'string.empty': 'PROJECT_NAME_REQUIRED',
+      'string.max': 'PROJECT_NAME_MAX_LENGTH',
+      'any.required': 'PROJECT_NAME_REQUIRED'
+    })
 })
 
-export const createProjectName = projectName.append(mcmsContext)
+export const createProjectName = projectName
+  .append(mcmsContext)
+  .append(organisation)
 
 export const updateProjectName = projectName.append(exemptionId)
