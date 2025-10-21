@@ -4,22 +4,26 @@ import { createLogger } from '../../../common/helpers/logging/logger.js'
 import { retryAsyncOperation } from '../../../common/helpers/retry-async-operation.js'
 import { ErrorWithData } from '../../../common/helpers/error-with-data.js'
 
+const getNotifyTemplateId = (organisation) => {
+  if (organisation?.userRelationshipType === 'Employee') {
+    return config.get('notify.notifyTemplateIdEmployee')
+  }
+  if (organisation?.userRelationshipType === 'Agent') {
+    return config.get('notify.notifyTemplateIdAgent')
+  }
+  return config.get('notify.notifyTemplateId')
+}
+
 const sendEmail = async ({
   userName,
   userEmail,
-  applicantOrganisationName,
+  organisation,
   applicationReference,
   frontEndBaseUrl,
   exemptionId
 }) => {
   const logger = createLogger()
-  const {
-    apiKey,
-    retryIntervalSeconds,
-    retries,
-    notifyTemplateId,
-    notifyTemplateIdOrganisation
-  } = config.get('notify')
+  const { apiKey, retryIntervalSeconds, retries } = config.get('notify')
   if (!apiKey) {
     throw new Error('Notify API key is not set')
   }
@@ -31,7 +35,7 @@ const sendEmail = async ({
       name: userName,
       reference: applicationReference,
       viewDetailsUrl,
-      applicantOrganisationName
+      organisationName: organisation?.name
     },
     reference: emailSendReference
   }
@@ -39,9 +43,7 @@ const sendEmail = async ({
     const result = await retryAsyncOperation({
       operation: async () => {
         try {
-          const templateId = applicantOrganisationName
-            ? notifyTemplateIdOrganisation
-            : notifyTemplateId
+          const templateId = getNotifyTemplateId(organisation)
           const response = await notifyClient.sendEmail(
             templateId,
             userEmail,
@@ -78,7 +80,7 @@ export const sendUserEmailConfirmation = async ({
   db,
   userName,
   userEmail,
-  applicantOrganisationName = null,
+  organisation,
   applicationReference,
   frontEndBaseUrl,
   exemptionId
@@ -86,7 +88,7 @@ export const sendUserEmailConfirmation = async ({
   const result = await sendEmail({
     userName,
     userEmail,
-    applicantOrganisationName,
+    organisation,
     applicationReference,
     frontEndBaseUrl,
     exemptionId

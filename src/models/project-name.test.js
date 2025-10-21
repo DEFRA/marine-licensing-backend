@@ -12,7 +12,9 @@ import {
 describe('Project name validation schemas', () => {
   describe('projectName schema', () => {
     it('should validate when projectName is a valid string', () => {
-      const result = projectName.validate({ projectName: 'Valid Project Name' })
+      const result = projectName.validate({
+        projectName: 'Valid Project Name'
+      })
       expect(result.error).toBeUndefined()
       expect(result.value.projectName).toBe('Valid Project Name')
     })
@@ -41,72 +43,12 @@ describe('Project name validation schemas', () => {
       expect(result.error).toBeDefined()
       expect(result.error.message).toBe('"projectName" must be a string')
     })
-
-    it('should fail when applicantOrganisationId is provided without applicantOrganisationName', () => {
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: 'org-123'
-      })
-      expect(result.error).toBeDefined()
-      expect(result.error.message).toBe('APPLICANT_ORGANISATION_NAME_REQUIRED')
-    })
-
-    it('should validate with both applicantOrganisationId and applicantOrganisationName', () => {
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: 'org-123',
-        applicantOrganisationName: 'Test Organisation Ltd'
-      })
-      expect(result.error).toBeUndefined()
-      expect(result.value.applicantOrganisationId).toBe('org-123')
-      expect(result.value.applicantOrganisationName).toBe(
-        'Test Organisation Ltd'
-      )
-    })
-
-    it('should fail when applicantOrganisationId is empty string', () => {
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: ''
-      })
-      expect(result.error).toBeDefined()
-      expect(result.error.message).toBe('APPLICANT_ORGANISATION_ID_REQUIRED')
-    })
-
-    it('should fail when applicantOrganisationName is required but missing', () => {
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: 'org-123'
-      })
-      expect(result.error).toBeDefined()
-      expect(result.error.message).toBe('APPLICANT_ORGANISATION_NAME_REQUIRED')
-    })
-
-    it('should fail when applicantOrganisationName is empty string but applicantOrganisationId is provided', () => {
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: 'org-123',
-        applicantOrganisationName: ''
-      })
-      expect(result.error).toBeDefined()
-      expect(result.error.message).toBe('APPLICANT_ORGANISATION_NAME_REQUIRED')
-    })
-
-    it('should validate when applicantOrganisationName is exactly 200 characters', () => {
-      const maxLengthOrgName = 'a'.repeat(200)
-      const result = projectName.validate({
-        projectName: 'Test Project',
-        applicantOrganisationId: 'org-123',
-        applicantOrganisationName: maxLengthOrgName
-      })
-      expect(result.error).toBeUndefined()
-      expect(result.value.applicantOrganisationName).toBe(maxLengthOrgName)
-    })
   })
 
   describe('createProjectName schema', () => {
     const validPayload = {
-      projectName: 'Valid Project Name'
+      projectName: 'Valid Project Name',
+      userRelationshipType: 'Citizen'
     }
 
     describe('when mcmsContext is not provided', () => {
@@ -396,21 +338,19 @@ describe('Project name validation schemas', () => {
       })
     })
 
-    describe('when applicant organisation fields are provided', () => {
-      it('should validate with applicantOrganisationId and applicantOrganisationName', () => {
+    describe('when organisation fields are provided', () => {
+      it('should validate with organisationId and organisationName', () => {
         const result = createProjectName.validate({
           ...validPayload,
-          applicantOrganisationId: 'org-456',
-          applicantOrganisationName: 'Example Organisation'
+          organisationId: 'org-456',
+          organisationName: 'Example Organisation'
         })
         expect(result.error).toBeUndefined()
-        expect(result.value.applicantOrganisationId).toBe('org-456')
-        expect(result.value.applicantOrganisationName).toBe(
-          'Example Organisation'
-        )
+        expect(result.value.organisationId).toBe('org-456')
+        expect(result.value.organisationName).toBe('Example Organisation')
       })
 
-      it('should validate with applicantOrganisationId and applicantOrganisationName plus mcmsContext', () => {
+      it('should validate with organisationId and organisationName plus mcmsContext', () => {
         const validMcmsContext = {
           activityType: activityTypes.CON,
           article: articleCodes[0],
@@ -421,16 +361,90 @@ describe('Project name validation schemas', () => {
 
         const result = createProjectName.validate({
           ...validPayload,
-          applicantOrganisationId: 'org-789',
-          applicantOrganisationName: 'Test Organisation with MCMS',
+          organisationId: 'org-789',
+          organisationName: 'Test Organisation with MCMS',
           mcmsContext: validMcmsContext
         })
         expect(result.error).toBeUndefined()
-        expect(result.value.applicantOrganisationId).toBe('org-789')
-        expect(result.value.applicantOrganisationName).toBe(
+        expect(result.value.organisationId).toBe('org-789')
+        expect(result.value.organisationName).toBe(
           'Test Organisation with MCMS'
         )
         expect(result.value.mcmsContext).toEqual(validMcmsContext)
+      })
+
+      it('should fail when organisationId is provided without organisationName', () => {
+        const result = createProjectName.validate({
+          projectName: 'Test Project',
+          organisationId: 'org-123'
+        })
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toBe('ORGANISATION_NAME_REQUIRED')
+      })
+
+      it('should validate with both organisationId and organisationName', () => {
+        const result = createProjectName.validate({
+          projectName: 'Test Project',
+          organisationId: 'org-123',
+          organisationName: 'Test Organisation Ltd',
+          userRelationshipType: 'Citizen'
+        })
+        expect(result.error).toBeUndefined()
+        expect(result.value.organisationId).toBe('org-123')
+        expect(result.value.organisationName).toBe('Test Organisation Ltd')
+      })
+
+      it('should fail when organisationId is empty string', () => {
+        const result = createProjectName.validate({
+          projectName: 'Test Project',
+          organisationId: ''
+        })
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toBe('ORGANISATION_ID_REQUIRED')
+      })
+
+      it('should fail when organisationName is required but missing', () => {
+        const result = createProjectName.validate({
+          projectName: 'Test Project',
+          organisationId: 'org-123'
+        })
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toBe('ORGANISATION_NAME_REQUIRED')
+      })
+
+      it('should fail when organisationName is empty string but organisationId is provided', () => {
+        const result = createProjectName.validate({
+          projectName: 'Test Project',
+          organisationId: 'org-123',
+          organisationName: ''
+        })
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toBe('ORGANISATION_NAME_REQUIRED')
+      })
+
+      it('should validate when organisationName is any length', () => {
+        const maxLengthOrgName = 'a'.repeat(200)
+        const result = createProjectName.validate({
+          projectName: 'Test Project',
+          organisationId: 'org-123',
+          organisationName: maxLengthOrgName,
+          userRelationshipType: 'Citizen'
+        })
+        expect(result.error).toBeUndefined()
+        expect(result.value.organisationName).toBe(maxLengthOrgName)
+      })
+
+      it('should fail when userRelationshipType is not valid', () => {
+        const result = createProjectName.validate({
+          projectName: 'Test Project',
+          organisationId: 'org-123',
+          organisationName: 'Test Organisation Ltd',
+          userRelationshipType: 'INVALID_TYPE'
+        })
+        expect(result.error).toBeDefined()
+        expect(result.error.message).toBe(
+          '"userRelationshipType" must be one of [Employee, Agent, Citizen]'
+        )
       })
     })
   })

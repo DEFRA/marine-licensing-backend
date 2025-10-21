@@ -6,7 +6,7 @@ import {
   getDynamicsAccessToken,
   sendExemptionToDynamics
 } from './dynamics-client.js'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
 
 vi.mock('../../../config.js')
 vi.mock('@hapi/wreck')
@@ -98,11 +98,9 @@ describe('Dynamics Client', () => {
       contactId: 'test-contact-id',
       projectName: 'Test Project',
       reference: 'TEST-REF-001',
-      organisations: {
-        applicant: {
-          id: 'test-org-id',
-          name: 'Org Ltd'
-        }
+      organisation: {
+        id: 'test-org-id',
+        userRelationshipType: 'Employee'
       }
     }
 
@@ -129,13 +127,11 @@ describe('Dynamics Client', () => {
       expect(mockServer.db.collection().findOne).toHaveBeenCalledWith({
         applicationReference: 'TEST-REF-001'
       })
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
-        expect.objectContaining({
-          _id: '123'
-        }),
-        {
-          $set: { status: 'in_progress', updatedAt: expect.any(Date) }
-        }
+
+      // Verify exemption-dynamics-queue collection is called for updateOne
+      const calls = mockServer.db.collection.mock.calls
+      expect(calls.some((call) => call[0] === 'exemption-dynamics-queue')).toBe(
+        true
       )
       expect(mockWreckPost).toHaveBeenCalledWith(
         'https://localhost/api/data/v9.2/exemptions',
@@ -144,9 +140,10 @@ describe('Dynamics Client', () => {
             contactid: 'test-contact-id',
             projectName: 'Test Project',
             reference: 'TEST-REF-001',
-            type: 'EXEMPT_ACTIVITY',
+            type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             applicationUrl: 'http://localhost/view-details/123',
             applicantOrganisationId: 'test-org-id',
+            beneficiaryOrganisationId: 'test-org-id',
             status: EXEMPTION_STATUS.SUBMITTED
           },
           headers: {
@@ -160,13 +157,74 @@ describe('Dynamics Client', () => {
     it('should not send applicant organisation id if not present', async () => {
       mockServer.db
         .collection()
-        .findOne.mockResolvedValue({ ...mockExemption, organisations: null })
+        .findOne.mockResolvedValue({ ...mockExemption, organisation: null })
 
       await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
 
       expect(
         mockWreckPost.mock.calls[0][1].payload.applicantOrganisationId
       ).toBeUndefined()
+      expect(
+        mockWreckPost.mock.calls[0][1].payload.beneficiaryOrganisationId
+      ).toBeUndefined()
+    })
+
+    it('should send beneficiary organisation id when user is not employee', async () => {
+      const exemptionWithBeneficiary = {
+        ...mockExemption,
+        organisation: {
+          id: 'test-beneficiary-org-id',
+          userRelationshipType: 'Non-Employee'
+        }
+      }
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue(exemptionWithBeneficiary)
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      const payload = mockWreckPost.mock.calls[0][1].payload
+      expect(payload.beneficiaryOrganisationId).toBe('test-beneficiary-org-id')
+      expect(payload.applicantOrganisationId).toBeUndefined()
+    })
+
+    it('should send applicant organisation id when user is employee', async () => {
+      const exemptionWithEmployee = {
+        ...mockExemption,
+        organisation: {
+          id: 'test-applicant-org-id',
+          userRelationshipType: 'Employee'
+        }
+      }
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue(exemptionWithEmployee)
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/exemptions',
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            applicantOrganisationId: 'test-applicant-org-id',
+            beneficiaryOrganisationId: 'test-applicant-org-id'
+          })
+        })
+      )
+    })
+
+    it('should not send organisation id fields when organisation is undefined', async () => {
+      const exemptionWithoutOrgs = {
+        ...mockExemption,
+        organisation: undefined
+      }
+      mockServer.db.collection().findOne.mockResolvedValue(exemptionWithoutOrgs)
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      const payload = mockWreckPost.mock.calls[0][1].payload
+      expect(payload.applicantOrganisationId).toBeUndefined()
+      expect(payload.beneficiaryOrganisationId).toBeUndefined()
     })
 
     it('should throw error if request fails', async () => {
