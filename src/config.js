@@ -16,6 +16,44 @@ if (process.env.ENVIRONMENT !== 'production') {
 
 const oneMinuteInMS = 60 * 1000
 
+// Custom convict format that requires an env var override for vars that have non-prod default values set.
+// Applied to sensitive configs like API URLs, credentials, and service endpoints.
+const requiredFromEnvInCdp = 'required-from-env-in-cdp'
+
+export const isCdpProductionLikeEnvironment = (env) =>
+  ['prod', 'perf-test', 'test'].includes(env)
+
+export const isNotCdpProductionLikeEnvironment = (env) =>
+  !isCdpProductionLikeEnvironment(env)
+
+/**
+ * 'required-from-env-in-cdp' format: When you must have an env var override the default value.
+ * This is used for sensitive vars that take local-config default values and the prod values MUST come from the
+ * environment.
+ *
+ * This is concerned with cdpEnvironments: prod (which is production), and perf-test (which is the equivalent of
+ * pre-production), and test.
+ */
+convict.addFormat({
+  name: requiredFromEnvInCdp,
+  validate: function (val, schema) {
+    const env = process.env.ENVIRONMENT ?? 'local'
+    // Validate that `requiredFromEnvInCdp` env vars are set from the environment on these CDP environments
+    if (isNotCdpProductionLikeEnvironment(env)) {
+      return
+    }
+
+    const invalidValues = schema.default === undefined ? [] : [schema.default] // never allow the default
+    invalidValues.push('') // dont allow empty strings
+
+    if (invalidValues.includes(val)) {
+      throw new Error(
+        `${schema.env || 'Configuration value'} must be set for ${env} environment (current value is invalid for production)`
+      )
+    }
+  }
+})
+
 const config = convict({
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
@@ -43,7 +81,7 @@ const config = convict({
   },
   frontEndBaseUrl: {
     doc: 'Base URL for the front end application',
-    format: String,
+    format: requiredFromEnvInCdp,
     default: 'http://localhost:3000',
     env: 'FRONTEND_BASE_URL'
   },
@@ -65,7 +103,7 @@ const config = convict({
   defraId: {
     jwksUri: {
       doc: 'JWKS Token validation url',
-      format: String,
+      format: requiredFromEnvInCdp,
       default: 'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json',
       env: 'DEFRA_ID_JWKS_URI'
     }
@@ -108,7 +146,7 @@ const config = convict({
   mongo: {
     mongoUrl: {
       doc: 'URI for mongodb',
-      format: String,
+      format: requiredFromEnvInCdp,
       default: 'mongodb://127.0.0.1:27017/',
       env: 'MONGO_URI'
     },
@@ -187,7 +225,7 @@ const config = convict({
   cdp: {
     uploadBucket: {
       doc: 'S3 bucket for file uploads - required for S3 bucket validation',
-      format: String,
+      format: requiredFromEnvInCdp,
       default: 'mmo-uploads',
       env: 'CDP_UPLOAD_BUCKET'
     },
@@ -201,13 +239,13 @@ const config = convict({
   dynamics: {
     clientId: {
       doc: 'The client ID.',
-      format: String,
+      format: requiredFromEnvInCdp,
       default: '',
       env: 'DYNAMICS_CLIENT_ID'
     },
     clientSecret: {
       doc: 'The client secret.',
-      format: String,
+      format: requiredFromEnvInCdp,
       default: '',
       env: 'DYNAMICS_CLIENT_SECRET'
     },
@@ -226,7 +264,7 @@ const config = convict({
     },
     apiUrl: {
       doc: 'URL for the Dynamics API',
-      format: String,
+      format: requiredFromEnvInCdp,
       default: '',
       env: 'DYNAMICS_API_URL'
     },
@@ -252,7 +290,7 @@ const config = convict({
   notify: {
     apiKey: {
       doc: 'API key for Notify',
-      format: String,
+      format: requiredFromEnvInCdp,
       default: '#',
       env: 'NOTIFY_API_KEY'
     },
