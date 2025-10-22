@@ -137,14 +137,12 @@ const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
 export const createTaskList = (exemption) => {
   const tasks = {
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
-    activityDates: (value) => (value ? COMPLETED : INCOMPLETE),
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
     siteDetails: (value) =>
       checkSiteDetails(
         value,
         exemption.multipleSiteDetails?.multipleSitesEnabled
-      ),
-    activityDescription: (value) => (value ? COMPLETED : INCOMPLETE)
+      )
   }
 
   const taskList = {}
