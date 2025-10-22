@@ -37,11 +37,26 @@ describe('sendUserEmailConfirmation', () => {
       apiKey: 'test-api-key',
       retryIntervalSeconds: 1,
       retries: 1,
-      notifyTemplateId: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
-      notifyTemplateIdOrganisation: 'b8e9507b-2b2c-4d5a-98d1-c371935e3f23'
+      notifyTemplateId: '123',
+      notifyTemplateIdEmployee: '456',
+      notifyTemplateIdAgent: '789'
     }
 
-    config.get.mockReturnValue(mockConfig)
+    config.get.mockImplementation((key) => {
+      if (key === 'notify') {
+        return mockConfig
+      }
+      if (key === 'notify.notifyTemplateId') {
+        return mockConfig.notifyTemplateId
+      }
+      if (key === 'notify.notifyTemplateIdEmployee') {
+        return mockConfig.notifyTemplateIdEmployee
+      }
+      if (key === 'notify.notifyTemplateIdAgent') {
+        return mockConfig.notifyTemplateIdAgent
+      }
+      return {}
+    })
     NotifyClient.mockImplementation(() => mockNotifyClient)
     createLogger.mockReturnValue(mockLogger)
   })
@@ -60,6 +75,7 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'John Doe',
         userEmail: 'john.doe@example.com',
+        organisation: null,
         applicationReference: 'EXE/2025/10001',
         frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
         exemptionId: '507f1f77bcf86cd799439011'
@@ -72,7 +88,7 @@ describe('sendUserEmailConfirmation', () => {
       )
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        mockConfig.notifyTemplateId,
         'john.doe@example.com',
         {
           personalisation: {
@@ -80,7 +96,7 @@ describe('sendUserEmailConfirmation', () => {
             reference: 'EXE/2025/10001',
             viewDetailsUrl:
               'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439011',
-            applicantOrganisationName: null
+            organisationName: undefined
           },
           reference: 'EXE/2025/10001'
         }
@@ -135,7 +151,11 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Jane Doe',
         userEmail: 'jane.doe@example.com',
-        applicantOrganisationName: 'Test Organisation Ltd',
+        organisation: {
+          id: 'org-456',
+          name: 'Test Organisation Ltd',
+          userRelationshipType: 'Employee'
+        },
         applicationReference: 'EXE/2025/10099',
         frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
         exemptionId: '507f1f77bcf86cd799439099'
@@ -144,7 +164,7 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'b8e9507b-2b2c-4d5a-98d1-c371935e3f23',
+        mockConfig.notifyTemplateIdEmployee,
         'jane.doe@example.com',
         {
           personalisation: {
@@ -152,7 +172,7 @@ describe('sendUserEmailConfirmation', () => {
             reference: 'EXE/2025/10099',
             viewDetailsUrl:
               'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439099',
-            applicantOrganisationName: 'Test Organisation Ltd'
+            organisationName: 'Test Organisation Ltd'
           },
           reference: 'EXE/2025/10099'
         }
@@ -332,6 +352,7 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Template Test',
         userEmail: 'template@example.com',
+        organisation: null,
         applicationReference: 'EXE/2025/10008',
         frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
         exemptionId: '507f1f77bcf86cd799439018'
@@ -340,9 +361,13 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
-        expect.anything(),
-        expect.anything()
+        mockConfig.notifyTemplateId,
+        'template@example.com',
+        expect.objectContaining({
+          personalisation: expect.objectContaining({
+            name: 'Template Test'
+          })
+        })
       )
     })
 
@@ -357,7 +382,11 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Org Template Test',
         userEmail: 'orgtemplate@example.com',
-        applicantOrganisationName: 'Test Org Ltd',
+        organisation: {
+          id: 'org-789',
+          name: 'Test Org Ltd',
+          userRelationshipType: 'Employee'
+        },
         applicationReference: 'EXE/2025/10015',
         frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
         exemptionId: '507f1f77bcf86cd799439025'
@@ -366,9 +395,14 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'b8e9507b-2b2c-4d5a-98d1-c371935e3f23',
-        expect.anything(),
-        expect.anything()
+        mockConfig.notifyTemplateIdEmployee,
+        'orgtemplate@example.com',
+        expect.objectContaining({
+          personalisation: expect.objectContaining({
+            name: 'Org Template Test',
+            organisationName: 'Test Org Ltd'
+          })
+        })
       )
     })
 
@@ -410,6 +444,7 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Base URL Test',
         userEmail: 'baseurl@example.com',
+        organisation: null,
         applicationReference: 'EXE/2025/10014',
         frontEndBaseUrl: 'http://localhost:3000', // Different format for testing
         exemptionId: '64a1b2c3d4e5f6789abcdef1'
@@ -418,18 +453,18 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        mockConfig.notifyTemplateId,
         'baseurl@example.com',
-        expect.objectContaining({
+        {
           personalisation: {
             name: 'Base URL Test',
             reference: 'EXE/2025/10014',
             viewDetailsUrl:
               'http://localhost:3000/exemption/view-details/64a1b2c3d4e5f6789abcdef1',
-            applicantOrganisationName: null
+            organisationName: undefined
           },
           reference: 'EXE/2025/10014'
-        })
+        }
       )
     })
   })
@@ -446,6 +481,7 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: '',
         userEmail: 'empty.name@example.com',
+        organisation: null,
         applicationReference: 'EXE/2025/10009',
         frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
         exemptionId: '507f1f77bcf86cd799439019'
@@ -454,17 +490,18 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        mockConfig.notifyTemplateId,
         'empty.name@example.com',
-        expect.objectContaining({
+        {
           personalisation: {
             name: '',
             reference: 'EXE/2025/10009',
             viewDetailsUrl:
               'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439019',
-            applicantOrganisationName: null
-          }
-        })
+            organisationName: undefined
+          },
+          reference: 'EXE/2025/10009'
+        }
       )
     })
 
@@ -480,6 +517,7 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Long Reference User',
         userEmail: 'long.ref@example.com',
+        organisation: null,
         applicationReference: longReference,
         frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
         exemptionId: '507f1f77bcf86cd799439020'
@@ -488,18 +526,18 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        mockConfig.notifyTemplateId,
         'long.ref@example.com',
-        expect.objectContaining({
+        {
           personalisation: {
             name: 'Long Reference User',
             reference: longReference,
             viewDetailsUrl:
               'https://marine-licensing.defra.gov.uk/exemption/view-details/507f1f77bcf86cd799439020',
-            applicantOrganisationName: null
+            organisationName: undefined
           },
           reference: longReference
-        })
+        }
       )
     })
 
@@ -514,6 +552,7 @@ describe('sendUserEmailConfirmation', () => {
         db: mockDb,
         userName: 'Plus User',
         userEmail: 'user+test@example.com',
+        organisation: null,
         applicationReference: 'EXE/2025/10010',
         frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
         exemptionId: '507f1f77bcf86cd799439021'
@@ -522,9 +561,13 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-        'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        mockConfig.notifyTemplateId,
         'user+test@example.com',
-        expect.any(Object)
+        expect.objectContaining({
+          personalisation: expect.objectContaining({
+            name: 'Plus User'
+          })
+        })
       )
     })
   })

@@ -48,11 +48,7 @@ const updateMultiSiteEnabled = (exemption) => {
   return multipleSiteDetails
 }
 
-const addToDynamics = async (
-  request,
-  applicationReference,
-  applicantOrganisationId = null
-) => {
+const addToDynamicsQueue = async ({ request, applicationReference }) => {
   const { payload, db } = request
   const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
@@ -63,8 +59,7 @@ const addToDynamics = async (
     createdAt,
     createdBy,
     updatedAt,
-    updatedBy,
-    applicantOrganisationId
+    updatedBy
   })
 
   request.server.methods.processExemptionsQueue().catch(() => {
@@ -119,21 +114,20 @@ export const submitExemptionController = {
       if (updateResult.matchedCount === 0) {
         throw Boom.notFound('Exemption not found during update')
       }
-      const { organisations } = exemption
       if (isDynamicsEnabled) {
-        await addToDynamics(
+        await addToDynamicsQueue({
           request,
-          applicationReference,
-          organisations?.applicant?.id
-        )
+          applicationReference
+        })
       }
 
+      const { organisation } = exemption
       // async; don't wait for this to complete
       sendUserEmailConfirmation({
         db,
         userName,
         userEmail,
-        applicantOrganisationName: organisations?.applicant?.name,
+        organisation,
         applicationReference,
         frontEndBaseUrl,
         exemptionId: id

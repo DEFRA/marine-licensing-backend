@@ -27,62 +27,68 @@ describe('POST /exemptions/project-name', () => {
       activitySubtype: validActivitySubtypes[0]
     }
   }
-  const mockInsertOne = vi.fn().mockResolvedValue({
-    insertedId: new ObjectId()
-  })
 
-  beforeEach(() => {
+  const setupMockInsertOne = (insertedId = new ObjectId()) => {
+    const mockInsertOne = vi.fn().mockResolvedValue({ insertedId })
     vi.spyOn(global.mockMongo, 'collection').mockImplementation(() => {
-      return {
-        insertOne: mockInsertOne
-      }
+      return { insertOne: mockInsertOne }
     })
-  })
+    return mockInsertOne
+  }
 
-  it('should fail if fields are missing', () => {
-    const result = payloadValidator.validate({})
+  let mockInsertOne
 
-    expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
-  })
+  beforeEach(() => (mockInsertOne = setupMockInsertOne()))
 
-  it('should fail if name is empty string', () => {
-    const result = payloadValidator.validate({
-      projectName: ''
-    })
+  describe('Validation', () => {
+    it('should fail if fields are missing', () => {
+      const result = payloadValidator.validate({})
 
-    expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
-  })
-
-  it('should validate successfully with mcmsContext', () => {
-    const result = payloadValidator.validate({
-      projectName: 'Test Project',
-      ...mockMcmsContext
+      expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
     })
 
-    expect(result.error).toBeUndefined()
-    expect(result.value.projectName).toBe('Test Project')
-    expect(result.value.mcmsContext).toEqual(mockMcmsContext.mcmsContext)
-  })
+    it('should fail if name is empty string', () => {
+      const result = payloadValidator.validate({
+        projectName: ''
+      })
 
-  it('should validate successfully if mcmsContext is undefined', () => {
-    const result = payloadValidator.validate({
-      projectName: 'Test Project'
+      expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
     })
 
-    expect(result.error).toBeUndefined()
-    expect(result.value.projectName).toBe('Test Project')
-    expect(result.value.mcmsContext).toBeUndefined()
-  })
+    it('should validate successfully with mcmsContext', () => {
+      const result = payloadValidator.validate({
+        projectName: 'Test Project',
+        userRelationshipType: 'Citizen',
+        ...mockMcmsContext
+      })
 
-  it('should validate successfully if mcmsContext is null', () => {
-    const result = payloadValidator.validate({
-      projectName: 'Test Project',
-      mcmsContext: null
+      expect(result.error).toBeUndefined()
+      expect(result.value.projectName).toBe('Test Project')
+      expect(result.value.mcmsContext).toEqual(mockMcmsContext.mcmsContext)
     })
 
-    expect(result.error).toBeUndefined()
-    expect(result.value.projectName).toBe('Test Project')
-    expect(result.value.mcmsContext).toBeNull()
+    it('should validate successfully if mcmsContext is undefined', () => {
+      const result = payloadValidator.validate({
+        projectName: 'Test Project',
+        userRelationshipType: 'Citizen'
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.projectName).toBe('Test Project')
+      expect(result.value.mcmsContext).toBeUndefined()
+    })
+
+    it('should validate successfully if mcmsContext is null', () => {
+      const result = payloadValidator.validate({
+        projectName: 'Test Project',
+        userRelationshipType: 'Citizen',
+        mcmsContext: null
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.projectName).toBe('Test Project')
+      expect(result.value.mcmsContext).toBeNull()
+    })
   })
 
   it('should create a new exemption with project name', async () => {
@@ -141,7 +147,6 @@ describe('POST /exemptions/project-name', () => {
       status: EXEMPTION_STATUS.DRAFT,
       contactId: expect.any(String),
       mcmsContext: undefined,
-      organisations: null,
       ...mockAuditPayload
     })
   })
@@ -153,15 +158,6 @@ describe('POST /exemptions/project-name', () => {
       ...mockAuditPayload,
       ...mockMcmsContext
     }
-    const mockInsertOne = vi.fn().mockResolvedValue({
-      insertedId: new ObjectId()
-    })
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
-      return {
-        insertOne: mockInsertOne
-      }
-    })
 
     await createProjectNameController.handler(
       { db: mockMongo, payload: mockPayload, auth },
@@ -173,77 +169,89 @@ describe('POST /exemptions/project-name', () => {
       status: EXEMPTION_STATUS.DRAFT,
       contactId: expect.any(String),
       mcmsContext: mockMcmsContext.mcmsContext,
-      organisations: null,
       ...mockAuditPayload
     })
   })
 
-  it('should create exemption with applicant organisation when provided', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      projectName: 'Test Project with Organisation',
-      applicantOrganisationId: 'org-123',
-      applicantOrganisationName: 'Test Organisation',
-      ...mockAuditPayload
-    }
-    const mockInsertOne = vi.fn().mockResolvedValue({
-      insertedId: new ObjectId()
-    })
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
-      return {
-        insertOne: mockInsertOne
+  describe('Organisations', () => {
+    it('should save organisation data for an employee', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = {
+        projectName: 'Test Project with Organisation',
+        organisationId: 'org-123',
+        organisationName: 'Test Organisation',
+        userRelationshipType: 'Employee',
+        ...mockAuditPayload
       }
-    })
 
-    await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
-      mockHandler
-    )
+      await createProjectNameController.handler(
+        { db: mockMongo, payload: mockPayload, auth },
+        mockHandler
+      )
 
-    expect(mockInsertOne).toHaveBeenCalledWith({
-      projectName: 'Test Project with Organisation',
-      status: EXEMPTION_STATUS.DRAFT,
-      contactId: expect.any(String),
-      mcmsContext: undefined,
-      organisations: {
-        applicant: {
+      expect(mockInsertOne).toHaveBeenCalledWith({
+        projectName: 'Test Project with Organisation',
+        status: EXEMPTION_STATUS.DRAFT,
+        contactId: expect.any(String),
+        mcmsContext: undefined,
+        organisation: {
           id: 'org-123',
-          name: 'Test Organisation'
-        }
-      },
-      ...mockAuditPayload
-    })
-  })
-
-  it('should create exemption with organisations as null when no applicant organisation provided', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      projectName: 'Test Project without Organisation',
-      ...mockAuditPayload
-    }
-    const mockInsertOne = vi.fn().mockResolvedValue({
-      insertedId: new ObjectId()
+          name: 'Test Organisation',
+          userRelationshipType: 'Employee'
+        },
+        ...mockAuditPayload
+      })
     })
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
-      return {
-        insertOne: mockInsertOne
+    it('should not include organisation field when no organisation provided', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = {
+        projectName: 'Test Project without Organisation',
+        userRelationshipType: 'Citizen',
+        ...mockAuditPayload
       }
+
+      await createProjectNameController.handler(
+        { db: mockMongo, payload: mockPayload, auth },
+        mockHandler
+      )
+
+      expect(mockInsertOne).toHaveBeenCalledWith({
+        projectName: 'Test Project without Organisation',
+        status: EXEMPTION_STATUS.DRAFT,
+        contactId: expect.any(String),
+        mcmsContext: undefined,
+        ...mockAuditPayload
+      })
     })
 
-    await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
-      mockHandler
-    )
+    it('should save organisation data for an intermediary / agent', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = {
+        projectName: 'Test Project with Beneficiary',
+        organisationId: 'org-456',
+        organisationName: 'Test Beneficiary Org',
+        userRelationshipType: 'Agent',
+        ...mockAuditPayload
+      }
 
-    expect(mockInsertOne).toHaveBeenCalledWith({
-      projectName: 'Test Project without Organisation',
-      status: EXEMPTION_STATUS.DRAFT,
-      contactId: expect.any(String),
-      mcmsContext: undefined,
-      organisations: null,
-      ...mockAuditPayload
+      await createProjectNameController.handler(
+        { db: mockMongo, payload: mockPayload, auth },
+        mockHandler
+      )
+
+      expect(mockInsertOne).toHaveBeenCalledWith({
+        projectName: 'Test Project with Beneficiary',
+        status: EXEMPTION_STATUS.DRAFT,
+        contactId: expect.any(String),
+        mcmsContext: undefined,
+        organisation: {
+          id: 'org-456',
+          name: 'Test Beneficiary Org',
+          userRelationshipType: 'Agent'
+        },
+        ...mockAuditPayload
+      })
     })
   })
 
@@ -269,5 +277,72 @@ describe('POST /exemptions/project-name', () => {
           mockHandler
         )
     ).rejects.toThrow(`Error creating project name: ${mockError}`)
+  })
+
+  it('should throw unauthorized error when user is not authenticated', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Project',
+      ...mockAuditPayload
+    }
+    const invalidAuth = { credentials: {} }
+
+    await expect(
+      createProjectNameController.handler(
+        { db: mockMongo, payload: mockPayload, auth: invalidAuth },
+        mockHandler
+      )
+    ).rejects.toThrow('User not authenticated')
+  })
+
+  it('should return response with 201 CREATED status code', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Project',
+      ...mockAuditPayload
+    }
+
+    await createProjectNameController.handler(
+      { db: mockMongo, payload: mockPayload, auth },
+      mockHandler
+    )
+
+    expect(mockHandler.code).toHaveBeenCalledWith(201)
+  })
+
+  it('should return insertedId in response value', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Project',
+      ...mockAuditPayload
+    }
+    const testObjectId = new ObjectId()
+    setupMockInsertOne(testObjectId)
+
+    await createProjectNameController.handler(
+      { db: mockMongo, payload: mockPayload, auth },
+      mockHandler
+    )
+
+    expect(mockHandler.response).toHaveBeenCalledWith({
+      message: 'success',
+      value: { id: testObjectId.toString() }
+    })
+  })
+
+  it('should call collection with exemptions collection name', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      projectName: 'Project',
+      ...mockAuditPayload
+    }
+    const collectionSpy = vi.spyOn(mockMongo, 'collection')
+
+    await createProjectNameController.handler(
+      { db: mockMongo, payload: mockPayload, auth },
+      mockHandler
+    )
+
+    expect(collectionSpy).toHaveBeenCalledWith('exemptions')
   })
 })
