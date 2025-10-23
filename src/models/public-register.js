@@ -10,8 +10,10 @@ export const publicRegister = joi
       'any.only': 'PUBLIC_REGISTER_CONSENT_REQUIRED',
       'any.required': 'PUBLIC_REGISTER_CONSENT_REQUIRED'
     }),
+    // consent: 'yes' = user consents to publish (no reason needed)
+    // consent: 'no' = user declines consent (reason required)
     reason: joi.when('consent', {
-      is: 'yes',
+      is: 'no',
       then: joi
         .string()
         .required()
