@@ -130,4 +130,12 @@ describe('PATCH /exemptions/public-register', () => {
       )
     ).rejects.toThrow(`Exemption not found`)
   })
+
+  it('should fail if consent is denied without a valid reason', async () => {
+    const result = payloadValidator.validate({
+      consent: 'no'
+    })
+
+    expect(result.error.message).toContain('PUBLIC_REGISTER_REASON_REQUIRED')
+  })
 })
