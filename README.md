@@ -1,28 +1,17 @@
 # marine-licensing-backend
 
-Core delivery platform Node.js Backend Template.
-
-## Releases
-
-### [1.0.0](https://eaflood.atlassian.net/projects/ML/versions/23736/tab/release-report-all-issues)
-
-Initial release of the marine licensing backend platform.
+The Marine Licensing Backend is part of a GDS-compliant replacement of the Marine Case Management System (MCMS).
 
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
 - [Local development](#local-development)
   - [Setup](#setup)
   - [Development](#development)
-  - [Testing](#testing)
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
-  - [Update dependencies](#update-dependencies)
-  - [Formatting](#formatting)
-    - [Windows prettier issue](#windows-prettier-issue)
+  - [Dependency updates](#dependency-updates)
+  - [Authentication](#authentication)
 - [API endpoints](#api-endpoints)
-- [Development helpers](#development-helpers)
-  - [MongoDB Locks](#mongodb-locks)
-  - [Proxy](#proxy)
 - [Docker](#docker)
   - [Development image](#development-image)
   - [Production image](#production-image)
@@ -36,15 +25,13 @@ Initial release of the marine licensing backend platform.
 
 ### Node.js
 
-Please install [Node.js](http://nodejs.org/) `>= v22` and [npm](https://nodejs.org/) `>= v11`. You will find it
-easier to use the Node Version Manager [nvm](https://github.com/creationix/nvm)
+For latest minimum versions of Node.js and NPM, see the [package.json](./package.json) 'engines' property.
 
-To use the correct version of Node.js for this application, via nvm:
+- [Node.js](http://nodejs.org/)
+- [npm](https://nodejs.org/)
+- [Docker](https://www.docker.com/)
 
-```bash
-cd marine-licensing-backend
-nvm use
-```
+You may find it easier to manage Node.js versions using a version manager such as [nvm](https://github.com/creationix/nvm) or [n](https://www.npmjs.com/package/n). From within the project folder you can then either run `nvm use` or `n auto` to install the required version.
 
 ## Local development
 
@@ -64,14 +51,6 @@ To run the application in `development` mode run:
 npm run dev
 ```
 
-### Testing
-
-To test the application run:
-
-```bash
-npm run test
-```
-
 ### Production
 
 To mimic the application running in `production` mode locally run:
@@ -89,101 +68,29 @@ To view them in your command line run:
 npm run
 ```
 
-### Update dependencies
+### Dependency updates
 
-To update dependencies use [npm-check-updates](https://github.com/raineorshine/npm-check-updates):
+Dependabot automatically creates pull requests to update dependencies.
 
-> The following script is a good start. Check out all the options on
-> the [npm-check-updates](https://github.com/raineorshine/npm-check-updates)
+### Authentication
 
-```bash
-ncu --interactive --format group
-```
+For authentication when running locally, there are 2 options. Whichever you use it has to match the option used by marine-licensing-frontend, so that auth tokens sent with requests to the backend are correctly validated:
 
-### Formatting
+#### Defra ID stub
 
-#### Windows prettier issue
+The out-of-the-box config will use the [cdp-defra-id-stub](https://github.com/DEFRA/cdp-defra-id-stub).
 
-If you are having issues with formatting of line breaks on Windows update your global git config by running:
+#### Real Defra ID and Entra ID
 
-```bash
-git config --global core.autocrlf false
-```
+To set this up and run it, [instructions are in marine-licensing-frontend](https://github.com/DEFRA/marine-licensing-frontend/blob/main/local-https-setup/README.md#local-https-development-setup). The .env.template file referred to by the instructions is in the root of this repo.
+
+### Environment variables
+
+For most local development, you shouldn't need to override any of the env var defaults that are in [config.js](./src/config/config.js).
 
 ## API endpoints
 
-| Endpoint             | Description                    |
-| :------------------- | :----------------------------- |
-| `GET: /health`       | Health                         |
-| `GET: /example    `  | Example API (remove as needed) |
-| `GET: /example/<id>` | Example API (remove as needed) |
-
-## Development helpers
-
-### MongoDB Locks
-
-If you require a write lock for Mongo you can acquire it via `server.locker` or `request.locker`:
-
-```javascript
-async function doStuff(server) {
-  const lock = await server.locker.lock('unique-resource-name')
-
-  if (!lock) {
-    // Lock unavailable
-    return
-  }
-
-  try {
-    // do stuff
-  } finally {
-    await lock.free()
-  }
-}
-```
-
-Keep it small and atomic.
-
-You may use **using** for the lock resource management.
-Note test coverage reports do not like that syntax.
-
-```javascript
-async function doStuff(server) {
-  await using lock = await server.locker.lock('unique-resource-name')
-
-  if (!lock) {
-    // Lock unavailable
-    return
-  }
-
-  // do stuff
-
-  // lock automatically released
-}
-```
-
-Helper methods are also available in `/src/helpers/mongo-lock.js`.
-
-### Proxy
-
-We are using forward-proxy which is set up by default. To make use of this: `import { fetch } from 'undici'` then
-because of the `setGlobalDispatcher(new ProxyAgent(proxyUrl))` calls will use the ProxyAgent Dispatcher
-
-If you are not using Wreck, Axios or Undici or a similar http that uses `Request`. Then you may have to provide the
-proxy dispatcher:
-
-To add the dispatcher to your own client:
-
-```javascript
-import { ProxyAgent } from 'undici'
-
-return await fetch(url, {
-  dispatcher: new ProxyAgent({
-    uri: proxyUrl,
-    keepAliveTimeout: 10,
-    keepAliveMaxTimeout: 10
-  })
-})
-```
+Under the index.js files in ./src/api/\*
 
 ## Docker
 
@@ -200,6 +107,8 @@ Run:
 ```bash
 docker run -e PORT=3001 -p 3001:3001 marine-licensing-backend:development
 ```
+
+Note - the development image uses the source files directly using volumes, and will automatically rebuild to reflect any changes.
 
 ### Production image
 
@@ -228,11 +137,6 @@ A local environment with:
 ```bash
 docker compose up --build -d
 ```
-
-### Dependabot
-
-We have added an example dependabot configuration file to the repository. You can enable it by renaming
-the [.github/example.dependabot.yml](.github/example.dependabot.yml) to `.github/dependabot.yml`
 
 ### SonarCloud
 
