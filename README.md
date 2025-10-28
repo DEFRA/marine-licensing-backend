@@ -31,7 +31,9 @@ For latest minimum versions of Node.js and NPM, see the [package.json](./package
 - [npm](https://nodejs.org/)
 - [Docker](https://www.docker.com/)
 
-You may find it easier to manage Node.js versions using a version manager such as [nvm](https://github.com/creationix/nvm) or [n](https://www.npmjs.com/package/n). From within the project folder you can then either run `nvm use` or `n auto` to install the required version.
+You may find it easier to manage Node.js versions using a version manager such
+as [nvm](https://github.com/creationix/nvm) or [n](https://www.npmjs.com/package/n). From within the project folder you
+can then either run `nvm use` or `n auto` to install the required version.
 
 ## Local development
 
@@ -74,7 +76,8 @@ Dependabot automatically creates pull requests to update dependencies.
 
 ### Authentication
 
-For authentication when running locally, there are 2 options. Whichever you use it has to match the option used by marine-licensing-frontend, so that auth tokens sent with requests to the backend are correctly validated:
+For authentication when running locally, there are 2 options. Whichever you use it has to match the option used by
+marine-licensing-frontend, so that auth tokens sent with requests to the backend are correctly validated:
 
 #### Defra ID stub
 
@@ -82,11 +85,14 @@ The out-of-the-box config will use the [cdp-defra-id-stub](https://github.com/DE
 
 #### Real Defra ID and Entra ID
 
-To set this up and run it, [instructions are in marine-licensing-frontend](https://github.com/DEFRA/marine-licensing-frontend/blob/main/local-https-setup/README.md#local-https-development-setup). The .env.template file referred to by the instructions is in the root of this repo.
+To set this up and run
+it, [instructions are in marine-licensing-frontend](https://github.com/DEFRA/marine-licensing-frontend/blob/main/local-https-setup/README.md#local-https-development-setup).
+The .env.template file referred to by the instructions is in the root of this repo.
 
 ### Environment variables
 
-For most local development, you shouldn't need to override any of the env var defaults that are in [config.js](./src/config/config.js).
+For most local development, you shouldn't need to override any of the env var defaults that are
+in [config.js](./src/config/config.js).
 
 ## API endpoints
 
@@ -108,7 +114,8 @@ Run:
 docker run -e PORT=3001 -p 3001:3001 marine-licensing-backend:development
 ```
 
-Note - the development image uses the source files directly using volumes, and will automatically rebuild to reflect any changes.
+Note - the development image uses the source files directly using volumes, and will automatically rebuild to reflect any
+changes.
 
 ### Production image
 
