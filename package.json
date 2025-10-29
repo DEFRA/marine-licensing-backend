@@ -75,7 +75,7 @@
     "prettier": "3.6.2",
     "vitest": "3.2.4",
     "vitest-fetch-mock": "0.4.5",
-    "vitest-mongodb": "1.0.1"
+    "vitest-mongodb": "1.0.2"
   },
   "overrides": {
     "axios": "^1.12.0"
