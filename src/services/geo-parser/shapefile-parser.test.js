@@ -5,10 +5,7 @@ import AdmZip from 'adm-zip'
 import proj4 from 'proj4'
 import * as shapefile from 'shapefile'
 
-import {
-  ShapefileParser,
-  MAX_PROJECTION_FILE_SIZE_BYTES
-} from './shapefile-parser.js'
+import { ShapefileParser } from './shapefile-parser.js'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 
 vi.mock('node:fs/promises')
@@ -141,6 +138,29 @@ describe('ShapefileParser class', () => {
       }
     ]
 
+    const mockFileEntries = [
+      {
+        name: 'test.shp',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      },
+      {
+        name: 'test.shx',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      },
+      {
+        name: 'test.dbf',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      },
+      {
+        name: 'test.prj',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      }
+    ]
+
     beforeEach(() => {
       mockAdmZip = {
         getEntries: vi.fn().mockReturnValue(mockZipEntries),
@@ -148,6 +168,8 @@ describe('ShapefileParser class', () => {
       }
       AdmZip.mockImplementation(() => mockAdmZip)
       fs.mkdtemp.mockResolvedValue('/tmp/mock-dir-123')
+      fs.readdir.mockResolvedValue(mockFileEntries)
+      fs.stat.mockResolvedValue({ size: 100 })
       sut = new ShapefileParser()
     })
 
@@ -241,8 +263,10 @@ describe('ShapefileParser class', () => {
 
     it('should handle empty zip file', async () => {
       mockAdmZip.getEntries.mockReturnValue([])
-      const result = await sut.extractZip(zipPath)
-      expect(result).toBe('/tmp/mock-dir-123')
+      fs.readdir.mockResolvedValue([])
+      await expect(sut.extractZip(zipPath)).rejects.toThrow(
+        'SHAPEFILE_MISSING_CORE_FILES'
+      )
       expect(mockAdmZip.extractEntryTo).not.toHaveBeenCalled()
     })
 
@@ -255,15 +279,61 @@ describe('ShapefileParser class', () => {
           header: { compressedSize: 500 }
         },
         {
+          entryName: 'test.SHX',
+          isDirectory: false,
+          getData: () => Buffer.alloc(100),
+          header: { compressedSize: 50 }
+        },
+        {
+          entryName: 'test.DBF',
+          isDirectory: false,
+          getData: () => Buffer.alloc(200),
+          header: { compressedSize: 100 }
+        },
+        {
+          entryName: 'test.PRJ',
+          isDirectory: false,
+          getData: () => Buffer.alloc(100),
+          header: { compressedSize: 50 }
+        },
+        {
           entryName: 'readme.txt',
           isDirectory: false,
           getData: () => Buffer.alloc(100),
           header: { compressedSize: 50 }
         }
       ]
+      const mixedFileEntries = [
+        {
+          name: 'test.SHP',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'test.SHX',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'test.DBF',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'test.PRJ',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'readme.txt',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        }
+      ]
       mockAdmZip.getEntries.mockReturnValue(mixedEntries)
+      fs.readdir.mockResolvedValue(mixedFileEntries)
       await sut.extractZip(zipPath)
-      expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(2)
+      expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(5)
     })
   })
 
@@ -569,20 +639,13 @@ describe('ShapefileParser class', () => {
       expect(result).toBeNull()
     })
 
-    it('returns null if the content of the proj file is is too large to read', async () => {
-      fs.stat.mockResolvedValue({
-        size: MAX_PROJECTION_FILE_SIZE_BYTES + 1
-      })
-      const result = await sut.readProjectionFile(directory)
-      expect(result).toBeNull()
-    })
-
-    it('reads the proj file if it is exactly at the max size', async () => {
-      fs.stat.mockResolvedValue({
-        size: MAX_PROJECTION_FILE_SIZE_BYTES
-      })
+    it('reads the projection file content', async () => {
       const result = await sut.readProjectionFile(directory)
       expect(result).toBe(mockPrjFileContent)
+      expect(fs.readFile).toHaveBeenCalledWith(
+        `${directory}/project1.prj`,
+        'utf-8'
+      )
     })
   })
 
@@ -668,7 +731,7 @@ describe('ShapefileParser class', () => {
     it('throws an error if no shapefile was found', async () => {
       vi.spyOn(sut, 'findShapefiles').mockResolvedValue([])
       await expect(sut.parseFile(filename)).rejects.toThrow(
-        'Failed to parse shapefile: No shapefiles found in zip archive'
+        'SHAPEFILE_NOT_FOUND'
       )
     })
 
