@@ -131,7 +131,10 @@ export class ShapefileParser {
         })
       }
     }
-    logger.debug({ allFiles }, `${this.logSystem}: all files found in zip ${this.zipFile}`)
+    logger.debug(
+      { allFiles },
+      `${this.logSystem}: all files found in zip ${this.zipFile}`
+    )
     return allFiles
   }
 
