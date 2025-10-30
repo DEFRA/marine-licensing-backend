@@ -1,11 +1,11 @@
 import * as shapefile from 'shapefile'
 import * as fs from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import AdmZip from 'adm-zip'
-import { createLogger } from '../../common/helpers/logging/logger.js'
-import proj4 from 'proj4'
 import * as path from 'node:path'
+import { tmpdir } from 'node:os'
+import AdmZip from 'adm-zip'
+import proj4 from 'proj4'
+import { createLogger } from '../../common/helpers/logging/logger.js'
+import { GEO_PARSER_ERROR_CODES, isGeoParserErrorCode } from './error-codes.js'
 
 const logger = createLogger()
 
@@ -32,7 +32,21 @@ const LONGITUDE_MAX = 180
 const LATITUDE_MIN = -90
 const LATITUDE_MAX = 90
 
+// Test .prj files are about 500 bytes.  This is expected to provide sufficient
+// headroom for the most complex .prj files but also keep a reasonable limit
+// for processing and memory limits.
 export const MAX_PROJECTION_FILE_SIZE_BYTES = 50_000
+
+/**
+ * Shapefile file extensions
+ * A complete shapefile consists of multiple files with these extensions
+ */
+const SHAPEFILE_EXTENSIONS = {
+  SHAPE: '.shp', // Main geometry file
+  INDEX: '.shx', // Shape index file
+  DBASE: '.dbf', // Attribute data file
+  PROJECTION: '.prj' // Projection/coordinate system definition
+}
 
 /**
  * Shapefile parser service for zipped shapefiles
@@ -62,10 +76,11 @@ export class ShapefileParser {
    * Safely extract a zip file to a temporary directory
    */
   async extractZip(zipPath) {
+    this.zipFile = zipPath
     logger.info(`${this.logSystem}: Extracting Zip file from ${zipPath}`)
     let fileCount = 0
     let totalSize = 0
-    const tempDir = await fs.mkdtemp(join(tmpdir(), 'shapefile-'))
+    const tempDir = await fs.mkdtemp(path.join(tmpdir(), 'shapefile-'))
     const zip = new AdmZip(zipPath)
     const zipEntries = zip.getEntries()
     for (const zipEntry of zipEntries) {
@@ -92,7 +107,108 @@ export class ShapefileParser {
     logger.info(
       `${this.logSystem}: Successfully extracted zip file from: ${zipPath}`
     )
+    await this.validateShapefileContents(tempDir)
+    this.zipFile = null
     return tempDir
+  }
+
+  /**
+   * Collect file metadata from directory entries
+   * @param {Array} files - directory entries from fs.readdir
+   * @param {string} tempDir - base directory path
+   * @returns {Array} array of file metadata objects
+   */
+  collectFileMetadata(files, tempDir) {
+    const allFiles = []
+    for (const file of files) {
+      if (file.isFile()) {
+        const fullPath = path.join(file.path, file.name)
+        allFiles.push({
+          name: file.name,
+          lowerName: file.name.toLowerCase(),
+          fullPath,
+          relativePath: path.relative(tempDir, fullPath)
+        })
+      }
+    }
+    logger.debug({ allFiles }, `${this.logSystem}: all files found in zip ${this.zipFile}`)
+    return allFiles
+  }
+
+  /**
+   * Validate that the extracted shapefile contains all required files
+   * Uses fail-fast approach - returns on first validation error
+   *
+   * @param {string} tempDir - directory where zip was extracted
+   * @throws {Error} with error code from GEO_PARSER_ERROR_CODES
+   */
+  async validateShapefileContents(tempDir) {
+    logger.info({ tempDir }, `${this.logSystem}: Validating shapefile contents`)
+
+    const files = await fs.readdir(tempDir, {
+      recursive: true,
+      withFileTypes: true
+    })
+
+    const allFiles = this.collectFileMetadata(files, tempDir)
+
+    const hasShp = allFiles.some((f) =>
+      f.lowerName.endsWith(SHAPEFILE_EXTENSIONS.SHAPE)
+    )
+    const hasShx = allFiles.some((f) =>
+      f.lowerName.endsWith(SHAPEFILE_EXTENSIONS.INDEX)
+    )
+    const hasDbf = allFiles.some((f) =>
+      f.lowerName.endsWith(SHAPEFILE_EXTENSIONS.DBASE)
+    )
+
+    if (!hasShp || !hasShx || !hasDbf) {
+      logger.warn(
+        { hasShp, hasShx, hasDbf, tempDir },
+        `${this.logSystem}: Validation failed - missing core shapefile files`
+      )
+      throw new Error(GEO_PARSER_ERROR_CODES.SHAPEFILE_MISSING_CORE_FILES)
+    }
+
+    const hasPrj = allFiles.some((f) =>
+      f.lowerName.endsWith(SHAPEFILE_EXTENSIONS.PROJECTION)
+    )
+
+    if (!hasPrj) {
+      logger.warn(
+        { tempDir },
+        `${this.logSystem}: Validation failed - missing .prj file`
+      )
+      throw new Error(GEO_PARSER_ERROR_CODES.SHAPEFILE_MISSING_PRJ_FILE)
+    }
+
+    const prjFiles = allFiles.filter((f) =>
+      f.lowerName.endsWith(SHAPEFILE_EXTENSIONS.PROJECTION)
+    )
+
+    // There seems to be no need to optimise this block, as so far our test files
+    // only have a single prj file in the zip.
+    for (const prjFile of prjFiles) {
+      const stats = await fs.stat(prjFile.fullPath)
+
+      if (stats.size > MAX_PROJECTION_FILE_SIZE_BYTES) {
+        logger.warn(
+          {
+            file: prjFile.relativePath,
+            size: stats.size,
+            maxSize: MAX_PROJECTION_FILE_SIZE_BYTES,
+            tempDir
+          },
+          `${this.logSystem}: Validation failed - .prj file exceeds size limit`
+        )
+        throw new Error(GEO_PARSER_ERROR_CODES.SHAPEFILE_PRJ_FILE_TOO_LARGE)
+      }
+    }
+
+    logger.info(
+      { tempDir, fileCount: files.length },
+      `${this.logSystem}: Shapefile validation passed`
+    )
   }
 
   /**
@@ -110,7 +226,7 @@ export class ShapefileParser {
           cwd: directory
         })
       )
-      const found = files.map((file) => join(directory, file))
+      const found = files.map((file) => path.join(directory, file))
       logger.info(
         { found, directory },
         `${this.logSystem}: Found shapefiles in directory`
@@ -241,7 +357,7 @@ export class ShapefileParser {
           cwd: directory
         })
       )
-      const paths = files.map((file) => join(directory, file))
+      const paths = files.map((file) => path.join(directory, file))
       if (paths[0]) {
         logger.info(
           { paths },
@@ -253,7 +369,6 @@ export class ShapefileParser {
           { paths },
           `${this.logSystem}: No projection file found - coordinates will not be transformed`
         )
-        // JMS: consider if we want to throw and reject the upload with a user message
         return null
       }
     } catch (error) {
@@ -281,16 +396,7 @@ export class ShapefileParser {
       return null
     }
 
-    const stats = await fs.stat(projFilePath)
-    if (stats.size > MAX_PROJECTION_FILE_SIZE_BYTES) {
-      logger.error(
-        { size: stats.size },
-        `${this.logSystem}: Projection file size ${stats.size} exceeds safe size limit ${MAX_PROJECTION_FILE_SIZE_BYTES} : no transformation will take place`
-      )
-      // JMS: consider whether we want to throw instead - and reject the upload
-      return null
-    }
-
+    // Note: file size is validated in validateShapefileContents() during extraction
     return fs.readFile(projFilePath, 'utf-8')
   }
 
@@ -333,7 +439,7 @@ export class ShapefileParser {
         )
 
         if (shapefiles.length === 0) {
-          throw new Error('No shapefiles found in zip archive')
+          throw new Error(GEO_PARSER_ERROR_CODES.SHAPEFILE_NOT_FOUND)
         }
 
         const allFeatures = []
@@ -355,6 +461,9 @@ export class ShapefileParser {
         })
       }
     } catch (error) {
+      if (isGeoParserErrorCode(error.message)) {
+        throw error
+      }
       throw new Error(`Failed to parse shapefile: ${error.message}`)
     }
   }

@@ -1,8 +1,9 @@
 import { Worker } from 'node:worker_threads'
 import { join } from 'node:path'
+import Boom from '@hapi/boom'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 import { blobService } from '../blob-service.js'
-import Boom from '@hapi/boom'
+import { isGeoParserErrorCode } from './error-codes.js'
 
 const logger = createLogger()
 
@@ -54,6 +55,10 @@ export class GeoParser {
 
       if (error.isBoom) {
         throw error
+      }
+
+      if (isGeoParserErrorCode(error.message)) {
+        throw Boom.badRequest(error.message)
       }
 
       throw Boom.internal(`GeoJSON extraction failed: ${error.message}`)
