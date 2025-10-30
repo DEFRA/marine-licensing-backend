@@ -196,6 +196,15 @@ describe('GeoParser', () => {
 
       expect(blobService.cleanupTempDirectory).not.toHaveBeenCalled()
     })
+
+    it('should throw Boom.badRequest for GeoParserErrorCode errors', async () => {
+      const geoParserError = new Error('SHAPEFILE_MISSING_CORE_FILES')
+      geoParser.parseFile.mockRejectedValue(geoParserError)
+
+      await expect(
+        geoParser.extract(s3Bucket, s3Key, fileType)
+      ).rejects.toThrow(Boom.badRequest('SHAPEFILE_MISSING_CORE_FILES'))
+    })
   })
 
   describe('parseFile', () => {
