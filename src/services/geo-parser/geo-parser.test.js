@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 import { GeoParser } from './geo-parser.js'
 import { Worker } from 'node:worker_threads'
 import { blobService } from '../blob-service.js'
@@ -195,6 +195,15 @@ describe('GeoParser', () => {
       ).rejects.toThrow()
 
       expect(blobService.cleanupTempDirectory).not.toHaveBeenCalled()
+    })
+
+    it('should throw Boom.badRequest for GeoParserErrorCode errors', async () => {
+      const geoParserError = new Error('SHAPEFILE_MISSING_CORE_FILES')
+      geoParser.parseFile.mockRejectedValue(geoParserError)
+
+      await expect(
+        geoParser.extract(s3Bucket, s3Key, fileType)
+      ).rejects.toThrow(Boom.badRequest('SHAPEFILE_MISSING_CORE_FILES'))
     })
   })
 
