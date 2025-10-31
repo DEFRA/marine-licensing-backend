@@ -28,7 +28,7 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.914.0",
+    "@aws-sdk/client-s3": "^3.920.0",
     "@defra/cdp-auditing": "0.4.0",
     "@defra/hapi-secure-context": "0.3.0",
     "@defra/hapi-tracing": "1.28.0",
@@ -63,8 +63,8 @@
     "undici": "7.5.0"
   },
   "devDependencies": {
-    "@babel/core": "7.28.4",
-    "@babel/preset-env": "7.26.9",
+    "@babel/core": "7.28.5",
+    "@babel/preset-env": "7.28.5",
     "@vitest/coverage-v8": "3.2.4",
     "autoprefixer": "10.4.21",
     "eslint": "9.35.0",
@@ -75,7 +75,7 @@
     "prettier": "3.6.2",
     "vitest": "3.2.4",
     "vitest-fetch-mock": "0.4.5",
-    "vitest-mongodb": "1.0.1"
+    "vitest-mongodb": "1.0.2"
   },
   "overrides": {
     "axios": "^1.12.0"
