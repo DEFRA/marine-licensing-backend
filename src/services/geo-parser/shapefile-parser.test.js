@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 import { join } from 'node:path'
 import * as fs from 'node:fs/promises'
 import AdmZip from 'adm-zip'
