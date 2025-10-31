@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 import { GeoParser } from './geo-parser.js'
 import { Worker } from 'node:worker_threads'
 import { blobService } from '../blob-service.js'
