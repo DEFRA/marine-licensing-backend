@@ -1,45 +1,10 @@
 import joi from 'joi'
 import { exemptionId } from './shared-models.js'
-import {
-  activityTypes,
-  articleCodes,
-  validActivitySubtypes
-} from '../common/constants/mcms-context.js'
 
 const PROJECT_NAME_MAX_LENGTH = 250
 
 const mcmsContext = {
-  mcmsContext: joi
-    .object({
-      activityType: joi
-        .string()
-        .valid(...Object.values(activityTypes))
-        .required(),
-      article: joi
-        .string()
-        .valid(...articleCodes)
-        .required(),
-      pdfDownloadUrl: joi
-        .string()
-        .pattern(
-          /^https:\/\/[^/]+\.marinemanagement\.org\.uk\/[^/]+\/journey\/self-service\/outcome-document\/[a-zA-Z0-9-]+$/
-        )
-        .required(),
-      activitySubtype: joi.when('activityType', {
-        is: [
-          activityTypes.CON,
-          activityTypes.DEPOSIT,
-          activityTypes.REMOVAL,
-          activityTypes.DREDGE
-        ],
-        then: joi
-          .string()
-          .valid(...validActivitySubtypes)
-          .required(),
-        otherwise: joi.forbidden()
-      })
-    })
-    .allow(null)
+  mcmsContext: joi.object().allow(null)
 }
 
 const ORG_STRING_MIN_LENGTH = 1
