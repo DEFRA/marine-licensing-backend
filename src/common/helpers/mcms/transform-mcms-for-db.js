@@ -1,7 +1,7 @@
 import { activityTypes } from '../../constants/mcms-context.js'
 
 export const transformMcmsContextForDb = (mcmsContext) => {
-  if (!mcmsContext) {
+  if (!mcmsContext?.activityType) {
     return undefined
   }
   const { activityType, activitySubtype, article, pdfDownloadUrl } = mcmsContext

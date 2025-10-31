@@ -7,7 +7,7 @@ describe('transformMcmsContextForDb', () => {
       const mockContext = { activityType: key }
       const result = transformMcmsContextForDb(mockContext)
       expect(result.activity.code).toBe(expectedActivityType.code)
-      expect(result.activity.value).toBe(expectedActivityType.value)
+      expect(result.activity.label).toBe(expectedActivityType.label)
     })
   })
 
@@ -67,5 +67,15 @@ describe('transformMcmsContextForDb', () => {
       pdfDownloadUrl:
         'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
     })
+  })
+
+  it('should return undefined if no activityType is provided', () => {
+    const mockContext = {
+      activityType: undefined,
+      article: '25',
+      activitySubtype: 'pontoons'
+    }
+    const result = transformMcmsContextForDb(mockContext)
+    expect(result).toBeUndefined()
   })
 })

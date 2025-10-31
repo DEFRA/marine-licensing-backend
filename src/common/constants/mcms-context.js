@@ -114,14 +114,17 @@ export const activityTypes = {
   },
   INCINERATION: {
     code: 'INCINERATION',
-    label: 'Incineration of a substance or object'
+    label: 'Incineration of a substance or object',
+    purpose: []
   },
   EXPLOSIVES: {
     code: 'EXPLOSIVES',
-    label: 'Use of an explosive substance'
+    label: 'Use of an explosive substance',
+    purpose: []
   },
   SCUTTLING: {
     code: 'SCUTTLING',
-    label: 'Sinking of a vessel or floating container'
+    label: 'Sinking of a vessel or floating container',
+    purpose: []
   }
 }
