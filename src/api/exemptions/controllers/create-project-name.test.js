@@ -4,7 +4,6 @@ import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import {
   activityTypes,
-  articleCodes,
   validActivitySubtypes
 } from '../../../common/constants/mcms-context.js'
 
@@ -20,8 +19,8 @@ describe('POST /exemptions/project-name', () => {
 
   const mockMcmsContext = {
     mcmsContext: {
-      activityType: activityTypes.CON,
-      article: articleCodes[0],
+      activityType: activityTypes.CON.code,
+      article: '25',
       pdfDownloadUrl:
         'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
       activitySubtype: validActivitySubtypes[0]
@@ -168,7 +167,17 @@ describe('POST /exemptions/project-name', () => {
       projectName: 'Test Project with MCMS',
       status: EXEMPTION_STATUS.DRAFT,
       contactId: expect.any(String),
-      mcmsContext: mockMcmsContext.mcmsContext,
+      mcmsContext: {
+        activity: {
+          code: 'CON',
+          label: 'Construction',
+          purpose: 'Moorings or aids to navigation',
+          subType: 'coastalProtectionDrainageOrFloodDefence'
+        },
+        articleCode: '25',
+        pdfDownloadUrl:
+          'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+      },
       ...mockAuditPayload
     })
   })

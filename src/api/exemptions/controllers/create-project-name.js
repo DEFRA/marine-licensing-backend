@@ -3,6 +3,7 @@ import { createProjectName } from '../../../models/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { transformMcmsContextForDb } from '../../../common/helpers/mcms/transform-mcms-for-db.js'
 
 export const createProjectNameController = {
   options: {
@@ -40,7 +41,7 @@ export const createProjectNameController = {
         updatedAt,
         status: EXEMPTION_STATUS.DRAFT,
         contactId,
-        mcmsContext,
+        mcmsContext: transformMcmsContextForDb(mcmsContext),
         ...(organisationId
           ? {
               organisation: {
