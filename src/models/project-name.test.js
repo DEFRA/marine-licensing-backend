@@ -70,7 +70,7 @@ describe('Project name validation schemas', () => {
 
     describe('when mcmsContext is provided', () => {
       const validMcmsContext = {
-        activityType: activityTypes.CON,
+        activityType: activityTypes.CON.code,
         article: articleCodes[0],
         pdfDownloadUrl:
           'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
@@ -89,7 +89,7 @@ describe('Project name validation schemas', () => {
       it('should validate with valid mcmsContext for DEPOSIT activity type', () => {
         const depositContext = {
           ...validMcmsContext,
-          activityType: activityTypes.DEPOSIT
+          activityType: activityTypes.DEPOSIT.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -102,7 +102,7 @@ describe('Project name validation schemas', () => {
       it('should validate with valid mcmsContext for REMOVAL activity type', () => {
         const removalContext = {
           ...validMcmsContext,
-          activityType: activityTypes.REMOVAL
+          activityType: activityTypes.REMOVAL.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -115,7 +115,7 @@ describe('Project name validation schemas', () => {
       it('should validate with valid mcmsContext for DREDGE activity type', () => {
         const dredgeContext = {
           ...validMcmsContext,
-          activityType: activityTypes.DREDGE
+          activityType: activityTypes.DREDGE.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -129,7 +129,7 @@ describe('Project name validation schemas', () => {
         const { activitySubtype, ...contextWithoutSubtype } = validMcmsContext
         const incinerationContext = {
           ...contextWithoutSubtype,
-          activityType: activityTypes.INCINERATION
+          activityType: activityTypes.INCINERATION.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -137,6 +137,204 @@ describe('Project name validation schemas', () => {
         })
         expect(result.error).toBeUndefined()
         expect(result.value.mcmsContext.activitySubtype).toBeUndefined()
+      })
+
+      describe('activityType validation', () => {
+        it('should fail with invalid activityType', () => {
+          const invalidContext = {
+            ...validMcmsContext,
+            activityType: 'INVALID_TYPE'
+          }
+          const result = createProjectName.validate({
+            ...validPayload,
+            mcmsContext: invalidContext
+          })
+          expect(result.error).toBeDefined()
+          expect(result.error.message).toContain('must be one of')
+        })
+
+        it('should fail when activityType is missing', () => {
+          const { activityType, ...contextWithoutActivityType } =
+            validMcmsContext
+          const result = createProjectName.validate({
+            ...validPayload,
+            mcmsContext: contextWithoutActivityType
+          })
+          expect(result.error).toBeDefined()
+          expect(result.error.message).toContain(
+            '"mcmsContext.activityType" is required'
+          )
+        })
+      })
+
+      describe('article validation', () => {
+        it('should fail with invalid article', () => {
+          const invalidContext = {
+            ...validMcmsContext,
+            article: 'INVALID_ARTICLE'
+          }
+          const result = createProjectName.validate({
+            ...validPayload,
+            mcmsContext: invalidContext
+          })
+          expect(result.error).toBeDefined()
+          expect(result.error.message).toContain('must be one of')
+        })
+
+        it('should fail when article is missing', () => {
+          const { article, ...contextWithoutArticle } = validMcmsContext
+          const result = createProjectName.validate({
+            ...validPayload,
+            mcmsContext: contextWithoutArticle
+          })
+          expect(result.error).toBeDefined()
+          expect(result.error.message).toContain(
+            '"mcmsContext.article" is required'
+          )
+        })
+
+        it('should validate with all valid article codes', () => {
+          articleCodes.forEach((code) => {
+            const contextWithArticle = {
+              ...validMcmsContext,
+              article: code
+            }
+            const result = createProjectName.validate({
+              ...validPayload,
+              mcmsContext: contextWithArticle
+            })
+            expect(result.error).toBeUndefined()
+          })
+        })
+      })
+
+      describe('pdfDownloadUrl validation', () => {
+        it('should fail when pdfDownloadUrl is missing', () => {
+          const { pdfDownloadUrl, ...contextWithoutUrl } = validMcmsContext
+          const result = createProjectName.validate({
+            ...validPayload,
+            mcmsContext: contextWithoutUrl
+          })
+          expect(result.error).toBeDefined()
+          expect(result.error.message).toContain(
+            '"mcmsContext.pdfDownloadUrl" is required'
+          )
+        })
+
+        it('should validate with different valid URL formats', () => {
+          const urls = [
+            'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
+            'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123'
+          ]
+
+          urls.forEach((url) => {
+            const contextWithUrl = {
+              ...validMcmsContext,
+              pdfDownloadUrl: url
+            }
+            const result = createProjectName.validate({
+              ...validPayload,
+              mcmsContext: contextWithUrl
+            })
+            expect(result.error).toBeUndefined()
+          })
+        })
+
+        it('should fail with invalid URL format', () => {
+          const contextWithInvalidUrl = {
+            ...validMcmsContext,
+            pdfDownloadUrl: 'https://test.com/test.pdf'
+          }
+          const result = createProjectName.validate({
+            ...validPayload,
+            mcmsContext: contextWithInvalidUrl
+          })
+          expect(result.error).toBeDefined()
+          expect(result.error.message).toContain(
+            '"mcmsContext.pdfDownloadUrl" with value "https://test.com/test.pdf" fails to match the required pattern: /^https:\\/\\/[^/]+\\.marinemanagement\\.org\\.uk\\/[^/]+\\/journey\\/self-service\\/outcome-document\\/[a-zA-Z0-9-]+$/'
+          )
+        })
+      })
+
+      describe('activitySubtype validation', () => {
+        const activityTypesRequiringSubtype = [
+          activityTypes.CON.code,
+          activityTypes.DEPOSIT.code,
+          activityTypes.REMOVAL.code,
+          activityTypes.DREDGE.code
+        ]
+
+        const activityTypesNotRequiringSubtype = [
+          activityTypes.INCINERATION.code,
+          activityTypes.EXPLOSIVES.code,
+          activityTypes.SCUTTLING.code
+        ]
+
+        activityTypesRequiringSubtype.forEach((type) => {
+          it(`should require activitySubtype for ${type} activity type`, () => {
+            const { activitySubtype, ...contextWithoutSubtype } =
+              validMcmsContext
+            const contextRequiringSubtype = {
+              ...contextWithoutSubtype,
+              activityType: type
+            }
+            const result = createProjectName.validate({
+              ...validPayload,
+              mcmsContext: contextRequiringSubtype
+            })
+            expect(result.error).toBeDefined()
+            expect(result.error.message).toContain(
+              '"mcmsContext.activitySubtype" is required'
+            )
+          })
+
+          it(`should validate with valid activitySubtype for ${type} activity type`, () => {
+            validActivitySubtypes.forEach((subtype) => {
+              const contextWithSubtype = {
+                ...validMcmsContext,
+                activityType: type,
+                activitySubtype: subtype
+              }
+              const result = createProjectName.validate({
+                ...validPayload,
+                mcmsContext: contextWithSubtype
+              })
+              expect(result.error).toBeUndefined()
+            })
+          })
+
+          it(`should fail with invalid activitySubtype for ${type} activity type`, () => {
+            const contextWithInvalidSubtype = {
+              ...validMcmsContext,
+              activityType: type,
+              activitySubtype: 'INVALID_SUBTYPE'
+            }
+            const result = createProjectName.validate({
+              ...validPayload,
+              mcmsContext: contextWithInvalidSubtype
+            })
+            expect(result.error).toBeDefined()
+            expect(result.error.message).toContain('must be one of')
+          })
+        })
+
+        activityTypesNotRequiringSubtype.forEach((type) => {
+          it(`should forbid activitySubtype for ${type} activity type`, () => {
+            const contextWithForbiddenSubtype = {
+              ...validMcmsContext,
+              activityType: type,
+              activitySubtype: validActivitySubtypes[0]
+            }
+            const result = createProjectName.validate({
+              ...validPayload,
+              mcmsContext: contextWithForbiddenSubtype
+            })
+            expect(result.error).toBeDefined()
+            expect(result.error.message).toContain(
+              '"mcmsContext.activitySubtype" is not allowed'
+            )
+          })
+        })
       })
     })
 
@@ -154,7 +352,7 @@ describe('Project name validation schemas', () => {
 
       it('should validate with organisationId and organisationName plus mcmsContext', () => {
         const validMcmsContext = {
-          activityType: activityTypes.CON,
+          activityType: activityTypes.CON.code,
           article: articleCodes[0],
           pdfDownloadUrl:
             'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
