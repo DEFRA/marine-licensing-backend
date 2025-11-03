@@ -13,7 +13,7 @@ const mcmsContext = {
     .object({
       activityType: joi
         .string()
-        .valid(...Object.values(activityTypes))
+        .valid(...Object.keys(activityTypes))
         .required(),
       article: joi
         .string()
@@ -27,10 +27,10 @@ const mcmsContext = {
         .required(),
       activitySubtype: joi.when('activityType', {
         is: [
-          activityTypes.CON,
-          activityTypes.DEPOSIT,
-          activityTypes.REMOVAL,
-          activityTypes.DREDGE
+          activityTypes.CON.code,
+          activityTypes.DEPOSIT.code,
+          activityTypes.REMOVAL.code,
+          activityTypes.DREDGE.code
         ],
         then: joi
           .string()

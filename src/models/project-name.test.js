@@ -70,7 +70,7 @@ describe('Project name validation schemas', () => {
 
     describe('when mcmsContext is provided', () => {
       const validMcmsContext = {
-        activityType: activityTypes.CON,
+        activityType: activityTypes.CON.code,
         article: articleCodes[0],
         pdfDownloadUrl:
           'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
@@ -89,7 +89,7 @@ describe('Project name validation schemas', () => {
       it('should validate with valid mcmsContext for DEPOSIT activity type', () => {
         const depositContext = {
           ...validMcmsContext,
-          activityType: activityTypes.DEPOSIT
+          activityType: activityTypes.DEPOSIT.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -102,7 +102,7 @@ describe('Project name validation schemas', () => {
       it('should validate with valid mcmsContext for REMOVAL activity type', () => {
         const removalContext = {
           ...validMcmsContext,
-          activityType: activityTypes.REMOVAL
+          activityType: activityTypes.REMOVAL.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -115,7 +115,7 @@ describe('Project name validation schemas', () => {
       it('should validate with valid mcmsContext for DREDGE activity type', () => {
         const dredgeContext = {
           ...validMcmsContext,
-          activityType: activityTypes.DREDGE
+          activityType: activityTypes.DREDGE.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -129,7 +129,7 @@ describe('Project name validation schemas', () => {
         const { activitySubtype, ...contextWithoutSubtype } = validMcmsContext
         const incinerationContext = {
           ...contextWithoutSubtype,
-          activityType: activityTypes.INCINERATION
+          activityType: activityTypes.INCINERATION.code
         }
         const result = createProjectName.validate({
           ...validPayload,
@@ -258,16 +258,16 @@ describe('Project name validation schemas', () => {
 
       describe('activitySubtype validation', () => {
         const activityTypesRequiringSubtype = [
-          activityTypes.CON,
-          activityTypes.DEPOSIT,
-          activityTypes.REMOVAL,
-          activityTypes.DREDGE
+          activityTypes.CON.code,
+          activityTypes.DEPOSIT.code,
+          activityTypes.REMOVAL.code,
+          activityTypes.DREDGE.code
         ]
 
         const activityTypesNotRequiringSubtype = [
-          activityTypes.INCINERATION,
-          activityTypes.EXPLOSIVES,
-          activityTypes.SCUTTLING
+          activityTypes.INCINERATION.code,
+          activityTypes.EXPLOSIVES.code,
+          activityTypes.SCUTTLING.code
         ]
 
         activityTypesRequiringSubtype.forEach((type) => {
@@ -352,7 +352,7 @@ describe('Project name validation schemas', () => {
 
       it('should validate with organisationId and organisationName plus mcmsContext', () => {
         const validMcmsContext = {
-          activityType: activityTypes.CON,
+          activityType: activityTypes.CON.code,
           article: articleCodes[0],
           pdfDownloadUrl:
             'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
