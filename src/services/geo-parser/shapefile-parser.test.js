@@ -1,14 +1,11 @@
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 import { join } from 'node:path'
 import * as fs from 'node:fs/promises'
 import AdmZip from 'adm-zip'
 import proj4 from 'proj4'
 import * as shapefile from 'shapefile'
 
-import {
-  ShapefileParser,
-  MAX_PROJECTION_FILE_SIZE_BYTES
-} from './shapefile-parser.js'
+import { ShapefileParser } from './shapefile-parser.js'
 import { createLogger } from '../../common/helpers/logging/logger.js'
 
 vi.mock('node:fs/promises')
@@ -141,6 +138,29 @@ describe('ShapefileParser class', () => {
       }
     ]
 
+    const mockFileEntries = [
+      {
+        name: 'test.shp',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      },
+      {
+        name: 'test.shx',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      },
+      {
+        name: 'test.dbf',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      },
+      {
+        name: 'test.prj',
+        path: '/tmp/mock-dir-123',
+        isFile: () => true
+      }
+    ]
+
     beforeEach(() => {
       mockAdmZip = {
         getEntries: vi.fn().mockReturnValue(mockZipEntries),
@@ -148,6 +168,8 @@ describe('ShapefileParser class', () => {
       }
       AdmZip.mockImplementation(() => mockAdmZip)
       fs.mkdtemp.mockResolvedValue('/tmp/mock-dir-123')
+      fs.readdir.mockResolvedValue(mockFileEntries)
+      fs.stat.mockResolvedValue({ size: 100 })
       sut = new ShapefileParser()
     })
 
@@ -241,8 +263,10 @@ describe('ShapefileParser class', () => {
 
     it('should handle empty zip file', async () => {
       mockAdmZip.getEntries.mockReturnValue([])
-      const result = await sut.extractZip(zipPath)
-      expect(result).toBe('/tmp/mock-dir-123')
+      fs.readdir.mockResolvedValue([])
+      await expect(sut.extractZip(zipPath)).rejects.toThrow(
+        'SHAPEFILE_MISSING_CORE_FILES'
+      )
       expect(mockAdmZip.extractEntryTo).not.toHaveBeenCalled()
     })
 
@@ -255,15 +279,244 @@ describe('ShapefileParser class', () => {
           header: { compressedSize: 500 }
         },
         {
+          entryName: 'test.SHX',
+          isDirectory: false,
+          getData: () => Buffer.alloc(100),
+          header: { compressedSize: 50 }
+        },
+        {
+          entryName: 'test.DBF',
+          isDirectory: false,
+          getData: () => Buffer.alloc(200),
+          header: { compressedSize: 100 }
+        },
+        {
+          entryName: 'test.PRJ',
+          isDirectory: false,
+          getData: () => Buffer.alloc(100),
+          header: { compressedSize: 50 }
+        },
+        {
           entryName: 'readme.txt',
           isDirectory: false,
           getData: () => Buffer.alloc(100),
           header: { compressedSize: 50 }
         }
       ]
+      const mixedFileEntries = [
+        {
+          name: 'test.SHP',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'test.SHX',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'test.DBF',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'test.PRJ',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        },
+        {
+          name: 'readme.txt',
+          path: '/tmp/mock-dir-123',
+          isFile: () => true
+        }
+      ]
       mockAdmZip.getEntries.mockReturnValue(mixedEntries)
+      fs.readdir.mockResolvedValue(mixedFileEntries)
       await sut.extractZip(zipPath)
-      expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(2)
+      expect(mockAdmZip.extractEntryTo).toHaveBeenCalledTimes(5)
+    })
+  })
+
+  describe('validateShapefileContents', () => {
+    const tempDir = '/tmp/mock-dir-456'
+    let sut
+
+    const validFileEntries = [
+      {
+        name: 'test.shp',
+        path: tempDir,
+        isFile: () => true
+      },
+      {
+        name: 'test.shx',
+        path: tempDir,
+        isFile: () => true
+      },
+      {
+        name: 'test.dbf',
+        path: tempDir,
+        isFile: () => true
+      },
+      {
+        name: 'test.prj',
+        path: tempDir,
+        isFile: () => true
+      }
+    ]
+
+    beforeEach(() => {
+      sut = new ShapefileParser()
+      fs.stat.mockResolvedValue({ size: 500 })
+    })
+
+    it('validates successfully with all required files', async () => {
+      fs.readdir.mockResolvedValue(validFileEntries)
+
+      await expect(
+        sut.validateShapefileContents(tempDir)
+      ).resolves.toBeUndefined()
+    })
+
+    it('throws SHAPEFILE_MISSING_CORE_FILES when .shp file is missing', async () => {
+      const entries = validFileEntries.filter((f) => f.name !== 'test.shp')
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(sut.validateShapefileContents(tempDir)).rejects.toThrow(
+        'SHAPEFILE_MISSING_CORE_FILES'
+      )
+    })
+
+    it('throws SHAPEFILE_MISSING_CORE_FILES when .shx file is missing', async () => {
+      const entries = validFileEntries.filter((f) => f.name !== 'test.shx')
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(sut.validateShapefileContents(tempDir)).rejects.toThrow(
+        'SHAPEFILE_MISSING_CORE_FILES'
+      )
+    })
+
+    it('throws SHAPEFILE_MISSING_CORE_FILES when .dbf file is missing', async () => {
+      const entries = validFileEntries.filter((f) => f.name !== 'test.dbf')
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(sut.validateShapefileContents(tempDir)).rejects.toThrow(
+        'SHAPEFILE_MISSING_CORE_FILES'
+      )
+    })
+
+    it('throws SHAPEFILE_MISSING_CORE_FILES when all core files are missing', async () => {
+      const entries = validFileEntries.filter((f) => f.name === 'test.prj')
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(sut.validateShapefileContents(tempDir)).rejects.toThrow(
+        'SHAPEFILE_MISSING_CORE_FILES'
+      )
+    })
+
+    it('throws SHAPEFILE_MISSING_PRJ_FILE when .prj file is missing', async () => {
+      const entries = validFileEntries.filter((f) => f.name !== 'test.prj')
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(sut.validateShapefileContents(tempDir)).rejects.toThrow(
+        'SHAPEFILE_MISSING_PRJ_FILE'
+      )
+    })
+
+    it('throws SHAPEFILE_PRJ_FILE_TOO_LARGE when .prj file exceeds 50KB', async () => {
+      fs.readdir.mockResolvedValue(validFileEntries)
+      fs.stat.mockResolvedValue({ size: 50_001 })
+
+      await expect(sut.validateShapefileContents(tempDir)).rejects.toThrow(
+        'SHAPEFILE_PRJ_FILE_TOO_LARGE'
+      )
+    })
+
+    it('validates successfully when .prj file is exactly 50KB', async () => {
+      fs.readdir.mockResolvedValue(validFileEntries)
+      fs.stat.mockResolvedValue({ size: 50_000 })
+
+      await expect(
+        sut.validateShapefileContents(tempDir)
+      ).resolves.toBeUndefined()
+    })
+
+    it('validates case-insensitive file extensions', async () => {
+      const entries = [
+        { name: 'test.SHP', path: tempDir, isFile: () => true },
+        { name: 'test.ShX', path: tempDir, isFile: () => true },
+        { name: 'test.DBF', path: tempDir, isFile: () => true },
+        { name: 'test.PrJ', path: tempDir, isFile: () => true }
+      ]
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(
+        sut.validateShapefileContents(tempDir)
+      ).resolves.toBeUndefined()
+    })
+
+    it('validates successfully with files in subdirectories', async () => {
+      const entries = validFileEntries.map((f) => ({
+        ...f,
+        path: join(tempDir, 'subdir')
+      }))
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(
+        sut.validateShapefileContents(tempDir)
+      ).resolves.toBeUndefined()
+    })
+
+    it('throws when multiple .prj files and one exceeds size limit', async () => {
+      const entries = [
+        ...validFileEntries,
+        { name: 'test2.prj', path: tempDir, isFile: () => true }
+      ]
+      fs.readdir.mockResolvedValue(entries)
+      fs.stat
+        .mockResolvedValueOnce({ size: 500 })
+        .mockResolvedValueOnce({ size: 60_000 })
+
+      await expect(sut.validateShapefileContents(tempDir)).rejects.toThrow(
+        'SHAPEFILE_PRJ_FILE_TOO_LARGE'
+      )
+    })
+
+    it('validates successfully with multiple valid .prj files', async () => {
+      const entries = [
+        ...validFileEntries,
+        { name: 'test2.prj', path: tempDir, isFile: () => true }
+      ]
+      fs.readdir.mockResolvedValue(entries)
+      fs.stat.mockResolvedValue({ size: 1000 })
+
+      await expect(
+        sut.validateShapefileContents(tempDir)
+      ).resolves.toBeUndefined()
+    })
+
+    it('ignores non-file entries when validating', async () => {
+      const entries = [
+        ...validFileEntries,
+        { name: 'folder', path: tempDir, isFile: () => false }
+      ]
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(
+        sut.validateShapefileContents(tempDir)
+      ).resolves.toBeUndefined()
+    })
+
+    it('validates with additional non-shapefile files present', async () => {
+      const entries = [
+        ...validFileEntries,
+        { name: 'readme.txt', path: tempDir, isFile: () => true },
+        { name: 'metadata.xml', path: tempDir, isFile: () => true }
+      ]
+      fs.readdir.mockResolvedValue(entries)
+
+      await expect(
+        sut.validateShapefileContents(tempDir)
+      ).resolves.toBeUndefined()
     })
   })
 
@@ -569,20 +822,13 @@ describe('ShapefileParser class', () => {
       expect(result).toBeNull()
     })
 
-    it('returns null if the content of the proj file is is too large to read', async () => {
-      fs.stat.mockResolvedValue({
-        size: MAX_PROJECTION_FILE_SIZE_BYTES + 1
-      })
-      const result = await sut.readProjectionFile(directory)
-      expect(result).toBeNull()
-    })
-
-    it('reads the proj file if it is exactly at the max size', async () => {
-      fs.stat.mockResolvedValue({
-        size: MAX_PROJECTION_FILE_SIZE_BYTES
-      })
+    it('reads the projection file content', async () => {
       const result = await sut.readProjectionFile(directory)
       expect(result).toBe(mockPrjFileContent)
+      expect(fs.readFile).toHaveBeenCalledWith(
+        `${directory}/project1.prj`,
+        'utf-8'
+      )
     })
   })
 
@@ -668,7 +914,7 @@ describe('ShapefileParser class', () => {
     it('throws an error if no shapefile was found', async () => {
       vi.spyOn(sut, 'findShapefiles').mockResolvedValue([])
       await expect(sut.parseFile(filename)).rejects.toThrow(
-        'Failed to parse shapefile: No shapefiles found in zip archive'
+        'SHAPEFILE_NOT_FOUND'
       )
     })
 
@@ -677,6 +923,24 @@ describe('ShapefileParser class', () => {
       await new Promise((resolve) => setImmediate(resolve))
       expect(sut.cleanupTempDirectory).toHaveBeenCalledTimes(1)
       expect(sut.cleanupTempDirectory).toHaveBeenCalledWith(mockTmpDir)
+    })
+
+    it('wraps non-GeoParserErrorCode errors with descriptive message', async () => {
+      const genericError = new Error('Disk full')
+      vi.spyOn(sut, 'parseShapefile').mockRejectedValue(genericError)
+
+      await expect(sut.parseFile(filename)).rejects.toThrow(
+        'Failed to parse shapefile: Disk full'
+      )
+    })
+
+    it('re-throws GeoParserErrorCode errors without wrapping', async () => {
+      const geoParserError = new Error('SHAPEFILE_MISSING_CORE_FILES')
+      vi.spyOn(sut, 'extractZip').mockRejectedValue(geoParserError)
+
+      await expect(sut.parseFile(filename)).rejects.toThrow(
+        'SHAPEFILE_MISSING_CORE_FILES'
+      )
     })
   })
 
