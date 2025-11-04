@@ -52,9 +52,16 @@ async function cleanupDatabase() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
     console.log('🔌 Connecting to MongoDB...')
-    client = await MongoClient.connect(mongoUrl, {
-      ...mongoOptions
-    })
+
+    // Add TLS options to handle self-signed certificates
+    const connectionOptions = {
+      ...mongoOptions,
+      tls: true,
+      tlsAllowInvalidCertificates: true,
+      tlsAllowInvalidHostnames: true
+    }
+
+    client = await MongoClient.connect(mongoUrl, connectionOptions)
 
     const db = client.db(databaseName)
     console.log(`✅ Connected to database: ${databaseName}\n`)
