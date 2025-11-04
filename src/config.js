@@ -287,6 +287,38 @@ const config = convict({
       env: 'DYNAMICS_RETRY_DELAY_MS'
     }
   },
+  exploreMarinePlanning: {
+    apiUrl: {
+      doc: 'URL for the EMP API',
+      format: requiredFromEnvInCdp,
+      default: '',
+      env: 'EMP_API_URL'
+    },
+    apiKey: {
+      doc: 'API key for the EMP API',
+      format: requiredFromEnvInCdp,
+      default: '',
+      env: 'EMP_API_KEY'
+    },
+    isEmpEnabled: {
+      doc: 'Is EMP integration enabled',
+      format: Boolean,
+      default: false,
+      env: 'EMP_ENABLED'
+    },
+    maxRetries: {
+      doc: 'Maximum number of retries for failed EMP queue items',
+      format: Number,
+      default: 3,
+      env: 'EMP_MAX_RETRIES'
+    },
+    retryDelayMs: {
+      doc: 'Delay in milliseconds before retrying a failed EMP queue item',
+      format: Number,
+      default: oneMinuteInMS,
+      env: 'EMP_RETRY_DELAY_MS'
+    }
+  },
   notify: {
     apiKey: {
       doc: 'API key for Notify',

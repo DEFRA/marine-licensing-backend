@@ -1,16 +1,16 @@
 import { vi } from 'vitest'
 import {
-  startExemptionsQueuePolling,
-  stopExemptionsQueuePolling,
-  processExemptionsQueue
+  startDynamicsQueuePolling,
+  stopDynamicsQueuePolling,
+  processDynamicsQueue
 } from '../common/helpers/dynamics/index.js'
 
-import { processExemptionsQueuePlugin } from './dynamics.js'
+import { processDynamicsQueuePlugin } from './dynamics.js'
 import { config } from '../config.js'
 
 vi.mock('../common/helpers/dynamics/index.js')
 
-describe('processExemptionsQueue Plugin', () => {
+describe('processDynamicsQueue Plugin', () => {
   const mockServer = {
     ext: vi.fn(),
     logger: { info: vi.fn() },
@@ -18,10 +18,8 @@ describe('processExemptionsQueue Plugin', () => {
     method: vi.fn()
   }
 
-  const mockedStartExemptionsQueuePolling = vi.mocked(
-    startExemptionsQueuePolling
-  )
-  const mockedStopExemptionsQueuePolling = vi.mocked(stopExemptionsQueuePolling)
+  const mockedStartExemptionsQueuePolling = vi.mocked(startDynamicsQueuePolling)
+  const mockedStopExemptionsQueuePolling = vi.mocked(stopDynamicsQueuePolling)
 
   beforeEach(() => {
     mockedStartExemptionsQueuePolling.mockClear()
@@ -31,11 +29,11 @@ describe('processExemptionsQueue Plugin', () => {
   it('should register hooks and log when enabled', async () => {
     vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
-    await processExemptionsQueuePlugin.plugin.register(mockServer, {})
+    await processDynamicsQueuePlugin.plugin.register(mockServer, {})
 
     expect(mockServer.ext).toHaveBeenCalledTimes(2)
     expect(mockServer.logger.info).toHaveBeenCalledWith(
-      'processExemptionsQueue plugin registered'
+      'processDynamicsQueue plugin registered'
     )
 
     const calls = mockServer.ext.mock.calls
@@ -44,31 +42,31 @@ describe('processExemptionsQueue Plugin', () => {
     const preStopHandler = calls.find(([event]) => event === 'onPreStop')[1]
 
     postStartHandler()
-    expect(startExemptionsQueuePolling).toHaveBeenCalledWith(
+    expect(startDynamicsQueuePolling).toHaveBeenCalledWith(
       mockServer,
       expect.any(Number)
     )
 
     preStopHandler()
-    expect(stopExemptionsQueuePolling).toHaveBeenCalledWith(mockServer)
+    expect(stopDynamicsQueuePolling).toHaveBeenCalledWith(mockServer)
   })
 
   it('should not register hooks when disabled', async () => {
-    await processExemptionsQueuePlugin.plugin.register(mockServer, {})
+    await processDynamicsQueuePlugin.plugin.register(mockServer, {})
     expect(mockServer.ext).not.toHaveBeenCalled()
   })
 
   it('should work with defaults without config', async () => {
     vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
-    await processExemptionsQueuePlugin.plugin.register(mockServer)
+    await processDynamicsQueuePlugin.plugin.register(mockServer)
 
     expect(mockServer.logger.info).toHaveBeenCalledWith(
-      'processExemptionsQueue plugin registered'
+      'processDynamicsQueue plugin registered'
     )
   })
 
-  it('should register the processExemptionsQueue server method', async () => {
+  it('should register the processDynamicsQueue server method', async () => {
     vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     const mockServer = {
@@ -78,16 +76,16 @@ describe('processExemptionsQueue Plugin', () => {
       method: vi.fn()
     }
 
-    await processExemptionsQueuePlugin.plugin.register(mockServer, {})
+    await processDynamicsQueuePlugin.plugin.register(mockServer, {})
 
     expect(mockServer.method).toHaveBeenCalledWith(
-      'processExemptionsQueue',
+      'processDynamicsQueue',
       expect.any(Function),
       {}
     )
   })
 
-  it('should register the processExemptionsQueue server method with correct implementation', async () => {
+  it('should register the processDynamicsQueue server method with correct implementation', async () => {
     vi.spyOn(config, 'get').mockReturnValueOnce({ isDynamicsEnabled: true })
 
     const mockServer = {
@@ -97,18 +95,18 @@ describe('processExemptionsQueue Plugin', () => {
       method: vi.fn()
     }
 
-    vi.mocked(processExemptionsQueue).mockResolvedValue('processed')
+    vi.mocked(processDynamicsQueue).mockResolvedValue('processed')
 
-    await processExemptionsQueuePlugin.plugin.register(mockServer, {})
+    await processDynamicsQueuePlugin.plugin.register(mockServer, {})
 
     const registeredMethodCall = mockServer.method.mock.calls.find(
-      ([name]) => name === 'processExemptionsQueue'
+      ([name]) => name === 'processDynamicsQueue'
     )
     const registeredFunction = registeredMethodCall[1]
 
     const result = await registeredFunction()
 
-    expect(processExemptionsQueue).toHaveBeenCalledWith(mockServer)
+    expect(processDynamicsQueue).toHaveBeenCalledWith(mockServer)
     expect(result).toBe('processed')
   })
 })
