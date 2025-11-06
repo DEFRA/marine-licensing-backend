@@ -200,7 +200,7 @@ describe('Dynamics Processor', () => {
       ).rejects.toThrow()
 
       expect(boomSpy).toHaveBeenCalledWith(
-        'Error during processing',
+        'Error during processing dynamics queue',
         'Database error'
       )
     })

@@ -96,7 +96,9 @@ export const processDynamicsQueue = async (server) => {
     let accessToken
 
     if (queueItems.length > 0) {
-      server.logger.info(`Found ${queueItems.length} items to process in queue`)
+      server.logger.info(
+        `Found ${queueItems.length} items to process in dynamics queue`
+      )
       accessToken = await getDynamicsAccessToken()
     }
 
@@ -111,7 +113,10 @@ export const processDynamicsQueue = async (server) => {
     }
   } catch (error) {
     server.logger.error(error)
-    throw Boom.badImplementation('Error during processing', error.message)
+    throw Boom.badImplementation(
+      'Error during processing dynamics queue',
+      error.message
+    )
   }
 }
 
