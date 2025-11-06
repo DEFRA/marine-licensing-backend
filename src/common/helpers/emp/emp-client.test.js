@@ -2,16 +2,10 @@ import { expect, vi } from 'vitest'
 
 import { config } from '../../../config.js'
 import { sendExemptionToEmp } from './emp-client.js'
-import * as helpers from './helpers.js'
+import { addFeatures } from '@esri/arcgis-rest-feature-service'
 
 vi.mock('../../../config.js')
-vi.mock('./helpers.js', async () => {
-  const actual = await vi.importActual('./helpers.js')
-  return {
-    ...actual,
-    makeEmpRequest: vi.fn()
-  }
-})
+vi.mock('@esri/arcgis-rest-feature-service')
 
 describe('Emp Client', () => {
   let mockServer
@@ -78,23 +72,18 @@ describe('Emp Client', () => {
       }
     }
 
-    const mockEmpResponse = {
-      response: {
-        res: { statusCode: 200 }
-      },
-      data: { id: 'emp-record-id' }
-    }
-
-    beforeEach(() => {
-      vi.mocked(helpers.makeEmpRequest).mockResolvedValue(mockEmpResponse)
-    })
-
     it('should send exemption data to EMP successfully', async () => {
+      vi.mocked(addFeatures).mockResolvedValue({
+        addResults: {
+          success: true,
+          objectId: 'emp-record-id'
+        }
+      })
       mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
 
       const result = await sendExemptionToEmp(mockServer, mockQueueItem)
 
-      expect(result).toEqual({ id: 'emp-record-id' })
+      expect(result.objectId).toEqual('emp-record-id')
       expect(mockServer.db.collection).toHaveBeenCalledWith('exemptions')
       expect(mockServer.db.collection().findOne).toHaveBeenCalledWith({
         applicationReference: 'TEST-REF-001'
@@ -104,37 +93,25 @@ describe('Emp Client', () => {
       const calls = mockServer.db.collection.mock.calls
       expect(calls.some((call) => call[0] === 'exemption-emp-queue')).toBe(true)
 
-      // Verify makeEmpRequest was called with correct parameters
-      expect(helpers.makeEmpRequest).toHaveBeenCalledWith({
+      expect(addFeatures).toHaveBeenCalledWith({
         features: expect.any(Object),
-        apiUrl: 'https://localhost/api',
-        apiKey: 'test-api-key'
+        url: 'https://localhost/api/addFeatures',
+        params: { token: 'test-api-key' }
       })
     })
 
-    it('should throw error if request fails', async () => {
+    it('should throw error if EMP request fails', async () => {
       mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
-      vi.mocked(helpers.makeEmpRequest).mockRejectedValue(
-        new Error('EMP API error')
-      )
-
-      await expect(
-        sendExemptionToEmp(mockServer, mockQueueItem)
-      ).rejects.toThrow('EMP API request failed')
-    })
-
-    it('should throw error if response status is not 200', async () => {
-      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
-      vi.mocked(helpers.makeEmpRequest).mockResolvedValue({
-        response: {
-          res: { statusCode: 400 }
-        },
-        data: { error: 'Bad Request' }
+      vi.mocked(addFeatures).mockResolvedValue({
+        addResults: {
+          success: false,
+          error: { code: 400, description: 'Error adding feature' }
+        }
       })
 
       await expect(
         sendExemptionToEmp(mockServer, mockQueueItem)
-      ).rejects.toThrow('EMP API request failed')
+      ).rejects.toThrow('EMP addFeatures failed: Error adding feature')
     })
 
     it('should throw error if exemption not found', async () => {

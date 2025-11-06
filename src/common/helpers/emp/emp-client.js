@@ -1,10 +1,9 @@
 import Boom from '@hapi/boom'
 import { config } from '../../../config.js'
-import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { transformExemptionToEmpRequest } from './transforms/exemption-to-emp.js'
 import { collectionEmpQueue } from '../../constants/db-collections.js'
-import { makeEmpRequest } from './helpers.js'
+import { addFeatures } from '@esri/arcgis-rest-feature-service'
 
 export const sendExemptionToEmp = async (server, queueItem) => {
   const { apiUrl, apiKey } = config.get('exploreMarinePlanning')
@@ -34,19 +33,18 @@ export const sendExemptionToEmp = async (server, queueItem) => {
     exemption,
     applicantName: queueItem.userName
   })
-  try {
-    const { response, data } = await makeEmpRequest({
-      features,
-      apiUrl,
-      apiKey
-    })
-    if (response.res.statusCode !== StatusCodes.OK) {
-      throw Boom.badImplementation(
-        `EMP API returned status ${response.res.statusCode}`
-      )
+
+  const { addResults } = await addFeatures({
+    url: `${apiUrl}/addFeatures`,
+    features,
+    params: {
+      token: apiKey
     }
-    return data
-  } catch (error) {
-    throw Boom.badImplementation(`EMP API request failed`, error)
+  })
+  if (!addResults?.success) {
+    throw Boom.badImplementation(
+      `EMP addFeatures failed: ${addResults?.error?.description}`
+    )
   }
+  return addResults
 }
