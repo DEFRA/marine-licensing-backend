@@ -290,13 +290,13 @@ const config = convict({
   exploreMarinePlanning: {
     apiUrl: {
       doc: 'URL for the EMP API',
-      format: requiredFromEnvInCdp,
+      format: String,
       default: '',
       env: 'EMP_API_URL'
     },
     apiKey: {
       doc: 'API key for the EMP API',
-      format: requiredFromEnvInCdp,
+      format: String,
       default: '',
       env: 'EMP_API_KEY'
     },
