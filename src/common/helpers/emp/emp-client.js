@@ -34,17 +34,21 @@ export const sendExemptionToEmp = async (server, queueItem) => {
     applicantName: queueItem.userName
   })
 
-  const { addResults } = await addFeatures({
-    url: `${apiUrl}/addFeatures`,
-    features,
-    params: {
-      token: apiKey
+  try {
+    const { addResults } = await addFeatures({
+      url: `${apiUrl}/addFeatures`,
+      features,
+      params: {
+        token: apiKey
+      }
+    })
+    if (!addResults?.success) {
+      throw Boom.badImplementation(
+        `EMP addFeatures failed: ${addResults?.error?.description}`
+      )
     }
-  })
-  if (!addResults?.success) {
-    throw Boom.badImplementation(
-      `EMP addFeatures failed: ${addResults?.error?.description}`
-    )
+    return addResults
+  } catch (error) {
+    throw Boom.badImplementation(`EMP addFeatures failed: ${error.message}`)
   }
-  return addResults
 }
