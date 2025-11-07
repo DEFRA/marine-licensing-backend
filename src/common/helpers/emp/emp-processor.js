@@ -48,7 +48,8 @@ export const handleEmpQueueItemFailure = async (server, item) => {
       ...item,
       retries: maxRetries,
       status: REQUEST_QUEUE_STATUS.FAILED,
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      userName: null
     })
 
     await server.db.collection(collectionEmpQueue).deleteOne({ _id: item._id })

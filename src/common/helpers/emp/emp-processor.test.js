@@ -135,6 +135,7 @@ describe('EMP Processor', () => {
       expect(insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockItem,
+          userName: null,
           retries: 3
         })
       )
