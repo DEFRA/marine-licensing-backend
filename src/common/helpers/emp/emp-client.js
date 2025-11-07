@@ -35,6 +35,7 @@ export const sendExemptionToEmp = async (server, queueItem) => {
   })
 
   try {
+    // https://developers.arcgis.com/rest/services-reference/enterprise/add-features/
     const { addResults } = await addFeatures({
       url: `${apiUrl}/addFeatures`,
       features,
