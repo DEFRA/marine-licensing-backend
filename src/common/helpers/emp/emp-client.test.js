@@ -74,16 +74,18 @@ describe('Emp Client', () => {
 
     it('should send exemption data to EMP successfully', async () => {
       vi.mocked(addFeatures).mockResolvedValue({
-        addResults: {
-          success: true,
-          objectId: 'emp-record-id'
-        }
+        addResults: [
+          {
+            success: true,
+            objectId: 'emp-record-id'
+          }
+        ]
       })
       mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
 
       const result = await sendExemptionToEmp(mockServer, mockQueueItem)
 
-      expect(result.objectId).toEqual('emp-record-id')
+      expect(result[0].objectId).toEqual('emp-record-id')
       expect(mockServer.db.collection).toHaveBeenCalledWith('exemptions')
       expect(mockServer.db.collection().findOne).toHaveBeenCalledWith({
         applicationReference: 'TEST-REF-001'
@@ -103,10 +105,12 @@ describe('Emp Client', () => {
     it('should throw error if EMP request fails', async () => {
       mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
       vi.mocked(addFeatures).mockResolvedValue({
-        addResults: {
-          success: false,
-          error: { code: 400, description: 'Error adding feature' }
-        }
+        addResults: [
+          {
+            success: false,
+            error: { code: 400, description: 'Error adding feature' }
+          }
+        ]
       })
 
       await expect(

@@ -42,9 +42,10 @@ export const sendExemptionToEmp = async (server, queueItem) => {
         token: apiKey
       }
     })
-    if (!addResults?.success) {
+    const result = addResults?.[0]
+    if (!result?.success) {
       throw Boom.badImplementation(
-        `EMP addFeatures failed: ${addResults?.error?.description}`
+        `EMP addFeatures failed: ${result?.error?.description}`
       )
     }
     return addResults
