@@ -53,10 +53,18 @@ describe('Emp Client', () => {
             start: '2024-01-01',
             end: '2024-12-31'
           },
-          location: {
-            latitude: 50.123,
-            longitude: -1.456
-          }
+          coordinatesEntry: 'multiple',
+          coordinateSystem: 'osgb36',
+          coordinates: [
+            {
+              eastings: '400780',
+              northings: '087555'
+            },
+            {
+              eastings: '400604',
+              northings: '087356'
+            }
+          ]
         }
       ],
       publicRegister: {
@@ -126,6 +134,25 @@ describe('Emp Client', () => {
       ).rejects.toThrow(
         'Exemption not found for applicationReference: TEST-REF-001'
       )
+    })
+
+    it('should throw error if no coordinates are passed to transformExemptionToEmpRequest', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockExemption,
+        siteDetails: [
+          {
+            activityDates: {
+              start: '2024-01-01',
+              end: '2024-12-31'
+            },
+            coordinatesEntry: 'multiple',
+            coordinateSystem: 'osgb36'
+          }
+        ]
+      })
+      await expect(
+        sendExemptionToEmp(mockServer, mockQueueItem)
+      ).rejects.toThrow('EMP addFeatures failed: Coordinates missing')
     })
   })
 })
