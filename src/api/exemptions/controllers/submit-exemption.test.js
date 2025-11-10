@@ -30,7 +30,8 @@ describe('POST /exemption/submit', () => {
     createdAt: new Date('2025-01-01T12:00:00Z'),
     createdBy: 'user123',
     updatedAt: new Date('2025-02-01T12:00:00Z'),
-    updatedBy: 'user123'
+    updatedBy: 'user123',
+    userName: 'John Doe'
   }
 
   beforeEach(() => {
@@ -40,6 +41,14 @@ describe('POST /exemption/submit', () => {
       if (key === 'dynamics') {
         return {
           isDynamicsEnabled: true,
+          apiKey: 'test-api-key',
+          retryIntervalSeconds: 1,
+          retries: 1
+        }
+      }
+      if (key === 'exploreMarinePlanning') {
+        return {
+          isEmpEnabled: true,
           apiKey: 'test-api-key',
           retryIntervalSeconds: 1,
           retries: 1
@@ -79,7 +88,8 @@ describe('POST /exemption/submit', () => {
         error: vi.fn()
       },
       methods: {
-        processExemptionsQueue: vi.fn().mockResolvedValue(undefined)
+        processDynamicsQueue: vi.fn().mockResolvedValue(undefined),
+        processEmpQueue: vi.fn().mockResolvedValue(undefined)
       }
     }
 
@@ -188,7 +198,8 @@ describe('POST /exemption/submit', () => {
 
       expect(mockHandler.code).toHaveBeenCalledWith(200)
 
-      expect(mockServer.methods.processExemptionsQueue).toHaveBeenCalled()
+      expect(mockServer.methods.processDynamicsQueue).toHaveBeenCalled()
+      expect(mockServer.methods.processEmpQueue).toHaveBeenCalled()
     })
 
     it('should insert request queue document when exemption is submitted', async () => {
@@ -223,6 +234,7 @@ describe('POST /exemption/submit', () => {
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
       expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
@@ -252,9 +264,10 @@ describe('POST /exemption/submit', () => {
         .collection()
         .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
 
-      mockServer.methods.processExemptionsQueue.mockRejectedValueOnce(
+      mockServer.methods.processDynamicsQueue.mockRejectedValueOnce(
         'Test error'
       )
+      mockServer.methods.processEmpQueue.mockRejectedValueOnce('Test error')
 
       await submitExemptionController.handler(
         {
@@ -266,16 +279,20 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
-      expect(mockServer.methods.processExemptionsQueue).toHaveBeenCalled()
+      expect(mockServer.methods.processDynamicsQueue).toHaveBeenCalled()
+      expect(mockServer.methods.processEmpQueue).toHaveBeenCalled()
 
       expect(mockServer.logger.error).toHaveBeenCalledWith(
-        'Failed to process exemptions queue, but exemption submission succeeded'
+        'Failed to process dynamics queue, but exemption submission succeeded'
+      )
+      expect(mockServer.logger.error).toHaveBeenCalledWith(
+        'Failed to process EMP queue, but exemption submission succeeded'
       )
 
       expect(mockHandler.code).toHaveBeenCalledWith(200)
     })
 
-    it('should not insert request queue document when dynamics is not enabled when exemption is submitted', async () => {
+    it('should not insert request queue document when dynamics and EMP are not enabled when exemption is submitted', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
@@ -290,8 +307,9 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test marine activity'
       }
 
-      config.get.mockReturnValueOnce({
-        isDynamicsEnabled: false
+      config.get.mockReturnValue({
+        isDynamicsEnabled: false,
+        isEmpEnabled: false
       })
 
       mockDb.collection().findOne.mockResolvedValue(mockExemption)
@@ -310,7 +328,7 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
     })
 
-    it('should insert request queue document regardless of organisation', async () => {
+    it('should insert dynamics and EMP queue documents regardless of organisation', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
         projectName: 'Test Marine Project',
@@ -347,7 +365,15 @@ describe('POST /exemption/submit', () => {
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
-      expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
+      const { userName, ...rest } = mockAuditPayload
+      expect(mockDb.collection().insertOne).toHaveBeenNthCalledWith(1, {
+        applicationReferenceNumber: 'EXE/2025/10001',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0,
+        ...rest
+      })
+      expect(mockDb.collection().insertOne).toHaveBeenNthCalledWith(2, {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,

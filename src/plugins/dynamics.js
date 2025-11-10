@@ -1,15 +1,15 @@
 import { config } from '../config.js'
 import {
-  startExemptionsQueuePolling,
-  stopExemptionsQueuePolling,
-  processExemptionsQueue
+  startDynamicsQueuePolling,
+  stopDynamicsQueuePolling,
+  processDynamicsQueue
 } from '../common/helpers/dynamics/index.js'
 
 const fiveMinutesInMS = 300_000
 
-const processExemptionsQueuePlugin = {
+const processDynamicsQueuePlugin = {
   plugin: {
-    name: 'process-exemptions-queue',
+    name: 'process-dynamics-queue',
     register: async (server, options = {}) => {
       const { isDynamicsEnabled } = config.get('dynamics')
 
@@ -22,24 +22,24 @@ const processExemptionsQueuePlugin = {
       const pollInterval = pollIntervalMs || fiveMinutesInMS
 
       server.method(
-        'processExemptionsQueue',
+        'processDynamicsQueue',
         async () => {
-          return processExemptionsQueue(server)
+          return processDynamicsQueue(server)
         },
         {}
       )
 
       server.ext('onPostStart', () => {
-        startExemptionsQueuePolling(server, pollInterval)
+        startDynamicsQueuePolling(server, pollInterval)
       })
 
       server.ext('onPreStop', () => {
-        stopExemptionsQueuePolling(server)
+        stopDynamicsQueuePolling(server)
       })
 
-      server.logger.info('processExemptionsQueue plugin registered')
+      server.logger.info('processDynamicsQueue plugin registered')
     }
   }
 }
 
-export { processExemptionsQueuePlugin }
+export { processDynamicsQueuePlugin }

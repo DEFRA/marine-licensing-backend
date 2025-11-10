@@ -1,26 +1,22 @@
 import { expect, vi } from 'vitest'
-import * as dynamicsModule from './dynamics-processor.js'
-import { getDynamicsAccessToken } from './dynamics-client.js'
+import * as empModule from './emp-processor.js'
 
 import { config } from '../../../config.js'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import Boom from '@hapi/boom'
 
 vi.mock('../../../config.js')
-vi.mock('./dynamics-client.js')
+vi.mock('./emp-client.js')
 
-describe('Dynamics Processor', () => {
+describe('EMP Processor', () => {
   let mockServer
   let mockDb
-  const mockGetDynamicsAccessToken = vi.mocked(getDynamicsAccessToken)
 
   const mockItem = { _id: 'abc123' }
 
   vi.useFakeTimers()
 
   beforeEach(() => {
-    mockGetDynamicsAccessToken.mockReturnValue('test_token')
-
     mockDb = {
       collection: vi.fn().mockReturnValue({
         find: vi.fn().mockReturnValue({
@@ -46,18 +42,18 @@ describe('Dynamics Processor', () => {
       scope: 'test-scope',
       maxRetries: 3,
       retryDelayMs: 60000,
-      tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
+      tokenUrl: 'https://placeholder.emp.com/oauth2/token'
     })
 
     vi.clearAllTimers()
   })
 
-  describe('startExemptionsQueuePolling', () => {
+  describe('startEmpQueuePolling', () => {
     it('should start polling with the specified interval', () => {
       const intervalMs = 5000
       const setIntervalSpy = vi.spyOn(global, 'setInterval')
 
-      dynamicsModule.startDynamicsQueuePolling(mockServer, intervalMs)
+      empModule.startEmpQueuePolling(mockServer, intervalMs)
       vi.advanceTimersByTime(intervalMs)
 
       expect(setIntervalSpy).toHaveBeenCalledWith(
@@ -68,13 +64,13 @@ describe('Dynamics Processor', () => {
     })
   })
 
-  describe('stopExemptionsQueuePolling', () => {
+  describe('stopEmpQueuePolling', () => {
     it('should stop polling and clear the timer', () => {
-      dynamicsModule.startDynamicsQueuePolling(mockServer, 5000)
+      empModule.startEmpQueuePolling(mockServer, 5000)
 
       mockServer.logger.info.mockClear()
 
-      dynamicsModule.stopDynamicsQueuePolling(mockServer)
+      empModule.stopEmpQueuePolling(mockServer)
 
       expect(mockServer.logger.info).not.toHaveBeenCalledWith(
         'Starting exemption queue poll'
@@ -82,9 +78,7 @@ describe('Dynamics Processor', () => {
     })
 
     it('should handle stop when no polling is active', () => {
-      expect(() =>
-        dynamicsModule.stopDynamicsQueuePolling(mockServer)
-      ).not.toThrow()
+      expect(() => empModule.stopEmpQueuePolling(mockServer)).not.toThrow()
     })
   })
 
@@ -92,25 +86,26 @@ describe('Dynamics Processor', () => {
     it('should update the item status to SUCCESS and log info', async () => {
       mockServer.db.collection().updateOne.mockReturnValue({})
 
-      await dynamicsModule.handleDynamicsQueueItemSuccess(mockServer, mockItem)
+      await empModule.handleEmpQueueItemSuccess(mockServer, mockItem)
 
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         mockItem,
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            userName: null
           }
         }
       )
     })
   })
 
-  describe('handleQueueItemFailure', () => {
+  describe('handleEmpQueueItemFailure', () => {
     it('should increment retries and update status', async () => {
       const item = { ...mockItem, retries: 1 }
 
-      await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, item)
+      await empModule.handleEmpQueueItemFailure(mockServer, item)
 
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         mockItem,
@@ -128,18 +123,19 @@ describe('Dynamics Processor', () => {
       const insertOne = vi.fn().mockResolvedValue({})
       const deleteOne = vi.fn().mockResolvedValue({})
       mockServer.db.collection.mockImplementation((name) => {
-        if (name === 'exemption-dynamics-queue') return { deleteOne }
-        if (name === 'exemption-dynamics-queue-failed') return { insertOne }
+        if (name === 'exemption-emp-queue') return { deleteOne }
+        if (name === 'exemption-emp-queue-failed') return { insertOne }
         throw new Error('Unexpected collection')
       })
 
       const item = { ...mockItem, retries: 2 }
 
-      await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, item)
+      await empModule.handleEmpQueueItemFailure(mockServer, item)
 
       expect(insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockItem,
+          userName: null,
           retries: 3
         })
       )
@@ -147,7 +143,7 @@ describe('Dynamics Processor', () => {
     })
   })
 
-  describe('processDynamicsQueue', () => {
+  describe('processEmpQueue', () => {
     it('should call handleQueueItemSuccess for each queue item', async () => {
       const mockQueueItems = [
         { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 },
@@ -165,7 +161,7 @@ describe('Dynamics Processor', () => {
 
       mockServer.db.collection().updateOne.mockResolvedValue({})
 
-      await dynamicsModule.processDynamicsQueue(mockServer)
+      await empModule.processEmpQueue(mockServer)
 
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledTimes(2)
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
@@ -173,7 +169,8 @@ describe('Dynamics Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            userName: null
           }
         }
       )
@@ -182,7 +179,8 @@ describe('Dynamics Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            userName: null
           }
         }
       )
@@ -195,12 +193,10 @@ describe('Dynamics Processor', () => {
 
       const boomSpy = vi.spyOn(Boom, 'badImplementation')
 
-      await expect(
-        dynamicsModule.processDynamicsQueue(mockServer)
-      ).rejects.toThrow()
+      await expect(empModule.processEmpQueue(mockServer)).rejects.toThrow()
 
       expect(boomSpy).toHaveBeenCalledWith(
-        'Error during processing dynamics queue',
+        'Error during processing EMP queue',
         'Database error'
       )
     })
@@ -218,7 +214,7 @@ describe('Dynamics Processor', () => {
         .collection()
         .updateOne.mockRejectedValueOnce('Processing failed')
 
-      await dynamicsModule.processDynamicsQueue(mockServer)
+      await empModule.processEmpQueue(mockServer)
 
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         { _id: '1' },
@@ -230,21 +226,6 @@ describe('Dynamics Processor', () => {
           $inc: { retries: 1 }
         }
       )
-    })
-
-    it('should get access token before processing queue items', async () => {
-      const mockQueueItems = [
-        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 }
-      ]
-      mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: vi.fn().mockResolvedValue(mockQueueItems)
-      })
-
-      mockServer.db.collection().updateOne.mockResolvedValue({})
-
-      await dynamicsModule.processDynamicsQueue(mockServer)
-
-      expect(mockGetDynamicsAccessToken).toHaveBeenCalled()
     })
   })
 })

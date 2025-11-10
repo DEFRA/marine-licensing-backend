@@ -5,6 +5,7 @@ import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
 import querystring from 'node:querystring'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
+import { isOrganisationEmployee } from '../organisations.js'
 
 export const getDynamicsAccessToken = async () => {
   const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
@@ -66,10 +67,9 @@ export const sendExemptionToDynamics = async (
 
   const organisationId = exemption.organisation?.id
   const beneficiaryOrganisationId = organisationId
-  const applicantOrganisationId =
-    exemption.organisation?.userRelationshipType === 'Employee'
-      ? organisationId
-      : undefined
+  const applicantOrganisationId = isOrganisationEmployee(exemption.organisation)
+    ? organisationId
+    : undefined
 
   const payload = {
     contactid: exemption.contactId,
