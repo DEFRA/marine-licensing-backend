@@ -13,7 +13,7 @@ import { pulse } from './common/helpers/pulse.js'
 import { requestTracing } from './common/helpers/request-tracing.js'
 import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import hapiAuthJwt2 from 'hapi-auth-jwt2'
-const FiftyMegaBytesForSonar = 50_000_000 // 50 MB :== 50 * 1000 * 1000
+const FiftyMegaBytesForSonar = 50_000_000 // 50 MB = 50 * 1000 * 1000
 
 async function createServer() {
   setupProxy()
