@@ -31,7 +31,7 @@
     "@aws-sdk/client-s3": "^3.922.0",
     "@defra/cdp-auditing": "0.4.0",
     "@defra/hapi-secure-context": "0.3.0",
-    "@defra/hapi-tracing": "1.28.0",
+    "@defra/hapi-tracing": "1.29.0",
     "@elastic/ecs-pino-format": "1.5.0",
     "@esri/arcgis-rest-feature-service": "4.4.1",
     "@hapi/boom": "10.0.1",
