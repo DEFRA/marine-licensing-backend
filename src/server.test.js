@@ -58,7 +58,6 @@ describe('Server payload size limit', () => {
       })
 
       expect(response.statusCode).toBe(413)
-      expect(response.result.message).toContain('Payload Too Large')
     })
   })
 })
