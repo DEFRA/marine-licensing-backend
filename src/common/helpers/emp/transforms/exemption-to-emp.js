@@ -1,6 +1,7 @@
 import { isOrganisationEmployee } from '../../organisations.js'
 import { getProjectStartEndDates } from './get-project-start-end-dates.js'
 import { shortIsoDate } from './short-iso-date.js'
+import { transformSiteDetails } from './site-details.js'
 
 export const transformExemptionToEmpRequest = ({
   exemption,
@@ -40,13 +41,7 @@ export const transformExemptionToEmpRequest = ({
       PubConsent: publicConsent
     },
     geometry: {
-      rings: [
-        [
-          [-118.2, 34.1],
-          [-118.4, 34.3],
-          [-118.2, 34.1]
-        ]
-      ],
+      rings: transformSiteDetails(siteDetails),
       spatialReference: {
         wkid: 4258
       }
