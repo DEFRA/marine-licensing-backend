@@ -43,7 +43,6 @@ describe('generateCirclePolygon', () => {
     expect(Circle).toHaveBeenCalledWith({
       center: [-1.987654, 50.123456],
       radius: 100,
-      radiusUnits: 'meters',
       geodesic: true
     })
   })
@@ -72,7 +71,6 @@ describe('generateCirclePolygon', () => {
     expect(Circle).toHaveBeenCalledWith({
       center: [-1.3995, 55.019889],
       radius: 25,
-      radiusUnits: 'meters',
       geodesic: true
     })
   })
