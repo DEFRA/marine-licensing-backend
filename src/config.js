@@ -9,8 +9,10 @@ convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
+const isDevelopment = process.env.NODE_ENV === 'development'
 
-if (process.env.ENVIRONMENT !== 'production') {
+// Only load dotenv for local development
+if (isDevelopment) {
   configDotenv()
 }
 
