@@ -39,4 +39,20 @@ describe('manualCoordsToEmpGeometry', () => {
       ])
     ).toThrow('Invalid coordinatesEntry: undefined')
   })
+
+  it('does not copy the first point to the last if they already match', () => {
+    const exemptionWithPolygonSites = testExemptions.find(
+      (e) => e.dbRecord.projectName === 'Manual - polygons'
+    )
+    const {
+      dbRecord: {
+        siteDetails: [site]
+      },
+      expected
+    } = exemptionWithPolygonSites
+    const rings = manualCoordsToEmpGeometry([
+      { ...site, coordinates: [...site.coordinates, site.coordinates[0]] }
+    ])
+    expect(rings[0]).toEqual(expected.geometry.rings[0])
+  })
 })

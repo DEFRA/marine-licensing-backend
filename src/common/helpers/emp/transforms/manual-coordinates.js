@@ -11,6 +11,10 @@ const singleOSGB36toWGS84 = ({ eastings, northings }) =>
     Number.parseFloat(northings)
   ])
 
+const areCoordsTheSame = ([lon1, lat1], [lon2, lat2]) => {
+  return lon1 === lon2 && lat1 === lat2
+}
+
 export const manualCoordsToEmpGeometry = (siteDetails) => {
   return siteDetails.map((site) => {
     let coords
@@ -20,10 +24,12 @@ export const manualCoordsToEmpGeometry = (siteDetails) => {
     if (site.coordinatesEntry === 'multiple') {
       coords = polygonToEmp(site)
     }
-    // For a polygon, the last point should be a copy of the first point
-    // https://developers.arcgis.com/rest/services-reference/enterprise/geometry-objects/#polygon
     if (coords) {
-      coords.push(coords[0])
+      // For a polygon, the last point should be a copy of the first point
+      // https://developers.arcgis.com/rest/services-reference/enterprise/geometry-objects/#polygon
+      if (!areCoordsTheSame(coords[0], coords[coords.length - 1])) {
+        coords.push(coords[0])
+      }
       return coords
     }
     throw new Error(`Invalid coordinatesEntry: ${site.coordinatesEntry}`)

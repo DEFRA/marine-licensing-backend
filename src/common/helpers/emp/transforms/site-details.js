@@ -5,7 +5,7 @@ export const transformSiteDetails = (siteDetails) => {
     (site) => site.coordinatesType === 'file'
   )
   if (isFileUploadCoordinates) {
-    return []
+    return [] // temporary; will be handled in ML-270
   }
   return manualCoordsToEmpGeometry(siteDetails)
 }
