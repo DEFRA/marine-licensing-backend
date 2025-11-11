@@ -27,7 +27,7 @@ export const manualCoordsToEmpGeometry = (siteDetails) => {
     if (coords) {
       // For a polygon, the last point should be a copy of the first point
       // https://developers.arcgis.com/rest/services-reference/enterprise/geometry-objects/#polygon
-      if (!areCoordsTheSame(coords[0], coords.at(-1)) {
+      if (!areCoordsTheSame(coords[0], coords.at(-1))) {
         coords.push(coords[0])
       }
       return coords
