@@ -9,8 +9,10 @@ convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
+const isDevelopment = process.env.NODE_ENV === 'development'
 
-if (process.env.ENVIRONMENT !== 'production') {
+// Only load dotenv for local development
+if (isDevelopment) {
   configDotenv()
 }
 
@@ -285,6 +287,38 @@ const config = convict({
       format: Number,
       default: oneMinuteInMS,
       env: 'DYNAMICS_RETRY_DELAY_MS'
+    }
+  },
+  exploreMarinePlanning: {
+    apiUrl: {
+      doc: 'URL for the EMP API',
+      format: String,
+      default: '',
+      env: 'EMP_API_URL'
+    },
+    apiKey: {
+      doc: 'API key for the EMP API',
+      format: String,
+      default: '',
+      env: 'EMP_API_KEY'
+    },
+    isEmpEnabled: {
+      doc: 'Is EMP integration enabled',
+      format: Boolean,
+      default: false,
+      env: 'EMP_ENABLED'
+    },
+    maxRetries: {
+      doc: 'Maximum number of retries for failed EMP queue items',
+      format: Number,
+      default: 3,
+      env: 'EMP_MAX_RETRIES'
+    },
+    retryDelayMs: {
+      doc: 'Delay in milliseconds before retrying a failed EMP queue item',
+      format: Number,
+      default: oneMinuteInMS,
+      env: 'EMP_RETRY_DELAY_MS'
     }
   },
   notify: {

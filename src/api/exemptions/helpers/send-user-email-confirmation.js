@@ -3,9 +3,10 @@ import { NotifyClient } from 'notifications-node-client'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 import { retryAsyncOperation } from '../../../common/helpers/retry-async-operation.js'
 import { ErrorWithData } from '../../../common/helpers/error-with-data.js'
+import { isOrganisationEmployee } from '../../../common/helpers/organisations.js'
 
 const getNotifyTemplateId = (organisation) => {
-  if (organisation?.userRelationshipType === 'Employee') {
+  if (isOrganisationEmployee(organisation)) {
     return config.get('notify.notifyTemplateIdEmployee')
   }
   if (organisation?.userRelationshipType === 'Agent') {
