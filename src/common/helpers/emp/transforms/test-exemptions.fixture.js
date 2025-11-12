@@ -131,7 +131,7 @@ export const testExemptions = [
       geometry: {
         rings: [],
         spatialReference: {
-          wkid: 4258
+          wkid: 4326
         }
       }
     }
@@ -259,7 +259,7 @@ export const testExemptions = [
           ]
         ],
         spatialReference: {
-          wkid: 4258
+          wkid: 4326
         }
       }
     }
@@ -613,7 +613,7 @@ export const testExemptions = [
       geometry: {
         rings: [],
         spatialReference: {
-          wkid: 4258
+          wkid: 4326
         }
       }
     }
@@ -832,7 +832,7 @@ export const testExemptions = [
           ]
         ],
         spatialReference: {
-          wkid: 4258
+          wkid: 4326
         }
       }
     }

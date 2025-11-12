@@ -4,3 +4,7 @@ export const COORDINATE_SYSTEMS = {
 }
 
 export const MIN_POINTS_MULTIPLE_COORDINATES = 3
+
+export const SPATIAL_REFERENCES = {
+  WGS84: { wkid: 4326 }
+}
