@@ -307,6 +307,9 @@ export class ShapefileParser {
 
   /**
    * Parse a shapefile and return GeoJSON
+   * @param {string} shpPath - Path to the shapefile
+   * @param {Object} transformer - Optional coordinate transformer
+   * @returns {Object} GeoJSON FeatureCollection with valid features only (features without geometry.coordinates are ignored)
    */
   async parseShapefile(shpPath, transformer = null) {
     const source = await shapefile.open(shpPath)
