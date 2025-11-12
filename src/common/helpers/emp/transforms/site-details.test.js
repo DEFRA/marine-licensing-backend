@@ -1,13 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { transformSiteDetails } from './site-details.js'
-import * as manualCoordinates from './manual-coordinates.js'
-
-vi.mock('./manual-coordinates.js', () => ({
-  manualCoordsToEmpGeometry: vi.fn()
-}))
 
 describe('transformSiteDetails', () => {
-  it('returns empty array for rings when siteDetails contains file upload coordinates', () => {
+  it('returns empty array for rings when siteDetails contains file upload with no features', () => {
     const siteDetails = [
       {
         coordinatesType: 'file',
@@ -18,57 +13,83 @@ describe('transformSiteDetails', () => {
 
     const result = transformSiteDetails(siteDetails)
 
+    expect(result.rings).toEqual([])
+    expect(result.spatialReference).toBeUndefined()
+  })
+
+  it('transforms manual coordinates for WGS84 polygon', () => {
+    const siteDetails = [
+      {
+        coordinatesType: 'coordinates',
+        coordinatesEntry: 'multiple',
+        coordinateSystem: 'wgs84',
+        coordinates: [
+          { latitude: '50.0', longitude: '-1.0' },
+          { latitude: '51.0', longitude: '-1.0' },
+          { latitude: '51.0', longitude: '-2.0' },
+          { latitude: '50.0', longitude: '-2.0' }
+        ]
+      }
+    ]
+
+    const result = transformSiteDetails(siteDetails)
+
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
+    expect(result.rings).toHaveLength(1)
+    expect(result.rings[0]).toEqual([
+      [-1.0, 50.0],
+      [-1.0, 51.0],
+      [-2.0, 51.0],
+      [-2.0, 50.0],
+      [-1.0, 50.0] // Last point should match first point
+    ])
+  })
+
+  it('returns empty rings array when siteDetails is empty', () => {
+    const siteDetails = []
+
+    const result = transformSiteDetails(siteDetails)
+
     expect(result).toEqual({
       rings: [],
       spatialReference: {
         wkid: 4326
       }
     })
-    expect(manualCoordinates.manualCoordsToEmpGeometry).not.toHaveBeenCalled()
   })
 
-  it('calls manualCoordsToEmpGeometry when siteDetails has manual coordinates', () => {
+  it('uses fileUploadToEmpGeometry for file upload with features', () => {
     const siteDetails = [
       {
-        coordinatesType: 'coordinates',
-        coordinateSystem: 'wgs84',
-        coordinates: { latitude: '50.0', longitude: '-1.0' }
-      },
-      {
-        coordinatesType: 'coordinates',
-        coordinateSystem: 'osgb36',
-        coordinates: { eastings: '400000', northings: '200000' }
+        coordinatesType: 'file',
+        fileUploadType: 'geojson',
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [-1.0, 50.0],
+                    [-1.0, 51.0],
+                    [-2.0, 51.0],
+                    [-2.0, 50.0],
+                    [-1.0, 50.0]
+                  ]
+                ]
+              }
+            }
+          ]
+        }
       }
     ]
-
-    const mockGeometry = [
-      [
-        [-1.0, 50.0],
-        [-1.0, 50.0]
-      ]
-    ]
-    manualCoordinates.manualCoordsToEmpGeometry.mockReturnValue(mockGeometry)
 
     const result = transformSiteDetails(siteDetails)
 
-    expect(manualCoordinates.manualCoordsToEmpGeometry).toHaveBeenCalledWith(
-      siteDetails
-    )
-    expect(result).toEqual({
-      rings: mockGeometry,
-      spatialReference: {
-        wkid: 4326
-      }
-    })
-  })
-
-  it('returns empty array when siteDetails is empty', () => {
-    const siteDetails = []
-
-    transformSiteDetails(siteDetails)
-
-    expect(manualCoordinates.manualCoordsToEmpGeometry).toHaveBeenCalledWith(
-      siteDetails
-    )
+    expect(result.rings).toHaveLength(1)
+    expect(result.rings[0]).toBeDefined()
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 })
