@@ -40,11 +40,6 @@ export const transformExemptionToEmpRequest = ({
       SubDate: shortIsoDate(new Date(exemption.submittedAt)),
       PubConsent: publicConsent
     },
-    geometry: {
-      rings: transformSiteDetails(siteDetails),
-      spatialReference: {
-        wkid: 4258
-      }
-    }
+    geometry: transformSiteDetails(siteDetails)
   }
 }
