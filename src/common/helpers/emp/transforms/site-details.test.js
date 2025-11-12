@@ -7,7 +7,7 @@ vi.mock('./manual-coordinates.js', () => ({
 }))
 
 describe('transformSiteDetails', () => {
-  it('returns empty array when siteDetails contains file upload coordinates', () => {
+  it('returns empty array for rings when siteDetails contains file upload coordinates', () => {
     const siteDetails = [
       {
         coordinatesType: 'file',
@@ -18,7 +18,12 @@ describe('transformSiteDetails', () => {
 
     const result = transformSiteDetails(siteDetails)
 
-    expect(result).toEqual([])
+    expect(result).toEqual({
+      rings: [],
+      spatialReference: {
+        wkid: 4326
+      }
+    })
     expect(manualCoordinates.manualCoordsToEmpGeometry).not.toHaveBeenCalled()
   })
 
@@ -49,7 +54,12 @@ describe('transformSiteDetails', () => {
     expect(manualCoordinates.manualCoordsToEmpGeometry).toHaveBeenCalledWith(
       siteDetails
     )
-    expect(result).toEqual(mockGeometry)
+    expect(result).toEqual({
+      rings: mockGeometry,
+      spatialReference: {
+        wkid: 4326
+      }
+    })
   })
 
   it('returns empty array when siteDetails is empty', () => {
