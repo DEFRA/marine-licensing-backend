@@ -310,20 +310,28 @@ export class ShapefileParser {
    */
   async parseShapefile(shpPath, transformer = null) {
     const source = await shapefile.open(shpPath)
-
     const features = []
 
-    let result = await source.read()
-    while (!result.done) {
+    while (true) {
+      const result = await source.read()
+      if (result.done) {
+        break
+      }
+
       const feature = result.value
 
       // Transform coordinates recursively
-      if (transformer !== null) {
-        this.transformCoordinates(feature.geometry.coordinates, transformer)
+      if (feature.geometry?.coordinates) {
+        if (transformer !== null) {
+          this.transformCoordinates(feature.geometry.coordinates, transformer)
+        }
+        features.push(feature)
+      } else {
+        logger.warn(
+          { feature },
+          `${this.logSystem}: ${shpPath} Ignoring feature without geometry.coordinates`
+        )
       }
-      features.push(feature)
-
-      result = await source.read()
     }
 
     return {
