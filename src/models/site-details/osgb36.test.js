@@ -19,6 +19,24 @@ describe('#osgb36ValidationSchema model', () => {
     expect(result.error).toBeUndefined()
   })
 
+  test('Should pass validation on minimum values', () => {
+    const result = osgb36ValidationSchema.validate({
+      eastings: '0',
+      northings: '0'
+    })
+
+    expect(result.error).toBeUndefined()
+  })
+
+  test('Should pass validation on maximum values', () => {
+    const result = osgb36ValidationSchema.validate({
+      eastings: '999999',
+      northings: '9999999'
+    })
+
+    expect(result.error).toBeUndefined()
+  })
+
   test('Should correctly validate on empty data', () => {
     const request = {}
 

@@ -12,7 +12,7 @@ const validateCoordinates = (value, helpers, type) => {
     return helpers.error('number.base')
   }
 
-  if (coordinate <= 0) {
+  if (coordinate < 0) {
     return helpers.error('number.positive')
   }
 
