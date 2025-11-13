@@ -19,6 +19,24 @@ describe('#osgb36ValidationSchema model', () => {
     expect(result.error).toBeUndefined()
   })
 
+  test('Should pass validation on minimum values', () => {
+    const result = osgb36ValidationSchema.validate({
+      eastings: '0',
+      northings: '0'
+    })
+
+    expect(result.error).toBeUndefined()
+  })
+
+  test('Should pass validation on maximum values', () => {
+    const result = osgb36ValidationSchema.validate({
+      eastings: '999999',
+      northings: '9999999'
+    })
+
+    expect(result.error).toBeUndefined()
+  })
+
   test('Should correctly validate on empty data', () => {
     const request = {}
 
@@ -58,24 +76,10 @@ describe('#osgb36ValidationSchema model', () => {
     expect(result.error.message).toContain('NORTHINGS_REQUIRED')
   })
 
-  test('Should correctly validate when northings and eastings is below minimum allowed value', () => {
-    const request = {
-      eastings: '10000',
-      northings: '10000'
-    }
-
-    const result = osgb36ValidationSchema.validate(request, {
-      abortEarly: false
-    })
-
-    expect(result.error.message).toContain('EASTINGS_LENGTH')
-    expect(result.error.message).toContain('NORTHINGS_LENGTH')
-  })
-
   test('Should correctly validate when northings and eastings is above maximum allowed value', () => {
     const request = {
-      eastings: '9999999',
-      northings: '99999999'
+      eastings: '1000000',
+      northings: '10000000'
     }
 
     const result = osgb36ValidationSchema.validate(request, {
