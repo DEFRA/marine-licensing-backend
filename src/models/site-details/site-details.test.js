@@ -623,7 +623,7 @@ describe('#siteDetails schema', () => {
           {
             ...mockOsgb36MultipleCoordinatesRequest.siteDetails[0],
             coordinates: [
-              { eastings: '50000', northings: '476895' }, // Below minimum
+              { eastings: '-1', northings: '476895' }, // Below minimum
               { eastings: '514040', northings: '476693' },
               { eastings: '514193', northings: '476835' }
             ]
@@ -631,7 +631,7 @@ describe('#siteDetails schema', () => {
         ]
       }
       const result = siteDetailsSchema.validate(invalidRequest)
-      expect(result.error.message).toBe('EASTINGS_LENGTH')
+      expect(result.error.message).toBe('EASTINGS_POSITIVE_NUMBER')
     })
 
     test('Should reject multiple coordinates when circleWidth is provided', () => {
