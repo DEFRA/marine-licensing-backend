@@ -60,8 +60,8 @@ describe('#osgb36ValidationSchema model', () => {
 
   test('Should correctly validate when northings and eastings is above maximum allowed value', () => {
     const request = {
-      eastings: '700001',
-      northings: '1200001'
+      eastings: '1000000',
+      northings: '10000000'
     }
 
     const result = osgb36ValidationSchema.validate(request, {
