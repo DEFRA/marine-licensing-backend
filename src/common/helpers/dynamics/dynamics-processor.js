@@ -5,6 +5,7 @@ import {
   getDynamicsAccessToken,
   sendExemptionToDynamics
 } from './dynamics-client.js'
+import { structureErrorForECS } from '../../helpers/logging/logger.js'
 import {
   collectionDynamicsQueueFailed,
   collectionDynamicsQueue
@@ -107,12 +108,18 @@ export const processDynamicsQueue = async (server) => {
         await sendExemptionToDynamics(server, accessToken, item)
         await handleDynamicsQueueItemSuccess(server, item)
       } catch (err) {
-        server.logger.error(err)
+        server.logger.error(
+          structureErrorForECS(err),
+          `Failed to process dynamics queue item ${item.applicationReferenceNumber}`
+        )
         await handleDynamicsQueueItemFailure(server, item)
       }
     }
   } catch (error) {
-    server.logger.error(error)
+    server.logger.error(
+      structureErrorForECS(error),
+      'Error during processing dynamics queue'
+    )
     throw Boom.badImplementation(
       'Error during processing dynamics queue',
       error.message

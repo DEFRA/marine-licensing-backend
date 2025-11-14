@@ -3,7 +3,10 @@ import { StatusCodes } from 'http-status-codes'
 import { geoParserExtract } from '../../../models/geo-parser-extract.js'
 import { geoParser } from '../../../services/geo-parser/geo-parser.js'
 import { config } from '../../../config.js'
-import { createLogger } from '../../../common/helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../../../common/helpers/logging/logger.js'
 
 const logger = createLogger()
 const logSystem = 'FileUpload:Extract Controller'
@@ -22,7 +25,7 @@ export const extractController = {
     const { s3Bucket, s3Key, fileType } = request.payload
 
     logger.info(
-      { s3Bucket, s3Key, fileType },
+      { fileType },
       `${logSystem}: Processing geo-parser extract request`
     )
 
@@ -30,13 +33,7 @@ export const extractController = {
       // Validate S3 bucket against config
       const allowedBucket = config.get('cdp.uploadBucket')
       if (s3Bucket !== allowedBucket) {
-        logger.warn(
-          {
-            s3Bucket,
-            allowedBucket
-          },
-          `${logSystem}: S3 bucket validation failed`
-        )
+        logger.warn(`${logSystem}: S3 bucket validation failed`)
 
         throw Boom.forbidden('Invalid S3 bucket')
       }
@@ -45,8 +42,6 @@ export const extractController = {
 
       logger.info(
         {
-          s3Bucket,
-          s3Key,
           fileType,
           featureCount: geoJSON.features?.length || 0
         },
@@ -61,12 +56,7 @@ export const extractController = {
         .code(StatusCodes.OK)
     } catch (error) {
       logger.error(
-        {
-          s3Bucket,
-          s3Key,
-          fileType,
-          error
-        },
+        structureErrorForECS(error),
         `${logSystem}: Failed to process geo-parser extract request`
       )
 

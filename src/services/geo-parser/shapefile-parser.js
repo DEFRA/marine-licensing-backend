@@ -4,7 +4,10 @@ import * as path from 'node:path'
 import { tmpdir } from 'node:os'
 import AdmZip from 'adm-zip'
 import proj4 from 'proj4'
-import { createLogger } from '../../common/helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../../common/helpers/logging/logger.js'
 import { GEO_PARSER_ERROR_CODES, isGeoParserErrorCode } from './error-codes.js'
 
 const logger = createLogger()
@@ -237,7 +240,7 @@ export class ShapefileParser {
       return found
     } catch (error) {
       logger.error(
-        { directory, error },
+        structureErrorForECS(error),
         `${this.logSystem}: Error during glob search`
       )
       return []
@@ -288,8 +291,12 @@ export class ShapefileParser {
       const [x, y] = transformer.forward(coords)
       // proj4 can return Infinity or NaN for invalid transformations
       if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        const transformationError = new Error(
+          `Invalid transformation result - no transformation has taken place. Original coords: [${coords[0]}, ${coords[1]}], Transformed: [${x}, ${y}]`
+        )
+        transformationError.code = 'INVALID_TRANSFORMATION'
         logger.error(
-          { original: coords, transformed: [x, y] },
+          structureErrorForECS(transformationError),
           `${this.logSystem}: Invalid transformation result - no transformation has taken place`
         )
         return
@@ -380,14 +387,13 @@ export class ShapefileParser {
         return paths[0]
       } else {
         logger.error(
-          { paths },
           `${this.logSystem}: No projection file found - coordinates will not be transformed`
         )
         return null
       }
     } catch (error) {
       logger.error(
-        { directory, error },
+        structureErrorForECS(error),
         `${this.logSystem}: Error during glob search for prj file`
       )
       return null
@@ -428,7 +434,7 @@ export class ShapefileParser {
       return proj4(projText, targetCRS)
     } catch (error) {
       logger.error(
-        { error: error.message, projText },
+        structureErrorForECS(error),
         `${this.logSystem}: Failed to create proj4 transformer`
       )
       return null

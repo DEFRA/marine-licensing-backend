@@ -6,7 +6,17 @@ import { createLogger } from '../../../common/helpers/logging/logger.js'
 
 vi.mock('../../../config.js')
 vi.mock('notifications-node-client')
-vi.mock('../../../common/helpers/logging/logger.js')
+vi.mock('../../../common/helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(),
+  structureErrorForECS: vi.fn((error) => ({
+    error: {
+      message: error?.message || String(error),
+      stack_trace: error?.stack,
+      type: error?.name || error?.constructor?.name || 'Error',
+      code: error?.code || error?.statusCode
+    }
+  }))
+}))
 
 describe('sendUserEmailConfirmation', () => {
   let mockDb
@@ -209,7 +219,13 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error sending email for exemption EXE/2025/10003: [{"error":"BadRequestError","message":"Invalid email address"}]'
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: expect.stringContaining('Error sending email'),
+            code: 'EMAIL_SEND_ERROR'
+          })
+        }),
+        'Error sending email for exemption EXE/2025/10003'
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('email-queue')
@@ -249,7 +265,13 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error sending email for exemption EXE/2025/10004: [{"error":"NetworkError","message":"Unable to connect to Notify service"}]'
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: expect.stringContaining('Error sending email'),
+            code: 'EMAIL_SEND_ERROR'
+          })
+        }),
+        'Error sending email for exemption EXE/2025/10004'
       )
       expect(mockCollection.insertOne).toHaveBeenCalledWith({
         applicationReferenceNumber: 'EXE/2025/10004',
@@ -620,7 +642,13 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error sending email for exemption EXE/2025/10012: [{"error":"TestError","message":"Test error message"}]'
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: expect.stringContaining('Error sending email'),
+            code: 'EMAIL_SEND_ERROR'
+          })
+        }),
+        'Error sending email for exemption EXE/2025/10012'
       )
       expect(mockLogger.error).toHaveBeenCalledTimes(1)
     })

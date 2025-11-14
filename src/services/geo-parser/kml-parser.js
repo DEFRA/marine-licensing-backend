@@ -1,7 +1,10 @@
 import { readFile } from 'node:fs/promises'
 import { JSDOM } from 'jsdom'
 import * as togeojson from '@tmcw/togeojson'
-import { createLogger } from '../../common/helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../../common/helpers/logging/logger.js'
 import Boom from '@hapi/boom'
 
 const logger = createLogger()
@@ -10,7 +13,7 @@ export class KmlParser {
   logSystem = 'FileUpload:KmlParser'
 
   async parseFile(filePath) {
-    logger.info({ filePath }, `${this.logSystem}: Parsing KML file`)
+    logger.info(`${this.logSystem}: Parsing KML file`)
 
     try {
       const kmlContent = await readFile(filePath, 'utf-8')
@@ -23,7 +26,6 @@ export class KmlParser {
 
       logger.info(
         {
-          filePath,
           featureCount: geoJSON.features?.length || 0
         },
         `${this.logSystem}: Successfully parsed KML file`
@@ -32,10 +34,7 @@ export class KmlParser {
       return geoJSON
     } catch (error) {
       logger.error(
-        {
-          filePath,
-          error
-        },
+        structureErrorForECS(error),
         `${this.logSystem}: Failed to parse KML file`
       )
 
