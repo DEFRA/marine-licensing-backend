@@ -746,6 +746,34 @@ describe('ShapefileParser class', () => {
         'Invalid shapefile'
       )
     })
+
+    it('should ignore features with null geometry and only return valid features', async () => {
+      const validFeature = pointFeature
+      const invalidFeature = {
+        type: 'Feature',
+        geometry: null,
+        properties: {}
+      }
+
+      const mockRead = vi
+        .fn()
+        .mockResolvedValueOnce({ done: false, value: validFeature })
+        .mockResolvedValueOnce({ done: false, value: invalidFeature })
+        .mockResolvedValueOnce({ done: true, value: undefined })
+
+      shapefile.open.mockResolvedValue({
+        read: mockRead
+      })
+
+      const result = await sut.parseShapefile(shpPath, nullTransformer)
+
+      expect(result.features).toHaveLength(1)
+      expect(result.features[0]).toEqual(validFeature)
+      expect(logger.warn).toHaveBeenCalledWith(
+        { feature: invalidFeature },
+        expect.stringContaining('Ignoring feature without geometry.coordinates')
+      )
+    })
   })
 
   describe('findProjectionFile', () => {
