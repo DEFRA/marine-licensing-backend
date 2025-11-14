@@ -14,7 +14,7 @@ describe('transformSiteDetails', () => {
     const result = transformSiteDetails(siteDetails)
 
     expect(result.rings).toEqual([])
-    expect(result.spatialReference).toBeUndefined()
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 
   it('transforms manual coordinates for WGS84 polygon', () => {

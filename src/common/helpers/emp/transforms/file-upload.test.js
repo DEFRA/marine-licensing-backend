@@ -169,7 +169,7 @@ describe('fileUploadToEmpGeometry', () => {
     const result = fileUploadToEmpGeometry(siteDetails)
 
     expect(result.rings).toEqual([])
-    expect(result.spatialReference).toBeUndefined()
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 
   it('handles sites with empty features arrays', () => {
@@ -191,10 +191,10 @@ describe('fileUploadToEmpGeometry', () => {
     const result = fileUploadToEmpGeometry(siteDetails)
 
     expect(result.rings).toEqual([])
-    expect(result.spatialReference).toBeUndefined()
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 
-  it('extracts spatialReference from first transformed feature', () => {
+  it('always returns WGS84 spatial reference', () => {
     const siteDetails = [
       {
         geoJSON: {
@@ -203,8 +203,16 @@ describe('fileUploadToEmpGeometry', () => {
             {
               type: 'Feature',
               geometry: {
-                type: 'Point',
-                coordinates: [0, 0]
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [0, 0],
+                    [1, 0],
+                    [1, 1],
+                    [0, 1],
+                    [0, 0]
+                  ]
+                ]
               }
             }
           ]
