@@ -28,11 +28,11 @@ function structureErrorForECS(error) {
   }
 
   // Remove undefined fields
-  Object.keys(errorObj.error).forEach((key) => {
+  for (const key of Object.keys(errorObj.error)) {
     if (errorObj.error[key] === undefined) {
       delete errorObj.error[key]
     }
-  })
+  }
 
   return errorObj
 }
