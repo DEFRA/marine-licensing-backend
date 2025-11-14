@@ -1,7 +1,10 @@
 import { Worker } from 'node:worker_threads'
 import { join } from 'node:path'
 import Boom from '@hapi/boom'
-import { createLogger } from '../../common/helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../../common/helpers/logging/logger.js'
 import { blobService } from '../blob-service.js'
 import { isGeoParserErrorCode } from './error-codes.js'
 
@@ -44,12 +47,7 @@ export class GeoParser {
       return geoJSON
     } catch (error) {
       logger.error(
-        {
-          s3Bucket,
-          s3Key,
-          fileType,
-          error
-        },
+        structureErrorForECS(error),
         `${this.logSystem}: ERROR: Failed to extract GeoJSON`
       )
 
@@ -72,17 +70,19 @@ export class GeoParser {
   }
 
   async parseFile(filePath, fileType) {
-    logger.info({ filePath, fileType }, `${this.logSystem}: Parsing file`)
+    logger.info({ fileType }, `${this.logSystem}: Parsing file`)
 
     // Use worker threads for CPU-intensive parsing to prevent blocking
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         worker.terminate()
+        const timeoutError = new Error('Processing timeout exceeded')
+        timeoutError.code = 'PROCESSING_TIMEOUT'
         logger.error(
-          { filePath, fileType, timeout: this.processingTimeout },
+          structureErrorForECS(timeoutError),
           `${this.logSystem}: Processing timeout exceeded: worker terminated`
         )
-        reject(new Error('Processing timeout exceeded'))
+        reject(timeoutError)
       }, this.processingTimeout)
 
       // This is relative to the project root
@@ -94,14 +94,16 @@ export class GeoParser {
         clearTimeout(timeout)
 
         if (result.error) {
+          const parseError = new Error(result.error)
+          parseError.code = 'PARSE_ERROR'
           logger.error(
-            { filePath, fileType, error: result.error },
+            structureErrorForECS(parseError),
             `${this.logSystem}: Failed to parse file`
           )
-          reject(new Error(result.error))
+          reject(parseError)
         } else {
           logger.info(
-            { filePath, fileType },
+            { fileType },
             `${this.logSystem}: File parsed successfully`
           )
           resolve(result.geoJSON)
@@ -111,11 +113,7 @@ export class GeoParser {
       worker.on('error', (error) => {
         clearTimeout(timeout)
         logger.error(
-          {
-            filePath,
-            fileType,
-            error
-          },
+          structureErrorForECS(error),
           `${this.logSystem}: Worker error during parsing`
         )
         reject(new Error(`Worker error: ${error.message}`))

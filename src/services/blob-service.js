@@ -10,7 +10,10 @@ import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
 import { config } from '../config.js'
-import { createLogger } from '../common/helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../common/helpers/logging/logger.js'
 import Boom from '@hapi/boom'
 
 const logger = createLogger()
@@ -80,11 +83,7 @@ class BlobService {
       }
     } catch (error) {
       logger.error(
-        {
-          s3Bucket,
-          s3Key,
-          error
-        },
+        structureErrorForECS(error),
         `${this.logSystem}: Failed to retrieve S3 object metadata`
       )
 
@@ -101,10 +100,7 @@ class BlobService {
   }
 
   async downloadFile(s3Bucket, s3Key, tempPath) {
-    logger.info(
-      { s3Bucket, s3Key, tempPath },
-      `${this.logSystem}: Downloading file from S3`
-    )
+    logger.info(`${this.logSystem}: Downloading file from S3`)
 
     try {
       const command = new GetObjectCommand({
@@ -115,16 +111,14 @@ class BlobService {
       const response = await this.client.send(command)
 
       if (!response.Body) {
-        const errorMessage = `No response body received from S3: bucket=${s3Bucket}, key=${s3Key}`
+        const errorMessage = 'No response body received from S3'
+        const error = new Error(errorMessage)
+        error.code = 'S3_NO_RESPONSE_BODY'
         logger.error(
-          {
-            s3Bucket,
-            s3Key,
-            tempPath
-          },
+          structureErrorForECS(error),
           `${this.logSystem}: ${errorMessage}`
         )
-        throw new Error(errorMessage)
+        throw error
       }
 
       const writeStream = createWriteStream(tempPath)
@@ -132,24 +126,12 @@ class BlobService {
       // Use pipeline for proper stream handling with timeout
       await pipeline(response.Body, writeStream)
 
-      logger.info(
-        {
-          s3Bucket,
-          s3Key,
-          tempPath
-        },
-        `${this.logSystem}: Successfully downloaded file from S3`
-      )
+      logger.info(`${this.logSystem}: Successfully downloaded file from S3`)
 
       return tempPath
     } catch (error) {
       logger.error(
-        {
-          s3Bucket,
-          s3Key,
-          tempPath,
-          error
-        },
+        structureErrorForECS(error),
         `${this.logSystem}: ERROR: Failed to download file from S3`
       )
 
@@ -196,13 +178,10 @@ class BlobService {
     const maxFileSize = config.get('cdp.maxFileSize')
 
     if (metadata.size > maxFileSize) {
+      const sizeError = new Error('File size exceeds maximum allowed size')
+      sizeError.code = 'FILE_SIZE_EXCEEDED'
       logger.error(
-        {
-          s3Bucket,
-          s3Key,
-          fileSize: metadata.size,
-          maxFileSize
-        },
+        structureErrorForECS(sizeError),
         `${this.logSystem}: File size exceeds maximum allowed size`
       )
 

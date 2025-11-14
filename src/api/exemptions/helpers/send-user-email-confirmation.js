@@ -1,6 +1,9 @@
 import { config } from '../../../config.js'
 import { NotifyClient } from 'notifications-node-client'
-import { createLogger } from '../../../common/helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../../../common/helpers/logging/logger.js'
 import { retryAsyncOperation } from '../../../common/helpers/retry-async-operation.js'
 import { ErrorWithData } from '../../../common/helpers/error-with-data.js'
 import { isOrganisationEmployee } from '../../../common/helpers/organisations.js'
@@ -65,10 +68,22 @@ const sendEmail = async ({
     logger.info(`Sent confirmation email for exemption ${applicationReference}`)
     return { status: 'success', id, reference: emailSendReference }
   } catch (error) {
-    const errors = JSON.stringify(error.data)
+    // Ensure we have an Error object for structured logging
+    const emailError =
+      error instanceof Error
+        ? error
+        : new Error(`Error sending email for exemption ${applicationReference}`)
+    if (!emailError.code) {
+      emailError.code = 'EMAIL_SEND_ERROR'
+    }
     logger.error(
-      `Error sending email for exemption ${applicationReference}: ${errors}`
+      structureErrorForECS(emailError),
+      `Error sending email for exemption ${applicationReference}`
     )
+    const errors =
+      error instanceof ErrorWithData && error.data
+        ? JSON.stringify(error.data)
+        : undefined
     return {
       status: 'error',
       errors,
