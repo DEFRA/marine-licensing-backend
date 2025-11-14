@@ -39,6 +39,7 @@
     "@hapi/boom": "10.0.1",
     "@hapi/hapi": "21.4.4",
     "@hapi/wreck": "18.1.0",
+    "@terraformer/arcgis": "2.1.2",
     "@tmcw/togeojson": "^7.1.2",
     "adm-zip": "^0.5.16",
     "aws-embedded-metrics": "4.2.0",

@@ -2,6 +2,7 @@ import proj4 from 'proj4'
 import './proj4-definition-osgb34.js'
 import { generateCirclePolygon } from './circle-to-polygon.js'
 import { COORDINATE_SYSTEMS } from '../../../constants/coordinates.js'
+import { areCoordsTheSame } from './are-coords-the-same.js'
 
 const { OSGB36, WGS84 } = COORDINATE_SYSTEMS
 
@@ -10,10 +11,6 @@ const singleOSGB36toWGS84 = ({ eastings, northings }) =>
     Number.parseFloat(eastings),
     Number.parseFloat(northings)
   ])
-
-const areCoordsTheSame = ([lon1, lat1], [lon2, lat2]) => {
-  return lon1 === lon2 && lat1 === lat2
-}
 
 export const manualCoordsToEmpGeometry = (siteDetails) => {
   return siteDetails.map((site) => {
