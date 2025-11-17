@@ -50,7 +50,6 @@ describe('transformMcmsContextForDb', () => {
     const mockContext = {
       activityType: 'CON',
       article: '25',
-      activitySubtype: 'pontoons',
       pdfDownloadUrl:
         'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
     }
@@ -60,8 +59,7 @@ describe('transformMcmsContextForDb', () => {
       activity: {
         code: 'CON',
         label: 'Construction',
-        purpose: 'Moorings or aids to navigation',
-        subType: 'pontoons'
+        purpose: 'Moorings or aids to navigation'
       },
       articleCode: '25',
       pdfDownloadUrl:
@@ -72,8 +70,7 @@ describe('transformMcmsContextForDb', () => {
   it('should return undefined if no activityType is provided', () => {
     const mockContext = {
       activityType: undefined,
-      article: '25',
-      activitySubtype: 'pontoons'
+      article: '25'
     }
     const result = transformMcmsContextForDb(mockContext)
     expect(result).toBeNull()

@@ -4,13 +4,7 @@ export const transformMcmsContextForDb = (mcmsContext) => {
   if (!mcmsContext?.activityType) {
     return null
   }
-  const {
-    activityType,
-    activitySubtype,
-    article,
-    pdfDownloadUrl,
-    iatQueryString
-  } = mcmsContext
+  const { activityType, article, pdfDownloadUrl, iatQueryString } = mcmsContext
   const { code, label, purpose } = activityTypes[activityType]
   const purposeLabel = purpose?.find((p) => p.article === article)?.label
 
@@ -18,8 +12,7 @@ export const transformMcmsContextForDb = (mcmsContext) => {
     activity: {
       code,
       label,
-      purpose: purposeLabel,
-      subType: activitySubtype
+      purpose: purposeLabel
     },
     articleCode: article,
     pdfDownloadUrl,
