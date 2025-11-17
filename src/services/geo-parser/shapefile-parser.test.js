@@ -17,7 +17,15 @@ vi.mock('../../common/helpers/logging/logger.js', () => {
     info: vi.fn()
   }
   return {
-    createLogger: vi.fn(() => logger)
+    createLogger: vi.fn(() => logger),
+    structureErrorForECS: vi.fn((error) => ({
+      error: {
+        message: error?.message || String(error),
+        stack_trace: error?.stack,
+        type: error?.name || error?.constructor?.name || 'Error',
+        code: error?.code || error?.statusCode
+      }
+    }))
   }
 })
 

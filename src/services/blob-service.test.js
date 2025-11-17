@@ -19,7 +19,15 @@ const mockLogger = {
 }
 
 vi.mock('../common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn().mockReturnValue(mockLogger)
+  createLogger: vi.fn().mockReturnValue(mockLogger),
+  structureErrorForECS: vi.fn((error) => ({
+    error: {
+      message: error?.message || String(error),
+      stack_trace: error?.stack,
+      type: error?.name || error?.constructor?.name || 'Error',
+      code: error?.code || error?.statusCode
+    }
+  }))
 }))
 
 vi.mock('../config.js', () => ({
@@ -275,9 +283,7 @@ describe('BlobService', () => {
       await expect(
         blobService.downloadFile(s3Bucket, s3Key, tempPath)
       ).rejects.toThrow(
-        Boom.internal(
-          'S3 download failed: No response body received from S3: bucket=test-bucket, key=test-key.kml'
-        )
+        Boom.internal('S3 download failed: No response body received from S3')
       )
     })
 

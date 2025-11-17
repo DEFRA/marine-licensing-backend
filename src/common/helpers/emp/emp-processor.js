@@ -2,6 +2,7 @@ import Boom from '@hapi/boom'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { config } from '../../../config.js'
 import { sendExemptionToEmp } from './emp-client.js'
+import { structureErrorForECS } from '../../helpers/logging/logger.js'
 
 import {
   collectionEmpQueue,
@@ -102,12 +103,18 @@ export const processEmpQueue = async (server) => {
         await sendExemptionToEmp(server, item)
         await handleEmpQueueItemSuccess(server, item)
       } catch (err) {
-        server.logger.error(err)
+        server.logger.error(
+          structureErrorForECS(err),
+          `Failed to process EMP queue item ${item.applicationReferenceNumber}`
+        )
         await handleEmpQueueItemFailure(server, item)
       }
     }
   } catch (error) {
-    server.logger.error(error)
+    server.logger.error(
+      structureErrorForECS(error),
+      'Error during processing EMP queue'
+    )
     throw Boom.badImplementation(
       'Error during processing EMP queue',
       error.message
