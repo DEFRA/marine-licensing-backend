@@ -1,46 +1,7 @@
 import joi from 'joi'
 import { exemptionId } from './shared-models.js'
-import {
-  activityTypes,
-  articleCodes,
-  validActivitySubtypes
-} from '../common/constants/mcms-context.js'
 
 const PROJECT_NAME_MAX_LENGTH = 250
-
-const mcmsContext = {
-  mcmsContext: joi
-    .object({
-      activityType: joi
-        .string()
-        .valid(...Object.keys(activityTypes))
-        .required(),
-      article: joi
-        .string()
-        .valid(...articleCodes)
-        .required(),
-      pdfDownloadUrl: joi
-        .string()
-        .pattern(
-          /^https:\/\/[^/]+\.marinemanagement\.org\.uk\/[^/]+\/journey\/self-service\/outcome-document\/[a-zA-Z0-9-]+$/
-        )
-        .required(),
-      activitySubtype: joi.when('activityType', {
-        is: [
-          activityTypes.CON.code,
-          activityTypes.DEPOSIT.code,
-          activityTypes.REMOVAL.code,
-          activityTypes.DREDGE.code
-        ],
-        then: joi
-          .string()
-          .valid(...validActivitySubtypes)
-          .required(),
-        otherwise: joi.forbidden()
-      })
-    })
-    .allow(null)
-}
 
 const ORG_STRING_MIN_LENGTH = 1
 
@@ -80,7 +41,7 @@ export const projectName = joi.object({
 })
 
 export const createProjectName = projectName
-  .append(mcmsContext)
   .append(organisation)
+  .append({ mcmsContext: joi.object().allow(null) })
 
 export const updateProjectName = projectName.append(exemptionId)

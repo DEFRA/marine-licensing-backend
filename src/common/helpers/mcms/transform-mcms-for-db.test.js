@@ -76,6 +76,6 @@ describe('transformMcmsContextForDb', () => {
       activitySubtype: 'pontoons'
     }
     const result = transformMcmsContextForDb(mockContext)
-    expect(result).toBeUndefined()
+    expect(result).toBeNull()
   })
 })
