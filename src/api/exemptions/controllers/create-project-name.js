@@ -26,7 +26,7 @@ export const createProjectNameController = {
         abortEarly: false
       })
       if (error) {
-        request.logger.error(
+        request.logger.info(
           'Validation failed for MCMS context:',
           JSON.stringify(payload.mcmsContext, null, 2),
           ' | Validation error details:',

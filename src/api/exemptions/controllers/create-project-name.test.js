@@ -367,7 +367,7 @@ describe('POST /exemptions/project-name', () => {
   })
 
   describe('MCMS Context Validation', () => {
-    it('should log error and use iatQueryString when mcmsContext validation fails', async () => {
+    it('should info log and use iatQueryString when mcmsContext validation fails', async () => {
       const { mockMongo, mockHandler } = global
       const invalidMcmsContext = {
         activityType: 'INVALID',
@@ -385,7 +385,7 @@ describe('POST /exemptions/project-name', () => {
         mockHandler
       )
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
+      expect(mockLogger.info).toHaveBeenCalledWith(
         'Validation failed for MCMS context:',
         JSON.stringify(invalidMcmsContext, null, 2),
         ' | Validation error details:',
