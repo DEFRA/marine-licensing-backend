@@ -27,10 +27,11 @@ export const createProjectNameController = {
       })
       if (error) {
         request.logger.info(
-          'Validation failed for MCMS context:',
-          JSON.stringify(payload.mcmsContext, null, 2),
-          ' | Validation error details:',
-          error.message
+          {
+            mcmsContext: payload.mcmsContext,
+            validationError: error.message
+          },
+          'Validation failed for MCMS context'
         )
         mcmsContext = {
           iatQueryString: payload.mcmsContext.iatQueryString
