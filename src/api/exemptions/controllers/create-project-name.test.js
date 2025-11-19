@@ -2,14 +2,16 @@ import { vi } from 'vitest'
 import { createProjectNameController } from './create-project-name'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
-import {
-  activityTypes,
-  validActivitySubtypes
-} from '../../../common/constants/mcms-context.js'
+import { activityTypes } from '../../../common/constants/mcms-context.js'
 
 describe('POST /exemptions/project-name', () => {
   const payloadValidator = createProjectNameController.options.validate.payload
   const auth = { credentials: { contactId: new ObjectId().toHexString() } }
+  const mockLogger = {
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn()
+  }
   const mockAuditPayload = {
     createdAt: new Date('2025-01-01T12:00:00Z'),
     createdBy: 'user123',
@@ -17,13 +19,18 @@ describe('POST /exemptions/project-name', () => {
     updatedBy: 'user123'
   }
 
+  const pdfDownloadUrl =
+    'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+
+  const iatQueryString =
+    '?ADV_TYPE=EXE&ARTICLE=25&outcomeType=WO_EXE_AVAILABLE_ARTICLE_17&pdfDownloadUrl=https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f&ACTIVITY_TYPE=CON&EXE_ACTIVITY_SUBTYPE_CON=scientificResearch'
+
   const mockMcmsContext = {
     mcmsContext: {
       activityType: activityTypes.CON.code,
       article: '25',
-      pdfDownloadUrl:
-        'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
-      activitySubtype: validActivitySubtypes[0]
+      pdfDownloadUrl,
+      iatQueryString
     }
   }
 
@@ -98,7 +105,7 @@ describe('POST /exemptions/project-name', () => {
     const { mockMongo, mockHandler } = global
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
+      { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
       mockHandler
     )
 
@@ -118,7 +125,7 @@ describe('POST /exemptions/project-name', () => {
     }
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
+      { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
       mockHandler
     )
 
@@ -137,7 +144,7 @@ describe('POST /exemptions/project-name', () => {
     }
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
+      { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
       mockHandler
     )
 
@@ -145,7 +152,7 @@ describe('POST /exemptions/project-name', () => {
       projectName: 'Test Project',
       status: EXEMPTION_STATUS.DRAFT,
       contactId: expect.any(String),
-      mcmsContext: undefined,
+      mcmsContext: null,
       ...mockAuditPayload
     })
   })
@@ -159,7 +166,7 @@ describe('POST /exemptions/project-name', () => {
     }
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
+      { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
       mockHandler
     )
 
@@ -171,12 +178,11 @@ describe('POST /exemptions/project-name', () => {
         activity: {
           code: 'CON',
           label: 'Construction',
-          purpose: 'Moorings or aids to navigation',
-          subType: 'coastalProtectionDrainageOrFloodDefence'
+          purpose: 'Moorings or aids to navigation'
         },
         articleCode: '25',
-        pdfDownloadUrl:
-          'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+        pdfDownloadUrl,
+        iatQueryString
       },
       ...mockAuditPayload
     })
@@ -194,7 +200,7 @@ describe('POST /exemptions/project-name', () => {
       }
 
       await createProjectNameController.handler(
-        { db: mockMongo, payload: mockPayload, auth },
+        { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
         mockHandler
       )
 
@@ -202,7 +208,7 @@ describe('POST /exemptions/project-name', () => {
         projectName: 'Test Project with Organisation',
         status: EXEMPTION_STATUS.DRAFT,
         contactId: expect.any(String),
-        mcmsContext: undefined,
+        mcmsContext: null,
         organisation: {
           id: 'org-123',
           name: 'Test Organisation',
@@ -221,7 +227,7 @@ describe('POST /exemptions/project-name', () => {
       }
 
       await createProjectNameController.handler(
-        { db: mockMongo, payload: mockPayload, auth },
+        { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
         mockHandler
       )
 
@@ -229,7 +235,7 @@ describe('POST /exemptions/project-name', () => {
         projectName: 'Test Project without Organisation',
         status: EXEMPTION_STATUS.DRAFT,
         contactId: expect.any(String),
-        mcmsContext: undefined,
+        mcmsContext: null,
         ...mockAuditPayload
       })
     })
@@ -245,7 +251,7 @@ describe('POST /exemptions/project-name', () => {
       }
 
       await createProjectNameController.handler(
-        { db: mockMongo, payload: mockPayload, auth },
+        { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
         mockHandler
       )
 
@@ -253,7 +259,7 @@ describe('POST /exemptions/project-name', () => {
         projectName: 'Test Project with Beneficiary',
         status: EXEMPTION_STATUS.DRAFT,
         contactId: expect.any(String),
-        mcmsContext: undefined,
+        mcmsContext: null,
         organisation: {
           id: 'org-456',
           name: 'Test Beneficiary Org',
@@ -282,7 +288,7 @@ describe('POST /exemptions/project-name', () => {
     await expect(
       async () =>
         await createProjectNameController.handler(
-          { db: mockMongo, payload: mockPayload, auth },
+          { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
           mockHandler
         )
     ).rejects.toThrow(`Error creating project name: ${mockError}`)
@@ -298,7 +304,12 @@ describe('POST /exemptions/project-name', () => {
 
     await expect(
       createProjectNameController.handler(
-        { db: mockMongo, payload: mockPayload, auth: invalidAuth },
+        {
+          db: mockMongo,
+          payload: mockPayload,
+          auth: invalidAuth,
+          logger: mockLogger
+        },
         mockHandler
       )
     ).rejects.toThrow('User not authenticated')
@@ -312,7 +323,7 @@ describe('POST /exemptions/project-name', () => {
     }
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
+      { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
       mockHandler
     )
 
@@ -329,7 +340,7 @@ describe('POST /exemptions/project-name', () => {
     setupMockInsertOne(testObjectId)
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
+      { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
       mockHandler
     )
 
@@ -348,10 +359,82 @@ describe('POST /exemptions/project-name', () => {
     const collectionSpy = vi.spyOn(mockMongo, 'collection')
 
     await createProjectNameController.handler(
-      { db: mockMongo, payload: mockPayload, auth },
+      { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
       mockHandler
     )
 
     expect(collectionSpy).toHaveBeenCalledWith('exemptions')
+  })
+
+  describe('MCMS Context Validation', () => {
+    it('should info log and use iatQueryString when mcmsContext validation fails', async () => {
+      const { mockMongo, mockHandler } = global
+      const invalidMcmsContext = {
+        activityType: 'INVALID',
+        article: 'invalid',
+        iatQueryString: 'test-query-string'
+      }
+      const mockPayload = {
+        projectName: 'Project with invalid MCMS',
+        mcmsContext: invalidMcmsContext,
+        ...mockAuditPayload
+      }
+
+      await createProjectNameController.handler(
+        { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
+        mockHandler
+      )
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        {
+          mcmsContext: invalidMcmsContext,
+          validationError: expect.stringContaining(
+            '"activityType" must be one of'
+          )
+        },
+        'Validation failed for MCMS context'
+      )
+
+      expect(mockInsertOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mcmsContext: {
+            iatQueryString: 'test-query-string'
+          }
+        })
+      )
+    })
+
+    it('should save values and not log when mcmsContext validation succeeds', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = {
+        projectName: 'Project with valid MCMS',
+        ...mockAuditPayload,
+        ...mockMcmsContext
+      }
+
+      await createProjectNameController.handler(
+        { db: mockMongo, payload: mockPayload, auth, logger: mockLogger },
+        mockHandler
+      )
+
+      expect(mockLogger.error).not.toHaveBeenCalled()
+
+      expect(mockInsertOne).toHaveBeenCalledWith({
+        projectName: 'Project with valid MCMS',
+        status: EXEMPTION_STATUS.DRAFT,
+        contactId: expect.any(String),
+        mcmsContext: {
+          activity: {
+            code: 'CON',
+            label: 'Construction',
+            purpose: 'Moorings or aids to navigation'
+          },
+          articleCode: '25',
+          pdfDownloadUrl,
+          iatQueryString
+        },
+        ...mockAuditPayload
+      })
+    })
   })
 })

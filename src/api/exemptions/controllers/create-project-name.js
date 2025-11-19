@@ -1,5 +1,6 @@
 import Boom from '@hapi/boom'
 import { createProjectName } from '../../../models/project-name.js'
+import { mcmsContext as mcmsContextPayload } from '../../../models/mcms-context.js'
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
@@ -19,6 +20,26 @@ export const createProjectNameController = {
   handler: async (request, h) => {
     try {
       const { payload, db, auth } = request
+
+      let mcmsContext = null
+      const { error } = mcmsContextPayload.validate(payload.mcmsContext, {
+        abortEarly: false
+      })
+      if (error) {
+        request.logger.info(
+          {
+            mcmsContext: payload.mcmsContext,
+            validationError: error.message
+          },
+          'Validation failed for MCMS context'
+        )
+        mcmsContext = {
+          iatQueryString: payload.mcmsContext.iatQueryString
+        }
+      } else {
+        mcmsContext = transformMcmsContextForDb(payload.mcmsContext)
+      }
+
       const contactId = getContactId(auth)
 
       const {
@@ -27,7 +48,6 @@ export const createProjectNameController = {
         createdAt,
         updatedBy,
         updatedAt,
-        mcmsContext,
         organisationId,
         organisationName,
         userRelationshipType
@@ -41,7 +61,7 @@ export const createProjectNameController = {
         updatedAt,
         status: EXEMPTION_STATUS.DRAFT,
         contactId,
-        mcmsContext: transformMcmsContextForDb(mcmsContext),
+        mcmsContext,
         ...(organisationId
           ? {
               organisation: {

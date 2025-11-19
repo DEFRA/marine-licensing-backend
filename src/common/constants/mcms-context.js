@@ -4,28 +4,6 @@ export const requiredQueryParams = {
   pdfDownloadUrl: 'pdfDownloadUrl'
 }
 
-export const validActivitySubtypes = [
-  'coastalProtectionDrainageOrFloodDefence',
-  'crossrailAct',
-  'deepseaMining',
-  'defenceMiningCrossrail',
-  'dredgedMaterial',
-  'emergency',
-  'fishing',
-  'hullCleaning',
-  'maintenance',
-  'markersMooringsAidsToNavigation',
-  'markersMooringsAndAidToNavigation',
-  'miscellaneous',
-  'navigationalDredging',
-  'ObstructionsDanger',
-  'pollutionResponse',
-  'pontoons',
-  'scientificResearch',
-  'shellfish',
-  'waste'
-]
-
 export const articleCodes = [
   '13',
   '17',
