@@ -6,12 +6,12 @@ export const fileUploadToEmpGeometry = (siteDetails) => {
     return [...acc, ...site.geoJSON.features]
   }, [])
   const transformed = geojsonToArcGIS({ type: 'FeatureCollection', features })
-  const rings = transformed.reduce((acc, feature) => {
+  const geometries = transformed.reduce((acc, feature) => {
     const coordSets = feature.geometry.rings || feature.geometry.paths
     return [...acc, ...coordSets]
   }, [])
   return {
-    rings,
+    rings: geometries,
     spatialReference: SPATIAL_REFERENCES.WGS84
   }
 }
