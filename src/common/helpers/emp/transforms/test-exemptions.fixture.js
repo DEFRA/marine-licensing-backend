@@ -1,9 +1,7 @@
 export const testExemptions = [
   {
     dbRecord: {
-      _id: {
-        $oid: '69020200af9bd9354c7d3575'
-      },
+      _id: '69020200af9bd9354c7d3575',
       projectName: 'File upload - KML',
       createdBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
       createdAt: '2025-10-29T12:01:04.693Z',
@@ -126,7 +124,9 @@ export const testExemptions = [
         ProjEndDate: '2026-11-01',
         Status: 'Closed',
         SubDate: '2025-10-29',
-        PubConsent: '0'
+        PubConsent: '0',
+        Exemptions_URL:
+          'http://localhost:3000/exemption/view-public-details/69020200af9bd9354c7d3575'
       },
       geometry: {
         rings: [
@@ -166,9 +166,7 @@ export const testExemptions = [
   },
   {
     dbRecord: {
-      _id: {
-        $oid: '690204a0af9bd9354c7d3578'
-      },
+      _id: '690204a0af9bd9354c7d3578',
       projectName: 'Manual - polygons',
       createdBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
       createdAt: '2025-10-29T12:12:16.243Z',
@@ -268,7 +266,9 @@ export const testExemptions = [
         ProjEndDate: '2026-11-01',
         Status: 'Closed',
         SubDate: '2025-10-29',
-        PubConsent: '0'
+        PubConsent: '0',
+        Exemptions_URL:
+          'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578'
       },
       geometry: {
         rings: [
@@ -294,9 +294,7 @@ export const testExemptions = [
   },
   {
     dbRecord: {
-      _id: {
-        $oid: '6902090baf9bd9354c7d357b'
-      },
+      _id: '6902090baf9bd9354c7d357b',
       projectName: 'File upload - shapefile',
       createdBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
       createdAt: '2025-10-29T12:31:07.223Z',
@@ -428,7 +426,9 @@ export const testExemptions = [
         ProjEndDate: '2026-12-01',
         Status: 'Closed',
         SubDate: '2025-10-29',
-        PubConsent: '1'
+        PubConsent: '1',
+        Exemptions_URL:
+          'http://localhost:3000/exemption/view-public-details/6902090baf9bd9354c7d357b'
       },
       geometry: {
         rings: [
@@ -461,9 +461,7 @@ export const testExemptions = [
   },
   {
     dbRecord: {
-      _id: {
-        $oid: '69020b36af9bd9354c7d357e'
-      },
+      _id: '69020b36af9bd9354c7d357e',
       projectName: 'Manual - circles',
       createdBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
       createdAt: '2025-10-29T12:40:22.472Z',
@@ -541,7 +539,9 @@ export const testExemptions = [
         ProjEndDate: '2026-05-01',
         Status: 'Closed',
         SubDate: '2025-10-29',
-        PubConsent: '0'
+        PubConsent: '0',
+        Exemptions_URL:
+          'http://localhost:3000/exemption/view-public-details/69020b36af9bd9354c7d357e'
       },
       geometry: {
         rings: [
