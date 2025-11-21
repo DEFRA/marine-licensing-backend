@@ -2,11 +2,13 @@ import { isOrganisationEmployee } from '../../organisations.js'
 import { getProjectStartEndDates } from './get-project-start-end-dates.js'
 import { shortIsoDate } from './short-iso-date.js'
 import { transformSiteDetails } from './site-details.js'
+import { config } from '../../../../config.js'
 
 export const transformExemptionToEmpRequest = ({
   exemption,
   applicantName
 }) => {
+  const frontEndBaseUrl = config.get('frontEndBaseUrl')
   const { organisation, mcmsContext, publicRegister, siteDetails } = exemption
   const applicantOrgName = isOrganisationEmployee(organisation)
     ? organisation?.name
@@ -38,7 +40,8 @@ export const transformExemptionToEmpRequest = ({
       ProjEndDate: projEndDate,
       Status: 'Closed',
       SubDate: shortIsoDate(new Date(exemption.submittedAt)),
-      PubConsent: publicConsent
+      PubConsent: publicConsent,
+      Exemptions_URL: `${frontEndBaseUrl}/exemption/view-public-details/${exemption._id}`
     },
     geometry: transformSiteDetails(siteDetails)
   }

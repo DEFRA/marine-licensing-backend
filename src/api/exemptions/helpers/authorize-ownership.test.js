@@ -1,10 +1,15 @@
 import { vi } from 'vitest'
-import { authorizeOwnership } from './authorize-ownership.js'
+import {
+  authorizeOwnership,
+  isUserAuthorizedToViewExemption
+} from './authorize-ownership.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { getContactId } from './get-contact-id.js'
+import { getJwtAuthStrategy } from '../../../plugins/auth.js'
 
 vi.mock('./get-contact-id.js')
+vi.mock('../../../plugins/auth.js')
 
 describe('authorizeOwnership', () => {
   let mockRequest
@@ -114,7 +119,7 @@ describe('authorizeOwnership', () => {
       await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow()
 
       expect(boomSpy).toHaveBeenCalledWith(
-        'Not authorized to update this resource'
+        'Not authorized to request this resource'
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
@@ -122,6 +127,99 @@ describe('authorizeOwnership', () => {
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
       expect(mockgetContactId).toHaveBeenCalledWith(mockRequest.auth)
+    })
+  })
+})
+
+describe('isUserAuthorizedToViewExemption', () => {
+  const mockGetJwtAuthStrategy = vi.mocked(getJwtAuthStrategy)
+  const mockGetContactId = vi.mocked(getContactId)
+
+  describe('when auth strategy is defraId', () => {
+    beforeEach(() => {
+      mockGetJwtAuthStrategy.mockReturnValue('defraId')
+    })
+
+    it('should not throw when user owns the exemption', async () => {
+      mockGetContactId.mockReturnValue('user123')
+
+      const request = {
+        auth: {
+          artifacts: { decoded: { some: 'token' } },
+          credentials: { contactId: 'user123' }
+        }
+      }
+      const exemption = { contactId: 'user123' }
+
+      await expect(
+        isUserAuthorizedToViewExemption({ request, exemption })
+      ).resolves.not.toThrow()
+
+      expect(mockGetJwtAuthStrategy).toHaveBeenCalledWith(
+        request.auth.artifacts.decoded
+      )
+      expect(mockGetContactId).toHaveBeenCalledWith(request.auth)
+    })
+
+    it('should throw 403 when user does not own the exemption', async () => {
+      mockGetContactId.mockReturnValue('user123')
+
+      const request = {
+        auth: {
+          artifacts: { decoded: { some: 'token' } },
+          credentials: { contactId: 'user123' }
+        }
+      }
+      const exemption = { contactId: 'differentUser' }
+
+      const boomSpy = vi.spyOn(Boom, 'forbidden')
+
+      await expect(
+        isUserAuthorizedToViewExemption({ request, exemption })
+      ).rejects.toThrow()
+
+      expect(boomSpy).toHaveBeenCalledWith(
+        'Not authorized to request this resource'
+      )
+    })
+  })
+
+  describe('when auth strategy is not defraId', () => {
+    it('should not throw regardless of ownership', async () => {
+      mockGetJwtAuthStrategy.mockReturnValue('entraId')
+
+      const request = {
+        auth: {
+          artifacts: { decoded: { some: 'token' } }
+        }
+      }
+      const exemption = { contactId: 'anyUser' }
+
+      await expect(
+        isUserAuthorizedToViewExemption({ request, exemption })
+      ).resolves.not.toThrow()
+
+      expect(mockGetJwtAuthStrategy).toHaveBeenCalledWith(
+        request.auth.artifacts.decoded
+      )
+      expect(mockGetContactId).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('when auth artifacts are missing', () => {
+    it('should handle missing auth artifacts gracefully', async () => {
+      mockGetJwtAuthStrategy.mockReturnValue(null)
+
+      const request = {
+        auth: {}
+      }
+      const exemption = { contactId: 'anyUser' }
+
+      await expect(
+        isUserAuthorizedToViewExemption({ request, exemption })
+      ).resolves.not.toThrow()
+
+      expect(mockGetJwtAuthStrategy).toHaveBeenCalledWith(undefined)
     })
   })
 })
