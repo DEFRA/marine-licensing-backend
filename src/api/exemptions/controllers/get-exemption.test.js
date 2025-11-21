@@ -2,7 +2,8 @@ import { getExemptionController } from './get-exemption'
 import { vi } from 'vitest'
 
 describe('GET /exemption', () => {
-  const paramsValidator = getExemptionController.options.validate.params
+  const paramsValidator = getExemptionController({ requiresAuth: true }).options
+    .validate.params
 
   const mockId = '123456789123456789123456'
 
@@ -35,7 +36,7 @@ describe('GET /exemption', () => {
       }
     })
 
-    await getExemptionController.handler(
+    await getExemptionController({ requiresAuth: true }).handler(
       {
         db: mockMongo,
         params: { id: mockId },
@@ -70,7 +71,7 @@ describe('GET /exemption', () => {
     })
 
     await expect(
-      getExemptionController.handler(
+      getExemptionController({ requiresAuth: true }).handler(
         {
           db: mockMongo,
           params: { id: mockId },
@@ -93,7 +94,7 @@ describe('GET /exemption', () => {
     })
 
     await expect(() =>
-      getExemptionController.handler(
+      getExemptionController({ requiresAuth: true }).handler(
         {
           db: mockMongo,
           params: { id: mockId },
@@ -121,7 +122,7 @@ describe('GET /exemption', () => {
       }
     })
 
-    await getExemptionController.handler(
+    await getExemptionController({ requiresAuth: true }).handler(
       {
         db: mockMongo,
         params: { id: mockId },
@@ -162,7 +163,7 @@ describe('GET /exemption', () => {
     })
 
     await expect(
-      getExemptionController.handler(
+      getExemptionController({ requiresAuth: true }).handler(
         {
           db: mockMongo,
           params: { id: mockId },
@@ -173,7 +174,7 @@ describe('GET /exemption', () => {
         },
         mockHandler
       )
-    ).rejects.toThrow('Not authorized to update this resource')
+    ).rejects.toThrow('Not authorized to request this resource')
   })
 
   it("if there is no auth token, don't check ownership authorization", async () => {
@@ -188,7 +189,7 @@ describe('GET /exemption', () => {
         })
       }
     })
-    await getExemptionController.handler(
+    await getExemptionController({ requiresAuth: true }).handler(
       {
         db: mockMongo,
         params: { id: mockId },
@@ -211,5 +212,69 @@ describe('GET /exemption', () => {
         }
       })
     )
+  })
+
+  describe('when requiresAuth is false', () => {
+    it('should set auth: false in options', () => {
+      const controller = getExemptionController({ requiresAuth: false })
+
+      expect(controller.options.auth).toBe(false)
+    })
+
+    it('should return exemption when publicRegister consent is yes', async () => {
+      const { mockMongo, mockHandler } = global
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+        return {
+          findOne: vi.fn().mockResolvedValue({
+            _id: mockId,
+            projectName: 'Test project',
+            publicRegister: { consent: 'yes' }
+          })
+        }
+      })
+
+      await getExemptionController({ requiresAuth: false }).handler(
+        {
+          db: mockMongo,
+          params: { id: mockId }
+        },
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'success',
+          value: expect.objectContaining({
+            id: mockId,
+            projectName: 'Test project'
+          })
+        })
+      )
+    })
+
+    it('should throw 403 when publicRegister consent is no', async () => {
+      const { mockMongo, mockHandler } = global
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+        return {
+          findOne: vi.fn().mockResolvedValue({
+            _id: mockId,
+            projectName: 'Test project',
+            publicRegister: { consent: 'no' }
+          })
+        }
+      })
+
+      await expect(
+        getExemptionController({ requiresAuth: false }).handler(
+          {
+            db: mockMongo,
+            params: { id: mockId }
+          },
+          mockHandler
+        )
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
   })
 })
