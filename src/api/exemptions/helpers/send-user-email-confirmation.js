@@ -65,7 +65,20 @@ const sendEmail = async ({
       intervalMs: retryIntervalSeconds * 1000
     })
     const { id } = result.data
-    logger.info(`Sent confirmation email for exemption ${applicationReference}`)
+    const statusCode = result?.statusCode || result?.response?.statusCode || 201
+    logger.info(
+      {
+        http: {
+          response: {
+            status_code: statusCode
+          }
+        },
+        service: 'gov-notify',
+        operation: 'sendEmail',
+        applicationReference
+      },
+      `Sent confirmation email for exemption ${applicationReference}`
+    )
     return { status: 'success', id, reference: emailSendReference }
   } catch (error) {
     // Ensure we have an Error object for structured logging
@@ -76,8 +89,28 @@ const sendEmail = async ({
     if (!emailError.code) {
       emailError.code = 'EMAIL_SEND_ERROR'
     }
+
+    // Extract HTTP status code from error response
+    const statusCode =
+      error.response?.statusCode ||
+      error.statusCode ||
+      error.status ||
+      (error instanceof ErrorWithData && error.data ? undefined : undefined)
+
     logger.error(
-      structureErrorForECS(emailError),
+      {
+        ...structureErrorForECS(emailError),
+        http: statusCode
+          ? {
+              response: {
+                status_code: statusCode
+              }
+            }
+          : undefined,
+        service: 'gov-notify',
+        operation: 'sendEmail',
+        applicationReference
+      },
       `Error sending email for exemption ${applicationReference}`
     )
     const errors =

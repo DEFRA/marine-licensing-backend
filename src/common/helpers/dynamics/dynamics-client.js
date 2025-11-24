@@ -6,6 +6,9 @@ import querystring from 'node:querystring'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { isOrganisationEmployee } from '../organisations.js'
+import { createLogger } from '../../helpers/logging/logger.js'
+
+const logger = createLogger()
 
 export const getDynamicsAccessToken = async () => {
   const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
@@ -23,6 +26,20 @@ export const getDynamicsAccessToken = async () => {
       }
     })
 
+    const statusCode = response.res?.statusCode
+    logger.info(
+      {
+        http: {
+          response: {
+            status_code: statusCode
+          }
+        },
+        service: 'dynamics',
+        operation: 'getAccessToken'
+      },
+      'Dynamics 365 access token request successful'
+    )
+
     const responsePayload = JSON.parse(response.payload.toString('utf8'))
 
     if (!responsePayload.access_token) {
@@ -31,6 +48,30 @@ export const getDynamicsAccessToken = async () => {
 
     return responsePayload.access_token
   } catch (error) {
+    const statusCode =
+      error.output?.statusCode ||
+      error.response?.statusCode ||
+      error.res?.statusCode
+    logger.error(
+      {
+        error: {
+          message: error.message || String(error),
+          stack_trace: error.stack,
+          type: error.name || error.constructor?.name || 'Error',
+          code: error.code || error.statusCode
+        },
+        http: statusCode
+          ? {
+              response: {
+                status_code: statusCode
+              }
+            }
+          : undefined,
+        service: 'dynamics',
+        operation: 'getAccessToken'
+      },
+      'Dynamics 365 access token request failed'
+    )
     throw Boom.badImplementation(`Dynamics token request failed`, error)
   }
 }
@@ -90,11 +131,42 @@ export const sendExemptionToDynamics = async (
     }
   })
 
-  if (response.res.statusCode !== StatusCodes.ACCEPTED) {
-    throw Boom.badImplementation(
-      `Dynamics API returned status ${response.res.statusCode}`
+  const statusCode = response.res?.statusCode
+
+  if (statusCode !== StatusCodes.ACCEPTED) {
+    logger.error(
+      {
+        error: {
+          message: `Dynamics API returned status ${statusCode}`,
+          code: 'DYNAMICS_API_ERROR'
+        },
+        http: {
+          response: {
+            status_code: statusCode
+          }
+        },
+        service: 'dynamics',
+        operation: 'sendExemption',
+        applicationReference: applicationReferenceNumber
+      },
+      `Dynamics API returned unexpected status ${statusCode}`
     )
+    throw Boom.badImplementation(`Dynamics API returned status ${statusCode}`)
   }
+
+  logger.info(
+    {
+      http: {
+        response: {
+          status_code: statusCode
+        }
+      },
+      service: 'dynamics',
+      operation: 'sendExemption',
+      applicationReference: applicationReferenceNumber
+    },
+    'Successfully sent exemption to Dynamics 365'
+  )
 
   return response.payload
 }

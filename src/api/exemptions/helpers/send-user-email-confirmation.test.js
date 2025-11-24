@@ -94,6 +94,16 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          http: expect.objectContaining({
+            response: expect.objectContaining({
+              status_code: expect.any(Number)
+            })
+          }),
+          service: 'gov-notify',
+          operation: 'sendEmail',
+          applicationReference: 'EXE/2025/10001'
+        }),
         'Sent confirmation email for exemption EXE/2025/10001'
       )
 
@@ -614,6 +624,16 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          http: expect.objectContaining({
+            response: expect.objectContaining({
+              status_code: expect.any(Number)
+            })
+          }),
+          service: 'gov-notify',
+          operation: 'sendEmail',
+          applicationReference: 'EXE/2025/10011'
+        }),
         'Sent confirmation email for exemption EXE/2025/10011'
       )
       expect(mockLogger.info).toHaveBeenCalledTimes(1)
