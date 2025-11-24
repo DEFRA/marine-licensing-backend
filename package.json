@@ -42,7 +42,7 @@
     "@terraformer/arcgis": "2.1.2",
     "@tmcw/togeojson": "^7.1.2",
     "adm-zip": "^0.5.16",
-    "aws-embedded-metrics": "4.2.0",
+    "aws-embedded-metrics": "4.2.1",
     "aws4": "1.13.2",
     "convict": "6.2.4",
     "convict-format-with-validator": "6.2.0",
