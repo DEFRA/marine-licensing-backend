@@ -221,7 +221,7 @@ describe('GET /exemption', () => {
       expect(controller.options.auth).toBe(false)
     })
 
-    it('should return exemption when publicRegister consent is yes', async () => {
+    it('should return exemption when exemption is active and publicRegister consent is yes', async () => {
       const { mockMongo, mockHandler } = global
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
@@ -229,6 +229,7 @@ describe('GET /exemption', () => {
           findOne: vi.fn().mockResolvedValue({
             _id: mockId,
             projectName: 'Test project',
+            status: 'ACTIVE',
             publicRegister: { consent: 'yes' }
           })
         }

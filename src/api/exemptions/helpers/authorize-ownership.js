@@ -23,7 +23,7 @@ export const authorizeOwnership = async (request, h) => {
   return h.continue
 }
 
-export const isUserAuthorizedToViewExemption = async ({
+export const errorIfUserNotAuthorizedToViewExemption = async ({
   request,
   exemption
 }) => {

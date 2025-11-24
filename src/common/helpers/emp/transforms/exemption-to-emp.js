@@ -14,6 +14,8 @@ export const transformExemptionToEmpRequest = ({
     ? organisation?.name
     : undefined
 
+  // this is counter-intuitive and we're going to ask the EMP team to change to
+  //  'no' is 0 and 'yes' is 1
   const publicConsent = publicRegister?.consent === 'no' ? '1' : '0'
 
   const { start: startDate, end: endDate } =
