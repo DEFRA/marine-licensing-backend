@@ -52,7 +52,7 @@
     "hapi-pino": "13.0.0",
     "hapi-pulse": "3.0.1",
     "http-status-codes": "2.3.0",
-    "https-proxy-agent": "7.0.5",
+    "https-proxy-agent": "7.0.6",
     "joi": "18.0.1",
     "jsdom": "^27.1.0",
     "jwk-to-pem": "2.0.7",
@@ -60,11 +60,11 @@
     "mongodb": "6.20.0",
     "node-fetch": "3.3.2",
     "notifications-node-client": "8.2.1",
-    "pino": "9.12.0",
+    "pino": "9.14.0",
     "pino-pretty": "13.1.1",
     "proj4": "2.19.10",
     "shapefile": "^0.6.6",
-    "undici": "7.5.0"
+    "undici": "7.16.0"
   },
   "devDependencies": {
     "@babel/core": "7.28.5",
