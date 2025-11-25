@@ -43,7 +43,10 @@ export const transformExemptionToEmpRequest = ({
       Status: 'Closed',
       SubDate: shortIsoDate(new Date(exemption.submittedAt)),
       PubConsent: publicConsent,
-      Exemptions_URL: `${frontEndBaseUrl}/exemption/view-public-details/${exemption._id}`
+      Exemptions_URL: new URL(
+        `/exemption/view-public-details/${exemption._id}`,
+        frontEndBaseUrl
+      ).toString()
     },
     geometry: transformSiteDetails(siteDetails)
   }
