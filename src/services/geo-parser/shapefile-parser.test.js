@@ -72,7 +72,7 @@ describe('ShapefileParser class', () => {
       expect(parser.options).toEqual({
         maxFiles: 10_000,
         maxSize: 1_000_000_000,
-        thresholdRatio: 100
+        thresholdRatio: 175
       })
     })
 
@@ -96,7 +96,7 @@ describe('ShapefileParser class', () => {
       expect(parser.options).toEqual({
         maxFiles: 5_000,
         maxSize: 1_000_000_000,
-        thresholdRatio: 100
+        thresholdRatio: 175
       })
     })
   })
@@ -241,7 +241,7 @@ describe('ShapefileParser class', () => {
           entryName: 'suspicious.shp',
           isDirectory: false,
           getData: () => Buffer.alloc(99_999),
-          header: { compressedSize: 909 } // 110 compression ration > 100
+          header: { compressedSize: 568 } // 176 compression ration > 175
         }
       ]
       mockAdmZip.getEntries.mockReturnValue(suspiciousEntries)
