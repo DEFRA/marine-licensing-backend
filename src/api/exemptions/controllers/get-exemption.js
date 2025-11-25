@@ -2,7 +2,7 @@ import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../../models/get-exemption.js'
 import { createTaskList } from '../helpers/createTaskList.js'
-import { errorIfUserNotAuthorizedToViewExemption } from '../helpers/authorize-ownership.js'
+import { errorIfApplicantNotAuthorizedToViewExemption } from '../helpers/authorize-ownership.js'
 import { getExemptionFromDb } from '../helpers/get-exemption-from-db.js'
 import { errorIfSubmittedExemptionNotPublic } from '../helpers/error-if-submitted-exemption-not-public.js'
 
@@ -18,7 +18,10 @@ export const getExemptionController = ({ requiresAuth }) => ({
       const exemption = await getExemptionFromDb(request)
 
       if (requiresAuth) {
-        await errorIfUserNotAuthorizedToViewExemption({ request, exemption })
+        await errorIfApplicantNotAuthorizedToViewExemption({
+          request,
+          exemption
+        })
       } else {
         errorIfSubmittedExemptionNotPublic(exemption)
       }

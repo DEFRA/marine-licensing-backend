@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import {
   authorizeOwnership,
-  errorIfUserNotAuthorizedToViewExemption
+  errorIfApplicantNotAuthorizedToViewExemption
 } from './authorize-ownership.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
@@ -131,7 +131,7 @@ describe('authorizeOwnership', () => {
   })
 })
 
-describe('errorIfUserNotAuthorizedToViewExemption', () => {
+describe('errorIfApplicantNotAuthorizedToViewExemption', () => {
   const mockGetJwtAuthStrategy = vi.mocked(getJwtAuthStrategy)
   const mockGetContactId = vi.mocked(getContactId)
 
@@ -152,7 +152,7 @@ describe('errorIfUserNotAuthorizedToViewExemption', () => {
       const exemption = { contactId: 'user123' }
 
       await expect(
-        errorIfUserNotAuthorizedToViewExemption({ request, exemption })
+        errorIfApplicantNotAuthorizedToViewExemption({ request, exemption })
       ).resolves.not.toThrow()
 
       expect(mockGetJwtAuthStrategy).toHaveBeenCalledWith(
@@ -175,7 +175,7 @@ describe('errorIfUserNotAuthorizedToViewExemption', () => {
       const boomSpy = vi.spyOn(Boom, 'forbidden')
 
       await expect(
-        errorIfUserNotAuthorizedToViewExemption({ request, exemption })
+        errorIfApplicantNotAuthorizedToViewExemption({ request, exemption })
       ).rejects.toThrow()
 
       expect(boomSpy).toHaveBeenCalledWith(
@@ -196,7 +196,7 @@ describe('errorIfUserNotAuthorizedToViewExemption', () => {
       const exemption = { contactId: 'anyUser' }
 
       await expect(
-        errorIfUserNotAuthorizedToViewExemption({ request, exemption })
+        errorIfApplicantNotAuthorizedToViewExemption({ request, exemption })
       ).resolves.not.toThrow()
 
       expect(mockGetJwtAuthStrategy).toHaveBeenCalledWith(
@@ -216,7 +216,7 @@ describe('errorIfUserNotAuthorizedToViewExemption', () => {
       const exemption = { contactId: 'anyUser' }
 
       await expect(
-        errorIfUserNotAuthorizedToViewExemption({ request, exemption })
+        errorIfApplicantNotAuthorizedToViewExemption({ request, exemption })
       ).resolves.not.toThrow()
 
       expect(mockGetJwtAuthStrategy).toHaveBeenCalledWith(undefined)

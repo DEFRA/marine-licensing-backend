@@ -23,7 +23,10 @@ export const authorizeOwnership = async (request, h) => {
   return h.continue
 }
 
-export const errorIfUserNotAuthorizedToViewExemption = async ({
+// check if the user is an applicant; if so they can only view their own exemptions
+// if authenticated but not via defraId, they can view any exemption as they're
+// an internal user
+export const errorIfApplicantNotAuthorizedToViewExemption = async ({
   request,
   exemption
 }) => {
