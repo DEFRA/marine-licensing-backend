@@ -2,9 +2,9 @@ import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../../models/get-exemption.js'
 import { createTaskList } from '../helpers/createTaskList.js'
-import { errorIfApplicantNotAuthorizedToViewExemption } from '../helpers/authorize-ownership.js'
-import { getExemptionFromDb } from '../helpers/get-exemption-from-db.js'
-import { errorIfSubmittedExemptionNotPublic } from '../helpers/error-if-submitted-exemption-not-public.js'
+import { ExemptionService } from '../services/exemption.service.js'
+import { isApplicantUser } from '../helpers/is-applicant-user.js'
+import { getContactId } from '../helpers/get-contact-id.js'
 
 export const getExemptionController = ({ requiresAuth }) => ({
   options: {
@@ -15,15 +15,27 @@ export const getExemptionController = ({ requiresAuth }) => ({
   },
   handler: async (request, h) => {
     try {
-      const exemption = await getExemptionFromDb(request)
+      const {
+        params: { id },
+        db,
+        logger
+      } = request
+      const exemptionService = new ExemptionService({ db, logger })
+      let exemption
 
       if (requiresAuth) {
-        await errorIfApplicantNotAuthorizedToViewExemption({
-          request,
-          exemption
+        // if the user is an applicant, they can only view their own exemptions
+        // alternatively they're an internal user (logged in with entra ID) and
+        // can view any exemption
+        const currentUserId = isApplicantUser(request)
+          ? getContactId(request.auth)
+          : null
+        exemption = await exemptionService.getExemptionById({
+          id,
+          currentUserId
         })
       } else {
-        errorIfSubmittedExemptionNotPublic(exemption)
+        exemption = await exemptionService.getPublicExemptionById(id)
       }
 
       const { _id, ...rest } = exemption

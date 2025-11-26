@@ -404,3 +404,4 @@ Tests are run via npm scripts (see package.json). Key patterns:
 - **sonar-project.properties** - SonarCloud configuration
 - **Dockerfile** - Multi-stage build (development and production)
 - **.github/example.dependabot.yml** - Dependency updates configuration
+- After a refactor, ensure any related unit tests pass
