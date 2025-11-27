@@ -22,12 +22,15 @@ const logger = createLogger()
  * We have seen a file where the .dbf file compressed from 6.2MB to 93KB, a
  * factor of 66.8!
  *
+ * Nov 2025 update: sometimes we get MapInfo files by accident.  The .MAP files in
+ * these archives are highly compressed up to 175 times.  See ML-897.
+ *
  * @type {{maxFiles: number, maxSize: number, thresholdRatio: number}}
  */
 const DEFAULT_OPTIONS = {
   maxFiles: 10_000,
   maxSize: 1_000_000_000, // 1 GB in bytes
-  thresholdRatio: 100
+  thresholdRatio: 175
 }
 
 const LONGITUDE_MIN = -180
@@ -100,7 +103,8 @@ export class ShapefileParser {
 
       const compressionRatio = entrySize / zipEntry.header.compressedSize
       if (compressionRatio > this.options.thresholdRatio) {
-        throw new Error('Reached max compression ratio')
+        const details = `Error at file ${zipEntry.entryName} is ${entrySize} bytes where header compressed size is ${zipEntry.header.compressedSize} bytes Compression Ratio is ${Math.round(entrySize / zipEntry.header.compressedSize, 1)} but max is set to ${this.options.thresholdRatio}`
+        throw new Error(`Reached max compression ratio for file: ${details}`)
       }
 
       if (!zipEntry.isDirectory) {
