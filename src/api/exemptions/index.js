@@ -6,6 +6,8 @@ import { updatePublicRegisterController } from './controllers/update-public-regi
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
 import { submitExemptionController } from './controllers/submit-exemption.js'
 import { deleteExemptionController } from './controllers/delete-exemption.js'
+import { getCoastalEnforcementAreaMongoController } from './controllers/get-coastal-enforcement-area-mongo.js'
+import { getCoastalEnforcementAreaController } from './controllers/get-coastal-enforcement-area.js'
 
 export const exemptions = [
   {
@@ -47,5 +49,15 @@ export const exemptions = [
     method: 'DELETE',
     path: '/exemption/{id}',
     ...deleteExemptionController
+  },
+  {
+    method: 'GET',
+    path: '/exemption/coastal-enforcement-area-mongo/{id}',
+    ...getCoastalEnforcementAreaMongoController
+  },
+  {
+    method: 'GET',
+    path: '/exemption/coastal-enforcement-area/{id}',
+    ...getCoastalEnforcementAreaController
   }
 ]

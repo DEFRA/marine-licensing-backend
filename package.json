@@ -40,6 +40,7 @@
     "@hapi/hapi": "21.4.4",
     "@hapi/wreck": "18.1.0",
     "@tmcw/togeojson": "^7.1.2",
+    "@turf/turf": "7.3.0",
     "adm-zip": "^0.5.16",
     "aws-embedded-metrics": "4.2.0",
     "aws4": "1.13.2",
