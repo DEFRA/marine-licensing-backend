@@ -672,5 +672,47 @@ describe('sendUserEmailConfirmation', () => {
       )
       expect(mockLogger.error).toHaveBeenCalledTimes(1)
     })
+
+    it('should log HTTP status code when email sending fails with status code', async () => {
+      const mockError = {
+        response: {
+          status: 400,
+          data: {
+            errors: [{ error: 'BadRequestError', message: 'Invalid request' }]
+          }
+        }
+      }
+
+      mockNotifyClient.sendEmail.mockRejectedValue(mockError)
+
+      const params = {
+        db: mockDb,
+        userName: 'Status Code Test',
+        userEmail: 'statuscode@example.com',
+        applicationReference: 'EXE/2025/10016',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439026'
+      }
+
+      await sendUserEmailConfirmation(params)
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: expect.stringContaining('Error sending email'),
+            code: 'EMAIL_SEND_ERROR'
+          }),
+          http: expect.objectContaining({
+            response: expect.objectContaining({
+              status_code: 400
+            })
+          }),
+          service: 'gov-notify',
+          operation: 'sendEmail',
+          applicationReference: 'EXE/2025/10016'
+        }),
+        'Error sending email for exemption EXE/2025/10016'
+      )
+    })
   })
 })

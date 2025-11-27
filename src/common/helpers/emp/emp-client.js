@@ -8,6 +8,80 @@ import { createLogger } from '../../helpers/logging/logger.js'
 
 const logger = createLogger()
 
+const extractStatusCodeFromError = (error) => {
+  return (
+    error.response?.statusCode || error.statusCode || error.status || error.code
+  )
+}
+
+const buildHttpLogContext = (statusCode) => {
+  return statusCode
+    ? {
+        response: {
+          status_code: statusCode
+        }
+      }
+    : undefined
+}
+
+const logEmpSuccess = (applicationReference) => {
+  logger.info(
+    {
+      http: {
+        response: {
+          status_code: 200
+        }
+      },
+      service: 'arcgis',
+      operation: 'addFeatures',
+      applicationReference
+    },
+    'Successfully sent exemption to ArcGIS/EMP'
+  )
+}
+
+const logEmpApiError = (errorMessage, statusCode, applicationReference) => {
+  logger.error(
+    {
+      error: {
+        message: errorMessage,
+        code: 'EMP_API_ERROR'
+      },
+      http: buildHttpLogContext(statusCode),
+      service: 'arcgis',
+      operation: 'addFeatures',
+      applicationReference
+    },
+    errorMessage
+  )
+}
+
+const logEmpExceptionError = (error, applicationReference) => {
+  const statusCode = extractStatusCodeFromError(error)
+  logger.error(
+    {
+      error: {
+        message: error.message || String(error),
+        stack_trace: error.stack,
+        type: error.name || error.constructor?.name || 'Error',
+        code: error.code || 'EMP_API_ERROR'
+      },
+      http: buildHttpLogContext(statusCode),
+      service: 'arcgis',
+      operation: 'addFeatures',
+      applicationReference
+    },
+    `EMP addFeatures failed: ${error.message}`
+  )
+}
+
+const handleEmpApiError = (result, applicationReference) => {
+  const errorMessage = `EMP addFeatures failed: ${result?.error?.description}`
+  const statusCode = result?.error?.code
+  logEmpApiError(errorMessage, statusCode, applicationReference)
+  throw Boom.badImplementation(errorMessage)
+}
+
 export const sendExemptionToEmp = async (server, queueItem) => {
   const { apiUrl, apiKey } = config.get('exploreMarinePlanning')
   const { applicationReferenceNumber } = queueItem
@@ -47,72 +121,14 @@ export const sendExemptionToEmp = async (server, queueItem) => {
     })
     const result = addResults?.[0]
     if (!result?.success) {
-      const errorMessage = `EMP addFeatures failed: ${result?.error?.description}`
-      const statusCode = result?.error?.code
-      logger.error(
-        {
-          error: {
-            message: errorMessage,
-            code: 'EMP_API_ERROR'
-          },
-          http: statusCode
-            ? {
-                response: {
-                  status_code: statusCode
-                }
-              }
-            : undefined,
-          service: 'arcgis',
-          operation: 'addFeatures',
-          applicationReference: applicationReferenceNumber
-        },
-        errorMessage
-      )
-      throw Boom.badImplementation(errorMessage)
+      handleEmpApiError(result, applicationReferenceNumber)
     }
 
-    logger.info(
-      {
-        http: {
-          response: {
-            status_code: 200
-          }
-        },
-        service: 'arcgis',
-        operation: 'addFeatures',
-        applicationReference: applicationReferenceNumber
-      },
-      'Successfully sent exemption to ArcGIS/EMP'
-    )
+    logEmpSuccess(applicationReferenceNumber)
 
     return addResults
   } catch (error) {
-    const statusCode =
-      error.response?.statusCode ||
-      error.statusCode ||
-      error.status ||
-      error.code
-    logger.error(
-      {
-        error: {
-          message: error.message || String(error),
-          stack_trace: error.stack,
-          type: error.name || error.constructor?.name || 'Error',
-          code: error.code || 'EMP_API_ERROR'
-        },
-        http: statusCode
-          ? {
-              response: {
-                status_code: statusCode
-              }
-            }
-          : undefined,
-        service: 'arcgis',
-        operation: 'addFeatures',
-        applicationReference: applicationReferenceNumber
-      },
-      `EMP addFeatures failed: ${error.message}`
-    )
+    logEmpExceptionError(error, applicationReferenceNumber)
     throw Boom.badImplementation(`EMP addFeatures failed: ${error.message}`)
   }
 }

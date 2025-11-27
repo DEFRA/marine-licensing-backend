@@ -18,6 +18,68 @@ const getNotifyTemplateId = (organisation) => {
   return config.get('notify.notifyTemplateId')
 }
 
+const extractStatusCode = (error) => {
+  return (
+    error.statusCode ||
+    error.response?.statusCode ||
+    error.response?.status ||
+    error.status
+  )
+}
+
+const wrapNotifyError = (error) => {
+  const wrappedError = new ErrorWithData(
+    'Error sending email',
+    error.response?.data?.errors
+  )
+  wrappedError.statusCode = extractStatusCode(error)
+  return wrappedError
+}
+
+const buildHttpLogContext = (statusCode) => {
+  return statusCode
+    ? {
+        response: {
+          status_code: statusCode
+        }
+      }
+    : undefined
+}
+
+const logEmailSuccess = (logger, applicationReference, statusCode) => {
+  logger.info(
+    {
+      http: {
+        response: {
+          status_code: statusCode
+        }
+      },
+      service: 'gov-notify',
+      operation: 'sendEmail',
+      applicationReference
+    },
+    `Sent confirmation email for exemption ${applicationReference}`
+  )
+}
+
+const logEmailError = (
+  logger,
+  emailError,
+  statusCode,
+  applicationReference
+) => {
+  logger.error(
+    {
+      ...structureErrorForECS(emailError),
+      http: buildHttpLogContext(statusCode),
+      service: 'gov-notify',
+      operation: 'sendEmail',
+      applicationReference
+    },
+    `Error sending email for exemption ${applicationReference}`
+  )
+}
+
 const sendEmail = async ({
   userName,
   userEmail,
@@ -48,17 +110,9 @@ const sendEmail = async ({
       operation: async () => {
         try {
           const templateId = getNotifyTemplateId(organisation)
-          const response = await notifyClient.sendEmail(
-            templateId,
-            userEmail,
-            options
-          )
-          return response
+          return await notifyClient.sendEmail(templateId, userEmail, options)
         } catch (error) {
-          throw new ErrorWithData(
-            'Error sending email',
-            error.response?.data?.errors
-          )
+          throw wrapNotifyError(error)
         }
       },
       retries,
@@ -66,22 +120,9 @@ const sendEmail = async ({
     })
     const { id } = result.data
     const statusCode = result?.statusCode || result?.response?.statusCode || 201
-    logger.info(
-      {
-        http: {
-          response: {
-            status_code: statusCode
-          }
-        },
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference
-      },
-      `Sent confirmation email for exemption ${applicationReference}`
-    )
+    logEmailSuccess(logger, applicationReference, statusCode)
     return { status: 'success', id, reference: emailSendReference }
   } catch (error) {
-    // Ensure we have an Error object for structured logging
     const emailError =
       error instanceof Error
         ? error
@@ -90,29 +131,9 @@ const sendEmail = async ({
       emailError.code = 'EMAIL_SEND_ERROR'
     }
 
-    // Extract HTTP status code from error response
-    const statusCode =
-      error.response?.statusCode ||
-      error.statusCode ||
-      error.status ||
-      (error instanceof ErrorWithData && error.data ? undefined : undefined)
+    const statusCode = extractStatusCode(error)
+    logEmailError(logger, emailError, statusCode, applicationReference)
 
-    logger.error(
-      {
-        ...structureErrorForECS(emailError),
-        http: statusCode
-          ? {
-              response: {
-                status_code: statusCode
-              }
-            }
-          : undefined,
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference
-      },
-      `Error sending email for exemption ${applicationReference}`
-    )
     const errors =
       error instanceof ErrorWithData && error.data
         ? JSON.stringify(error.data)
