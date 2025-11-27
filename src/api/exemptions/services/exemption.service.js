@@ -22,7 +22,11 @@ export class ExemptionService {
     const exemption = await this.#findExemptionById(id)
     if (currentUserId && currentUserId !== exemption.contactId) {
       this.logger.info(
-        { exemptionId: id },
+        {
+          exemptionId: id,
+          currentUserId,
+          exemptionContactId: exemption.contactId
+        },
         'Authorization error in getExemptionById'
       )
       throw Boom.forbidden('Not authorized to request this resource')
