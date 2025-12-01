@@ -3,17 +3,29 @@ import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
 import * as turf from '@turf/turf'
-import { generateCirclePolygon } from '../../../common/helpers/emp/transforms/circle-to-polygon.js'
+import joi from 'joi'
+
+const querySchema = joi.object({
+  collection: joi
+    .string()
+    .valid('experiment-coastal-areas', 'experiment-coastal-plan-areas')
+    .default('experiment-coastal-areas')
+})
 
 export const getCoastalEnforcementAreaController = {
   options: {
     validate: {
-      params: getExemption
+      params: getExemption,
+      query: querySchema
     }
   },
   handler: async (request, h) => {
+    const startTime = performance.now()
+    const startMemory = process.memoryUsage()
+
     try {
-      const { params, db } = request
+      const { params, db, query } = request
+      const collectionName = query.collection || 'experiment-coastal-areas'
 
       const exemption = await db
         .collection('exemptions')
@@ -27,73 +39,35 @@ export const getCoastalEnforcementAreaController = {
         return h
           .response({
             message: 'success',
-            value: { result: [] }
+            value: {
+              result: []
+            }
           })
           .code(StatusCodes.OK)
       }
 
       const marinePlanAreas = await db
-        .collection('experiment-coastal-areas')
+        .collection(collectionName)
         .find({})
         .toArray()
 
       const result = exemption.siteDetails.map((site, siteIndex) => {
-        const sitePolygons = []
-
-        if (site.geoJSON?.features) {
-          for (const feature of site.geoJSON.features) {
-            if (feature.geometry?.coordinates) {
-              try {
-                sitePolygons.push(turf.polygon(feature.geometry.coordinates))
-              } catch (error) {
-                // Skip invalid polygons
-                continue
-              }
-            }
-          }
-        } else if (site.coordinatesEntry === 'single') {
-          try {
-            const radiusMetres = parseInt(site.circleWidth, 10) / 2
-            const circleCoords = generateCirclePolygon({
-              latitude: parseFloat(site.coordinates.latitude),
-              longitude: parseFloat(site.coordinates.longitude),
-              radiusMetres
-            })
-            sitePolygons.push(turf.polygon([circleCoords]))
-          } catch (error) {
-            // Skip invalid circle
-          }
-        } else if (site.coordinatesEntry === 'multiple') {
-          try {
-            const coords = site.coordinates.map((c) => [
-              parseFloat(c.longitude),
-              parseFloat(c.latitude)
-            ])
-            const firstCoord = coords[0]
-            const lastCoord = coords[coords.length - 1]
-            if (
-              firstCoord[0] !== lastCoord[0] ||
-              firstCoord[1] !== lastCoord[1]
-            ) {
-              coords.push(firstCoord)
-            }
-            sitePolygons.push(turf.polygon([coords]))
-          } catch (error) {
-            // Skip invalid polygon
-          }
-        }
-
-        if (sitePolygons.length === 0) {
+        if (!site.geoJSON?.features) {
           return { site: siteIndex, coastalArea: 'none' }
         }
 
-        for (const sitePolygon of sitePolygons) {
+        for (const feature of site.geoJSON.features) {
+          if (!feature.geometry?.coordinates) {
+            continue
+          }
+
           for (const area of marinePlanAreas) {
             if (!area.geometry || !area.geometry.coordinates) {
               continue
             }
 
             try {
+              const sitePolygon = turf.polygon(feature.geometry.coordinates)
               const areaPolygon =
                 area.geometry.type === 'Polygon'
                   ? turf.polygon(area.geometry.coordinates)
@@ -111,10 +85,41 @@ export const getCoastalEnforcementAreaController = {
         return { site: siteIndex, coastalArea: 'none' }
       })
 
+      const endTime = performance.now()
+      const endMemory = process.memoryUsage()
+
       return h
         .response({
           message: 'success',
-          value: { result }
+          value: {
+            result,
+            performance: {
+              // Duration in milliseconds - how long the query took from start to finish
+              // Lower is better. Compare with MongoDB endpoint to see which is faster
+              durationMs: (endTime - startTime).toFixed(2),
+              memoryDeltaMB: {
+                // JavaScript heap memory used by your code during the query
+                // Higher values indicate more data loaded into memory (e.g., all marine areas)
+                heapUsed: (
+                  (endMemory.heapUsed - startMemory.heapUsed) /
+                  1024 /
+                  1024
+                ).toFixed(2),
+                // Memory used by C++ objects bound to JavaScript (native libraries like MongoDB driver)
+                // Usually smaller, but can grow with large native operations
+                external: (
+                  (endMemory.external - startMemory.external) /
+                  1024 /
+                  1024
+                ).toFixed(2),
+                // Resident Set Size - total memory allocated to the Node.js process (heap + external + code)
+                // The big picture - overall memory footprint of the request. Lower is better
+                rss: ((endMemory.rss - startMemory.rss) / 1024 / 1024).toFixed(
+                  2
+                )
+              }
+            }
+          }
         })
         .code(StatusCodes.OK)
     } catch (error) {

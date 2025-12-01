@@ -5,14 +5,15 @@ import './helpers/emp/transforms/proj4-definition-osgb34.js'
 export const outputIntersectionAreas = async (
   db,
   siteGeometries,
-  siteIndex
+  siteIndex,
+  collectionName = 'experiment-coastal-areas'
 ) => {
   const result = []
 
   for (const geometry of siteGeometries) {
     try {
       const intersectingAreas = await db
-        .collection('experiment-coastal-areas')
+        .collection(collectionName)
         .find(
           {
             geometry: {

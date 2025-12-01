@@ -7,16 +7,29 @@ import {
   convertSingleCoords,
   outputIntersectionAreas
 } from '../../../common/costal-utils.js'
+import joi from 'joi'
+
+const querySchema = joi.object({
+  collection: joi
+    .string()
+    .valid('experiment-coastal-areas', 'experiment-coastal-plan-areas')
+    .default('experiment-coastal-areas')
+})
 
 export const getCoastalEnforcementAreaMongoController = {
   options: {
     validate: {
-      params: getExemption
+      params: getExemption,
+      query: querySchema
     }
   },
   handler: async (request, h) => {
+    const startTime = performance.now()
+    const startMemory = process.memoryUsage()
+
     try {
-      const { params, db } = request
+      const { params, db, query } = request
+      const collectionName = query.collection || 'experiment-coastal-areas'
 
       const exemption = await db
         .collection('exemptions')
@@ -30,7 +43,9 @@ export const getCoastalEnforcementAreaMongoController = {
         return h
           .response({
             message: 'success',
-            value: { result: [] }
+            value: {
+              result: []
+            }
           })
           .code(StatusCodes.OK)
       }
@@ -77,15 +92,51 @@ export const getCoastalEnforcementAreaMongoController = {
 
         if (siteGeometries.length > 0) {
           result.push(
-            await outputIntersectionAreas(db, siteGeometries, siteIndex)
+            await outputIntersectionAreas(
+              db,
+              siteGeometries,
+              siteIndex,
+              collectionName
+            )
           )
         }
       }
 
+      const endTime = performance.now()
+      const endMemory = process.memoryUsage()
+
       return h
         .response({
           message: 'success',
-          value: { result }
+          value: {
+            result,
+            performance: {
+              // Duration in milliseconds - how long the query took from start to finish
+              // Lower is better. Compare with Turf.js endpoint to see which is faster
+              durationMs: (endTime - startTime).toFixed(2),
+              memoryDeltaMB: {
+                // JavaScript heap memory used by your code during the query
+                // Should be lower than Turf.js endpoint since MongoDB does the filtering
+                heapUsed: (
+                  (endMemory.heapUsed - startMemory.heapUsed) /
+                  1024 /
+                  1024
+                ).toFixed(2),
+                // Memory used by C++ objects bound to JavaScript (native libraries like MongoDB driver)
+                // Usually smaller, but can grow with large native operations
+                external: (
+                  (endMemory.external - startMemory.external) /
+                  1024 /
+                  1024
+                ).toFixed(2),
+                // Resident Set Size - total memory allocated to the Node.js process (heap + external + code)
+                // The big picture - overall memory footprint of the request. Lower is better
+                rss: ((endMemory.rss - startMemory.rss) / 1024 / 1024).toFixed(
+                  2
+                )
+              }
+            }
+          }
         })
         .code(StatusCodes.OK)
     } catch (error) {

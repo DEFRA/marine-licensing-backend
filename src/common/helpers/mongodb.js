@@ -74,5 +74,11 @@ async function createIndexes(db) {
   await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
   await db.collection('exemption-dynamics-queue-failed').createIndex({ id: 1 })
 
-  await db.collection('experiment-coastal-areas').createIndex({ id: 1 })
+  await db
+    .collection('experiment-coastal-areas')
+    .createIndex({ geometry: '2dsphere' })
+
+  await db
+    .collection('experiment-coastal-plan-areas')
+    .createIndex({ geometry: '2dsphere' })
 }
