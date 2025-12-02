@@ -68,12 +68,16 @@ export const getCoastalEnforcementAreaController = {
 
             try {
               const sitePolygon = turf.polygon(feature.geometry.coordinates)
+              // Apply 50m buffer
+              const bufferedSitePolygon = turf.buffer(sitePolygon, 50, {
+                units: 'meters'
+              })
               const areaPolygon =
                 area.geometry.type === 'Polygon'
                   ? turf.polygon(area.geometry.coordinates)
                   : turf.multiPolygon(area.geometry.coordinates)
 
-              if (turf.booleanIntersects(sitePolygon, areaPolygon)) {
+              if (turf.booleanIntersects(bufferedSitePolygon, areaPolygon)) {
                 return { site: siteIndex, coastalArea: area.name }
               }
             } catch (error) {

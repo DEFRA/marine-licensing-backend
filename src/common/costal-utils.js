@@ -1,6 +1,27 @@
 import { generateCirclePolygon } from './helpers/emp/transforms/circle-to-polygon.js'
 import proj4 from 'proj4'
 import './helpers/emp/transforms/proj4-definition-osgb34.js'
+import * as turf from '@turf/turf'
+
+// Applies a 50m buffer to a GeoJSON geometry and returns the buffered geometry
+const bufferGeometry = (geometry) => {
+  try {
+    let turfFeature
+
+    // Convert geometry to Turf feature
+    if (geometry.type === 'Polygon') {
+      turfFeature = turf.polygon(geometry.coordinates)
+    } else {
+      return geometry
+    }
+
+    const buffered = turf.buffer(turfFeature, 50, { units: 'meters' })
+
+    return buffered.geometry
+  } catch (error) {
+    return geometry
+  }
+}
 
 export const outputIntersectionAreas = async (
   db,
@@ -12,13 +33,15 @@ export const outputIntersectionAreas = async (
 
   for (const geometry of siteGeometries) {
     try {
+      const bufferedGeometry = bufferGeometry(geometry)
+
       const intersectingAreas = await db
         .collection(collectionName)
         .find(
           {
             geometry: {
               $geoIntersects: {
-                $geometry: geometry
+                $geometry: bufferedGeometry
               }
             }
           },
