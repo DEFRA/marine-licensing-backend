@@ -27,7 +27,7 @@ describe('GET /exemption', () => {
   it('should get exemption by id', async () => {
     const { mockMongo, mockHandler } = global
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi
           .fn()
@@ -63,7 +63,7 @@ describe('GET /exemption', () => {
   it('should return 404 if ID does not exist', async () => {
     const { mockMongo, mockHandler } = global
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockResolvedValue(null)
       }
@@ -86,7 +86,7 @@ describe('GET /exemption', () => {
 
     const mockError = 'Database failed'
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
@@ -111,7 +111,7 @@ describe('GET /exemption', () => {
     const { mockMongo, mockHandler } = global
     const userId = 'abc'
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockResolvedValue({
           _id: mockId,
@@ -151,7 +151,7 @@ describe('GET /exemption', () => {
     const { mockMongo, mockHandler } = global
     const userId = 'abc'
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockResolvedValue({
           _id: mockId,
@@ -179,7 +179,7 @@ describe('GET /exemption', () => {
   it("if there is no auth token, don't check ownership authorization", async () => {
     const { mockMongo, mockHandler } = global
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockResolvedValue({
           _id: mockId,

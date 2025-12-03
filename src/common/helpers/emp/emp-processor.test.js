@@ -122,7 +122,7 @@ describe('EMP Processor', () => {
     it('should move to dead letter queue if retries hit the maximum', async () => {
       const insertOne = vi.fn().mockResolvedValue({})
       const deleteOne = vi.fn().mockResolvedValue({})
-      mockServer.db.collection.mockImplementation((name) => {
+      mockServer.db.collection.mockImplementation(function (name) {
         if (name === 'exemption-emp-queue') return { deleteOne }
         if (name === 'exemption-emp-queue-failed') return { insertOne }
         throw new Error('Unexpected collection')
@@ -187,7 +187,7 @@ describe('EMP Processor', () => {
     })
 
     it('should handle database errors during processing', async () => {
-      mockServer.db.collection.mockImplementation(() => {
+      mockServer.db.collection.mockImplementation(function () {
         throw new Error('Database error')
       })
 

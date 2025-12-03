@@ -36,7 +36,7 @@ describe('POST /exemptions/project-name', () => {
 
   const setupMockInsertOne = (insertedId = new ObjectId()) => {
     const mockInsertOne = vi.fn().mockResolvedValue({ insertedId })
-    vi.spyOn(global.mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(global.mockMongo, 'collection').mockImplementation(function () {
       return { insertOne: mockInsertOne }
     })
     return mockInsertOne
@@ -279,7 +279,7 @@ describe('POST /exemptions/project-name', () => {
 
     const mockError = 'Database failed'
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         insertOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
