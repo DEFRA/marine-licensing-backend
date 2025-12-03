@@ -4,7 +4,7 @@ import Circle from '@arcgis/core/geometry/Circle.js'
 
 vi.mock('@arcgis/core/geometry/Circle.js', () => {
   return {
-    default: vi.fn()
+    default: vi.fn(function () {})
   }
 })
 
@@ -28,7 +28,9 @@ describe('generateCirclePolygon', () => {
     }
     mockCircleInstance.clone.mockReturnValue(mockCircleInstance)
 
-    Circle.mockImplementation(() => mockCircleInstance)
+    Circle.mockImplementation(function () {
+      return mockCircleInstance
+    })
   })
 
   it('creates a Circle with correct parameters', () => {

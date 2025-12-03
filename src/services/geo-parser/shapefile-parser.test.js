@@ -29,7 +29,9 @@ vi.mock('../../common/helpers/logging/logger.js', () => {
   }
 })
 
-vi.mock('adm-zip')
+vi.mock('adm-zip', () => ({
+  default: vi.fn(function () {})
+}))
 vi.mock('shapefile')
 
 const logger = createLogger()
@@ -174,7 +176,9 @@ describe('ShapefileParser class', () => {
         getEntries: vi.fn().mockReturnValue(mockZipEntries),
         extractEntryTo: vi.fn()
       }
-      AdmZip.mockImplementation(() => mockAdmZip)
+      AdmZip.mockImplementation(function () {
+        return mockAdmZip
+      })
       fs.mkdtemp.mockResolvedValue('/tmp/mock-dir-123')
       fs.readdir.mockResolvedValue(mockFileEntries)
       fs.stat.mockResolvedValue({ size: 100 })
@@ -251,7 +255,7 @@ describe('ShapefileParser class', () => {
     })
 
     it('should handle AdmZip errors', async () => {
-      AdmZip.mockImplementation(() => {
+      AdmZip.mockImplementation(function () {
         throw new Error('Invalid zip file')
       })
       await expect(sut.extractZip(zipPath)).rejects.toThrow('Invalid zip file')
@@ -263,7 +267,7 @@ describe('ShapefileParser class', () => {
     })
 
     it('should handle extraction errors', async () => {
-      mockAdmZip.extractEntryTo.mockImplementation(() => {
+      mockAdmZip.extractEntryTo.mockImplementation(function () {
         throw new Error('Extraction failed')
       })
       await expect(sut.extractZip(zipPath)).rejects.toThrow('Extraction failed')
@@ -534,7 +538,9 @@ describe('ShapefileParser class', () => {
     const mockFiles = ['mock.shp', 'mock.prj', 'mock.dbf']
 
     beforeEach(() => {
-      fs.glob.mockImplementation(() => createAsyncIterable(mockFiles))
+      fs.glob.mockImplementation(function () {
+        return createAsyncIterable(mockFiles)
+      })
       sut = new ShapefileParser()
     })
 
@@ -551,13 +557,15 @@ describe('ShapefileParser class', () => {
     })
 
     it('should return empty array when no shapefiles found', async () => {
-      fs.glob.mockImplementation(() => createAsyncIterable([]))
+      fs.glob.mockImplementation(function () {
+        return createAsyncIterable([])
+      })
       const result = await sut.findShapefiles(directory)
       expect(result).toEqual([])
     })
 
     it('should handle glob errors', async () => {
-      fs.glob.mockImplementation(() => {
+      fs.glob.mockImplementation(function () {
         throw new Error('Glob error')
       })
       const result = await sut.findShapefiles(directory)
@@ -791,7 +799,9 @@ describe('ShapefileParser class', () => {
     const basename = 'mock'
 
     beforeEach(() => {
-      fs.glob.mockImplementation(() => createAsyncIterable(mockFiles))
+      fs.glob.mockImplementation(function () {
+        return createAsyncIterable(mockFiles)
+      })
       sut = new ShapefileParser()
     })
 
@@ -815,7 +825,7 @@ describe('ShapefileParser class', () => {
     })
 
     it('should handle glob errors', async () => {
-      fs.glob.mockImplementation(() => {
+      fs.glob.mockImplementation(function () {
         throw new Error('Glob error')
       })
       const result = await sut.findProjectionFile(directory, 'mock')
@@ -824,7 +834,9 @@ describe('ShapefileParser class', () => {
 
     it('returns the first projection file if there is more than one', async () => {
       const mockMultipleFiles = ['project1.prj', 'project1.PRJ']
-      fs.glob.mockImplementation(() => createAsyncIterable(mockMultipleFiles))
+      fs.glob.mockImplementation(function () {
+        return createAsyncIterable(mockMultipleFiles)
+      })
       const result = await sut.findProjectionFile(directory, 'project1')
       expect(result).toBe('/tmp/mock-dir-567/project1.prj')
     })

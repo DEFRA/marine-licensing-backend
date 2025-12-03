@@ -42,7 +42,7 @@ describe('PATCH /exemptions/public-register', () => {
     }
 
     const mockUpdateOne = vi.fn().mockResolvedValueOnce({})
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         updateOne: mockUpdateOne
       }
@@ -87,7 +87,7 @@ describe('PATCH /exemptions/public-register', () => {
 
     const mockError = 'Database failed'
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
@@ -112,7 +112,7 @@ describe('PATCH /exemptions/public-register', () => {
       ...mockAuditPayload
     }
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }

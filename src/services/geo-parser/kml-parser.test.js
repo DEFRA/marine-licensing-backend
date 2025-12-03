@@ -6,23 +6,28 @@ import * as togeojson from '@tmcw/togeojson'
 import Boom from '@hapi/boom'
 
 vi.mock('node:fs/promises', () => ({
-  readFile: vi.fn()
+  readFile: vi.fn(function () {})
 }))
 
-vi.mock('jsdom', () => ({
-  JSDOM: vi.fn()
-}))
+vi.mock('jsdom', () => {
+  const MockJSDOM = vi.fn(function () {})
+  return {
+    JSDOM: MockJSDOM
+  }
+})
 
 vi.mock('@tmcw/togeojson', () => ({
-  kml: vi.fn()
+  kml: vi.fn(function () {})
 }))
 
 vi.mock('../../common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(() => ({
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn()
-  })),
+  createLogger: vi.fn(function () {
+    return {
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn()
+    }
+  }),
   structureErrorForECS: vi.fn((error) => ({
     error: {
       message: error?.message || String(error),
@@ -48,8 +53,10 @@ describe('KmlParser', () => {
       document: mockDocument
     }
 
-    JSDOM.mockReturnValue({
-      window: mockWindow
+    JSDOM.mockImplementation(function () {
+      return {
+        window: mockWindow
+      }
     })
 
     kmlParser = new KmlParser()
@@ -219,7 +226,7 @@ describe('KmlParser', () => {
 
     it('should handle JSDOM creation errors', async () => {
       const error = new Error('Invalid XML')
-      JSDOM.mockImplementation(() => {
+      JSDOM.mockImplementation(function () {
         throw error
       })
 
@@ -233,7 +240,7 @@ describe('KmlParser', () => {
       readFile.mockResolvedValue(invalidXml)
 
       const error = new Error('Invalid XML format')
-      JSDOM.mockImplementation(() => {
+      JSDOM.mockImplementation(function () {
         throw error
       })
 
@@ -244,7 +251,7 @@ describe('KmlParser', () => {
 
     it('should handle togeojson conversion errors', async () => {
       const error = new Error('Conversion failed')
-      togeojson.kml.mockImplementation(() => {
+      togeojson.kml.mockImplementation(function () {
         throw error
       })
 
@@ -257,7 +264,7 @@ describe('KmlParser', () => {
       readFile.mockResolvedValue('')
 
       const error = new Error('Empty document')
-      JSDOM.mockImplementation(() => {
+      JSDOM.mockImplementation(function () {
         throw error
       })
 
@@ -426,7 +433,7 @@ describe('KmlParser', () => {
       readFile.mockResolvedValue(null)
 
       const error = new Error('Cannot read null content')
-      JSDOM.mockImplementation(() => {
+      JSDOM.mockImplementation(function () {
         throw error
       })
 
@@ -439,7 +446,7 @@ describe('KmlParser', () => {
       readFile.mockResolvedValue(undefined)
 
       const error = new Error('Cannot read undefined content')
-      JSDOM.mockImplementation(() => {
+      JSDOM.mockImplementation(function () {
         throw error
       })
 
@@ -450,7 +457,7 @@ describe('KmlParser', () => {
 
     it('should handle memory errors during parsing', async () => {
       const error = new Error('JavaScript heap out of memory')
-      togeojson.kml.mockImplementation(() => {
+      togeojson.kml.mockImplementation(function () {
         throw error
       })
 

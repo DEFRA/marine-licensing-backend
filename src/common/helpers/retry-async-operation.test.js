@@ -282,7 +282,7 @@ describe('retryAsyncOperation', () => {
 
   describe('Async Operation Behavior', () => {
     it('should handle async operations that take time to resolve', async () => {
-      const mockOperation = vi.fn().mockImplementation(() => {
+      const mockOperation = vi.fn().mockImplementation(function () {
         return new Promise((resolve) => {
           setTimeout(() => resolve('delayed-success'), 10)
         })
