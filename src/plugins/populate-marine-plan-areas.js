@@ -2,6 +2,7 @@ import Wreck from '@hapi/wreck'
 import Boom from '@hapi/boom'
 import { config } from '../config.js'
 import { formatGeoForStorage } from '../common/helpers/geo/geo-transforms.js'
+import { marinePlanAreas } from '../common/constants/db-collections.js'
 
 export const populateMarinePlanAreasPlugin = {
   plugin: {
@@ -15,7 +16,7 @@ export const populateMarinePlanAreasPlugin = {
       }
 
       try {
-        const collection = server.db.collection('marine-plan-areas')
+        const collection = server.db.collection(marinePlanAreas)
         if (marinePlanArea.refreshMarinePlanArea) {
           server.logger.info(
             'refreshMarinePlanArea is enabled, clearing existing data'
