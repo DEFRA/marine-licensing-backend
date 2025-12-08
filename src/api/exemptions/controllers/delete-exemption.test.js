@@ -29,7 +29,7 @@ describe('DELETE /exemption', () => {
   it('should delete exemption by id when status is DRAFT', async () => {
     const { mockMongo, mockHandler } = global
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockResolvedValue({
           _id: mockId,
@@ -54,7 +54,7 @@ describe('DELETE /exemption', () => {
   it('should return 400 if exemption status is not DRAFT', async () => {
     const { mockMongo, mockHandler } = global
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockResolvedValue({
           _id: mockId,
@@ -78,7 +78,7 @@ describe('DELETE /exemption', () => {
   it('should return 404 if ID does not exist', async () => {
     const { mockMongo, mockHandler } = global
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockResolvedValue(null)
       }
@@ -97,7 +97,7 @@ describe('DELETE /exemption', () => {
 
     const mockError = 'Database failed'
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
