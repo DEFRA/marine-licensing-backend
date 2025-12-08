@@ -9,9 +9,11 @@ import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js
 import { config } from '../../../config.js'
 
 vi.mock('notifications-node-client', () => ({
-  NotifyClient: vi.fn().mockImplementation(() => ({
-    sendEmail: vi.fn()
-  }))
+  NotifyClient: vi.fn().mockImplementation(function () {
+    return {
+      sendEmail: vi.fn()
+    }
+  })
 }))
 vi.mock('../helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
@@ -37,7 +39,7 @@ describe('POST /exemption/submit', () => {
   beforeEach(() => {
     vi.resetAllMocks()
 
-    config.get.mockImplementation((key) => {
+    config.get.mockImplementation(function (key) {
       if (key === 'dynamics') {
         return {
           isDynamicsEnabled: true,
@@ -61,7 +63,9 @@ describe('POST /exemption/submit', () => {
     })
 
     mockDate = new Date('2025-06-15T10:30:00Z')
-    vi.spyOn(global, 'Date').mockImplementation(() => mockDate)
+    vi.spyOn(global, 'Date').mockImplementation(function () {
+      return mockDate
+    })
     Date.now = vi.fn(() => mockDate.getTime())
 
     mockExemptionId = new ObjectId().toHexString()
