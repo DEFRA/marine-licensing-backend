@@ -7,6 +7,7 @@ import {
 import { retryAsyncOperation } from '../../../common/helpers/retry-async-operation.js'
 import { ErrorWithData } from '../../../common/helpers/error-with-data.js'
 import { isOrganisationEmployee } from '../../../common/helpers/organisations.js'
+import { StatusCodes } from 'http-status-codes'
 
 const getNotifyTemplateId = (organisation) => {
   if (isOrganisationEmployee(organisation)) {
@@ -119,8 +120,8 @@ const sendEmail = async ({
       intervalMs: retryIntervalSeconds * 1000
     })
     const { id } = result.data
-    const statusCode = result?.statusCode || result?.response?.statusCode || 201
-    logEmailSuccess(logger, applicationReference, statusCode)
+    // Gov Notify returns CREATED (201) status on successful email creation
+    logEmailSuccess(logger, applicationReference, StatusCodes.CREATED)
     return { status: 'success', id, reference: emailSendReference }
   } catch (error) {
     const emailError =
