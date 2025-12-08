@@ -328,6 +328,12 @@ const config = convict({
         format: String,
         default: '',
         env: 'MARINE_PLAN_AREAS_API_URL'
+      },
+      refreshMarinePlanArea: {
+        doc: 'Force application to update the Marine Plan Areas',
+        format: Boolean,
+        default: false,
+        env: 'REFRESH_MARINE_PLAN_AREAS'
       }
     }
   },

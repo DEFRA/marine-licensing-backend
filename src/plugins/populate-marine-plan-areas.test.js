@@ -14,6 +14,7 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
   let mockWreckGet
   let mockLogger
   let mockDb
+  let mockPayload
 
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -21,6 +22,14 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
     mockWreckGet = vi.mocked(Wreck.get)
 
     server = Hapi.server()
+
+    mockPayload = {
+      type: 'FeatureCollection',
+      features: [
+        { type: 'Feature', properties: { id: 1 }, geometry: {} },
+        { type: 'Feature', properties: { id: 2 }, geometry: {} }
+      ]
+    }
 
     mockLogger = {
       warn: vi.fn(),
@@ -37,7 +46,8 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
 
     vi.mocked(config.get).mockReturnValue({
       marinePlanArea: {
-        geoJsonUrl: 'http://localhost:3000/marine-plan-areas.json'
+        geoJsonUrl: 'http://localhost:3000/marine-plan-areas.json',
+        refreshMarinePlanArea: false
       }
     })
   })
@@ -50,7 +60,8 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
     test('should log warning and return early when geoJsonUrl is blank', async () => {
       vi.mocked(config.get).mockReturnValue({
         marinePlanArea: {
-          geoJsonUrl: ''
+          geoJsonUrl: '',
+          refreshMarinePlanArea: false
         }
       })
 
@@ -64,7 +75,8 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
 
     test('should log warning and return early when marinePlanArea is undefined', async () => {
       vi.mocked(config.get).mockReturnValue({
-        marinePlanArea: undefined
+        marinePlanArea: undefined,
+        refreshMarinePlanArea: false
       })
 
       await server.register(populateMarinePlanAreasPlugin)
@@ -121,19 +133,12 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
 
     test('should successfully fetch and insert features', async () => {
       const mockCollection = {
+        deleteMany: vi.fn(),
         countDocuments: vi.fn().mockResolvedValue(0),
         insertMany: vi.fn().mockResolvedValue({})
       }
 
       mockDb.collection.mockReturnValue(mockCollection)
-
-      const mockPayload = {
-        type: 'FeatureCollection',
-        features: [
-          { type: 'Feature', properties: { id: 1 }, geometry: {} },
-          { type: 'Feature', properties: { id: 2 }, geometry: {} }
-        ]
-      }
 
       const mockFormattedFeatures = [
         { id: 1, geometry: {} },
@@ -149,6 +154,7 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
       await server.register(populateMarinePlanAreasPlugin)
 
       expect(formatGeoForStorage).toHaveBeenCalledWith(mockPayload)
+      expect(mockCollection.deleteMany).not.toHaveBeenCalled()
       expect(mockCollection.insertMany).toHaveBeenCalledWith(
         mockFormattedFeatures
       )
@@ -161,7 +167,7 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
 
       mockDb.collection.mockReturnValue(mockCollection)
 
-      const mockPayload = {
+      mockPayload = {
         type: 'FeatureCollection',
         features: [{ type: 'Feature', properties: { id: 1 }, geometry: {} }]
       }
@@ -183,6 +189,48 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
           error: 'Failed to format GeoJSON'
         },
         'Failed to populate Marine Plan Areas collection'
+      )
+    })
+  })
+
+  describe('Refresh functionality', () => {
+    test('should clear and refresh collection when refreshMarinePlanArea is true', async () => {
+      const mockCollection = {
+        countDocuments: vi.fn(),
+        deleteMany: vi.fn().mockResolvedValue({}),
+        insertMany: vi.fn().mockResolvedValue({})
+      }
+
+      vi.mocked(config.get).mockReturnValue({
+        marinePlanArea: {
+          geoJsonUrl: 'http://localhost:3000/marine-plan-areas.json',
+          refreshMarinePlanArea: true
+        }
+      })
+
+      mockDb.collection.mockReturnValue(mockCollection)
+
+      const mockFormattedFeatures = [
+        { id: 1, geometry: {} },
+        { id: 2, geometry: {} }
+      ]
+
+      mockWreckGet.mockResolvedValue({
+        payload: mockPayload
+      })
+
+      vi.mocked(formatGeoForStorage).mockReturnValue(mockFormattedFeatures)
+
+      await server.register(populateMarinePlanAreasPlugin)
+
+      expect(mockCollection.deleteMany).toHaveBeenCalledWith({})
+      expect(mockCollection.countDocuments).not.toHaveBeenCalled()
+      expect(mockWreckGet).toHaveBeenCalledWith(
+        'http://localhost:3000/marine-plan-areas.json',
+        { json: true }
+      )
+      expect(mockCollection.insertMany).toHaveBeenCalledWith(
+        mockFormattedFeatures
       )
     })
   })

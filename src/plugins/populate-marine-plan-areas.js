@@ -14,22 +14,29 @@ export const populateMarinePlanAreasPlugin = {
         return
       }
 
-      const { geoJsonUrl } = marinePlanArea
-
       try {
         const collection = server.db.collection('marine-plan-areas')
-        const count = await collection.countDocuments()
-
-        if (count > 0) {
+        if (marinePlanArea.refreshMarinePlanArea) {
           server.logger.info(
-            `Marine Plan Areas collection already populated with documents`
+            'refreshMarinePlanArea is enabled, clearing existing data'
           )
-          return
+          await collection.deleteMany({})
+        } else {
+          const count = await collection.countDocuments()
+
+          if (count > 0) {
+            server.logger.info(
+              `Marine Plan Areas collection already populated with documents`
+            )
+            return
+          }
         }
 
         server.logger.info(
           'Marine Plan Areas collection is empty, fetching data from API'
         )
+
+        const { geoJsonUrl } = marinePlanArea
 
         const { payload } = await Wreck.get(geoJsonUrl, { json: true })
 
