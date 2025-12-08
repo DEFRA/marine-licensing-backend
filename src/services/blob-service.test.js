@@ -49,22 +49,22 @@ vi.mock('../config.js', () => ({
 }))
 
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(),
-  HeadObjectCommand: vi.fn(),
-  GetObjectCommand: vi.fn()
+  S3Client: vi.fn(function () {}),
+  HeadObjectCommand: vi.fn(function () {}),
+  GetObjectCommand: vi.fn(function () {})
 }))
 
 vi.mock('node:fs', () => ({
-  createWriteStream: vi.fn()
+  createWriteStream: vi.fn(function () {})
 }))
 
 vi.mock('node:fs/promises', () => ({
-  mkdir: vi.fn(),
-  rm: vi.fn()
+  mkdir: vi.fn(function () {}),
+  rm: vi.fn(function () {})
 }))
 
 vi.mock('node:stream/promises', () => ({
-  pipeline: vi.fn()
+  pipeline: vi.fn(function () {})
 }))
 
 let BlobService
@@ -90,7 +90,9 @@ describe('BlobService', () => {
     mockS3Client = {
       send: mockSend
     }
-    S3Client.mockReturnValue(mockS3Client)
+    S3Client.mockImplementation(function () {
+      return mockS3Client
+    })
 
     config.get.mockImplementation((key) => {
       const configMap = {
@@ -126,7 +128,9 @@ describe('BlobService', () => {
 
     it('should create S3Client with custom endpoint for localstack', () => {
       const customMockS3Client = { send: vi.fn() }
-      S3Client.mockReturnValue(customMockS3Client)
+      S3Client.mockImplementation(function () {
+        return customMockS3Client
+      })
 
       const service = new BlobService()
       service.client = new S3Client({

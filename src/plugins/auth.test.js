@@ -27,7 +27,7 @@ describe('Auth Plugin', () => {
     mockWreckGet = vi.mocked(Wreck.get)
     mockJwkToPem = vi.mocked(jwkToPem)
 
-    config.get.mockImplementation((key) => {
+    config.get.mockImplementation(function (key) {
       return key === 'defraId'
         ? {
             jwksUri:
@@ -73,7 +73,7 @@ describe('Auth Plugin', () => {
 
   describe('Default auth mode configuration', () => {
     test('should set default auth strategy to jwt with required mode', async () => {
-      config.get.mockImplementation(() => {
+      config.get.mockImplementation(function () {
         return {
           jwksUri:
             'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'

@@ -13,7 +13,7 @@ describe('generateApplicationReference', () => {
 
     mockDate = new Date('2025-06-15T10:30:00Z')
     const OriginalDate = Date
-    vi.spyOn(global, 'Date').mockImplementation((...args) => {
+    vi.spyOn(global, 'Date').mockImplementation(function (...args) {
       if (args.length === 0) {
         return mockDate
       }
@@ -87,7 +87,7 @@ describe('generateApplicationReference', () => {
     it('should reset sequence to seed for new year', async () => {
       const mockNewYearDate = new Date('2026-01-01T10:30:00Z')
       const OriginalDate = Date
-      vi.spyOn(global, 'Date').mockImplementation((...args) => {
+      vi.spyOn(global, 'Date').mockImplementation(function (...args) {
         if (args.length === 0) {
           return mockNewYearDate
         }
@@ -291,7 +291,7 @@ describe('generateApplicationReference', () => {
 
       const mockNewYearDate = new Date('2026-01-01T10:30:00Z')
       const OriginalDate = Date
-      vi.spyOn(global, 'Date').mockImplementation((...args) => {
+      vi.spyOn(global, 'Date').mockImplementation(function (...args) {
         if (args.length === 0) {
           return mockNewYearDate
         }
