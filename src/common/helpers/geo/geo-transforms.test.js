@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { formatGeoForStorage } from './geo-transforms.js'
-import { mockFeatureCollection } from './test.fixtures.js'
+import { mockFeatureCollection } from './test.fixture.js'
 
 describe('geo-transforms', () => {
   describe('formatGeoForStorage', () => {

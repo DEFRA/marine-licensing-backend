@@ -16,7 +16,7 @@ export const convertSingleCoordinates = (site) => {
     longitude = Number.parseFloat(site.coordinates.longitude)
   }
 
-  const radiusMetres = parseInt(site.circleWidth, 10) / 2
+  const radiusMetres = Number.parseInt(site.circleWidth, 10) / 2
   const circleCoords = generateCirclePolygon({
     latitude,
     longitude,
@@ -80,7 +80,7 @@ export const parseGeoAreas = async (exemption, db, tableName) => {
       coordinatesEntry === 'multiple'
     ) {
       siteGeometries.push(...convertMultipleCoordinates(site))
-    } else if (coordinatesType === 'file') {
+    } else {
       siteGeometries.push(...formatFileCoordinates(site))
     }
   }

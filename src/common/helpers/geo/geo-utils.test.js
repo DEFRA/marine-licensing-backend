@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import proj4 from 'proj4'
 import { buffer } from '@turf/turf'
 import { singleOSGB36toWGS84, addBufferToShape } from './geo-utils.js'
-import { mockPointGeometry, mockPolygonGeometry } from './test.fixtures.js'
+import { mockPointGeometry, mockPolygonGeometry } from './test.fixture.js'
 
 vi.mock('proj4')
 vi.mock('@turf/turf')

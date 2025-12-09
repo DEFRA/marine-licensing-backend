@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import Boom from '@hapi/boom'
 import { outputIntersectionAreas } from './geo-search.js'
 import { addBufferToShape } from './geo-utils.js'
-import { mockFeatureCollection, mockMarinePlanAreas } from './test.fixtures.js'
+import { mockFeatureCollection, mockMarinePlanAreas } from './test.fixture.js'
 
 vi.mock('./geo-utils.js')
 

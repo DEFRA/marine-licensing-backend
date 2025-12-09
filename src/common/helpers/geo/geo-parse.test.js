@@ -15,7 +15,7 @@ import {
   mockSiteMultipleOSGB36,
   mockSiteFile,
   mockMarinePlanAreas
-} from './test.fixtures.js'
+} from './test.fixture.js'
 
 vi.mock('./geo-utils.js')
 vi.mock('../emp/transforms/circle-to-polygon.js')
