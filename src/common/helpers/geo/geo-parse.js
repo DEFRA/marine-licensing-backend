@@ -45,8 +45,17 @@ export const convertMultipleCoordinates = (site) => {
   return siteGeometries
 }
 
-export const formatFileCoordinates = () => {
-  return []
+export const formatFileCoordinates = (site) => {
+  if (!site.geoJSON?.features) {
+    return []
+  }
+
+  return site.geoJSON.features
+    .filter((feature) => feature.geometry?.coordinates)
+    .map((feature) => ({
+      type: feature.geometry.type,
+      coordinates: feature.geometry.coordinates
+    }))
 }
 
 export const parseGeoAreas = async (exemption, db, tableName) => {
@@ -72,7 +81,7 @@ export const parseGeoAreas = async (exemption, db, tableName) => {
     }
 
     if (coordinatesType === 'file') {
-      siteGeometries.push(formatFileCoordinates(site))
+      siteGeometries.push(...formatFileCoordinates(site))
     }
   }
 

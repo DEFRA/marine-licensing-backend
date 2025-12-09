@@ -210,7 +210,19 @@ describe('geo-parse', () => {
 
       expect(outputIntersectionAreas).toHaveBeenCalledWith(
         mockDb,
-        [[]],
+        [
+          {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-2.6561784467249394, 55.6217431238072],
+                [-2.3132402554949936, 55.32224616938891],
+                [-2.9479108792966926, 55.331328251526465],
+                [-2.6561784467249394, 55.6217431238072]
+              ]
+            ]
+          }
+        ],
         'marine-plan-areas'
       )
       expect(result).toEqual(mockMarinePlanAreas)
