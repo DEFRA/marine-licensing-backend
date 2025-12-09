@@ -5,9 +5,11 @@ import { NotifyClient } from 'notifications-node-client'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 
 vi.mock('../../../config.js')
-vi.mock('notifications-node-client')
+vi.mock('notifications-node-client', () => ({
+  NotifyClient: vi.fn(function () {})
+}))
 vi.mock('../../../common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(),
+  createLogger: vi.fn(function () {}),
   structureErrorForECS: vi.fn((error) => ({
     error: {
       message: error?.message || String(error),
@@ -67,7 +69,9 @@ describe('sendUserEmailConfirmation', () => {
       }
       return {}
     })
-    NotifyClient.mockImplementation(() => mockNotifyClient)
+    NotifyClient.mockImplementation(function () {
+      return mockNotifyClient
+    })
     createLogger.mockReturnValue(mockLogger)
   })
 

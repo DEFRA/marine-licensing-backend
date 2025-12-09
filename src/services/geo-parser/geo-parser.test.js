@@ -6,7 +6,7 @@ import Boom from '@hapi/boom'
 import { join } from 'node:path'
 
 vi.mock('node:worker_threads', () => ({
-  Worker: vi.fn()
+  Worker: vi.fn(function () {})
 }))
 
 vi.mock('../blob-service.js', () => ({
@@ -19,12 +19,14 @@ vi.mock('../blob-service.js', () => ({
 }))
 
 vi.mock('../../common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(() => ({
-    info: vi.fn(),
-    debug: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn()
-  })),
+  createLogger: vi.fn(function () {
+    return {
+      info: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn()
+    }
+  }),
   structureErrorForECS: vi.fn((error) => ({
     error: {
       message: error?.message || String(error),
@@ -184,7 +186,7 @@ describe('GeoParser', () => {
 
     it('should handle validateGeoJSON failures', async () => {
       const error = Boom.internal('Invalid GeoJSON')
-      geoParser.validateGeoJSON.mockImplementation(() => {
+      geoParser.validateGeoJSON.mockImplementation(function () {
         throw error
       })
 
@@ -230,11 +232,13 @@ describe('GeoParser', () => {
         on: vi.fn(),
         terminate: vi.fn()
       }
-      Worker.mockReturnValue(mockWorker)
+      Worker.mockImplementation(function () {
+        return mockWorker
+      })
     })
 
     it('should successfully parse file using worker thread', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
+      mockWorker.on.mockImplementation(function (event, callback) {
         if (event === 'message') {
           // Simulate successful message
           setTimeout(() => callback({ geoJSON: mockGeoJSON }), 10)
@@ -253,7 +257,7 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker error messages', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
+      mockWorker.on.mockImplementation(function (event, callback) {
         if (event === 'message') {
           setTimeout(() => callback({ error: 'Parse failed' }), 10)
         }
@@ -265,7 +269,7 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker error event', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
+      mockWorker.on.mockImplementation(function (event, callback) {
         if (event === 'error') {
           setTimeout(() => callback(new Error('Worker error')), 10)
         }
@@ -277,7 +281,7 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker exit with non-zero code', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
+      mockWorker.on.mockImplementation(function (event, callback) {
         if (event === 'exit') {
           // Worker exit event handler expects exit code (number) as first parameter
           // eslint-disable-next-line n/no-callback-literal
@@ -291,7 +295,7 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker exit with exit code 0', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
+      mockWorker.on.mockImplementation(function (event, callback) {
         if (event === 'exit') {
           // Worker exit event handler expects exit code (number) as first parameter
           // eslint-disable-next-line n/no-callback-literal
@@ -306,7 +310,7 @@ describe('GeoParser', () => {
     })
 
     it('should timeout after processing timeout', async () => {
-      mockWorker.on.mockImplementation(() => {
+      mockWorker.on.mockImplementation(function () {
         // Worker never responds
       })
 
@@ -321,7 +325,7 @@ describe('GeoParser', () => {
     })
 
     it('should clear timeout when worker responds', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
+      mockWorker.on.mockImplementation(function (event, callback) {
         if (event === 'message') {
           setTimeout(() => callback({ geoJSON: mockGeoJSON }), 10)
         }
@@ -333,7 +337,7 @@ describe('GeoParser', () => {
     })
 
     it('should clear timeout when worker has error', async () => {
-      mockWorker.on.mockImplementation((event, callback) => {
+      mockWorker.on.mockImplementation(function (event, callback) {
         if (event === 'error') {
           setTimeout(() => callback(new Error('Worker error')), 10)
         }

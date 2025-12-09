@@ -30,13 +30,48 @@ describe('GET /exemption', () => {
 
       expect(result.error.message).toContain('EXEMPTION_ID_INVALID')
     })
+
+    it('should get exemption by id', async () => {
+      const { mockMongo, mockHandler } = global
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return {
+          findOne: vi
+            .fn()
+            .mockResolvedValue({ _id: mockId, projectName: 'Test project' })
+        }
+      })
+      await getExemptionController({ requiresAuth: true }).handler(
+        {
+          db: mockMongo,
+          params: { id: mockId },
+          auth: { artifacts: { decoded: { tid: 'abc' } } }
+        },
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'success',
+          value: {
+            id: mockId,
+            projectName: 'Test project',
+            taskList: {
+              publicRegister: 'INCOMPLETE',
+              projectName: 'COMPLETED',
+              siteDetails: 'INCOMPLETE'
+            }
+          }
+        })
+      )
+    })
   })
 
   describe('Authenticated endpoint', () => {
     it('should return 404 if ID does not exist', async () => {
       const { mockMongo, mockHandler } = global
 
-      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
         return {
           findOne: vi.fn().mockResolvedValue(null)
         }
@@ -57,7 +92,7 @@ describe('GET /exemption', () => {
 
       const mockError = 'Database failed'
 
-      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
         return {
           findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
         }
@@ -77,7 +112,7 @@ describe('GET /exemption', () => {
       const { mockMongo, mockHandler } = global
 
       const userContactId = 'abc'
-      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
         return {
           findOne: vi.fn().mockResolvedValue({
             _id: mockId,
@@ -86,11 +121,12 @@ describe('GET /exemption', () => {
           })
         }
       })
+
       await getExemptionController({ requiresAuth: true }).handler(
-        requestFromApplicantUser({
-          userContactId,
+        {
+          db: mockMongo,
           params: { id: mockId }
-        }),
+        },
         mockHandler
       )
 
@@ -115,7 +151,7 @@ describe('GET /exemption', () => {
       const { mockMongo, mockHandler } = global
       const userContactId = 'abc'
 
-      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
         return {
           findOne: vi.fn().mockResolvedValue({
             _id: mockId,
@@ -139,26 +175,27 @@ describe('GET /exemption', () => {
     it('should get exemption by id if user is an internal user', async () => {
       const { mockMongo, mockHandler } = global
 
-      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
         return {
-          findOne: vi
-            .fn()
-            .mockResolvedValue({ _id: mockId, projectName: 'Test project' })
+          findOne: vi.fn().mockResolvedValue({
+            _id: mockId,
+            projectName: 'Test project',
+            contactId: 'different-user-id'
+          })
         }
       })
-
       await getExemptionController({ requiresAuth: true }).handler(
         requestFromInternalUser({
           params: { id: mockId }
         }),
         mockHandler
       )
-
       expect(mockHandler.response).toHaveBeenCalledWith(
         expect.objectContaining({
           message: 'success',
           value: {
-            id: mockId,
+            contactId: 'different-user-id',
+            id: '123456789123456789123456',
             projectName: 'Test project',
             taskList: {
               publicRegister: 'INCOMPLETE',
