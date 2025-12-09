@@ -122,7 +122,7 @@ export const testExemptions = [
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-10-01',
         ProjEndDate: '2026-11-01',
-        Status: 'Closed',
+        Status: '',
         SubDate: '2025-10-29',
         PubConsent: '0',
         Exemptions_URL:
@@ -264,7 +264,7 @@ export const testExemptions = [
         IAT_URL: undefined,
         ProjStartDate: '2026-10-01',
         ProjEndDate: '2026-11-01',
-        Status: 'Closed',
+        Status: '',
         SubDate: '2025-10-29',
         PubConsent: '0',
         Exemptions_URL:
@@ -424,7 +424,7 @@ export const testExemptions = [
         IAT_URL: undefined,
         ProjStartDate: '2026-11-30',
         ProjEndDate: '2026-12-01',
-        Status: 'Closed',
+        Status: '',
         SubDate: '2025-10-29',
         PubConsent: '1',
         Exemptions_URL:
@@ -537,7 +537,7 @@ export const testExemptions = [
         IAT_URL: undefined,
         ProjStartDate: '2026-03-01',
         ProjEndDate: '2026-05-01',
-        Status: 'Closed',
+        Status: '',
         SubDate: '2025-10-29',
         PubConsent: '0',
         Exemptions_URL:

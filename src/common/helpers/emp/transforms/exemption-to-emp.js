@@ -40,7 +40,7 @@ export const transformExemptionToEmpRequest = ({
       IAT_URL: mcmsContext?.pdfDownloadUrl,
       ProjStartDate: projStartDate,
       ProjEndDate: projEndDate,
-      Status: 'Closed',
+      Status: '',
       SubDate: shortIsoDate(new Date(exemption.submittedAt)),
       PubConsent: publicConsent,
       Exemptions_URL: new URL(
