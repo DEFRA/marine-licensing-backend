@@ -3,6 +3,7 @@ import Boom from '@hapi/boom'
 import {
   convertSingleCoordinates,
   convertMultipleCoordinates,
+  formatFileCoordinates,
   parseGeoAreas
 } from './geo-parse.js'
 import { singleOSGB36toWGS84 } from './geo-utils.js'
@@ -126,6 +127,99 @@ describe('geo-parse', () => {
         {
           type: 'Polygon',
           coordinates: [mockConvertedCoords]
+        }
+      ])
+    })
+  })
+
+  describe('formatFileCoordinates', () => {
+    test('should return empty array when site has no geoJSON', () => {
+      const site = { coordinatesType: 'file' }
+
+      const result = formatFileCoordinates(site)
+
+      expect(result).toEqual([])
+    })
+
+    test('should return empty array when geoJSON has no features', () => {
+      const site = {
+        coordinatesType: 'file',
+        geoJSON: { type: 'FeatureCollection' }
+      }
+
+      const result = formatFileCoordinates(site)
+
+      expect(result).toEqual([])
+    })
+
+    test('should return geometry for single valid feature', () => {
+      const result = formatFileCoordinates(mockSiteFile)
+
+      expect(result).toEqual([
+        {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-2.6561784467249394, 55.6217431238072],
+              [-2.3132402554949936, 55.32224616938891],
+              [-2.9479108792966926, 55.331328251526465],
+              [-2.6561784467249394, 55.6217431238072]
+            ]
+          ]
+        }
+      ])
+    })
+
+    test('should return multiple geometries for multiple valid features', () => {
+      const site = {
+        coordinatesType: 'file',
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'Point',
+                coordinates: [-1.5491, 54.9783]
+              }
+            },
+            {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [-2.6561784467249394, 55.6217431238072],
+                    [-2.3132402554949936, 55.32224616938891],
+                    [-2.9479108792966926, 55.331328251526465],
+                    [-2.6561784467249394, 55.6217431238072]
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      }
+
+      const result = formatFileCoordinates(site)
+
+      expect(result).toEqual([
+        {
+          type: 'Point',
+          coordinates: [-1.5491, 54.9783]
+        },
+        {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-2.6561784467249394, 55.6217431238072],
+              [-2.3132402554949936, 55.32224616938891],
+              [-2.9479108792966926, 55.331328251526465],
+              [-2.6561784467249394, 55.6217431238072]
+            ]
+          ]
         }
       ])
     })
