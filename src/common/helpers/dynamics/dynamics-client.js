@@ -6,7 +6,6 @@ import querystring from 'node:querystring'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { isOrganisationEmployee } from '../organisations.js'
-import { marinePlanAreas } from '../../constants/db-collections.js'
 
 export const getDynamicsAccessToken = async () => {
   const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
