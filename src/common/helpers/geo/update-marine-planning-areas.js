@@ -11,12 +11,14 @@ export const updateMarinePlanningAreas = async (
     throw Boom.notFound('Exemption not found')
   }
 
-  const data = await parseGeoAreas(exemption, db, marinePlanAreas)
+  const result = await parseGeoAreas(exemption, db, marinePlanAreas)
 
   await db.collection('exemptions').updateOne(
     { _id: exemption._id },
     {
-      $set: { marinePlanAreas: data, updatedAt, updatedBy }
+      $set: { marinePlanAreas: result, updatedAt, updatedBy }
     }
   )
+
+  return result
 }
