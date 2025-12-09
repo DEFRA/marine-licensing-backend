@@ -36,7 +36,7 @@ describe('PATCH /exemptions/site-details', () => {
     }
 
     const mockUpdateOne = vi.fn().mockResolvedValueOnce({})
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         updateOne: mockUpdateOne
       }
@@ -87,7 +87,7 @@ describe('PATCH /exemptions/site-details', () => {
 
     const mockError = 'Database failed'
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
@@ -122,7 +122,7 @@ describe('PATCH /exemptions/site-details', () => {
       ...mockAuditPayload
     }
 
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
         updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }

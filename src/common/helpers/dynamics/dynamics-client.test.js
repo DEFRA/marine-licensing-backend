@@ -26,8 +26,8 @@ describe('Dynamics Client', () => {
         })
       }
     }
-    config.get.mockImplementation((value) =>
-      value === 'dynamics'
+    config.get.mockImplementation(function (value) {
+      return value === 'dynamics'
         ? {
             clientId: 'test-client-id',
             clientSecret: 'test-client-secret',
@@ -38,7 +38,7 @@ describe('Dynamics Client', () => {
             apiUrl: 'https://localhost/api/data/v9.2'
           }
         : 'http://localhost'
-    )
+    })
   })
 
   describe('getDynamicsAccessToken', () => {
@@ -59,7 +59,7 @@ describe('Dynamics Client', () => {
     })
 
     it('should throw error if request fails', async () => {
-      mockWreckPost.mockImplementation(() => {
+      mockWreckPost.mockImplementation(function () {
         throw new Error('Network error')
       })
 
@@ -78,7 +78,7 @@ describe('Dynamics Client', () => {
     it('should throw error with Dynamics error description when token request fails', async () => {
       const mockError = new Error('Response Error: 400 Bad Request')
 
-      mockWreckPost.mockImplementation(() => {
+      mockWreckPost.mockImplementation(function () {
         throw mockError
       })
 
@@ -248,7 +248,7 @@ describe('Dynamics Client', () => {
 
     it('should throw error if request fails', async () => {
       mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
-      mockWreckPost.mockImplementation(() => {
+      mockWreckPost.mockImplementation(function () {
         throw new Error('Dynamics API error')
       })
 
