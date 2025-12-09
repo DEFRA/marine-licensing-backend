@@ -2,6 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import Boom from '@hapi/boom'
 import { updateMarinePlanningAreas } from './update-marine-planning-areas.js'
 import { parseGeoAreas } from './geo-parse.js'
+import { mockMarinePlanAreas } from './test-fixtures.js'
 
 vi.mock('./geo-parse.js')
 
@@ -41,8 +42,6 @@ describe('updateMarinePlanningAreas', () => {
       location: { coordinates: [1, 2] }
     }
 
-    const mockMarinePlanAreas = ['North east inshore']
-
     vi.mocked(parseGeoAreas).mockResolvedValue(mockMarinePlanAreas)
 
     await updateMarinePlanningAreas(mockExemption, mockDb, {
@@ -60,7 +59,7 @@ describe('updateMarinePlanningAreas', () => {
       { _id: 'test-exemption-id' },
       {
         $set: {
-          marinePlanAreas: ['North east inshore'],
+          marinePlanAreas: mockMarinePlanAreas,
           updatedAt: mockUpdatedAt,
           updatedBy: mockUpdatedBy
         }

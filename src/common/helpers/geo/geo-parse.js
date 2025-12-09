@@ -4,7 +4,6 @@ import { singleOSGB36toWGS84 } from './geo-utils.js'
 import { outputIntersectionAreas } from './geo-search.js'
 
 export const convertSingleCoordinates = (site) => {
-  const siteGeometries = []
   let latitude, longitude
 
   if (site.coordinateSystem === 'osgb36') {
@@ -24,12 +23,30 @@ export const convertSingleCoordinates = (site) => {
     radiusMetres
   })
 
+  return { type: 'Polygon', coordinates: [circleCoords] }
+}
+
+export const convertMultipleCoordinates = (site) => {
+  const siteGeometries = []
+
+  const polygonCoords = site.coordinates.map((coord) => {
+    if (site.coordinateSystem === 'osgb36') {
+      return singleOSGB36toWGS84(coord.eastings, coord.northings)
+    } else {
+      return [parseFloat(coord.longitude), parseFloat(coord.latitude)]
+    }
+  })
+
   siteGeometries.push({
     type: 'Polygon',
-    coordinates: [circleCoords]
+    coordinates: [polygonCoords]
   })
 
   return siteGeometries
+}
+
+export const formatFileCoordinates = () => {
+  return []
 }
 
 export const parseGeoAreas = async (exemption, db, tableName) => {
@@ -44,9 +61,18 @@ export const parseGeoAreas = async (exemption, db, tableName) => {
   for (const site of siteDetails) {
     const { coordinatesEntry, coordinatesType } = site
 
-    // Circular Coordinates - Next add Polygon and File.
     if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
-      siteGeometries.push(...convertSingleCoordinates(site))
+      siteGeometries.push(convertSingleCoordinates(site))
+      continue
+    }
+
+    if (coordinatesType === 'coordinates' && coordinatesEntry === 'multiple') {
+      siteGeometries.push(...convertMultipleCoordinates(site))
+      continue
+    }
+
+    if (coordinatesType === 'file') {
+      siteGeometries.push(formatFileCoordinates(site))
     }
   }
 

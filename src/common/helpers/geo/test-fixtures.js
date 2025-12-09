@@ -1,3 +1,5 @@
+import { COORDINATE_SYSTEMS } from '../../constants/coordinates.js'
+
 export const mockFeatureCollection = {
   type: 'FeatureCollection',
   features: [
@@ -45,3 +47,84 @@ export const mockFeatureCollection = {
     }
   ]
 }
+
+export const mockSiteWGS84 = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'single',
+  coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+  coordinates: { latitude: '51.489676', longitude: '-0.231530' },
+  circleWidth: '20'
+}
+
+export const mockSiteOSGB36 = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'single',
+  coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
+  coordinates: { eastings: '513967', northings: '476895' },
+  circleWidth: '20'
+}
+
+export const mockSiteMultipleWGS84 = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'multiple',
+  coordinateSystem: COORDINATE_SYSTEMS.WGS84,
+  coordinates: [
+    {
+      latitude: '54.088594',
+      longitude: '-0.178408'
+    },
+    {
+      latitude: '54.086782',
+      longitude: '-0.177369'
+    },
+    {
+      latitude: '54.088057',
+      longitude: '-0.175219'
+    }
+  ]
+}
+
+export const mockSiteMultipleOSGB36 = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'multiple',
+  coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
+  coordinates: [
+    {
+      eastings: '513967',
+      northings: '476895'
+    },
+    {
+      eastings: '514040',
+      northings: '476693'
+    },
+    {
+      eastings: '514193',
+      northings: '476835'
+    }
+  ]
+}
+
+export const mockSiteFile = {
+  coordinatesType: 'file',
+  fileUploadType: 'kml'
+}
+
+export const mockPointGeometry = {
+  type: 'Point',
+  coordinates: [-1.5491, 54.9783]
+}
+
+export const mockPolygonGeometry = {
+  type: 'Polygon',
+  coordinates: [
+    [
+      [-1.5492, 54.9783],
+      [-1.5491, 54.9784],
+      [-1.549, 54.9783],
+      [-1.5491, 54.9782],
+      [-1.5492, 54.9783]
+    ]
+  ]
+}
+
+export const mockMarinePlanAreas = ['North east inshore', 'South west inshore']

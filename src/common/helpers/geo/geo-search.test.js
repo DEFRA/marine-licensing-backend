@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import Boom from '@hapi/boom'
 import { outputIntersectionAreas } from './geo-search.js'
 import { addBufferToShape } from './geo-utils.js'
-import { mockFeatureCollection } from './test-fixtures.js'
+import { mockFeatureCollection, mockMarinePlanAreas } from './test-fixtures.js'
 
 vi.mock('./geo-utils.js')
 
@@ -33,10 +33,9 @@ describe('geo-search', () => {
 
   describe('outputIntersectionAreas', () => {
     test('should query database and return deduplicated array of intersecting area names', async () => {
-      const mockIntersectingAreas = [
-        { name: 'North east inshore' },
-        { name: 'South west inshore' }
-      ]
+      const mockIntersectingAreas = mockMarinePlanAreas.map((name) => ({
+        name
+      }))
 
       vi.mocked(addBufferToShape).mockReturnValue(mockGeometry)
       mockToArray.mockResolvedValue(mockIntersectingAreas)
@@ -66,7 +65,7 @@ describe('geo-search', () => {
           projection: { name: 1, _id: 0 }
         }
       )
-      expect(result).toEqual(['North east inshore', 'South west inshore'])
+      expect(result).toEqual(mockMarinePlanAreas)
     })
 
     test('should throw Boom error when database query fails', async () => {

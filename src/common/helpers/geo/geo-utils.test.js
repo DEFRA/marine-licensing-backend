@@ -2,6 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import proj4 from 'proj4'
 import { buffer } from '@turf/turf'
 import { singleOSGB36toWGS84, addBufferToShape } from './geo-utils.js'
+import { mockPointGeometry, mockPolygonGeometry } from './test-fixtures.js'
 
 vi.mock('proj4')
 vi.mock('@turf/turf')
@@ -30,36 +31,18 @@ describe('geo-utils', () => {
 
   describe('addBufferToShape', () => {
     test('should add buffer to geometry successfully', () => {
-      const mockGeometry = {
-        type: 'Point',
-        coordinates: [-1.5491, 54.9783]
-      }
-
-      const mockBufferedGeometry = {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [-1.5492, 54.9783],
-            [-1.5491, 54.9784],
-            [-1.549, 54.9783],
-            [-1.5491, 54.9782],
-            [-1.5492, 54.9783]
-          ]
-        ]
-      }
-
       const mockBuffered = {
-        geometry: mockBufferedGeometry
+        geometry: mockPolygonGeometry
       }
 
       vi.mocked(buffer).mockReturnValue(mockBuffered)
 
-      const result = addBufferToShape(mockGeometry, 50)
+      const result = addBufferToShape(mockPointGeometry, 50)
 
-      expect(buffer).toHaveBeenCalledWith(mockGeometry, 50, {
+      expect(buffer).toHaveBeenCalledWith(mockPointGeometry, 50, {
         units: 'meters'
       })
-      expect(result).toEqual(mockBufferedGeometry)
+      expect(result).toEqual(mockPolygonGeometry)
     })
 
     test('should return error when buffer throws an error', () => {
