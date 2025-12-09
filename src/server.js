@@ -53,8 +53,8 @@ async function createServer() {
   // processDynamicsQueuePlugin - polls exemption queue and syncs to Dynamics 365
   // processEmpQueuePlugin - polls exemption queue and syncs to "Explore Marine Planning"
   await server.register([
-    requestLogger,
     requestTracing,
+    requestLogger,
     secureContext,
     pulse,
     {
