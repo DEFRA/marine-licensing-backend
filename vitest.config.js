@@ -11,7 +11,7 @@ export default defineConfig({
       reportsDirectory: './coverage',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.js'],
-      exclude: [...configDefaults.exclude, 'coverage']
+      exclude: [...configDefaults.exclude, 'coverage', 'src/index.js']
     },
     setupFiles: ['.vite/mongo-memory-server.js', '.vite/setup-files.js']
   }
