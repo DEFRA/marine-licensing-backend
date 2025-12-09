@@ -12,8 +12,8 @@ export const convertSingleCoordinates = (site) => {
       site.coordinates.northings
     )
   } else {
-    latitude = parseFloat(site.coordinates.latitude)
-    longitude = parseFloat(site.coordinates.longitude)
+    latitude = Number.parseFloat(site.coordinates.latitude)
+    longitude = Number.parseFloat(site.coordinates.longitude)
   }
 
   const radiusMetres = parseInt(site.circleWidth, 10) / 2
@@ -33,7 +33,10 @@ export const convertMultipleCoordinates = (site) => {
     if (site.coordinateSystem === 'osgb36') {
       return singleOSGB36toWGS84(coord.eastings, coord.northings)
     } else {
-      return [parseFloat(coord.longitude), parseFloat(coord.latitude)]
+      return [
+        Number.parseFloat(coord.longitude),
+        Number.parseFloat(coord.latitude)
+      ]
     }
   })
 
@@ -72,15 +75,12 @@ export const parseGeoAreas = async (exemption, db, tableName) => {
 
     if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
       siteGeometries.push(convertSingleCoordinates(site))
-      continue
-    }
-
-    if (coordinatesType === 'coordinates' && coordinatesEntry === 'multiple') {
+    } else if (
+      coordinatesType === 'coordinates' &&
+      coordinatesEntry === 'multiple'
+    ) {
       siteGeometries.push(...convertMultipleCoordinates(site))
-      continue
-    }
-
-    if (coordinatesType === 'file') {
+    } else if (coordinatesType === 'file') {
       siteGeometries.push(...formatFileCoordinates(site))
     }
   }

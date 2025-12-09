@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import Boom from '@hapi/boom'
 import { outputIntersectionAreas } from './geo-search.js'
 import { addBufferToShape } from './geo-utils.js'
-import { mockFeatureCollection, mockMarinePlanAreas } from './test-fixtures.js'
+import { mockFeatureCollection, mockMarinePlanAreas } from './test.fixtures.js'
 
 vi.mock('./geo-utils.js')
 
@@ -70,13 +70,16 @@ describe('geo-search', () => {
 
     test('should throw Boom error when database query fails', async () => {
       vi.mocked(addBufferToShape).mockReturnValue(mockGeometry)
-      mockToArray.mockRejectedValue(new Error('Database error'))
+      const dbError = new Error('Database error')
+      mockToArray.mockRejectedValue(dbError)
 
       const siteGeometries = [mockFeatureCollection.features[0].geometry]
 
       await expect(
         outputIntersectionAreas(mockDb, siteGeometries, 'marine-plan-areas')
-      ).rejects.toThrow(Boom.internal('Error searching coordinates'))
+      ).rejects.toThrow(
+        Boom.internal('Error searching coordinates: Database error')
+      )
 
       expect(addBufferToShape).toHaveBeenCalledWith(
         mockFeatureCollection.features[0].geometry,

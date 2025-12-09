@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import Boom from '@hapi/boom'
 import { updateMarinePlanningAreas } from './update-marine-planning-areas.js'
 import { parseGeoAreas } from './geo-parse.js'
-import { mockMarinePlanAreas } from './test-fixtures.js'
+import { mockMarinePlanAreas } from './test.fixtures.js'
 
 vi.mock('./geo-parse.js')
 

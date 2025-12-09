@@ -1,6 +1,8 @@
 import Boom from '@hapi/boom'
 import { addBufferToShape } from './geo-utils.js'
 
+const DEFAULT_BUFFER = 50
+
 export const outputIntersectionAreas = async (
   db,
   siteGeometries,
@@ -10,7 +12,7 @@ export const outputIntersectionAreas = async (
 
   for (const geometry of siteGeometries) {
     try {
-      const bufferedGeometry = addBufferToShape(geometry, 50)
+      const bufferedGeometry = addBufferToShape(geometry, DEFAULT_BUFFER)
 
       const intersectingAreas = await db
         .collection(collectionName)
@@ -32,7 +34,7 @@ export const outputIntersectionAreas = async (
         result.push(area.name)
       }
     } catch (error) {
-      throw Boom.internal('Error searching coordinates')
+      throw Boom.internal(`Error searching coordinates: ${error.message}`)
     }
   }
 
