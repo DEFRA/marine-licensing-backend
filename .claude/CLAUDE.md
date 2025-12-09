@@ -4,14 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**marine-licensing-backend** is a Node.js backend API for managing marine licensing exemptions. Built on the Defra CDP (Core Delivery Platform) template, it handles exemption applications with integrations to:
+**marine-licensing-backend** is a Node.js backend API for managing marine licensing exemptions.
+
+### Integrations with other systems
 
 - **Dynamics 365** (for exemption approval workflow)
 - **AWS S3** (for file storage)
 - **GOV.UK Notify** (for email notifications)
 - **MongoDB** (for primary data storage)
 
-**Technology Stack:** Hapi 21, Vitest, MongoDB, JWT auth (defraId/Entra ID), Pino logging
+### Technology Stack
+
+Hapi 21, Vitest, MongoDB, JWT auth (defraId/Entra ID), Pino logging
 
 ---
 
@@ -22,26 +26,6 @@ All npm scripts are defined in **package.json**. View them with:
 ```bash
 npm run
 ```
-
-**Common tasks:**
-
-- **Development:** `npm run dev` (with hot-reload)
-- **Testing:** `npm test` or `npm run test:watch`
-- **Linting:** `npm run lint` and `npm run lint:fix`
-- **Formatting:** `npm run format` and `npm run format:check`
-- **Debugging:** `npm run dev:debug` (Node debugger on port 9229)
-
-**Docker:**
-
-```bash
-# Development image
-docker build --target development --no-cache --tag marine-licensing-backend:development .
-
-# Docker Compose (includes MongoDB, S3, Redis, etc.)
-docker compose up --build -d
-```
-
----
 
 ## Architecture Overview
 
