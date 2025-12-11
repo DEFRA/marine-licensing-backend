@@ -1,16 +1,10 @@
-import proj4 from 'proj4'
 import './proj4-definition-osgb34.js'
 import { generateCirclePolygon } from './circle-to-polygon.js'
 import { COORDINATE_SYSTEMS } from '../../../constants/coordinates.js'
 import { areCoordsTheSame } from './are-coords-the-same.js'
+import { singleOSGB36toWGS84 } from '../../geo/geo-utils.js'
 
 const { OSGB36, WGS84 } = COORDINATE_SYSTEMS
-
-const singleOSGB36toWGS84 = ({ eastings, northings }) =>
-  proj4('OSGB36', 'WGS84', [
-    Number.parseFloat(eastings),
-    Number.parseFloat(northings)
-  ])
 
 export const manualCoordsToEmpGeometry = (siteDetails) => {
   return siteDetails.map((site) => {

@@ -10,6 +10,7 @@ import { config } from '../../../config.js'
 import { sendUserEmailConfirmation } from '../helpers/send-user-email-confirmation.js'
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
+import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
 
 const getExemptionWithId = async (db, id) => {
   const exemption = await db
@@ -95,6 +96,9 @@ export const submitExemptionController = {
       if (updateResult.matchedCount === 0) {
         throw Boom.notFound('Exemption not found during update')
       }
+
+      await updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
+
       if (isDynamicsEnabled) {
         await addToDynamicsQueue({
           request,
