@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
 import { ExemptionService } from './exemption.service.js'
 
+vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
+  getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
+}))
+
 describe('ExemptionService', () => {
   const exemption = {
     _id: '6925a4dfc30cd032d1607963',
@@ -38,10 +42,37 @@ describe('ExemptionService', () => {
   })
 
   describe('getExemptionById', () => {
-    it('should return exemption if found', async () => {
+    it('should return exemption with individual contact name, if requested without a contact ID', async () => {
       const exemptionService = createService(global.mockMongo, exemption)
       const result = await exemptionService.getExemptionById({
         id: exemption._id
+      })
+      expect(result).toEqual({
+        ...exemption,
+        whoExemptionIsFor: 'Dave Barnett'
+      })
+    })
+
+    it('should return exemption with organisation name, if requested without a contact ID', async () => {
+      const exemptionWithOrg = {
+        ...exemption,
+        organisation: { name: 'Dredging Co' }
+      }
+      const exemptionService = createService(global.mockMongo, exemptionWithOrg)
+      const result = await exemptionService.getExemptionById({
+        id: exemption._id
+      })
+      expect(result).toEqual({
+        ...exemptionWithOrg,
+        whoExemptionIsFor: 'Dredging Co'
+      })
+    })
+
+    it('should return exemption if requested with a contact ID', async () => {
+      const exemptionService = createService(global.mockMongo, exemption)
+      const result = await exemptionService.getExemptionById({
+        id: exemption._id,
+        contactId: exemption.contactId
       })
       expect(result).toEqual(exemption)
     })

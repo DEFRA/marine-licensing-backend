@@ -1,15 +1,13 @@
 import Boom from '@hapi/boom'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { config } from '../../../config.js'
-import {
-  getDynamicsAccessToken,
-  sendExemptionToDynamics
-} from './dynamics-client.js'
+import { sendExemptionToDynamics } from './dynamics-client.js'
 import { structureErrorForECS } from '../../helpers/logging/logger.js'
 import {
   collectionDynamicsQueueFailed,
   collectionDynamicsQueue
 } from '../../constants/db-collections.js'
+import { getDynamicsAccessToken } from './get-access-token.js'
 
 export const startDynamicsQueuePolling = (server, intervalMs) => {
   processDynamicsQueue(server)
@@ -100,7 +98,7 @@ export const processDynamicsQueue = async (server) => {
       server.logger.info(
         `Found ${queueItems.length} items to process in dynamics queue`
       )
-      accessToken = await getDynamicsAccessToken()
+      accessToken = await getDynamicsAccessToken({ scopeType: 'exemption' })
     }
 
     for (const item of queueItems) {

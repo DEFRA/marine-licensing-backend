@@ -104,7 +104,7 @@ const config = convict({
   },
   defraId: {
     jwksUri: {
-      doc: 'JWKS Token validation url',
+      doc: 'Defra ID JWKS Token validation url',
       format: requiredFromEnvInCdp,
       default: 'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json',
       env: 'DEFRA_ID_JWKS_URI'
@@ -112,7 +112,7 @@ const config = convict({
   },
   entraId: {
     jwksUri: {
-      doc: 'JWKS Token validation url',
+      doc: 'Entra ID JWKS Token validation url',
       format: String,
       default: 'https://login.microsoftonline.com/common/discovery/keys',
       env: 'ENTRA_ID_JWKS_URI'
@@ -259,16 +259,32 @@ const config = convict({
       env: 'DYNAMICS_TOKEN_URL'
     },
     scope: {
-      doc: 'Scope for the Dynamics API access',
-      format: String,
-      default: 'https://service.flow.microsoft.com//.default',
-      env: 'DYNAMICS_SCOPE'
+      exemption: {
+        doc: 'Scope Dynamics Exemption API',
+        format: String,
+        default: 'https://service.flow.microsoft.com//.default',
+        env: 'DYNAMICS_SCOPE'
+      },
+      contactDetails: {
+        doc: 'Scope Dynamics Contact details API',
+        format: requiredFromEnvInCdp,
+        default: 'https://marinelicensingdev.crm11.dynamics.com/.default',
+        env: 'DYNAMICS_SCOPE_CONTACT_DETAILS'
+      }
     },
     apiUrl: {
-      doc: 'URL for the Dynamics API',
-      format: requiredFromEnvInCdp,
-      default: '',
-      env: 'DYNAMICS_API_URL'
+      exemption: {
+        doc: 'URL for the Dynamics API to send an exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_URL'
+      },
+      contactDetails: {
+        doc: 'URL for the Dynamics API to get contact details',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_CONTACT_DETAILS_URL'
+      }
     },
     isDynamicsEnabled: {
       doc: 'Is Dynamics integration enabled',
