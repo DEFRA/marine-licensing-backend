@@ -41,11 +41,13 @@ vi.mock('../config.js', () => ({
             endpoint: undefined
           }
         },
+        cdpEnvironment: 'test',
         'cdp.maxFileSize': 50_000_000
       }
       return configs[key]
     })
-  }
+  },
+  isDevelopment: false
 }))
 
 vi.mock('@aws-sdk/client-s3', () => ({
@@ -120,6 +122,8 @@ describe('BlobService', () => {
       // Then - should configure S3Client correctly
       expect(S3Client).toHaveBeenCalledWith({
         region: 'eu-west-2',
+        endpoint: undefined,
+        forcePathStyle: false,
         requestHandler: {
           requestTimeout: 30_000
         }

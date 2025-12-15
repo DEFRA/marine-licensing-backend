@@ -9,7 +9,7 @@ convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
-const isDevelopment = process.env.NODE_ENV === 'development'
+export const isDevelopment = process.env.NODE_ENV === 'development'
 
 // Only load dotenv for local development
 if (isDevelopment) {
@@ -211,10 +211,10 @@ const config = convict({
     },
     s3: {
       endpoint: {
-        doc: 'AWS S3 Endpoint (needed for localstack)',
-        format: String,
+        doc: 'AWS S3 Endpoint',
+        format: requiredFromEnvInCdp,
         default: 'http://localhost:4566',
-        env: 'AWS_S3_ENDPOINT'
+        env: 'S3_ENDPOINT' // defined globally in CDP
       },
       timeout: {
         doc: 'S3 operation timeout in milliseconds',

@@ -9,7 +9,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
-import { config } from '../config.js'
+import { config, isDevelopment } from '../config.js'
 import {
   createLogger,
   structureErrorForECS
@@ -23,31 +23,20 @@ const cdpEnvironment = config.get('cdpEnvironment')
 class BlobService {
   logSystem = 'FileUpload:BlobService'
   constructor(s3Client) {
-    if (s3Client === undefined) {
-      const options = {
-        region: awsConfig.region,
-        requestHandler: {
-          requestTimeout: awsConfig.s3.timeout
-        }
-      }
-
-      if (cdpEnvironment === 'local') {
-        options.endpoint = awsConfig.s3.endpoint
-        options.forcePathStyle = true
-      }
-
-      logger.info(
-        options,
-        `${this.logSystem}: constructor(): S3 client options`
-      )
-      logger.info(
-        `${this.logSystem}: config: cdpEnvironment is [${cdpEnvironment}]`
-      )
-
-      this.client = new S3Client(options)
-    } else {
-      this.client = s3Client
+    const options = {
+      region: awsConfig.region,
+      endpoint: awsConfig.s3.endpoint,
+      requestHandler: {
+        requestTimeout: awsConfig.s3.timeout
+      },
+      forcePathStyle: isDevelopment // local only
     }
+
+    logger.info(
+      `${this.logSystem}: config: cdpEnvironment is [${cdpEnvironment}], S3_ENDPOINT is ${awsConfig.s3.endpoint}`
+    )
+
+    this.client = s3Client ?? new S3Client(options)
     this.timeout = awsConfig.s3.timeout
   }
 
@@ -62,7 +51,6 @@ class BlobService {
         Bucket: s3Bucket,
         Key: s3Key
       })
-
       const response = await this.client.send(command)
 
       logger.info(
@@ -74,7 +62,6 @@ class BlobService {
         },
         `${this.logSystem}: Successfully retrieved S3 object metadata`
       )
-
       return {
         size: response.ContentLength,
         lastModified: response.LastModified,
