@@ -57,7 +57,7 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
   })
 
   describe('Configuration validation', () => {
-    test('should log warning and return early when geoJsonUrl is blank', async () => {
+    test('should log error and return early when geoJsonUrl is blank', async () => {
       vi.mocked(config.get).mockReturnValue({
         marinePlanArea: {
           geoJsonUrl: '',
@@ -67,13 +67,13 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
 
       await server.register(populateMarinePlanAreasPlugin)
 
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLogger.error).toHaveBeenCalledWith(
         'Marine Plan Areas API URL not configured'
       )
       expect(mockDb.collection).not.toHaveBeenCalled()
     })
 
-    test('should log warning and return early when marinePlanArea is undefined', async () => {
+    test('should log error and return early when marinePlanArea is undefined', async () => {
       vi.mocked(config.get).mockReturnValue({
         marinePlanArea: undefined,
         refreshMarinePlanArea: false
@@ -81,7 +81,7 @@ describe('populateMarinePlanAreasPlugin Plugin', () => {
 
       await server.register(populateMarinePlanAreasPlugin)
 
-      expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect(mockLogger.error).toHaveBeenCalledWith(
         'Marine Plan Areas API URL not configured'
       )
       expect(mockDb.collection).not.toHaveBeenCalled()

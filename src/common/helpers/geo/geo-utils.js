@@ -1,5 +1,6 @@
 import proj4 from 'proj4'
 import { buffer } from '@turf/turf'
+import Boom from '@hapi/boom'
 
 export const singleOSGB36toWGS84 = ({ eastings, northings }) =>
   proj4('OSGB36', 'WGS84', [
@@ -12,6 +13,8 @@ export const addBufferToShape = (geometry, amount = 50) => {
     const buffered = buffer(geometry, amount, { units: 'meters' })
     return buffered.geometry
   } catch (error) {
-    return error
+    throw Boom.badImplementation(
+      `Error adding buffer to shape: ${error.message}`
+    )
   }
 }

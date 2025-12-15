@@ -45,19 +45,20 @@ describe('geo-utils', () => {
       expect(result).toEqual(mockPolygonGeometry)
     })
 
-    test('should return error when buffer throws an error', () => {
+    test('should throw error when buffer throws an error', () => {
       const mockError = new Error('Invalid geometry')
 
       vi.mocked(buffer).mockImplementation(() => {
         throw mockError
       })
 
-      const result = addBufferToShape({}, 50)
+      expect(() => addBufferToShape({}, 50)).toThrow(
+        'Error adding buffer to shape: Invalid geometry'
+      )
 
       expect(buffer).toHaveBeenCalledWith({}, 50, {
         units: 'meters'
       })
-      expect(result).toEqual(mockError)
     })
   })
 })

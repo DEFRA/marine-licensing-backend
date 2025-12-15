@@ -11,18 +11,14 @@ export const populateMarinePlanAreasPlugin = {
       const { marinePlanArea } = config.get('externalGeoAreas')
 
       if (!marinePlanArea?.geoJsonUrl) {
-        server.logger.warn('Marine Plan Areas API URL not configured')
+        server.logger.error('Marine Plan Areas API URL not configured')
         return
       }
 
       try {
         const collection = server.db.collection(marinePlanAreas)
-        if (marinePlanArea.refreshMarinePlanArea) {
-          server.logger.info(
-            'refreshMarinePlanArea is enabled, clearing existing data'
-          )
-          await collection.deleteMany({})
-        } else {
+
+        if (!marinePlanArea.refreshMarinePlanArea) {
           const count = await collection.countDocuments()
 
           if (count > 0) {
@@ -43,6 +39,13 @@ export const populateMarinePlanAreasPlugin = {
 
         if (!payload?.features) {
           throw Boom.badImplementation('Invalid GeoJSON response')
+        }
+
+        if (marinePlanArea.refreshMarinePlanArea) {
+          server.logger.info(
+            'refreshMarinePlanArea is enabled, clearing existing data'
+          )
+          await collection.deleteMany({})
         }
 
         const features = formatGeoForStorage(payload)

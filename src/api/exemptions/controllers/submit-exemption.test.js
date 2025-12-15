@@ -166,7 +166,7 @@ describe('POST /exemption/submit', () => {
 
       await submitExemptionController.handler(
         {
-          payload: { id: mockExemptionId },
+          payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
           locker: mockLocker,
           server: mockServer
@@ -183,7 +183,10 @@ describe('POST /exemption/submit', () => {
       expect(updateMarinePlanningAreas).toHaveBeenCalledWith(
         mockExemption,
         mockDb,
-        { updatedAt: undefined, updatedBy: undefined }
+        {
+          updatedAt: mockAuditPayload.updatedAt,
+          updatedBy: mockAuditPayload.updatedBy
+        }
       )
 
       expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
@@ -195,7 +198,9 @@ describe('POST /exemption/submit', () => {
               multipleSitesEnabled: false
             },
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.ACTIVE
+            status: EXEMPTION_STATUS.ACTIVE,
+            updatedAt: mockAuditPayload.updatedAt,
+            updatedBy: mockAuditPayload.updatedBy
           }
         }
       )

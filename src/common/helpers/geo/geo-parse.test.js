@@ -9,6 +9,7 @@ import {
 import { singleOSGB36toWGS84 } from './geo-utils.js'
 import { generateCirclePolygon } from '../emp/transforms/circle-to-polygon.js'
 import { outputIntersectionAreas } from './geo-search.js'
+import { createLogger } from '../logging/logger.js'
 import {
   mockSiteWGS84,
   mockSiteOSGB36,
@@ -21,6 +22,7 @@ import {
 vi.mock('./geo-utils.js')
 vi.mock('../emp/transforms/circle-to-polygon.js')
 vi.mock('./geo-search.js')
+vi.mock('../logging/logger.js')
 
 describe('geo-parse', () => {
   beforeEach(() => {
@@ -227,9 +229,12 @@ describe('geo-parse', () => {
 
   describe('parseGeoAreas', () => {
     let mockDb
+    let mockLogger
 
     beforeEach(() => {
       mockDb = { collection: vi.fn() }
+      mockLogger = { error: vi.fn() }
+      vi.mocked(createLogger).mockReturnValue(mockLogger)
     })
 
     test('should throw error when exemption has no siteDetails', async () => {
@@ -320,6 +325,21 @@ describe('geo-parse', () => {
         'marine-plan-areas'
       )
       expect(result).toEqual(mockMarinePlanAreas)
+    })
+
+    test('should return empty array when there is an error', async () => {
+      const exemption = {
+        siteDetails: [mockSiteWGS84]
+      }
+
+      vi.mocked(outputIntersectionAreas).mockRejectedValue(
+        new Error('Database connection failed')
+      )
+
+      const result = await parseGeoAreas(exemption, mockDb, 'marine-plan-areas')
+
+      expect(result).toEqual([])
+      expect(mockLogger.error).toHaveBeenCalled()
     })
   })
 })

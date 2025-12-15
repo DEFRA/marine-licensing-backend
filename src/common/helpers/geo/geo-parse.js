@@ -2,6 +2,7 @@ import Boom from '@hapi/boom'
 import { generateCirclePolygon } from '../emp/transforms/circle-to-polygon.js'
 import { singleOSGB36toWGS84 } from './geo-utils.js'
 import { outputIntersectionAreas } from './geo-search.js'
+import { createLogger, structureErrorForECS } from '../logging/logger.js'
 
 export const convertSingleCoordinates = (site) => {
   let latitude, longitude
@@ -66,26 +67,36 @@ export const parseGeoAreas = async (exemption, db, tableName) => {
     throw Boom.notFound('Exemption with site details not found')
   }
 
+  const logger = createLogger()
+
   const { siteDetails } = exemption
 
   const siteGeometries = []
+  try {
+    for (const site of siteDetails) {
+      const { coordinatesEntry, coordinatesType } = site
 
-  for (const site of siteDetails) {
-    const { coordinatesEntry, coordinatesType } = site
-
-    if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
-      siteGeometries.push(convertSingleCoordinates(site))
-    } else if (
-      coordinatesType === 'coordinates' &&
-      coordinatesEntry === 'multiple'
-    ) {
-      siteGeometries.push(...convertMultipleCoordinates(site))
-    } else {
-      siteGeometries.push(...formatFileCoordinates(site))
+      if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
+        siteGeometries.push(convertSingleCoordinates(site))
+      } else if (
+        coordinatesType === 'coordinates' &&
+        coordinatesEntry === 'multiple'
+      ) {
+        siteGeometries.push(...convertMultipleCoordinates(site))
+      } else {
+        siteGeometries.push(...formatFileCoordinates(site))
+      }
     }
+
+    const result = await outputIntersectionAreas(db, siteGeometries, tableName)
+
+    return result
+  } catch (error) {
+    logger.error(
+      structureErrorForECS(error),
+      `ERROR: Failed to parse GeoJSON data for Marine Plan Areas`
+    )
+
+    return []
   }
-
-  const result = await outputIntersectionAreas(db, siteGeometries, tableName)
-
-  return result
 }

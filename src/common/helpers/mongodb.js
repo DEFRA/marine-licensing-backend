@@ -2,6 +2,7 @@ import { MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
 
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
+import { marinePlanAreas } from '../constants/db-collections.js'
 
 export const addAuditFields = (request, h) => {
   const requestMethod = request.method.toUpperCase()
@@ -74,5 +75,5 @@ async function createIndexes(db) {
   await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
   await db.collection('exemption-dynamics-queue-failed').createIndex({ id: 1 })
 
-  await db.collection('marine-plan-areas').createIndex({ geometry: '2dsphere' })
+  await db.collection(marinePlanAreas).createIndex({ geometry: '2dsphere' })
 }
