@@ -44,8 +44,8 @@ async function createServer() {
   })
 
   // Hapi Plugins:
+  // requestTracing - trace header logging and propagation (add before requestLogger)
   // requestLogger  - automatically logs incoming requests
-  // requestTracing - trace header logging and propagation
   // secureContext  - loads CA certificates from environment config
   // pulse          - provides shutdown handlers
   // mongoDb        - sets up mongo connection pool and attaches to `server` and `request` objects
@@ -55,8 +55,8 @@ async function createServer() {
   // processDynamicsQueuePlugin - polls exemption queue and syncs to Dynamics 365
   // processEmpQueuePlugin - polls exemption queue and syncs to "Explore Marine Planning"
   await server.register([
-    requestLogger,
     requestTracing,
+    requestLogger,
     secureContext,
     pulse,
     {

@@ -11,7 +11,7 @@ CDP_UPLOAD_BUCKET=${CDP_UPLOAD_BUCKET:-'mmo-uploads'}
 
 # SQS queues
 # aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name my-queue
-
+cdp-uploader-download-requests
 
 # CDP Uploader Dependencies
 aws --endpoint-url=http://localhost:4566 s3 mb s3://cdp-uploader-quarantine
@@ -33,4 +33,8 @@ aws --endpoint-url=http://localhost:4566 s3api put-bucket-notification-configura
                                            "Events": ["s3:ObjectCreated:*"]
                                          }
                                        ]
-	                                }'  
+	                                }'
+
+# Fix multiple errors per second - this is probably the cdp-uploader test harness leakage.
+# We can add this in here - as compose is only used for local dev.
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploader-download-requests
