@@ -1,12 +1,14 @@
 import { expect, vi } from 'vitest'
 import * as dynamicsModule from './dynamics-processor.js'
-import { getDynamicsAccessToken } from './dynamics-client.js'
 
 import { config } from '../../../config.js'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import Boom from '@hapi/boom'
+import { getDynamicsAccessToken } from './get-access-token.js'
+import { sendExemptionToDynamics } from './dynamics-client.js'
 
 vi.mock('../../../config.js')
+vi.mock('./get-access-token.js')
 vi.mock('./dynamics-client.js')
 
 describe('Dynamics Processor', () => {
@@ -214,9 +216,10 @@ describe('Dynamics Processor', () => {
         toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
 
-      mockServer.db
-        .collection()
-        .updateOne.mockRejectedValueOnce('Processing failed')
+      // Mock sendExemptionToDynamics to fail for this test
+      vi.mocked(sendExemptionToDynamics).mockRejectedValueOnce(
+        new Error('Processing failed')
+      )
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 

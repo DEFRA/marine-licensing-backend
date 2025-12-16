@@ -2,38 +2,9 @@ import Boom from '@hapi/boom'
 import Wreck from '@hapi/wreck'
 import { config } from '../../../config.js'
 import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
-import querystring from 'node:querystring'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { isOrganisationEmployee } from '../organisations.js'
-
-export const getDynamicsAccessToken = async () => {
-  const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
-
-  try {
-    const response = await Wreck.post(tokenUrl, {
-      payload: querystring.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'client_credentials',
-        scope
-      }),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    })
-
-    const responsePayload = JSON.parse(response.payload.toString('utf8'))
-
-    if (!responsePayload.access_token) {
-      throw Boom.badImplementation('No access_token in response')
-    }
-
-    return responsePayload.access_token
-  } catch (error) {
-    throw Boom.badImplementation(`Dynamics token request failed`, error)
-  }
-}
 
 export const sendExemptionToDynamics = async (
   server,
@@ -82,7 +53,7 @@ export const sendExemptionToDynamics = async (
     status: EXEMPTION_STATUS.SUBMITTED
   }
 
-  const response = await Wreck.post(`${apiUrl}/exemptions`, {
+  const response = await Wreck.post(`${apiUrl.exemption}/exemptions`, {
     payload,
     headers: {
       Authorization: `Bearer ${accessToken}`,
