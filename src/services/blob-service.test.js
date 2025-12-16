@@ -1,9 +1,5 @@
 import { vi } from 'vitest'
-import {
-  S3Client,
-  HeadObjectCommand,
-  GetObjectCommand
-} from '@aws-sdk/client-s3'
+import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { pipeline } from 'node:stream/promises'
@@ -50,8 +46,11 @@ vi.mock('../config.js', () => ({
   isDevelopment: false
 }))
 
+vi.mock('./data-service/s3-client.js', () => ({
+  getS3Client: vi.fn()
+}))
+
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(function () {}),
   HeadObjectCommand: vi.fn(function () {}),
   GetObjectCommand: vi.fn(function () {})
 }))
@@ -70,6 +69,7 @@ vi.mock('node:stream/promises', () => ({
 }))
 
 let BlobService
+let getS3Client
 
 describe('BlobService', () => {
   let blobService
@@ -80,6 +80,9 @@ describe('BlobService', () => {
     // Import BlobService _after_ mocks are set up
     const module = await import('./blob-service.js')
     BlobService = module.BlobService
+
+    const s3ClientModule = await import('./data-service/s3-client.js')
+    getS3Client = s3ClientModule.getS3Client
   })
 
   beforeEach(() => {
@@ -92,9 +95,8 @@ describe('BlobService', () => {
     mockS3Client = {
       send: mockSend
     }
-    S3Client.mockImplementation(function () {
-      return mockS3Client
-    })
+
+    getS3Client.mockReturnValue(mockS3Client)
 
     config.get.mockImplementation((key) => {
       const configMap = {
@@ -105,6 +107,7 @@ describe('BlobService', () => {
             endpoint: undefined
           }
         },
+        cdpEnvironment: 'test',
         'cdp.maxFileSize': 50_000_000
       }
       return configMap[key]
@@ -114,54 +117,27 @@ describe('BlobService', () => {
   })
 
   describe('Constructor', () => {
-    it('should create S3Client with default configuration', () => {
-      // Constructor call is intentional to test S3Client configuration
+    it('should use getS3Client singleton by default', () => {
       // eslint-disable-next-line no-new
       new BlobService()
 
-      // Then - should configure S3Client correctly
-      expect(S3Client).toHaveBeenCalledWith({
-        region: 'eu-west-2',
-        endpoint: undefined,
-        forcePathStyle: false,
-        requestHandler: {
-          requestTimeout: 30_000
-        }
-      })
+      expect(getS3Client).toHaveBeenCalled()
     })
 
-    it('should create S3Client with custom endpoint for localstack', () => {
-      const customMockS3Client = { send: vi.fn() }
-      S3Client.mockImplementation(function () {
-        return customMockS3Client
-      })
-
-      const service = new BlobService()
-      service.client = new S3Client({
-        region: 'eu-west-2',
-        endpoint: 'http://localhost:4566',
-        forcePathStyle: true,
-        requestHandler: {
-          requestTimeout: 30_000
-        }
-      })
-
-      expect(S3Client).toHaveBeenCalledWith({
-        region: 'eu-west-2',
-        endpoint: 'http://localhost:4566',
-        forcePathStyle: true,
-        requestHandler: {
-          requestTimeout: 30_000
-        }
-      })
-    })
-
-    it('should accept custom S3Client', () => {
+    it('should accept custom S3Client and not call getS3Client', () => {
       const customClient = { send: vi.fn() }
+      getS3Client.mockClear()
 
       const service = new BlobService(customClient)
 
       expect(service.client).toBe(customClient)
+      expect(getS3Client).not.toHaveBeenCalled()
+    })
+
+    it('should set timeout from config', () => {
+      const service = new BlobService()
+
+      expect(service.timeout).toBe(30_000)
     })
   })
 
@@ -472,52 +448,17 @@ describe('BlobService', () => {
   })
 
   describe('Configuration variations', () => {
-    it('should handle different timeout values', () => {
-      const service = new BlobService()
-      service.timeout = 60_000
-
-      const customClient = new S3Client({
-        region: 'us-east-1',
-        requestHandler: {
-          requestTimeout: 60_000
-        }
-      })
-      service.client = customClient
-
-      expect(service.timeout).toBe(60_000)
-      expect(S3Client).toHaveBeenCalledWith({
-        region: 'us-east-1',
-        requestHandler: {
-          requestTimeout: 60_000
-        }
-      })
-    })
-
-    it('should handle different regions', () => {
-      const service = new BlobService()
-
-      const customClient = new S3Client({
-        region: 'ap-southeast-2',
-        requestHandler: {
-          requestTimeout: 30_000
-        }
-      })
-      service.client = customClient
-
-      expect(S3Client).toHaveBeenCalledWith({
-        region: 'ap-southeast-2',
-        requestHandler: {
-          requestTimeout: 30_000
-        }
-      })
-    })
-
     it('should handle different max file sizes', async () => {
       config.get.mockImplementation((key) => {
         const configMap = {
-          'aws.region': 'eu-west-2',
-          'aws.s3.timeout': 30_000,
-          'aws.s3.endpoint': undefined,
+          aws: {
+            region: 'eu-west-2',
+            s3: {
+              timeout: 30_000,
+              endpoint: undefined
+            }
+          },
+          cdpEnvironment: 'test',
           'cdp.maxFileSize': 100_000_000 // 100MB
         }
         return configMap[key]

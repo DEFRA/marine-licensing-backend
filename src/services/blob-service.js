@@ -1,20 +1,17 @@
-import {
-  S3Client,
-  HeadObjectCommand,
-  GetObjectCommand
-} from '@aws-sdk/client-s3'
+import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
-import { config, isDevelopment } from '../config.js'
+import { config } from '../config.js'
 import {
   createLogger,
   structureErrorForECS
 } from '../common/helpers/logging/logger.js'
 import Boom from '@hapi/boom'
+import { getS3Client } from './data-service/s3-client.js'
 
 const logger = createLogger()
 const awsConfig = config.get('aws')
@@ -23,20 +20,11 @@ const cdpEnvironment = config.get('cdpEnvironment')
 class BlobService {
   logSystem = 'FileUpload:BlobService'
   constructor(s3Client) {
-    const options = {
-      region: awsConfig.region,
-      endpoint: awsConfig.s3.endpoint,
-      requestHandler: {
-        requestTimeout: awsConfig.s3.timeout
-      },
-      forcePathStyle: isDevelopment // local only
-    }
-
     logger.info(
       `${this.logSystem}: config: cdpEnvironment is [${cdpEnvironment}], S3_ENDPOINT is ${awsConfig.s3.endpoint}`
     )
 
-    this.client = s3Client ?? new S3Client(options)
+    this.client = s3Client ?? getS3Client()
     this.timeout = awsConfig.s3.timeout
   }
 
