@@ -1,37 +1,45 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../../models/get-exemption.js'
-import { ObjectId } from 'mongodb'
 import { createTaskList } from '../helpers/createTaskList.js'
-import { authorizeOwnership } from '../helpers/authorize-ownership.js'
-import { getJwtAuthStrategy } from '../../../plugins/auth.js'
+import { ExemptionService } from '../services/exemption.service.js'
+import { isApplicantUser } from '../helpers/is-applicant-user.js'
+import { getContactId } from '../helpers/get-contact-id.js'
 
-export const getExemptionController = {
+export const getExemptionController = ({ requiresAuth }) => ({
   options: {
     validate: {
       params: getExemption
-    }
+    },
+    ...(requiresAuth ? {} : { auth: false })
   },
   handler: async (request, h) => {
     try {
-      const authStrategy = getJwtAuthStrategy(request.auth?.artifacts?.decoded)
-      if (authStrategy === 'defraId') {
-        await authorizeOwnership(request, h)
+      const {
+        params: { id },
+        db,
+        logger
+      } = request
+      const exemptionService = new ExemptionService({ db, logger })
+      let exemption
+
+      if (requiresAuth) {
+        // if the user is an applicant, they can only view their own exemptions
+        // alternatively they're an internal user (logged in with entra ID) and
+        // can view any exemption
+        const currentUserId = isApplicantUser(request)
+          ? getContactId(request.auth)
+          : null
+        exemption = await exemptionService.getExemptionById({
+          id,
+          currentUserId
+        })
+      } else {
+        exemption = await exemptionService.getPublicExemptionById(id)
       }
-      const { params, db } = request
 
-      const result = await db
-        .collection('exemptions')
-        .findOne({ _id: ObjectId.createFromHexString(params.id) })
-
-      if (!result) {
-        throw Boom.notFound('Exemption not found')
-      }
-
-      const { _id, ...rest } = result
-
-      const taskList = createTaskList(result)
-
+      const { _id, ...rest } = exemption
+      const taskList = createTaskList(exemption)
       const response = { id: _id.toString(), ...rest, taskList }
 
       return h
@@ -44,4 +52,4 @@ export const getExemptionController = {
       throw Boom.internal(`Error retrieving exemption: ${error.message}`)
     }
   }
-}
+})

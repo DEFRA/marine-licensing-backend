@@ -2,17 +2,14 @@ import { vi } from 'vitest'
 import { authorizeOwnership } from './authorize-ownership.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
-import { getContactId } from './get-contact-id.js'
 
-vi.mock('./get-contact-id.js')
+vi.mock('../../../plugins/auth.js')
 
 describe('authorizeOwnership', () => {
   let mockRequest
   let mockH
   let mockDb
   let mockCollection
-
-  const mockgetContactId = vi.mocked(getContactId).mockReturnValue('user123')
 
   beforeEach(() => {
     mockCollection = {
@@ -58,7 +55,6 @@ describe('authorizeOwnership', () => {
       expect(mockCollection.findOne).toHaveBeenCalledWith({
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
-      expect(getContactId).toHaveBeenCalledWith(mockRequest.auth)
       expect(result).toBe('continue')
     })
 
@@ -77,7 +73,6 @@ describe('authorizeOwnership', () => {
       expect(mockCollection.findOne).toHaveBeenCalledWith({
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
-      expect(getContactId).toHaveBeenCalledWith(mockRequest.auth)
       expect(result).toBe('continue')
     })
   })
@@ -109,19 +104,14 @@ describe('authorizeOwnership', () => {
 
       mockCollection.findOne.mockResolvedValue(document)
 
-      const boomSpy = vi.spyOn(Boom, 'notFound')
-
-      await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow()
-
-      expect(boomSpy).toHaveBeenCalledWith(
-        'Not authorized to update this resource'
+      await expect(authorizeOwnership(mockRequest, mockH)).rejects.toThrow(
+        'Not authorized to request this resource'
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
       expect(mockCollection.findOne).toHaveBeenCalledWith({
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
-      expect(mockgetContactId).toHaveBeenCalledWith(mockRequest.auth)
     })
   })
 })
