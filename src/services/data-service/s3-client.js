@@ -6,6 +6,7 @@ const awsConfig = config.get('aws')
 const s3ClientOptions = {
   region: awsConfig.region,
   endpoint: awsConfig.s3.endpoint,
+  maxAttempts: 3,
   requestHandler: {
     requestTimeout: awsConfig.s3.timeout
   },

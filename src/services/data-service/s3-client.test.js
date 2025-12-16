@@ -44,6 +44,7 @@ describe('s3-client', () => {
     expect(S3Client).toHaveBeenCalledWith({
       region: 'eu-west-2',
       endpoint: 'http://localhost:4566',
+      maxAttempts: 3,
       requestHandler: {
         requestTimeout: 30_000
       },
@@ -60,20 +61,5 @@ describe('s3-client', () => {
     expect(S3Client).toHaveBeenCalledTimes(1)
     expect(client1).toBe(client2)
     expect(client2).toBe(client3)
-  })
-
-  it('should create singleton instance only once across multiple calls', () => {
-    const clients = []
-
-    for (let i = 0; i < 10; i++) {
-      clients.push(getS3Client())
-    }
-
-    expect(S3Client).toHaveBeenCalledTimes(1)
-
-    const firstClient = clients[0]
-    clients.forEach((client) => {
-      expect(client).toBe(firstClient)
-    })
   })
 })
