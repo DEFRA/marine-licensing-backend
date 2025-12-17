@@ -52,7 +52,7 @@ function buildErrorMessage(error) {
   // Prefer explicit `data` on the error (e.g. ErrorWithData), otherwise fall back
   // to common HTTP client patterns like `error.response.data`.
   const payload =
-    (error && typeof error === 'object' && 'data' in error && error.data) ??
+    (error && typeof error === 'object' && 'data' in error && error.data) ||
     error?.response?.data
 
   if (!payload) {
