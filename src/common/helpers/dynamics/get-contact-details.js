@@ -1,5 +1,4 @@
 import Wreck from '@hapi/wreck'
-import Boom from '@hapi/boom'
 import { createLogger, structureErrorForECS } from '../logging/logger.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
 import { config } from '../../../config.js'
@@ -34,6 +33,6 @@ export const getContactNameById = async ({ contactId }) => {
       structureErrorForECS(err),
       `Error - Dynamics contact details request for ID ${contactId}`
     )
-    throw Boom.badImplementation(`Dynamics contact details API error`)
+    return null
   }
 }

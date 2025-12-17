@@ -58,16 +58,15 @@ describe('Get contact name from Dynamics 365', () => {
     )
   })
 
-  it('should throw if the contact details request returns an error', async () => {
+  it('should return null if the contact details request returns an error', async () => {
     vi.spyOn(Wreck, 'get').mockRejectedValue(Boom.internal('Server error'))
     vi.mocked(getDynamicsAccessToken).mockResolvedValue(accessToken)
 
-    await expect(() =>
-      getContactNameById({
-        contactId,
-        accessToken
-      })
-    ).rejects.toThrow('Dynamics contact details API error')
+    const contactName = await getContactNameById({
+      contactId,
+      accessToken
+    })
+    expect(contactName).toBeNull()
     expect(logger.error).toHaveBeenCalledWith(
       {
         error: expect.objectContaining({
