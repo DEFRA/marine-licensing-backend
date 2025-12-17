@@ -69,19 +69,13 @@ const logEmailError = (
   statusCode,
   applicationReference
 ) => {
-  const notifyErrors =
-    emailError instanceof ErrorWithData && emailError.data
-      ? emailError.data
-      : undefined
-
   logger.error(
     {
       ...structureErrorForECS(emailError),
       http: buildHttpLogContext(statusCode),
       service: 'gov-notify',
       operation: 'sendEmail',
-      applicationReference,
-      notifyErrors
+      applicationReference
     },
     `Error sending email for exemption ${applicationReference}`
   )

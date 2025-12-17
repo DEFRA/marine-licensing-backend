@@ -39,13 +39,47 @@ function buildHttpContext(statusCode) {
 }
 
 /**
+ * Builds a detailed error message, optionally including any response or data payload
+ * so that it is visible in the standard `error.message` field consumed by CDP.
+ * @param {Error} error - The error object
+ * @returns {string} The combined error message
+ */
+function buildErrorMessage(error) {
+  const baseMessage =
+    (error && typeof error.message === 'string' && error.message) ||
+    String(error)
+
+  // Prefer explicit `data` on the error (e.g. ErrorWithData), otherwise fall back
+  // to common HTTP client patterns like `error.response.data`.
+  const payload =
+    (error && typeof error === 'object' && 'data' in error && error.data) ??
+    error?.response?.data
+
+  if (!payload) {
+    return baseMessage
+  }
+
+  try {
+    const serialisedPayload =
+      typeof payload === 'string' ? payload : JSON.stringify(payload)
+
+    // Append a short, parseable suffix so CDP dashboards can surface the upstream
+    // response alongside the primary error message.
+    return `${baseMessage} | response: ${serialisedPayload}`
+  } catch {
+    // Fallback to the base message if serialisation fails
+    return baseMessage
+  }
+}
+
+/**
  * Builds the error details object
  * @param {Error} error - The error object
  * @returns {Object} Error details with message, stack_trace, type, and code
  */
 function buildErrorDetails(error) {
   return {
-    message: error.message || String(error),
+    message: buildErrorMessage(error),
     stack_trace: error.stack || undefined,
     type: error.name || error.constructor?.name || 'Error',
     code: error.code || error.statusCode || undefined
