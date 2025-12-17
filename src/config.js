@@ -333,7 +333,7 @@ const config = convict({
         doc: 'Force application to update Coastal Enforcement Areas',
         format: Boolean,
         default: false,
-        env: 'COASTAL_ENFORCEMENT_PLAN_AREAS'
+        env: 'REFRESH_COASTAL_ENFORCEMENT_PLAN_AREAS'
       }
     },
     marinePlanArea: {
