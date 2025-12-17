@@ -4,7 +4,7 @@ import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
-import { config } from '../config.js'
+import { config } from '../../config.js'
 import Boom from '@hapi/boom'
 
 const mockLogger = {
@@ -14,7 +14,7 @@ const mockLogger = {
   debug: vi.fn()
 }
 
-vi.mock('../common/helpers/logging/logger.js', () => ({
+vi.mock('../../common/helpers/logging/logger.js', () => ({
   createLogger: vi.fn().mockReturnValue(mockLogger),
   structureErrorForECS: vi.fn((error) => ({
     error: {
@@ -26,7 +26,7 @@ vi.mock('../common/helpers/logging/logger.js', () => ({
   }))
 }))
 
-vi.mock('../config.js', () => ({
+vi.mock('../../config.js', () => ({
   config: {
     get: vi.fn((key) => {
       const configs = {
@@ -46,7 +46,7 @@ vi.mock('../config.js', () => ({
   isDevelopment: false
 }))
 
-vi.mock('./data-service/s3-client.js', () => ({
+vi.mock('./s3-client.js', () => ({
   getS3Client: vi.fn()
 }))
 
@@ -81,7 +81,7 @@ describe('BlobService', () => {
     const module = await import('./blob-service.js')
     BlobService = module.BlobService
 
-    const s3ClientModule = await import('./data-service/s3-client.js')
+    const s3ClientModule = await import('./s3-client.js')
     getS3Client = s3ClientModule.getS3Client
   })
 

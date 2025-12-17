@@ -5,13 +5,13 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
-import { config } from '../config.js'
+import { config } from '../../config.js'
 import {
   createLogger,
   structureErrorForECS
-} from '../common/helpers/logging/logger.js'
+} from '../../common/helpers/logging/logger.js'
 import Boom from '@hapi/boom'
-import { getS3Client } from './data-service/s3-client.js'
+import { getS3Client } from './s3-client.js'
 
 const logger = createLogger()
 const awsConfig = config.get('aws')
