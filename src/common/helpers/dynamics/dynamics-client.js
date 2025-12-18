@@ -80,6 +80,7 @@ export const sendExemptionToDynamics = async (
     ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
     ...(beneficiaryOrganisationId ? { beneficiaryOrganisationId } : {}),
     status: EXEMPTION_STATUS.SUBMITTED,
+    coastalEnforcementAreas: exemption.coastalEnforcementAreas ?? [],
     marinePlanAreas: exemption.marinePlanAreas ?? []
   }
 
