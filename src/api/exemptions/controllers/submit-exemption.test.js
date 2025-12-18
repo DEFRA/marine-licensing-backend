@@ -7,6 +7,7 @@ import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { REQUEST_QUEUE_STATUS } from '../../../common/constants/request-queue.js'
 import { config } from '../../../config.js'
+import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
 
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn().mockImplementation(function () {
@@ -19,6 +20,7 @@ vi.mock('../helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
 vi.mock('../helpers/send-user-email-confirmation.js')
 vi.mock('../../../config.js')
+vi.mock('../../../common/helpers/geo/update-marine-planning-areas.js')
 
 describe('POST /exemption/submit', () => {
   let mockDb
@@ -164,7 +166,7 @@ describe('POST /exemption/submit', () => {
 
       await submitExemptionController.handler(
         {
-          payload: { id: mockExemptionId },
+          payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
           locker: mockLocker,
           server: mockServer
@@ -178,6 +180,15 @@ describe('POST /exemption/submit', () => {
         'EXEMPTION'
       )
 
+      expect(updateMarinePlanningAreas).toHaveBeenCalledWith(
+        mockExemption,
+        mockDb,
+        {
+          updatedAt: mockAuditPayload.updatedAt,
+          updatedBy: mockAuditPayload.updatedBy
+        }
+      )
+
       expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
         { _id: ObjectId.createFromHexString(mockExemptionId) },
         {
@@ -187,7 +198,9 @@ describe('POST /exemption/submit', () => {
               multipleSitesEnabled: false
             },
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.ACTIVE
+            status: EXEMPTION_STATUS.ACTIVE,
+            updatedAt: mockAuditPayload.updatedAt,
+            updatedBy: mockAuditPayload.updatedBy
           }
         }
       )
@@ -235,6 +248,15 @@ describe('POST /exemption/submit', () => {
           server: mockServer
         },
         mockHandler
+      )
+
+      expect(updateMarinePlanningAreas).toHaveBeenCalledWith(
+        mockExemption,
+        mockDb,
+        {
+          updatedAt: mockAuditPayload.updatedAt,
+          updatedBy: mockAuditPayload.updatedBy
+        }
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
