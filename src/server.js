@@ -5,7 +5,8 @@ import { router } from './plugins/router.js'
 import { auth } from './plugins/auth.js'
 import { processDynamicsQueuePlugin } from './plugins/dynamics.js'
 import { processEmpQueuePlugin } from './plugins/emp.js'
-import { populateMarinePlanAreasPlugin } from './plugins/populate-marine-plan-areas.js'
+import { populateCoastalEnforcementAreasPlugin } from './plugins/geo-areas/populate-coastal-enforcement-areas.js'
+import { populateMarinePlanAreasPlugin } from './plugins/geo-areas/populate-marine-plan-areas.js'
 import { requestLogger } from './common/helpers/logging/request-logger.js'
 import { mongoDb } from './common/helpers/mongodb.js'
 import { failAction } from './common/helpers/fail-action.js'
@@ -14,7 +15,6 @@ import { pulse } from './common/helpers/pulse.js'
 import { requestTracing } from './common/helpers/request-tracing.js'
 import { setupProxy } from './common/helpers/proxy/setup-proxy.js'
 import hapiAuthJwt2 from 'hapi-auth-jwt2'
-import { populateCoastalEnforcementAreasPlugin } from './plugins/populate-coastal-enforcement-areas.js'
 
 async function createServer() {
   setupProxy()

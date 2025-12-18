@@ -329,7 +329,7 @@ const config = convict({
         default: '',
         env: 'COASTAL_ENFORCEMENT_AREAS_API_URL'
       },
-      refreshCoastalEnforcementArea: {
+      refreshAreas: {
         doc: 'Force application to update Coastal Enforcement Areas',
         format: Boolean,
         default: false,
@@ -343,7 +343,7 @@ const config = convict({
         default: '',
         env: 'MARINE_PLAN_AREAS_API_URL'
       },
-      refreshMarinePlanArea: {
+      refreshAreas: {
         doc: 'Force application to update the Marine Plan Areas',
         format: Boolean,
         default: false,
