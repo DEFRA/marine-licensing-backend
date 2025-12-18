@@ -12,33 +12,29 @@ describe('getDynamicsAccessToken', () => {
   })
 
   beforeEach(() => {
-    config.get.mockImplementation(function (value) {
-      return value === 'dynamics'
-        ? {
-            clientId: 'test-client-id',
-            clientSecret: 'test-client-secret',
-            scope: {
-              exemption: 'exemptionScope',
-              contactDetails: 'contactDetailsScope'
-            },
-            maxRetries: 3,
-            retryDelayMs: 60000,
-            tokenUrl: 'https://localhost/oauth2/token',
-            apiUrl: { exemption: 'https://localhost/api/data/v9.2' }
-          }
-        : 'http://localhost'
+    config.get.mockReturnValue({
+      exemptions: {
+        clientId: 'exemption-client-id',
+        clientSecret: 'exemption-client-secret',
+        scope: 'exemption-scope'
+      },
+      contactDetails: {
+        clientId: 'contactDetails-client-id',
+        clientSecret: 'contactDetails-client-secret',
+        scope: 'contactDetails-scope'
+      },
+      tokenUrl: 'https://localhost/oauth2/token'
     })
   })
 
-  it('should make POST request to config URL with client credentials', async () => {
-    const result = await getDynamicsAccessToken({ scopeType: 'exemption' })
-
+  it('exemptions - should get token with correct params', async () => {
+    const result = await getDynamicsAccessToken({ type: 'exemptions' })
     expect(result).toBe('test_token')
     expect(mockWreckPost).toHaveBeenCalledWith(
       'https://localhost/oauth2/token',
       expect.objectContaining({
         payload:
-          'client_id=test-client-id&client_secret=test-client-secret&grant_type=client_credentials&scope=exemptionScope',
+          'client_id=exemption-client-id&client_secret=exemption-client-secret&grant_type=client_credentials&scope=exemption-scope',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -46,10 +42,18 @@ describe('getDynamicsAccessToken', () => {
     )
   })
 
-  it('should use scope for contact details, if specified', async () => {
-    await getDynamicsAccessToken({ scopeType: 'contactDetails' })
-    expect(mockWreckPost.mock.calls[0][1].payload).toEqual(
-      'client_id=test-client-id&client_secret=test-client-secret&grant_type=client_credentials&scope=contactDetailsScope'
+  it('contact details - should get token with correct params', async () => {
+    const result = await getDynamicsAccessToken({ type: 'contactDetails' })
+    expect(result).toBe('test_token')
+    expect(mockWreckPost).toHaveBeenCalledWith(
+      'https://localhost/oauth2/token',
+      expect.objectContaining({
+        payload:
+          'client_id=contactDetails-client-id&client_secret=contactDetails-client-secret&grant_type=client_credentials&scope=contactDetails-scope',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      })
     )
   })
 
@@ -59,7 +63,7 @@ describe('getDynamicsAccessToken', () => {
     })
 
     await expect(
-      getDynamicsAccessToken({ scopeType: 'exemption' })
+      getDynamicsAccessToken({ type: 'exemptions' })
     ).rejects.toThrow('Network error')
   })
 
@@ -68,7 +72,7 @@ describe('getDynamicsAccessToken', () => {
       payload: Buffer.from('{}')
     })
     await expect(
-      getDynamicsAccessToken({ scopeType: 'exemption' })
+      getDynamicsAccessToken({ type: 'exemptions' })
     ).rejects.toThrow('Dynamics token request failed')
   })
 
@@ -80,7 +84,7 @@ describe('getDynamicsAccessToken', () => {
     })
 
     await expect(
-      getDynamicsAccessToken({ scopeType: 'exemption' })
+      getDynamicsAccessToken({ type: 'exemptions' })
     ).rejects.toThrow('Response Error: 400 Bad Request')
   })
 })

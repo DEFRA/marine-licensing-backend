@@ -43,12 +43,14 @@ describe('Dynamics Processor', () => {
     }
 
     config.get.mockReturnValue({
-      clientId: 'test-client-id',
-      clientSecret: 'test-client-secret',
-      scope: 'test-scope',
-      maxRetries: 3,
-      retryDelayMs: 60000,
-      tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
+      exemptions: {
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        scope: 'test-scope',
+        maxRetries: 3,
+        retryDelayMs: 60000,
+        tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
+      }
     })
 
     vi.clearAllTimers()

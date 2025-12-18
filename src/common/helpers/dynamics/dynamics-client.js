@@ -11,7 +11,9 @@ export const sendExemptionToDynamics = async (
   accessToken,
   queueItem
 ) => {
-  const { apiUrl } = config.get('dynamics')
+  const {
+    exemptions: { apiUrl }
+  } = config.get('dynamics')
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
   const { applicationReferenceNumber } = queueItem
@@ -53,7 +55,7 @@ export const sendExemptionToDynamics = async (
     status: EXEMPTION_STATUS.SUBMITTED
   }
 
-  const response = await Wreck.post(`${apiUrl.exemption}/exemptions`, {
+  const response = await Wreck.post(`${apiUrl}/exemptions`, {
     payload,
     headers: {
       Authorization: `Bearer ${accessToken}`,

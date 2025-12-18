@@ -26,13 +26,15 @@ describe('Dynamics Client', () => {
     config.get.mockImplementation(function (value) {
       return value === 'dynamics'
         ? {
-            clientId: 'test-client-id',
-            clientSecret: 'test-client-secret',
-            scope: 'test-scope',
-            maxRetries: 3,
-            retryDelayMs: 60000,
-            tokenUrl: 'https://localhost/oauth2/token',
-            apiUrl: { exemption: 'https://localhost/api/data/v9.2' }
+            exemptions: {
+              clientId: 'test-client-id',
+              clientSecret: 'test-client-secret',
+              scope: 'test-scope',
+              maxRetries: 3,
+              retryDelayMs: 60000,
+              apiUrl: 'https://localhost/api/data/v9.2'
+            },
+            tokenUrl: 'https://localhost/oauth2/token'
           }
         : 'http://localhost'
     })

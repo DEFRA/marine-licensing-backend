@@ -40,7 +40,9 @@ export const handleDynamicsQueueItemSuccess = async (server, item) => {
 }
 
 export const handleDynamicsQueueItemFailure = async (server, item) => {
-  const { maxRetries } = config.get('dynamics')
+  const {
+    exemptions: { maxRetries }
+  } = config.get('dynamics')
 
   const retries = item.retries + 1
   if (retries >= maxRetries) {

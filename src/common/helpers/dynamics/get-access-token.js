@@ -3,16 +3,17 @@ import Wreck from '@hapi/wreck'
 import Boom from '@hapi/boom'
 import querystring from 'node:querystring'
 
-export const getDynamicsAccessToken = async ({ scopeType }) => {
-  const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
+export const getDynamicsAccessToken = async ({ type }) => {
+  const dynamics = config.get('dynamics')
+  const { clientId, clientSecret, scope } = dynamics[type]
 
   try {
-    const response = await Wreck.post(tokenUrl, {
+    const response = await Wreck.post(dynamics.tokenUrl, {
       payload: querystring.stringify({
         client_id: clientId,
         client_secret: clientSecret,
         grant_type: 'client_credentials',
-        scope: scope[scopeType]
+        scope
       }),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
