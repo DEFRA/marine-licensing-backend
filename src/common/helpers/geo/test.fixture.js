@@ -147,4 +147,6 @@ export const mockPolygonGeometry = {
   ]
 }
 
+export const mockCoastalAreas = ['North', 'South']
+
 export const mockMarinePlanAreas = ['North east inshore', 'South west inshore']
