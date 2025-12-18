@@ -14,7 +14,7 @@ export const getContactNameById = async ({ contactId }) => {
     }
     const endpoint = apiUrl.contactDetails.replace('{{contactId}}', contactId)
     const accessToken = await getDynamicsAccessToken({
-      scopeType: 'contactDetails'
+      type: 'contactDetails'
     })
     const response = await Wreck.get(endpoint, {
       headers: {

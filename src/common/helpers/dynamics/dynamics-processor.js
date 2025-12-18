@@ -100,7 +100,7 @@ export const processDynamicsQueue = async (server) => {
       server.logger.info(
         `Found ${queueItems.length} items to process in dynamics queue`
       )
-      accessToken = await getDynamicsAccessToken({ scopeType: 'exemption' })
+      accessToken = await getDynamicsAccessToken({ type: 'exemptions' })
     }
 
     for (const item of queueItems) {
