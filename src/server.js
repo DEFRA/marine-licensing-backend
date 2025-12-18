@@ -50,7 +50,7 @@ async function createServer() {
   // secureContext  - loads CA certificates from environment config
   // pulse          - provides shutdown handlers
   // mongoDb        - sets up mongo connection pool and attaches to `server` and `request` objects
-  // populateCoastalEnforcementAreasPlugin - checks if coastal-enforce e t-areas collection is empty and populates it
+  // populateCoastalEnforcementAreasPlugin - checks if coastal-enforcement-areas collection is empty and populates it
   // populateMarinePlanAreasPlugin - checks if marine-plan-areas collection is empty and populates it
   // auth           - JWT authentication strategy
   // router         - routes used in the app
