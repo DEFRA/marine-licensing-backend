@@ -8,11 +8,14 @@ const logger = createLogger()
 export const getContactNameById = async ({ contactId }) => {
   logger.info(`Dynamics contact details requested for ID ${contactId}`)
   try {
-    const { apiUrl, isDynamicsEnabled } = config.get('dynamics')
+    const {
+      contactDetails: { apiUrl },
+      isDynamicsEnabled
+    } = config.get('dynamics')
     if (!isDynamicsEnabled) {
       return null
     }
-    const endpoint = apiUrl.contactDetails.replace('{{contactId}}', contactId)
+    const endpoint = apiUrl.replace('{{contactId}}', contactId)
     const accessToken = await getDynamicsAccessToken({
       type: 'contactDetails'
     })

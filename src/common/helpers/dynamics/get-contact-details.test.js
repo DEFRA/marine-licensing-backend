@@ -18,8 +18,8 @@ describe('Get contact name from Dynamics 365', () => {
     vi.spyOn(logger, 'error')
     config.get.mockReturnValue({
       isDynamicsEnabled: true,
-      apiUrl: {
-        contactDetails:
+      contactDetails: {
+        apiUrl:
           'https://marinelicensingdev.crm11.dynamics.com/api/data/v9.2/contacts({{contactId}})?$select=fullname'
       }
     })
