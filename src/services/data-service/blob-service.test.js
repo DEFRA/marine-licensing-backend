@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, expect, it } from 'vitest'
 import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
