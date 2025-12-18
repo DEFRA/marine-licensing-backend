@@ -96,7 +96,8 @@ describe('Dynamics Client', () => {
             applicationUrl: 'http://localhost/view-details/123',
             applicantOrganisationId: 'test-org-id',
             beneficiaryOrganisationId: 'test-org-id',
-            status: EXEMPTION_STATUS.SUBMITTED
+            status: EXEMPTION_STATUS.SUBMITTED,
+            marinePlanAreas: []
           },
           headers: {
             Authorization: 'Bearer test-access-token',
@@ -163,6 +164,24 @@ describe('Dynamics Client', () => {
           })
         })
       )
+    })
+
+    it('should correctly send marine plan area details', async () => {
+      const mockMarinePlanAreas = ['North east inshore', 'North west offshore']
+
+      const exemptionWithMarinePlanAreas = {
+        ...mockExemption,
+        marinePlanAreas: mockMarinePlanAreas
+      }
+
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue(exemptionWithMarinePlanAreas)
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      const payload = mockWreckPost.mock.calls[0][1].payload
+      expect(payload.marinePlanAreas).toEqual(mockMarinePlanAreas)
     })
 
     it('should not send organisation id fields when organisation is undefined', async () => {

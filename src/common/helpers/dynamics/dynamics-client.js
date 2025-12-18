@@ -52,7 +52,8 @@ export const sendExemptionToDynamics = async (
     applicationUrl: `${frontEndBaseUrl}/view-details/${exemption._id}`,
     ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
     ...(beneficiaryOrganisationId ? { beneficiaryOrganisationId } : {}),
-    status: EXEMPTION_STATUS.SUBMITTED
+    status: EXEMPTION_STATUS.SUBMITTED,
+    marinePlanAreas: exemption.marinePlanAreas ?? []
   }
 
   const response = await Wreck.post(`${apiUrl}/exemptions`, {

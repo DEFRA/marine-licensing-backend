@@ -349,6 +349,22 @@ const config = convict({
       env: 'EMP_RETRY_DELAY_MS'
     }
   },
+  externalGeoAreas: {
+    marinePlanArea: {
+      geoJsonUrl: {
+        doc: 'URL for the Marine Plan Areas GeoJSON API',
+        format: String,
+        default: '',
+        env: 'MARINE_PLAN_AREAS_API_URL'
+      },
+      refreshMarinePlanArea: {
+        doc: 'Force application to update the Marine Plan Areas',
+        format: Boolean,
+        default: false,
+        env: 'REFRESH_MARINE_PLAN_AREAS'
+      }
+    }
+  },
   notify: {
     apiKey: {
       doc: 'API key for Notify',
