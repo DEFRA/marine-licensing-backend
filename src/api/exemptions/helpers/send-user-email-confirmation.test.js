@@ -8,17 +8,15 @@ vi.mock('../../../config.js')
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn(function () {})
 }))
-vi.mock('../../../common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(function () {}),
-  structureErrorForECS: vi.fn((error) => ({
-    error: {
-      message: error?.message || String(error),
-      stack_trace: error?.stack,
-      type: error?.name || error?.constructor?.name || 'Error',
-      code: error?.code || error?.statusCode
-    }
-  }))
-}))
+vi.mock('../../../common/helpers/logging/logger.js', async () => {
+  const actual = await vi.importActual(
+    '../../../common/helpers/logging/logger.js'
+  )
+  return {
+    ...actual,
+    createLogger: vi.fn(function () {})
+  }
+})
 
 describe('sendUserEmailConfirmation', () => {
   let mockDb
@@ -717,6 +715,16 @@ describe('sendUserEmailConfirmation', () => {
         }),
         'Error sending email for exemption EXE/2025/10016'
       )
+
+      // Verify that the Notify response body ('Invalid request') is included in the error message
+      const errorCall = mockLogger.error.mock.calls[0]
+      const errorMessage = errorCall[0].error.message
+      // The error message should include the base message and the response data
+      expect(errorMessage).toContain('Error sending email')
+      expect(errorMessage).toContain('response:')
+      // Verify the Notify error details are included in the serialized response
+      expect(errorMessage).toContain('Invalid request')
+      expect(errorMessage).toContain('BadRequestError')
     })
   })
 })
