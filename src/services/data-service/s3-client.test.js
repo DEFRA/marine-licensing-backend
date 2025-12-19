@@ -11,6 +11,7 @@ vi.mock('../../config.js', () => ({
   config: {
     get: vi.fn((key) => {
       const configs = {
+        cdpEnvironment: 'local',
         aws: {
           region: 'eu-west-2',
           s3: {
@@ -21,8 +22,7 @@ vi.mock('../../config.js', () => ({
       }
       return configs[key]
     })
-  },
-  isDevelopment: true
+  }
 }))
 
 describe('s3-client', () => {

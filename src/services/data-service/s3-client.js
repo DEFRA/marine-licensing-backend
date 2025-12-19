@@ -1,5 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3'
-import { config, isDevelopment } from '../../config.js'
+import { config } from '../../config.js'
+const cdpEnvironment = config.get('cdpEnvironment')
 
 const awsConfig = config.get('aws')
 
@@ -10,7 +11,8 @@ const s3ClientOptions = {
   requestHandler: {
     requestTimeout: awsConfig.s3.timeout
   },
-  forcePathStyle: isDevelopment // local only
+  // isDevelopment does not work, because on Github ci NODE_ENV = 'production'
+  forcePathStyle: cdpEnvironment === 'local'
 }
 
 let s3ClientInstance = null
