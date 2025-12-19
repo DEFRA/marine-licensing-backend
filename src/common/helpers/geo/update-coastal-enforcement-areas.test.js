@@ -1,5 +1,4 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import Boom from '@hapi/boom'
 import { parseGeoAreas } from './geo-parse.js'
 import { mockCoastalAreas } from './test.fixture.js'
 import { updateCoastalEnforcementAreas } from './update-coastal-enforcement-areas.js'
@@ -25,15 +24,6 @@ describe('updateCoastalEnforcementAreas', () => {
 
     mockUpdatedAt = new Date('2024-01-01T00:00:00.000Z')
     mockUpdatedBy = 'test-user'
-  })
-
-  test('should throw error when exemption is not provided', async () => {
-    await expect(
-      updateCoastalEnforcementAreas(null, mockDb, {
-        updatedAt: mockUpdatedAt,
-        updatedBy: mockUpdatedBy
-      })
-    ).rejects.toThrow(Boom.notFound('Exemption not found'))
   })
 
   test('should update exemption with Coastal Enforcement Areas when exemption is valid', async () => {

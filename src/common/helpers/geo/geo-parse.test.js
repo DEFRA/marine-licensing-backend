@@ -18,6 +18,7 @@ import {
   mockSiteFile,
   mockMarinePlanAreas
 } from './test.fixture.js'
+import { marinePlanAreas } from '../../constants/db-collections.js'
 
 vi.mock('./geo-utils.js')
 vi.mock('../emp/transforms/circle-to-polygon.js')
@@ -241,7 +242,7 @@ describe('geo-parse', () => {
       const exemption = { id: '123' }
 
       await expect(
-        parseGeoAreas(exemption, mockDb, 'marine-plan-areas', {
+        parseGeoAreas(exemption, mockDb, marinePlanAreas, {
           displayName: 'Marine Plan Areas'
         })
       ).rejects.toThrow(Boom.notFound('Exemption with site details not found'))
@@ -257,12 +258,9 @@ describe('geo-parse', () => {
       vi.mocked(generateCirclePolygon).mockReturnValue(mockCircleCoords)
       vi.mocked(outputIntersectionAreas).mockResolvedValue(mockMarinePlanAreas)
 
-      const result = await parseGeoAreas(
-        exemption,
-        mockDb,
-        'marine-plan-areas',
-        { displayName: 'Marine Plan Areas' }
-      )
+      const result = await parseGeoAreas(exemption, mockDb, marinePlanAreas, {
+        displayName: 'Marine Plan Areas'
+      })
 
       expect(outputIntersectionAreas).toHaveBeenCalledWith(
         mockDb,
@@ -272,7 +270,7 @@ describe('geo-parse', () => {
             coordinates: [mockCircleCoords]
           }
         ],
-        'marine-plan-areas'
+        marinePlanAreas
       )
       expect(result).toEqual(mockMarinePlanAreas)
     })
@@ -284,12 +282,9 @@ describe('geo-parse', () => {
 
       vi.mocked(outputIntersectionAreas).mockResolvedValue(mockMarinePlanAreas)
 
-      const result = await parseGeoAreas(
-        exemption,
-        mockDb,
-        'marine-plan-areas',
-        { displayName: 'Marine Plan Areas' }
-      )
+      const result = await parseGeoAreas(exemption, mockDb, marinePlanAreas, {
+        displayName: 'Marine Plan Areas'
+      })
 
       expect(outputIntersectionAreas).toHaveBeenCalledWith(
         mockDb,
@@ -305,7 +300,7 @@ describe('geo-parse', () => {
             ]
           }
         ],
-        'marine-plan-areas'
+        marinePlanAreas
       )
       expect(result).toEqual(mockMarinePlanAreas)
     })
@@ -317,12 +312,9 @@ describe('geo-parse', () => {
 
       vi.mocked(outputIntersectionAreas).mockResolvedValue(mockMarinePlanAreas)
 
-      const result = await parseGeoAreas(
-        exemption,
-        mockDb,
-        'marine-plan-areas',
-        { displayName: 'Marine Plan Areas' }
-      )
+      const result = await parseGeoAreas(exemption, mockDb, marinePlanAreas, {
+        displayName: 'Marine Plan Areas'
+      })
 
       expect(outputIntersectionAreas).toHaveBeenCalledWith(
         mockDb,
@@ -339,7 +331,7 @@ describe('geo-parse', () => {
             ]
           }
         ],
-        'marine-plan-areas'
+        marinePlanAreas
       )
       expect(result).toEqual(mockMarinePlanAreas)
     })
@@ -353,12 +345,9 @@ describe('geo-parse', () => {
         new Error('Database connection failed')
       )
 
-      const result = await parseGeoAreas(
-        exemption,
-        mockDb,
-        'marine-plan-areas',
-        { displayName: 'Marine Plan Areas' }
-      )
+      const result = await parseGeoAreas(exemption, mockDb, marinePlanAreas, {
+        displayName: 'Marine Plan Areas'
+      })
 
       expect(result).toEqual([])
       expect(mockLogger.error).toHaveBeenCalled()
