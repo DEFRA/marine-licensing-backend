@@ -11,7 +11,12 @@ export const exemptions = [
   {
     method: 'GET',
     path: '/exemption/{id}',
-    ...getExemptionController
+    ...getExemptionController({ requiresAuth: true })
+  },
+  {
+    method: 'GET',
+    path: '/public/exemption/{id}',
+    ...getExemptionController({ requiresAuth: false })
   },
   {
     method: 'GET',
