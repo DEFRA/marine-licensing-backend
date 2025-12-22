@@ -14,7 +14,7 @@ export const formatGeoForStorage = (geoJson) => {
 
   return processed.features.map((feature) => ({
     type: 'Feature',
-    name: feature.properties.info,
+    name: feature.properties.info ?? feature.properties.name,
     geometry: {
       type: feature.geometry.type,
       coordinates: feature.geometry.coordinates
