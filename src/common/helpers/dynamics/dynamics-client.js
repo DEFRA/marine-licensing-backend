@@ -6,6 +6,127 @@ import querystring from 'node:querystring'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { isOrganisationEmployee } from '../organisations.js'
+import { createLogger } from '../../helpers/logging/logger.js'
+
+const logger = createLogger()
+
+/**
+ * Fetches an exemption from the database by application reference
+ * @param {Object} db - Database connection
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @returns {Promise<Object>} The exemption document
+ */
+const fetchExemption = async (db, applicationReferenceNumber) => {
+  const exemption = await db.collection('exemptions').findOne({
+    applicationReference: applicationReferenceNumber
+  })
+
+  if (!exemption) {
+    throw Boom.notFound(
+      `Exemption not found for applicationReference: ${applicationReferenceNumber}`
+    )
+  }
+
+  return exemption
+}
+
+/**
+ * Updates the queue status to IN_PROGRESS
+ * @param {Object} db - Database connection
+ * @param {string} exemptionId - Exemption ID
+ */
+const updateQueueStatus = async (db, exemptionId) => {
+  await db.collection('exemption-dynamics-queue').updateOne(
+    { _id: exemptionId },
+    {
+      $set: {
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+        updatedAt: new Date()
+      }
+    }
+  )
+}
+
+/**
+ * Builds the Dynamics API payload
+ * @param {Object} exemption - The exemption document
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @param {string} frontEndBaseUrl - Frontend base URL
+ * @returns {Object} The payload for Dynamics API
+ */
+const buildDynamicsPayload = (
+  exemption,
+  applicationReferenceNumber,
+  frontEndBaseUrl
+) => {
+  const organisationId = exemption.organisation?.id
+  const beneficiaryOrganisationId = organisationId
+  const applicantOrganisationId = isOrganisationEmployee(exemption.organisation)
+    ? organisationId
+    : undefined
+
+  return {
+    contactid: exemption.contactId,
+    projectName: exemption.projectName,
+    reference: applicationReferenceNumber,
+    type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
+    applicationUrl: `${frontEndBaseUrl}/view-details/${exemption._id}`,
+    ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
+    ...(beneficiaryOrganisationId ? { beneficiaryOrganisationId } : {}),
+    status: EXEMPTION_STATUS.SUBMITTED,
+    marinePlanAreas: exemption.marinePlanAreas ?? [],
+    coastalEnforcementAreas: exemption.coastalEnforcementAreas ?? []
+  }
+}
+
+/**
+ * Validates the Dynamics API response
+ * @param {number} statusCode - HTTP status code
+ * @param {string} applicationReferenceNumber - Application reference number
+ */
+const validateDynamicsResponse = (statusCode, applicationReferenceNumber) => {
+  if (statusCode !== StatusCodes.ACCEPTED) {
+    logger.error(
+      {
+        error: {
+          message: `Dynamics API returned status ${statusCode}`,
+          code: 'DYNAMICS_API_ERROR'
+        },
+        http: {
+          response: {
+            status_code: statusCode
+          }
+        },
+        service: 'dynamics',
+        operation: 'sendExemption',
+        applicationReference: applicationReferenceNumber
+      },
+      `Dynamics API returned unexpected status ${statusCode}`
+    )
+    throw Boom.badImplementation(`Dynamics API returned status ${statusCode}`)
+  }
+}
+
+/**
+ * Logs successful Dynamics API request
+ * @param {number} statusCode - HTTP status code
+ * @param {string} applicationReferenceNumber - Application reference number
+ */
+const logDynamicsSuccess = (statusCode, applicationReferenceNumber) => {
+  logger.info(
+    {
+      http: {
+        response: {
+          status_code: statusCode
+        }
+      },
+      service: 'dynamics',
+      operation: 'sendExemption',
+      applicationReference: applicationReferenceNumber
+    },
+    'Successfully sent exemption to Dynamics 365'
+  )
+}
 
 export const getDynamicsAccessToken = async () => {
   const { clientId, clientSecret, scope, tokenUrl } = config.get('dynamics')
@@ -23,6 +144,20 @@ export const getDynamicsAccessToken = async () => {
       }
     })
 
+    const statusCode = response.res?.statusCode
+    logger.info(
+      {
+        http: {
+          response: {
+            status_code: statusCode
+          }
+        },
+        service: 'dynamics',
+        operation: 'getAccessToken'
+      },
+      'Dynamics 365 access token request successful'
+    )
+
     const responsePayload = JSON.parse(response.payload.toString('utf8'))
 
     if (!responsePayload.access_token) {
@@ -31,6 +166,30 @@ export const getDynamicsAccessToken = async () => {
 
     return responsePayload.access_token
   } catch (error) {
+    const statusCode =
+      error.output?.statusCode ||
+      error.response?.statusCode ||
+      error.res?.statusCode
+    logger.error(
+      {
+        error: {
+          message: error.message || String(error),
+          stack_trace: error.stack,
+          type: error.name || error.constructor?.name || 'Error',
+          code: error.code || error.statusCode
+        },
+        http: statusCode
+          ? {
+              response: {
+                status_code: statusCode
+              }
+            }
+          : undefined,
+        service: 'dynamics',
+        operation: 'getAccessToken'
+      },
+      'Dynamics 365 access token request failed'
+    )
     throw Boom.badImplementation(`Dynamics token request failed`, error)
   }
 }
@@ -42,47 +201,18 @@ export const sendExemptionToDynamics = async (
 ) => {
   const { apiUrl } = config.get('dynamics')
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
-
   const { applicationReferenceNumber } = queueItem
 
-  const exemption = await server.db.collection('exemptions').findOne({
-    applicationReference: applicationReferenceNumber
-  })
+  // Fetch exemption and update queue status
+  const exemption = await fetchExemption(server.db, applicationReferenceNumber)
+  await updateQueueStatus(server.db, exemption._id)
 
-  if (!exemption) {
-    throw Boom.notFound(
-      `Exemption not found for applicationReference: ${applicationReferenceNumber}`
-    )
-  }
-
-  await server.db.collection('exemption-dynamics-queue').updateOne(
-    { _id: exemption._id },
-    {
-      $set: {
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-        updatedAt: new Date()
-      }
-    }
+  // Build payload and send to Dynamics
+  const payload = buildDynamicsPayload(
+    exemption,
+    applicationReferenceNumber,
+    frontEndBaseUrl
   )
-
-  const organisationId = exemption.organisation?.id
-  const beneficiaryOrganisationId = organisationId
-  const applicantOrganisationId = isOrganisationEmployee(exemption.organisation)
-    ? organisationId
-    : undefined
-
-  const payload = {
-    contactid: exemption.contactId,
-    projectName: exemption.projectName,
-    reference: applicationReferenceNumber,
-    type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
-    applicationUrl: `${frontEndBaseUrl}/view-details/${exemption._id}`,
-    ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
-    ...(beneficiaryOrganisationId ? { beneficiaryOrganisationId } : {}),
-    status: EXEMPTION_STATUS.SUBMITTED,
-    coastalEnforcementAreas: exemption.coastalEnforcementAreas ?? [],
-    marinePlanAreas: exemption.marinePlanAreas ?? []
-  }
 
   const response = await Wreck.post(`${apiUrl}/exemptions`, {
     payload,
@@ -92,11 +222,10 @@ export const sendExemptionToDynamics = async (
     }
   })
 
-  if (response.res.statusCode !== StatusCodes.ACCEPTED) {
-    throw Boom.badImplementation(
-      `Dynamics API returned status ${response.res.statusCode}`
-    )
-  }
+  // Validate and log response
+  const statusCode = response.res?.statusCode
+  validateDynamicsResponse(statusCode, applicationReferenceNumber)
+  logDynamicsSuccess(statusCode, applicationReferenceNumber)
 
   return response.payload
 }

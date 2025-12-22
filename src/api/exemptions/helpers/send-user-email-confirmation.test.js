@@ -8,17 +8,15 @@ vi.mock('../../../config.js')
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn(function () {})
 }))
-vi.mock('../../../common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn(function () {}),
-  structureErrorForECS: vi.fn((error) => ({
-    error: {
-      message: error?.message || String(error),
-      stack_trace: error?.stack,
-      type: error?.name || error?.constructor?.name || 'Error',
-      code: error?.code || error?.statusCode
-    }
-  }))
-}))
+vi.mock('../../../common/helpers/logging/logger.js', async () => {
+  const actual = await vi.importActual(
+    '../../../common/helpers/logging/logger.js'
+  )
+  return {
+    ...actual,
+    createLogger: vi.fn(function () {})
+  }
+})
 
 describe('sendUserEmailConfirmation', () => {
   let mockDb
@@ -98,6 +96,16 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          http: expect.objectContaining({
+            response: expect.objectContaining({
+              status_code: expect.any(Number)
+            })
+          }),
+          service: 'gov-notify',
+          operation: 'sendEmail',
+          applicationReference: 'EXE/2025/10001'
+        }),
         'Sent confirmation email for exemption EXE/2025/10001'
       )
 
@@ -618,6 +626,16 @@ describe('sendUserEmailConfirmation', () => {
       await sendUserEmailConfirmation(params)
 
       expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          http: expect.objectContaining({
+            response: expect.objectContaining({
+              status_code: expect.any(Number)
+            })
+          }),
+          service: 'gov-notify',
+          operation: 'sendEmail',
+          applicationReference: 'EXE/2025/10011'
+        }),
         'Sent confirmation email for exemption EXE/2025/10011'
       )
       expect(mockLogger.info).toHaveBeenCalledTimes(1)
@@ -655,6 +673,58 @@ describe('sendUserEmailConfirmation', () => {
         'Error sending email for exemption EXE/2025/10012'
       )
       expect(mockLogger.error).toHaveBeenCalledTimes(1)
+    })
+
+    it('should log HTTP status code when email sending fails with status code', async () => {
+      const mockError = {
+        response: {
+          status: 400,
+          data: {
+            errors: [{ error: 'BadRequestError', message: 'Invalid request' }]
+          }
+        }
+      }
+
+      mockNotifyClient.sendEmail.mockRejectedValue(mockError)
+
+      const params = {
+        db: mockDb,
+        userName: 'Status Code Test',
+        userEmail: 'statuscode@example.com',
+        applicationReference: 'EXE/2025/10016',
+        frontEndBaseUrl: 'https://marine-licensing.defra.gov.uk',
+        exemptionId: '507f1f77bcf86cd799439026'
+      }
+
+      await sendUserEmailConfirmation(params)
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: expect.stringContaining('Error sending email'),
+            code: 'EMAIL_SEND_ERROR'
+          }),
+          http: expect.objectContaining({
+            response: expect.objectContaining({
+              status_code: 400
+            })
+          }),
+          service: 'gov-notify',
+          operation: 'sendEmail',
+          applicationReference: 'EXE/2025/10016'
+        }),
+        'Error sending email for exemption EXE/2025/10016'
+      )
+
+      // Verify that the Notify response body ('Invalid request') is included in the error message
+      const errorCall = mockLogger.error.mock.calls[0]
+      const errorMessage = errorCall[0].error.message
+      // The error message should include the base message and the response data
+      expect(errorMessage).toContain('Error sending email')
+      expect(errorMessage).toContain('response:')
+      // Verify the Notify error details are included in the serialized response
+      expect(errorMessage).toContain('Invalid request')
+      expect(errorMessage).toContain('BadRequestError')
     })
   })
 })
