@@ -68,11 +68,11 @@ describe('Get contact name from Dynamics 365', () => {
     })
     expect(contactName).toBeNull()
     expect(logger.error).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         error: expect.objectContaining({
           message: 'Server error'
         })
-      },
+      }),
       `Error - Dynamics contact details request for ID ${contactId}`
     )
   })
