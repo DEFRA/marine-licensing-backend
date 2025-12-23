@@ -1,20 +1,17 @@
-import {
-  S3Client,
-  HeadObjectCommand,
-  GetObjectCommand
-} from '@aws-sdk/client-s3'
+import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { pipeline } from 'node:stream/promises'
-import { config } from '../config.js'
+import { config } from '../../config.js'
 import {
   createLogger,
   structureErrorForECS
-} from '../common/helpers/logging/logger.js'
+} from '../../common/helpers/logging/logger.js'
 import Boom from '@hapi/boom'
+import { getS3Client } from './s3-client.js'
 
 const logger = createLogger()
 const awsConfig = config.get('aws')
@@ -23,31 +20,11 @@ const cdpEnvironment = config.get('cdpEnvironment')
 class BlobService {
   logSystem = 'FileUpload:BlobService'
   constructor(s3Client) {
-    if (s3Client === undefined) {
-      const options = {
-        region: awsConfig.region,
-        requestHandler: {
-          requestTimeout: awsConfig.s3.timeout
-        }
-      }
+    logger.info(
+      `${this.logSystem}: config: cdpEnvironment is [${cdpEnvironment}], S3_ENDPOINT is ${awsConfig.s3.endpoint}`
+    )
 
-      if (cdpEnvironment === 'local') {
-        options.endpoint = awsConfig.s3.endpoint
-        options.forcePathStyle = true
-      }
-
-      logger.info(
-        options,
-        `${this.logSystem}: constructor(): S3 client options`
-      )
-      logger.info(
-        `${this.logSystem}: config: cdpEnvironment is [${cdpEnvironment}]`
-      )
-
-      this.client = new S3Client(options)
-    } else {
-      this.client = s3Client
-    }
+    this.client = s3Client ?? getS3Client()
     this.timeout = awsConfig.s3.timeout
   }
 
@@ -62,7 +39,6 @@ class BlobService {
         Bucket: s3Bucket,
         Key: s3Key
       })
-
       const response = await this.client.send(command)
 
       logger.info(
@@ -74,7 +50,6 @@ class BlobService {
         },
         `${this.logSystem}: Successfully retrieved S3 object metadata`
       )
-
       return {
         size: response.ContentLength,
         lastModified: response.LastModified,

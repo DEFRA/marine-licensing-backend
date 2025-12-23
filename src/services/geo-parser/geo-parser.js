@@ -5,7 +5,7 @@ import {
   createLogger,
   structureErrorForECS
 } from '../../common/helpers/logging/logger.js'
-import { blobService } from '../blob-service.js'
+import { blobService } from '../data-service/blob-service.js'
 import { isGeoParserErrorCode } from './error-codes.js'
 
 const logger = createLogger()

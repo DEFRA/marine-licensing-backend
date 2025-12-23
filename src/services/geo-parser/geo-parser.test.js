@@ -1,7 +1,7 @@
 import { vi, expect } from 'vitest'
 import { GeoParser } from './geo-parser.js'
 import { Worker } from 'node:worker_threads'
-import { blobService } from '../blob-service.js'
+import { blobService } from '../data-service/blob-service.js'
 import Boom from '@hapi/boom'
 import { join } from 'node:path'
 
@@ -9,7 +9,7 @@ vi.mock('node:worker_threads', () => ({
   Worker: vi.fn(function () {})
 }))
 
-vi.mock('../blob-service.js', () => ({
+vi.mock('../data-service/blob-service.js', () => ({
   blobService: {
     createTempDirectory: vi.fn(),
     validateFileSize: vi.fn(),
