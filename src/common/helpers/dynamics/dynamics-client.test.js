@@ -2,10 +2,7 @@ import { expect, vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 
 import { config } from '../../../config.js'
-import {
-  getDynamicsAccessToken,
-  sendExemptionToDynamics
-} from './dynamics-client.js'
+import { sendExemptionToDynamics } from './dynamics-client.js'
 import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
 
 vi.mock('../../../config.js')
@@ -29,62 +26,17 @@ describe('Dynamics Client', () => {
     config.get.mockImplementation(function (value) {
       return value === 'dynamics'
         ? {
-            clientId: 'test-client-id',
-            clientSecret: 'test-client-secret',
-            scope: 'test-scope',
-            maxRetries: 3,
-            retryDelayMs: 60000,
-            tokenUrl: 'https://localhost/oauth2/token',
-            apiUrl: 'https://localhost/api/data/v9.2'
+            exemptions: {
+              clientId: 'test-client-id',
+              clientSecret: 'test-client-secret',
+              scope: 'test-scope',
+              maxRetries: 3,
+              retryDelayMs: 60000,
+              apiUrl: 'https://localhost/api/data/v9.2'
+            },
+            tokenUrl: 'https://localhost/oauth2/token'
           }
         : 'http://localhost'
-    })
-  })
-
-  describe('getDynamicsAccessToken', () => {
-    it('should make POST request to config URL with client credentials', async () => {
-      const result = await getDynamicsAccessToken()
-
-      expect(result).toBe('test_token')
-      expect(mockWreckPost).toHaveBeenCalledWith(
-        'https://localhost/oauth2/token',
-        expect.objectContaining({
-          payload:
-            'client_id=test-client-id&client_secret=test-client-secret&grant_type=client_credentials&scope=test-scope',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        })
-      )
-    })
-
-    it('should throw error if request fails', async () => {
-      mockWreckPost.mockImplementation(function () {
-        throw new Error('Network error')
-      })
-
-      await expect(getDynamicsAccessToken()).rejects.toThrow('Network error')
-    })
-
-    it('should throw error if response does not contain access_token', async () => {
-      mockWreckPost.mockReturnValue({
-        payload: Buffer.from('{}')
-      })
-      await expect(getDynamicsAccessToken()).rejects.toThrow(
-        'Dynamics token request failed'
-      )
-    })
-
-    it('should throw error with Dynamics error description when token request fails', async () => {
-      const mockError = new Error('Response Error: 400 Bad Request')
-
-      mockWreckPost.mockImplementation(function () {
-        throw mockError
-      })
-
-      await expect(getDynamicsAccessToken()).rejects.toThrow(
-        'Response Error: 400 Bad Request'
-      )
     })
   })
 
@@ -145,6 +97,7 @@ describe('Dynamics Client', () => {
             applicantOrganisationId: 'test-org-id',
             beneficiaryOrganisationId: 'test-org-id',
             status: EXEMPTION_STATUS.SUBMITTED,
+            coastalEnforcementAreas: [],
             marinePlanAreas: []
           },
           headers: {
@@ -230,6 +183,26 @@ describe('Dynamics Client', () => {
 
       const payload = mockWreckPost.mock.calls[0][1].payload
       expect(payload.marinePlanAreas).toEqual(mockMarinePlanAreas)
+    })
+
+    it('should correctly send coastal enforcement area details', async () => {
+      const mockCoastalEnforcementAreas = ['North', 'South']
+
+      const exemptionWithCoastalEnforcementAreas = {
+        ...mockExemption,
+        coastalEnforcementAreas: mockCoastalEnforcementAreas
+      }
+
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue(exemptionWithCoastalEnforcementAreas)
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      const payload = mockWreckPost.mock.calls[0][1].payload
+      expect(payload.coastalEnforcementAreas).toEqual(
+        mockCoastalEnforcementAreas
+      )
     })
 
     it('should not send organisation id fields when organisation is undefined', async () => {

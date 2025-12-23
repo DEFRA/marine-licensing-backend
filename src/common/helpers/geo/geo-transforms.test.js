@@ -23,5 +23,29 @@ describe('geo-transforms', () => {
         type: 'Feature'
       })
     })
+
+    it('should correctly format all data using name field for Coastal Enforment Areas', () => {
+      const mockCoastalAreasCollection = {
+        ...mockFeatureCollection,
+        features: mockFeatureCollection.features.map((area) => {
+          const coastalArea = {
+            ...area,
+            properties: { name: area.properties.info }
+          }
+          return coastalArea
+        })
+      }
+
+      const formattedGeoData = formatGeoForStorage(mockCoastalAreasCollection)
+
+      expect(formattedGeoData.length).toBe(2)
+
+      expect(formattedGeoData[0]).toEqual({
+        name: mockCoastalAreasCollection.features[0].properties.name,
+        properties: mockCoastalAreasCollection.features[0].properties,
+        geometry: { coordinates: expect.any(Array), type: 'Polygon' },
+        type: 'Feature'
+      })
+    })
   })
 })

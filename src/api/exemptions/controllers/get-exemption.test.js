@@ -5,6 +5,9 @@ import {
   requestFromInternalUser,
   requestFromPublicUser
 } from '../../../../.vite/mocks.js'
+vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
+  getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
+}))
 
 describe('GET /exemption', () => {
   const paramsValidator = getExemptionController({ requiresAuth: true }).options
@@ -31,7 +34,7 @@ describe('GET /exemption', () => {
       expect(result.error.message).toContain('EXEMPTION_ID_INVALID')
     })
 
-    it('should get exemption by id', async () => {
+    it('should get exemption by id for an internal user', async () => {
       const { mockMongo, mockHandler } = global
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
@@ -42,11 +45,9 @@ describe('GET /exemption', () => {
         }
       })
       await getExemptionController({ requiresAuth: true }).handler(
-        {
-          db: mockMongo,
-          params: { id: mockId },
-          auth: { artifacts: { decoded: { tid: 'abc' } } }
-        },
+        requestFromInternalUser({
+          params: { id: mockId }
+        }),
         mockHandler
       )
 
@@ -60,7 +61,8 @@ describe('GET /exemption', () => {
               publicRegister: 'INCOMPLETE',
               projectName: 'COMPLETED',
               siteDetails: 'INCOMPLETE'
-            }
+            },
+            whoExemptionIsFor: 'Dave Barnett'
           }
         })
       )
@@ -123,10 +125,10 @@ describe('GET /exemption', () => {
       })
 
       await getExemptionController({ requiresAuth: true }).handler(
-        {
-          db: mockMongo,
+        requestFromApplicantUser({
+          userContactId,
           params: { id: mockId }
-        },
+        }),
         mockHandler
       )
 
@@ -201,7 +203,8 @@ describe('GET /exemption', () => {
               publicRegister: 'INCOMPLETE',
               projectName: 'COMPLETED',
               siteDetails: 'INCOMPLETE'
-            }
+            },
+            whoExemptionIsFor: 'Dave Barnett'
           }
         })
       )

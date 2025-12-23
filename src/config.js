@@ -104,7 +104,7 @@ const config = convict({
   },
   defraId: {
     jwksUri: {
-      doc: 'JWKS Token validation url',
+      doc: 'Defra ID JWKS Token validation url',
       format: requiredFromEnvInCdp,
       default: 'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json',
       env: 'DEFRA_ID_JWKS_URI'
@@ -112,7 +112,7 @@ const config = convict({
   },
   entraId: {
     jwksUri: {
-      doc: 'JWKS Token validation url',
+      doc: 'Entra ID JWKS Token validation url',
       format: String,
       default: 'https://login.microsoftonline.com/common/discovery/keys',
       env: 'ENTRA_ID_JWKS_URI'
@@ -239,17 +239,69 @@ const config = convict({
     }
   },
   dynamics: {
-    clientId: {
-      doc: 'The client ID.',
-      format: requiredFromEnvInCdp,
-      default: '',
-      env: 'DYNAMICS_CLIENT_ID'
+    exemptions: {
+      clientId: {
+        doc: 'Dynamics client ID for exemptions',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_CLIENT_ID'
+      },
+      clientSecret: {
+        doc: 'Dynamics client secret for exemptions',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_CLIENT_SECRET'
+      },
+      scope: {
+        doc: 'Scope Dynamics Exemption API',
+        format: String,
+        default: 'https://service.flow.microsoft.com//.default',
+        env: 'DYNAMICS_SCOPE'
+      },
+      apiUrl: {
+        doc: 'URL for the Dynamics API to send an exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_URL'
+      },
+      maxRetries: {
+        doc: 'Maximum number of retries for failed Dynamics queue items',
+        format: Number,
+        default: 3,
+        env: 'DYNAMICS_MAX_RETRIES'
+      },
+      retryDelayMs: {
+        doc: 'Delay in milliseconds before retrying a failed Dynamics queue item',
+        format: Number,
+        default: oneMinuteInMS,
+        env: 'DYNAMICS_RETRY_DELAY_MS'
+      }
     },
-    clientSecret: {
-      doc: 'The client secret.',
-      format: requiredFromEnvInCdp,
-      default: '',
-      env: 'DYNAMICS_CLIENT_SECRET'
+    contactDetails: {
+      clientId: {
+        doc: 'The client ID.',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_CLIENT_ID_CONTACT_DETAILS'
+      },
+      clientSecret: {
+        doc: 'The client secret.',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_CLIENT_SECRET_CONTACT_DETAILS'
+      },
+      scope: {
+        doc: 'Scope Dynamics Contact details API',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_SCOPE_CONTACT_DETAILS'
+      },
+      apiUrl: {
+        doc: 'URL for the Dynamics API to get contact details',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_CONTACT_DETAILS_URL'
+      }
     },
     tokenUrl: {
       doc: 'URL to get token for the Dynamics request',
@@ -258,35 +310,11 @@ const config = convict({
         'https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/oauth2/v2.0/token',
       env: 'DYNAMICS_TOKEN_URL'
     },
-    scope: {
-      doc: 'Scope for the Dynamics API access',
-      format: String,
-      default: 'https://service.flow.microsoft.com//.default',
-      env: 'DYNAMICS_SCOPE'
-    },
-    apiUrl: {
-      doc: 'URL for the Dynamics API',
-      format: requiredFromEnvInCdp,
-      default: '',
-      env: 'DYNAMICS_API_URL'
-    },
     isDynamicsEnabled: {
       doc: 'Is Dynamics integration enabled',
       format: Boolean,
       default: false,
       env: 'DYNAMICS_ENABLED'
-    },
-    maxRetries: {
-      doc: 'Maximum number of retries for failed Dynamics queue items',
-      format: Number,
-      default: 3,
-      env: 'DYNAMICS_MAX_RETRIES'
-    },
-    retryDelayMs: {
-      doc: 'Delay in milliseconds before retrying a failed Dynamics queue item',
-      format: Number,
-      default: oneMinuteInMS,
-      env: 'DYNAMICS_RETRY_DELAY_MS'
     }
   },
   exploreMarinePlanning: {
@@ -322,6 +350,20 @@ const config = convict({
     }
   },
   externalGeoAreas: {
+    coastalEnforcementArea: {
+      geoJsonUrl: {
+        doc: 'URL for the Coastal Enforcement Areas GeoJSON API',
+        format: String,
+        default: '',
+        env: 'COASTAL_ENFORCEMENT_AREAS_API_URL'
+      },
+      refreshAreas: {
+        doc: 'Force application to update Coastal Enforcement Areas',
+        format: Boolean,
+        default: false,
+        env: 'REFRESH_COASTAL_ENFORCEMENT_PLAN_AREAS'
+      }
+    },
     marinePlanArea: {
       geoJsonUrl: {
         doc: 'URL for the Marine Plan Areas GeoJSON API',
@@ -329,7 +371,7 @@ const config = convict({
         default: '',
         env: 'MARINE_PLAN_AREAS_API_URL'
       },
-      refreshMarinePlanArea: {
+      refreshAreas: {
         doc: 'Force application to update the Marine Plan Areas',
         format: Boolean,
         default: false,
