@@ -62,7 +62,12 @@ export const formatFileCoordinates = (site) => {
     }))
 }
 
-export const parseGeoAreas = async (exemption, db, tableName) => {
+export const parseGeoAreas = async (
+  exemption,
+  db,
+  tableName,
+  { displayName }
+) => {
   if (!exemption?.siteDetails) {
     throw Boom.notFound('Exemption with site details not found')
   }
@@ -94,7 +99,7 @@ export const parseGeoAreas = async (exemption, db, tableName) => {
   } catch (error) {
     logger.error(
       structureErrorForECS(error),
-      `ERROR: Failed to parse GeoJSON data for Marine Plan Areas`
+      `ERROR: Failed to parse GeoJSON data for ${displayName}`
     )
 
     return []

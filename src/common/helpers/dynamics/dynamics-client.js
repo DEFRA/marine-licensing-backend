@@ -73,7 +73,8 @@ const buildDynamicsPayload = (
     ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
     ...(beneficiaryOrganisationId ? { beneficiaryOrganisationId } : {}),
     status: EXEMPTION_STATUS.SUBMITTED,
-    marinePlanAreas: exemption.marinePlanAreas ?? []
+    marinePlanAreas: exemption.marinePlanAreas ?? [],
+    coastalEnforcementAreas: exemption.coastalEnforcementAreas ?? []
   }
 }
 
