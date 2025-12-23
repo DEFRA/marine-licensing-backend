@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { getContactNameById } from '../../../common/helpers/dynamics/get-contact-details.js'
 
 export class ExemptionService {
   constructor({ db, logger }) {
@@ -18,6 +19,13 @@ export class ExemptionService {
     return result
   }
 
+  async #getWhoExemptionIsFor(exemption) {
+    return (
+      exemption.organisation?.name ||
+      getContactNameById({ contactId: exemption.contactId })
+    )
+  }
+
   async getExemptionById({ id, currentUserId }) {
     const exemption = await this.#findExemptionById(id)
     if (currentUserId && currentUserId !== exemption.contactId) {
@@ -30,6 +38,9 @@ export class ExemptionService {
         'Authorization error in getExemptionById'
       )
       throw Boom.forbidden('Not authorized to request this resource')
+    }
+    if (!currentUserId) {
+      exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
     }
     return exemption
   }
@@ -46,6 +57,7 @@ export class ExemptionService {
       )
       throw Boom.forbidden('Not authorized to request this resource')
     }
+    exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
     return exemption
   }
 }
