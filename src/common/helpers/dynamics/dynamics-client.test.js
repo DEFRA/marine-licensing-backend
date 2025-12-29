@@ -97,6 +97,7 @@ describe('Dynamics Client', () => {
             applicantOrganisationId: 'test-org-id',
             beneficiaryOrganisationId: 'test-org-id',
             status: EXEMPTION_STATUS.SUBMITTED,
+            coastalEnforcementAreas: [],
             marinePlanAreas: []
           },
           headers: {
@@ -182,6 +183,26 @@ describe('Dynamics Client', () => {
 
       const payload = mockWreckPost.mock.calls[0][1].payload
       expect(payload.marinePlanAreas).toEqual(mockMarinePlanAreas)
+    })
+
+    it('should correctly send coastal enforcement area details', async () => {
+      const mockCoastalEnforcementAreas = ['North', 'South']
+
+      const exemptionWithCoastalEnforcementAreas = {
+        ...mockExemption,
+        coastalEnforcementAreas: mockCoastalEnforcementAreas
+      }
+
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue(exemptionWithCoastalEnforcementAreas)
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      const payload = mockWreckPost.mock.calls[0][1].payload
+      expect(payload.coastalEnforcementAreas).toEqual(
+        mockCoastalEnforcementAreas
+      )
     })
 
     it('should not send organisation id fields when organisation is undefined', async () => {

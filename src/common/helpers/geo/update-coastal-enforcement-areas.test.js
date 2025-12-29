@@ -1,11 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { updateMarinePlanningAreas } from './update-marine-planning-areas.js'
 import { parseGeoAreas } from './geo-parse.js'
-import { mockMarinePlanAreas } from './test.fixture.js'
+import { mockCoastalAreas } from './test.fixture.js'
+import { updateCoastalEnforcementAreas } from './update-coastal-enforcement-areas.js'
 
 vi.mock('./geo-parse.js')
 
-describe('updateMarinePlanningAreas', () => {
+describe('updateCoastalEnforcementAreas', () => {
   let mockDb
   let mockCollection
   let mockUpdatedAt
@@ -26,15 +26,15 @@ describe('updateMarinePlanningAreas', () => {
     mockUpdatedBy = 'test-user'
   })
 
-  test('should update exemption with marine plan areas when exemption is valid', async () => {
+  test('should update exemption with Coastal Enforcement Areas when exemption is valid', async () => {
     const mockExemption = {
       _id: 'test-exemption-id',
       location: { coordinates: [1, 2] }
     }
 
-    vi.mocked(parseGeoAreas).mockResolvedValue(mockMarinePlanAreas)
+    vi.mocked(parseGeoAreas).mockResolvedValue(mockCoastalAreas)
 
-    await updateMarinePlanningAreas(mockExemption, mockDb, {
+    await updateCoastalEnforcementAreas(mockExemption, mockDb, {
       updatedAt: mockUpdatedAt,
       updatedBy: mockUpdatedBy
     })
@@ -42,15 +42,15 @@ describe('updateMarinePlanningAreas', () => {
     expect(parseGeoAreas).toHaveBeenCalledWith(
       mockExemption,
       mockDb,
-      'marine-plan-areas',
-      { displayName: 'Marine Plan Areas' }
+      'coastal-enforcement-areas',
+      { displayName: 'Coastal Enforcement Areas' }
     )
 
     expect(mockCollection.updateOne).toHaveBeenCalledWith(
       { _id: 'test-exemption-id' },
       {
         $set: {
-          marinePlanAreas: mockMarinePlanAreas,
+          coastalEnforcementAreas: mockCoastalAreas,
           updatedAt: mockUpdatedAt,
           updatedBy: mockUpdatedBy
         }

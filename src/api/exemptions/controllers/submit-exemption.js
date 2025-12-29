@@ -11,6 +11,7 @@ import { sendUserEmailConfirmation } from '../helpers/send-user-email-confirmati
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
 import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
+import { updateCoastalEnforcementAreas } from '../../../common/helpers/geo/update-coastal-enforcement-areas.js'
 
 const getExemptionWithId = async (db, id) => {
   const exemption = await db
@@ -96,6 +97,11 @@ export const submitExemptionController = {
       if (updateResult.matchedCount === 0) {
         throw Boom.notFound('Exemption not found during update')
       }
+
+      await updateCoastalEnforcementAreas(exemption, db, {
+        updatedAt,
+        updatedBy
+      })
 
       await updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
 
