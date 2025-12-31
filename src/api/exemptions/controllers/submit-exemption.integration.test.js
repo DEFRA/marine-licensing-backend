@@ -1,31 +1,20 @@
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  vi
-} from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import {
   createCompleteExemption,
   mockCredentials
 } from '../../../../tests/test.fixture.js'
+import { setupTestServer } from '../../../../tests/test-server.js'
 
-describe('POST /exemption/submit', () => {
-  let server
+describe('POST /exemption/submit', async () => {
+  const getServer = await setupTestServer()
   let db
   let exemptionId
   let mockDate
 
   beforeAll(async () => {
-    const { createServer } = await import('../../../server.js')
-    server = await createServer()
-    await server.initialize()
     db = globalThis.mockMongo
-
     mockDate = new Date('2025-06-15T10:30:00Z')
     vi.spyOn(global, 'Date').mockImplementation(function () {
       return mockDate
@@ -33,13 +22,7 @@ describe('POST /exemption/submit', () => {
     Date.now = vi.fn(() => mockDate.getTime())
   })
 
-  afterAll(async () => {
-    await server?.stop({ timeout: 1000 })
-  })
-
   beforeEach(async () => {
-    await db.collection('exemptions').deleteMany({})
-
     exemptionId = new ObjectId()
     const completeExemption = createCompleteExemption({
       _id: exemptionId,
@@ -50,7 +33,7 @@ describe('POST /exemption/submit', () => {
   })
 
   it('should successfully submit a complete exemption', async () => {
-    const response = await server.inject({
+    const response = await getServer().inject({
       method: 'POST',
       url: '/exemption/submit',
       payload: {
@@ -93,7 +76,7 @@ describe('POST /exemption/submit', () => {
   it('should return 404 if not found in database', async () => {
     await db.collection('exemptions').deleteMany({})
 
-    const response = await server.inject({
+    const response = await getServer().inject({
       method: 'POST',
       url: '/exemption/submit',
       payload: {
@@ -144,7 +127,7 @@ describe('POST /exemption/submit', () => {
       }
     ])
 
-    const response = await server.inject({
+    const response = await getServer().inject({
       method: 'POST',
       url: '/exemption/submit',
       payload: {
