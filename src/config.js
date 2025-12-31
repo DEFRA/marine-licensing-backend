@@ -175,7 +175,7 @@ const config = convict({
           'secondaryPreferred',
           'nearest'
         ],
-        default: null,
+        default: 'primary',
         nullable: true,
         env: 'MONGO_READ_PREFERENCE'
       }
