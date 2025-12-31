@@ -389,3 +389,4 @@ Tests are run via npm scripts (see package.json). Key patterns:
 - **Dockerfile** - Multi-stage build (development and production)
 - **.github/example.dependabot.yml** - Dependency updates configuration
 - After a refactor, ensure any related unit tests pass
+- When adding integration tests, not every edge case needs to be covered ie don't cover every validation scenario. Those will be covered by lower level unit tests.

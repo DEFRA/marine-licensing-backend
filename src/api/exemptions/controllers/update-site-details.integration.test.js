@@ -1,25 +1,17 @@
-describe('PATCH /exemption/site-details - payload size limits', () => {
-  let server
+import { setupTestServer } from '../../../../tests/test-server.js'
+
+describe('PATCH /exemption/site-details - payload size limits', async () => {
+  const getServer = await setupTestServer()
   const tenMegaBytes = 10 * 1000 * 1000
 
   const mockCredentials = {
     contactId: '123e4567-e89b-12d3-a456-426614174000'
   }
 
-  beforeAll(async () => {
-    const { createServer } = await import('../../../server.js')
-    server = await createServer()
-    await server.initialize()
-  })
-
-  afterAll(async () => {
-    await server?.stop({ timeout: 1000 })
-  })
-
   it('should reject payload 1 byte over the 10MB threshold', async () => {
     const oversizedString = 'x'.repeat(tenMegaBytes + 1)
 
-    const response = await server.inject({
+    const response = await getServer().inject({
       method: 'PATCH',
       url: '/exemption/site-details',
       payload: oversizedString,
@@ -42,7 +34,7 @@ describe('PATCH /exemption/site-details - payload size limits', () => {
   it('should accept payload exactly at the 10MB threshold', async () => {
     const exactString = 'x'.repeat(tenMegaBytes)
 
-    const response = await server.inject({
+    const response = await getServer().inject({
       method: 'PATCH',
       url: '/exemption/site-details',
       payload: exactString,
@@ -58,7 +50,7 @@ describe('PATCH /exemption/site-details - payload size limits', () => {
   it('should accept payload 1 byte below the 10MB threshold', async () => {
     const undersizedString = 'x'.repeat(tenMegaBytes - 1)
 
-    const response = await server.inject({
+    const response = await getServer().inject({
       method: 'PATCH',
       url: '/exemption/site-details',
       payload: undersizedString,

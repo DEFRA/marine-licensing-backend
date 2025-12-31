@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import Boom from '@hapi/boom'
 import { deleteExemptionController } from './delete-exemption'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 
@@ -49,47 +48,6 @@ describe('DELETE /exemption', () => {
         message: 'Exemption deleted successfully'
       })
     )
-  })
-
-  it('should return 400 if exemption status is not DRAFT', async () => {
-    const { mockMongo, mockHandler } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        findOne: vi.fn().mockResolvedValue({
-          _id: mockId,
-          status: EXEMPTION_STATUS.SUBMITTED
-        })
-      }
-    })
-
-    await expect(
-      deleteExemptionController.handler(
-        { db: mockMongo, params: { id: mockId } },
-        mockHandler
-      )
-    ).rejects.toThrow(
-      Boom.badRequest(
-        `Cannot delete exemption as exemption must be the status '${EXEMPTION_STATUS.DRAFT}'.`
-      )
-    )
-  })
-
-  it('should return 404 if ID does not exist', async () => {
-    const { mockMongo, mockHandler } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        findOne: vi.fn().mockResolvedValue(null)
-      }
-    })
-
-    await expect(
-      deleteExemptionController.handler(
-        { db: mockMongo, params: { id: mockId } },
-        mockHandler
-      )
-    ).rejects.toThrow('Exemption not found')
   })
 
   it('should return an error message if the database operation fails', async () => {

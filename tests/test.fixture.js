@@ -20,7 +20,7 @@ export const createCompleteExemption = (overrides = {}) => {
     },
     projectName: 'Test Marine Project',
     publicRegister: {
-      consent: true
+      consent: 'yes'
     },
     multipleSiteDetails: {
       multipleSitesEnabled: false
@@ -43,8 +43,8 @@ export const createCompleteExemption = (overrides = {}) => {
       }
     ],
     status: EXEMPTION_STATUS.DRAFT,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date('2026-12-01'),
+    updatedAt: new Date('2026-12-01'),
     ...overrides
   }
 }
