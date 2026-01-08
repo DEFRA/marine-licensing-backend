@@ -25,7 +25,13 @@ const equal = (x, y) => {
 
 export const areCoordsTheSame = (coord1, coord2) => {
   return (
-    equal(parseFloat(coord1.latitude), parseFloat(coord2.latitude)) &&
-    equal(parseFloat(coord1.longitude), parseFloat(coord2.longitude))
+    equal(
+      Number.parseFloat(coord1.latitude),
+      Number.parseFloat(coord2.latitude)
+    ) &&
+    equal(
+      Number.parseFloat(coord1.longitude),
+      Number.parseFloat(coord2.longitude)
+    )
   )
 }
