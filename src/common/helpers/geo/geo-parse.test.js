@@ -20,7 +20,13 @@ import {
 } from './test.fixture.js'
 import { marinePlanAreas } from '../../constants/db-collections.js'
 
-vi.mock('./geo-utils.js')
+vi.mock('./geo-utils.js', async () => {
+  const actual = await vi.importActual('./geo-utils.js')
+  return {
+    ...actual,
+    singleOSGB36toWGS84: vi.fn()
+  }
+})
 vi.mock('../emp/transforms/circle-to-polygon.js')
 vi.mock('./geo-search.js')
 vi.mock('../logging/logger.js')
@@ -101,7 +107,8 @@ describe('geo-parse', () => {
             [
               [-0.178408, 54.088594],
               [-0.177369, 54.086782],
-              [-0.175219, 54.088057]
+              [-0.175219, 54.088057],
+              [-0.178408, 54.088594]
             ]
           ]
         }
@@ -112,17 +119,19 @@ describe('geo-parse', () => {
       const mockConvertedCoords = [
         [-0.178408, 54.088594],
         [-0.177369, 54.086782],
-        [-0.175219, 54.088057]
+        [-0.175219, 54.088057],
+        [-0.178408, 54.088594]
       ]
 
       vi.mocked(singleOSGB36toWGS84)
         .mockReturnValueOnce(mockConvertedCoords[0])
         .mockReturnValueOnce(mockConvertedCoords[1])
         .mockReturnValueOnce(mockConvertedCoords[2])
+        .mockReturnValueOnce(mockConvertedCoords[0])
 
       const result = convertMultipleCoordinates(mockSiteMultipleOSGB36)
 
-      expect(singleOSGB36toWGS84).toHaveBeenCalledTimes(3)
+      expect(singleOSGB36toWGS84).toHaveBeenCalledTimes(4)
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith('513967', '476895')
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith('514040', '476693')
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith('514193', '476835')
@@ -132,6 +141,48 @@ describe('geo-parse', () => {
           coordinates: [mockConvertedCoords]
         }
       ])
+    })
+
+    test('should not add closing coordinate when shape is already closed', () => {
+      const closedCoordinates = [
+        {
+          latitude: '54.088594',
+          longitude: '-0.178408'
+        },
+        {
+          latitude: '54.086782',
+          longitude: '-0.177369'
+        },
+        {
+          latitude: '54.088057',
+          longitude: '-0.175219'
+        },
+        {
+          latitude: '54.088594',
+          longitude: '-0.178408'
+        }
+      ]
+
+      const result = convertMultipleCoordinates({
+        ...mockSiteMultipleWGS84,
+        coordinates: closedCoordinates
+      })
+
+      expect(result).toEqual([
+        {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [-0.178408, 54.088594],
+              [-0.177369, 54.086782],
+              [-0.175219, 54.088057],
+              [-0.178408, 54.088594]
+            ]
+          ]
+        }
+      ])
+
+      expect(result[0].coordinates[0]).toHaveLength(4)
     })
   })
 
@@ -295,7 +346,8 @@ describe('geo-parse', () => {
               [
                 [-0.178408, 54.088594],
                 [-0.177369, 54.086782],
-                [-0.175219, 54.088057]
+                [-0.175219, 54.088057],
+                [-0.178408, 54.088594]
               ]
             ]
           }

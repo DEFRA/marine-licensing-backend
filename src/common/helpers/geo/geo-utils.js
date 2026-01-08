@@ -18,3 +18,14 @@ export const addBufferToShape = (geometry, amount = 50) => {
     )
   }
 }
+
+const equal = (x, y) => {
+  return Math.abs(x - y) < Number.EPSILON
+}
+
+export const areCoordsTheSame = (coord1, coord2) => {
+  return (
+    equal(parseFloat(coord1.latitude), parseFloat(coord2.latitude)) &&
+    equal(parseFloat(coord1.longitude), parseFloat(coord2.longitude))
+  )
+}
