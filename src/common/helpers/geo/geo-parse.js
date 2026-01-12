@@ -1,6 +1,6 @@
 import Boom from '@hapi/boom'
 import { generateCirclePolygon } from '../emp/transforms/circle-to-polygon.js'
-import { singleOSGB36toWGS84 } from './geo-utils.js'
+import { areCoordsTheSame, singleOSGB36toWGS84 } from './geo-utils.js'
 import { outputIntersectionAreas } from './geo-search.js'
 import { createLogger, structureErrorForECS } from '../logging/logger.js'
 
@@ -30,7 +30,13 @@ export const convertSingleCoordinates = (site) => {
 export const convertMultipleCoordinates = (site) => {
   const siteGeometries = []
 
-  const polygonCoords = site.coordinates.map((coord) => {
+  const coordinates = [...site.coordinates]
+
+  if (!areCoordsTheSame(coordinates[0], coordinates.at(-1))) {
+    coordinates.push(coordinates[0])
+  }
+
+  const polygonCoords = coordinates.map((coord) => {
     if (site.coordinateSystem === 'osgb36') {
       return singleOSGB36toWGS84(coord.eastings, coord.northings)
     } else {

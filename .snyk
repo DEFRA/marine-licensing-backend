@@ -7,6 +7,6 @@ ignore:
         reason: >-
           Only used for RSA JWKS from trusted IdPs; no attacker‑controlled keys
           or signatures.
-        expires: 2026-01-03T08:40:31.496Z
+        expires: 2026-03-03T08:40:31.496Z
         created: 2025-12-04T08:40:31.498Z
 patch: {}

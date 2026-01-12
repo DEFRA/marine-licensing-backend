@@ -1,7 +1,11 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import proj4 from 'proj4'
 import { buffer } from '@turf/turf'
-import { singleOSGB36toWGS84, addBufferToShape } from './geo-utils.js'
+import {
+  singleOSGB36toWGS84,
+  addBufferToShape,
+  areCoordsTheSame
+} from './geo-utils.js'
 import { mockPointGeometry, mockPolygonGeometry } from './test.fixture.js'
 
 vi.mock('proj4')
@@ -59,6 +63,62 @@ describe('geo-utils', () => {
       expect(buffer).toHaveBeenCalledWith({}, 50, {
         units: 'meters'
       })
+    })
+  })
+
+  describe('areCoordsTheSame', () => {
+    test('should return true when coordinates are identical', () => {
+      const coord1 = { latitude: '54.088594', longitude: '-0.178408' }
+      const coord2 = { latitude: '54.088594', longitude: '-0.178408' }
+
+      const result = areCoordsTheSame(coord1, coord2)
+
+      expect(result).toBe(true)
+    })
+
+    test('should return true when coordinates are identical with different string formats', () => {
+      const coord1 = { latitude: '54.088594', longitude: '-0.178408' }
+      const coord2 = { latitude: '54.088594000', longitude: '-0.178408000' }
+
+      const result = areCoordsTheSame(coord1, coord2)
+
+      expect(result).toBe(true)
+    })
+
+    test('should return false when latitudes are different', () => {
+      const coord1 = { latitude: '54.088594', longitude: '-0.178408' }
+      const coord2 = { latitude: '54.088595', longitude: '-0.178408' }
+
+      const result = areCoordsTheSame(coord1, coord2)
+
+      expect(result).toBe(false)
+    })
+
+    test('should return false when longitudes are different', () => {
+      const coord1 = { latitude: '54.088594', longitude: '-0.178408' }
+      const coord2 = { latitude: '54.088594', longitude: '-0.178409' }
+
+      const result = areCoordsTheSame(coord1, coord2)
+
+      expect(result).toBe(false)
+    })
+
+    test('should handle numeric string coordinates', () => {
+      const coord1 = { latitude: '51.5074', longitude: '-0.1278' }
+      const coord2 = { latitude: '51.5074', longitude: '-0.1278' }
+
+      const result = areCoordsTheSame(coord1, coord2)
+
+      expect(result).toBe(true)
+    })
+
+    test('should detect very small differences in coordinates', () => {
+      const coord1 = { latitude: '54.088594', longitude: '-0.178408' }
+      const coord2 = { latitude: '54.088594001', longitude: '-0.178408' }
+
+      const result = areCoordsTheSame(coord1, coord2)
+
+      expect(result).toBe(false)
     })
   })
 })
