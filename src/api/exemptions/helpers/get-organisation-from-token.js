@@ -16,3 +16,31 @@ export const getOrganisationIdFromAuthToken = (auth) => {
   const [, organisationId] = relationship?.split(':') || []
   return organisationId || null
 }
+
+export const getOrganisationDetailsFromAuthToken = (auth) => {
+  const { currentRelationshipId, relationships } =
+    auth?.artifacts?.decoded || {}
+  if (!currentRelationshipId || !Array.isArray(relationships)) {
+    return {
+      organisationId: null,
+      organisationName: null,
+      userRelationshipType: 'Citizen'
+    }
+  }
+  const relationship = relationships.find((r) =>
+    r.startsWith(currentRelationshipId)
+  )
+  const [, organisationId, organisationName, , relationshipType] =
+    relationship?.split(':') || []
+
+  let userRelationshipType = relationshipType
+  if (!['Employee', 'Agent', 'Citizen'].includes(userRelationshipType)) {
+    userRelationshipType = 'Citizen'
+  }
+
+  return {
+    organisationId: organisationId || null,
+    organisationName: organisationName || null,
+    userRelationshipType
+  }
+}
