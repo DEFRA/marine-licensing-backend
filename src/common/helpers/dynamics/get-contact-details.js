@@ -6,14 +6,12 @@ import { config } from '../../../config.js'
 
 const logger = createLogger()
 
-// Helper function to validate GUID format
 const isValidGuid = (guid) => {
   const guidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return guidRegex.test(guid)
 }
 
-// Helper function to escape OData string values
 const escapeODataString = (str) => {
   return String(str).replaceAll("'", "''")
 }
@@ -99,7 +97,14 @@ export const getContactNameById = async ({ contactId }) => {
 }
 
 const MAX_BATCH_SIZE = 50
-
+/**
+ * Look up fullname for multiple contacts at once
+ * @param {string[]} contactIds - Array of contact GUIDs
+ * @returns {Promise<Object<string, string>>} Map of contactId to fullname (or '-' if unavailable)
+ * @example
+ * const names = await batchGetContactNames(['guid-1', 'guid-2'])
+ * // { 'guid-1': 'John Smith', 'guid-2': 'Jane Doe' }
+ */
 export const batchGetContactNames = async (contactIds) => {
   const {
     contactDetails: { baseUrl },

@@ -4,44 +4,31 @@ import { EXEMPTION_STATUS_LABEL } from '../../../common/constants/exemption.js'
 import { getOrganisationDetailsFromAuthToken } from '../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 
-const transformExemption = (exemption, currentContactId, ownerNames = {}) => {
-  const {
-    _id,
-    projectName,
-    applicationReference,
-    status,
-    submittedAt,
-    contactId
-  } = exemption
-
-  const isOwnProject = contactId === currentContactId
-  const ownerName = ownerNames[contactId] || '-'
+const transformExemptionBase = (exemption) => {
+  const { _id, projectName, applicationReference, status, submittedAt } = exemption
 
   return {
     id: _id.toString(),
     ...(status && { status: EXEMPTION_STATUS_LABEL[status] || status }),
     ...(projectName && { projectName }),
     ...(applicationReference && { applicationReference }),
-    ...(submittedAt && { submittedAt }),
+    ...(submittedAt && { submittedAt })
+  }
+}
+
+const transformExemption = (exemption, currentContactId, ownerNames = {}) => {
+  const { contactId } = exemption
+
+  return {
+    ...transformExemptionBase(exemption),
     contactId,
-    isOwnProject,
-    ownerName
+    isOwnProject: contactId === currentContactId,
+    ownerName: ownerNames[contactId] || '-'
   }
 }
 
 const transformedExemptions = (exemptions) =>
-  exemptions.map((exemption) => {
-    const { _id, projectName, applicationReference, status, submittedAt } =
-      exemption
-
-    return {
-      id: _id.toString(),
-      ...(status && { status: EXEMPTION_STATUS_LABEL[status] || status }),
-      ...(projectName && { projectName }),
-      ...(applicationReference && { applicationReference }),
-      ...(submittedAt && { submittedAt })
-    }
-  })
+  exemptions.map(transformExemptionBase)
 
 export const sortByStatus = (a, b) => {
   const statusOrder = [
