@@ -1,3 +1,7 @@
+import { createLogger } from '../../../common/helpers/logging/logger.js'
+
+const logger = createLogger()
+
 export const getOrganisationIdFromAuthToken = (auth) => {
   // currentRelationshipId is the relationship the user is signing into the service in the context of, based on what they selected in the organisation picker (either themselves, or a linked org)
   // relationships - The relationships the user has selected to sign into the service in, within their current session.
@@ -30,8 +34,31 @@ export const getOrganisationDetailsFromAuthToken = (auth) => {
   const relationship = relationships.find((r) =>
     r.startsWith(currentRelationshipId)
   )
-  const [, organisationId, organisationName, , relationshipType] =
-    relationship?.split(':') || []
+
+  // Validate relationship format before destructuring
+  if (!relationship) {
+    return {
+      organisationId: null,
+      organisationName: null,
+      userRelationshipType: 'Citizen'
+    }
+  }
+
+  const parts = relationship.split(':')
+  // Expected format: relationshipId:organisationId:organisationName:organisationLoa:relationshipType:relationshipLoa
+  // We need at least 5 parts to safely extract organisationId (index 1), organisationName (index 2), and relationshipType (index 4)
+  if (parts.length < 5) {
+    logger.warn(
+      `Invalid relationship format: expected at least 5 parts, got ${parts.length}`
+    )
+    return {
+      organisationId: null,
+      organisationName: null,
+      userRelationshipType: 'Citizen'
+    }
+  }
+
+  const [, organisationId, organisationName, , relationshipType] = parts
 
   let userRelationshipType = relationshipType
   if (!['Employee', 'Agent', 'Citizen'].includes(userRelationshipType)) {
