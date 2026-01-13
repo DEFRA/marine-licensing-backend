@@ -1,9 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../helpers/get-contact-id.js'
 import { EXEMPTION_STATUS_LABEL } from '../../../common/constants/exemption.js'
-import {
-  getOrganisationDetailsFromAuthToken
-} from '../helpers/get-organisation-from-token.js'
+import { getOrganisationDetailsFromAuthToken } from '../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 
 const transformExemption = (exemption, currentContactId, ownerNames = {}) => {

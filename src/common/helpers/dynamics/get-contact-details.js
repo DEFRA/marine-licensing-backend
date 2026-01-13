@@ -8,7 +8,8 @@ const logger = createLogger()
 
 // Helper function to validate GUID format
 const isValidGuid = (guid) => {
-  const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const guidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
   return guidRegex.test(guid)
 }
 
@@ -17,7 +18,61 @@ const escapeODataString = (str) => {
   return String(str).replaceAll("'", "''")
 }
 
+const dynamicsHeaders = (accessToken) => ({
+  Authorization: `Bearer ${accessToken}`,
+  Accept: 'application/json',
+  'OData-Version': '4.0',
+  'OData-MaxVersion': '4.0'
+})
+
+const parseResponse = (response) => {
+  const jsonString = Buffer.from(response.payload).toString('utf8')
+  return JSON.parse(jsonString)
+}
+
+const filterValidContactIds = (contactIds) => {
+  const uniqueIds = [...new Set(contactIds)]
+
+  return uniqueIds.filter((id) => {
+    if (!id) {
+      logger.warn('Empty contact ID provided')
+      return false
+    }
+    if (!isValidGuid(id)) {
+      logger.warn(`Invalid contact ID format: ${id}`)
+      return false
+    }
+    return true
+  })
+}
+
+const fetchContactBatch = async (batchIds, baseUrl) => {
+  const accessToken = await getDynamicsAccessToken({ type: 'contactDetails' })
+
+  const filterClauses = batchIds
+    .map((id) => `contactid eq '${escapeODataString(id)}'`)
+    .join(' or ')
+  const endpoint = `${baseUrl}/contacts?$select=fullname,contactid&$filter=${filterClauses}`
+
+  const response = await Wreck.get(endpoint, {
+    headers: dynamicsHeaders(accessToken)
+  })
+
+  const parsedData = parseResponse(response)
+  const contacts = parsedData.value || []
+
+  return contacts.reduce((map, contact) => {
+    map[contact.contactid] = contact.fullname || '-'
+    return map
+  }, {})
+}
+
 export const getContactNameById = async ({ contactId }) => {
+  if (!isValidGuid(contactId)) {
+    logger.warn(`Invalid contact ID format in getContactNameById: ${contactId}`)
+    return null
+  }
+
   logger.info(`Dynamics contact details requested for ID ${contactId}`)
   try {
     const {
@@ -28,20 +83,11 @@ export const getContactNameById = async ({ contactId }) => {
       return null
     }
     const endpoint = apiUrl.replace('{{contactId}}', contactId)
-    const accessToken = await getDynamicsAccessToken({
-      type: 'contactDetails'
-    })
+    const accessToken = await getDynamicsAccessToken({ type: 'contactDetails' })
     const response = await Wreck.get(endpoint, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: 'application/json',
-        'OData-Version': '4.0',
-        'OData-MaxVersion': '4.0'
-      }
+      headers: dynamicsHeaders(accessToken)
     })
-    const jsonString = Buffer.from(response.payload).toString('utf8')
-    const parsedData = JSON.parse(jsonString)
-    const { fullname } = parsedData
+    const { fullname } = parseResponse(response)
     return fullname
   } catch (err) {
     logger.error(
@@ -51,6 +97,8 @@ export const getContactNameById = async ({ contactId }) => {
     return null
   }
 }
+
+const MAX_BATCH_SIZE = 50
 
 export const batchGetContactNames = async (contactIds) => {
   const {
@@ -62,81 +110,40 @@ export const batchGetContactNames = async (contactIds) => {
     return {}
   }
 
-  const uniqueIds = [...new Set(contactIds)]
-
-  // Validate and sanitize IDs
-  const processedIds = uniqueIds.reduce((acc, id) => {
-    if (!id) {
-      logger.warn('Empty contact ID provided')
-      return acc
-    }
-
-    if (!isValidGuid(id)) {
-      logger.warn(`Invalid contact ID format: ${id}`)
-      return acc
-    }
-
-    acc.push(id)
-    return acc
-  }, [])
-
-  if (processedIds.length === 0) {
+  const validIds = filterValidContactIds(contactIds)
+  if (validIds.length === 0) {
     logger.warn('No valid contact IDs provided for batch lookup')
     return {}
   }
 
   logger.info(
-    `Dynamics batch contact details requested for ${processedIds.length} contacts`
+    `Dynamics batch contact details requested for ${validIds.length} contacts`
   )
 
-  // We will need to address max batch sizes and pagination in a future ticket.
-  const MAX_BATCH_SIZE = 50 // Dynamics typically has limits
-
-  if (processedIds.length > MAX_BATCH_SIZE) {
-    logger.warn(
-      `Batch size (${processedIds.length}) exceeds recommended limit (${MAX_BATCH_SIZE})`
-    )
-  }
+  const results = {}
 
   try {
-    return await retryAsyncOperation({
-      operation: async () => {
-        const accessToken = await getDynamicsAccessToken({
-          type: 'contactDetails'
-        })
-
-        // Even though we validated GUIDs, still escape as defense in depth
-        const filterClauses = processedIds
-          .map((id) => `contactid eq '${escapeODataString(id)}'`)
-          .join(' or ')
-        const endpoint = `${baseUrl}/contacts?$select=fullname,contactid&$filter=${filterClauses}`
-
-        const response = await Wreck.get(endpoint, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: 'application/json',
-            'OData-Version': '4.0',
-            'OData-MaxVersion': '4.0'
-          }
-        })
-
-        const jsonString = Buffer.from(response.payload).toString('utf8')
-        const parsedData = JSON.parse(jsonString)
-        const contacts = parsedData.value || []
-
-        return contacts.reduce((map, contact) => {
-          map[contact.contactid] = contact.fullname || '-'
-          return map
-        }, {})
-      },
-      retries: 3,
-      intervalMs: 1000
-    })
+    for (let i = 0; i < validIds.length; i += MAX_BATCH_SIZE) {
+      const batchIds = validIds.slice(i, i + MAX_BATCH_SIZE)
+      const batchResult = await retryAsyncOperation({
+        operation: () => fetchContactBatch(batchIds, baseUrl),
+        retries: 3,
+        intervalMs: 1000
+      })
+      Object.assign(results, batchResult)
+    }
+    return results
   } catch (err) {
     logger.error(
       structureErrorForECS(err),
       'Error fetching batch contact names after retries'
     )
-    return {}
+    // Return what we have so far, with fallbacks for any missing IDs
+    validIds.forEach((id) => {
+      if (!results[id]) {
+        results[id] = '-'
+      }
+    })
+    return results
   }
 }
