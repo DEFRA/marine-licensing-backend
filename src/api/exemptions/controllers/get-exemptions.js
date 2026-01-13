@@ -5,7 +5,8 @@ import { getOrganisationDetailsFromAuthToken } from '../helpers/get-organisation
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 
 const transformExemptionBase = (exemption) => {
-  const { _id, projectName, applicationReference, status, submittedAt } = exemption
+  const { _id, projectName, applicationReference, status, submittedAt } =
+    exemption
 
   return {
     id: _id.toString(),
