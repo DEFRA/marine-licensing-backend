@@ -100,7 +100,7 @@ export const getExemptionsController = {
       .sort({ projectName: 1 })
       .toArray()
 
-    // The second sort here is using relying on stable sort to achieve a final sort
+    // The second sort here is relying on stable sort to achieve a final sort
     // by status and then subsorted by project name if the status is the same.
     const transformed = transformedExemptions(exemptions).sort(sortByStatus)
 
