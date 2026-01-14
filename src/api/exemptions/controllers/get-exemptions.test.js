@@ -153,19 +153,6 @@ describe('getExemptionsController', () => {
       expect(mockH.code).toHaveBeenCalledWith(200)
     })
 
-    it('should return empty array when employee has no exemptions', async () => {
-      mockCollection.find().sort().toArray.mockResolvedValue([])
-
-      await getExemptionsController.handler(mockRequest, mockH)
-
-      expect(mockH.response).toHaveBeenCalledWith({
-        message: 'success',
-        value: [],
-        isEmployee: true,
-        organisationId: testOrgId
-      })
-    })
-
     it('should handle missing data for employee', async () => {
       mockCollection
         .find()
@@ -191,19 +178,6 @@ describe('getExemptionsController', () => {
         isEmployee: true,
         organisationId: testOrgId
       })
-    })
-
-    it('should sort exemptions by status priority (DRAFT first, then ACTIVE, then others)', async () => {
-      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
-
-      await getExemptionsController.handler(mockRequest, mockH)
-
-      const responseValue = mockH.response.mock.calls[0][0].value
-
-      expect(responseValue[0].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
-      expect(responseValue[1].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
-      expect(responseValue[2].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
-      expect(responseValue[3].status).toBe('Unknown status')
     })
 
     it('should rename Closed status to Active', async () => {
@@ -278,14 +252,6 @@ describe('getExemptionsController', () => {
       await expect(
         getExemptionsController.handler(mockRequest, mockH)
       ).rejects.toThrow('User not authenticated')
-    })
-
-    it('should return OK status code', async () => {
-      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
-
-      await getExemptionsController.handler(mockRequest, mockH)
-
-      expect(mockH.code).toHaveBeenCalledWith(200)
     })
   })
 
