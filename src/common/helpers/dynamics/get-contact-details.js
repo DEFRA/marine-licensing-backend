@@ -13,7 +13,16 @@ const isValidGuid = (guid) => {
 }
 
 const escapeODataString = (str) => {
-  return String(str).replaceAll("'", "''")
+  if (str === null || str === undefined) {
+    throw new Error('Cannot escape null or undefined value for OData query')
+  }
+
+  if (typeof str !== 'string') {
+    logger.warn(`escapeODataString received non-string value: ${typeof str}`)
+    str = String(str)
+  }
+
+  return str.trim().replaceAll("'", "''")
 }
 
 const dynamicsHeaders = (accessToken) => ({
