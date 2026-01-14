@@ -1,6 +1,7 @@
 import proj4 from 'proj4'
 import { buffer } from '@turf/turf'
 import Boom from '@hapi/boom'
+import { equal } from '../utils.js'
 
 export const singleOSGB36toWGS84 = ({ eastings, northings }) =>
   proj4('OSGB36', 'WGS84', [
@@ -17,4 +18,17 @@ export const addBufferToShape = (geometry, amount = 50) => {
       `Error adding buffer to shape: ${error.message}`
     )
   }
+}
+
+export const areCoordsTheSame = (coord1, coord2) => {
+  return (
+    equal(
+      Number.parseFloat(coord1.latitude),
+      Number.parseFloat(coord2.latitude)
+    ) &&
+    equal(
+      Number.parseFloat(coord1.longitude),
+      Number.parseFloat(coord2.longitude)
+    )
+  )
 }
