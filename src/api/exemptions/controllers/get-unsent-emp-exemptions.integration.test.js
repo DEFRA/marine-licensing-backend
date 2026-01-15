@@ -12,33 +12,37 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     await globalThis.mockMongo.collection('exemption-emp-queue').deleteMany({})
   })
 
-  test('returns only ACTIVE exemptions sorted by projectName', async () => {
+  test('returns only ACTIVE exemptions sorted by submitted date (newest first)', async () => {
     // Create exemptions with different statuses
     const activeExemption1 = createCompleteExemption({
       _id: new ObjectId(),
       status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Zebra Project',
-      applicationReference: 'EXEMPTION-2024-003'
+      applicationReference: 'EXEMPTION-2024-003',
+      submittedAt: '2023-01-04'
     })
 
     const activeExemption2 = createCompleteExemption({
       _id: new ObjectId(),
       status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Alpha Project',
-      applicationReference: 'EXEMPTION-2024-001'
+      applicationReference: 'EXEMPTION-2024-001',
+      submittedAt: '2024-12-15'
     })
 
     const draftExemption = createCompleteExemption({
       _id: new ObjectId(),
       status: EXEMPTION_STATUS.DRAFT,
-      projectName: 'Draft Project'
+      projectName: 'Draft Project',
+      submittedAt: '2025-06-10'
     })
 
     const activeExemption3 = createCompleteExemption({
       _id: new ObjectId(),
       status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Mango Project',
-      applicationReference: 'EXEMPTION-2024-002'
+      applicationReference: 'EXEMPTION-2024-002',
+      submittedAt: '2026-01-15'
     })
 
     await globalThis.mockMongo
@@ -62,15 +66,8 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     // Verify only ACTIVE exemptions are returned
     expect(body.every((exemption) => exemption.status === 'ACTIVE')).toBe(true)
 
-    // Verify they are sorted by projectName (ascending)
-    expect(body[0].projectName).toBe('Alpha Project')
-    expect(body[1].projectName).toBe('Mango Project')
-    expect(body[2].projectName).toBe('Zebra Project')
-
-    // Verify application references are included
-    expect(body[0].applicationReference).toBe('EXEMPTION-2024-001')
-    expect(body[1].applicationReference).toBe('EXEMPTION-2024-002')
-    expect(body[2].applicationReference).toBe('EXEMPTION-2024-003')
+    const submittedDates = body.map((exemption) => exemption.submittedAt)
+    expect(submittedDates).toEqual(['2026-01-15', '2024-12-15', '2023-01-04'])
   })
 
   test('returns empty array when no ACTIVE exemptions exist', async () => {
@@ -167,40 +164,6 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     expect(statusCode).toBe(200)
     expect(body).toHaveLength(1)
     expect(body[0].projectName).toBe('Minimal Project')
-  })
-
-  test('returns multiple ACTIVE exemptions in correct sort order', async () => {
-    const exemptions = [
-      createCompleteExemption({
-        _id: new ObjectId(),
-        status: EXEMPTION_STATUS.ACTIVE,
-        projectName: 'Project C'
-      }),
-      createCompleteExemption({
-        _id: new ObjectId(),
-        status: EXEMPTION_STATUS.ACTIVE,
-        projectName: 'Project A'
-      }),
-      createCompleteExemption({
-        _id: new ObjectId(),
-        status: EXEMPTION_STATUS.ACTIVE,
-        projectName: 'Project B'
-      })
-    ]
-
-    await globalThis.mockMongo.collection('exemptions').insertMany(exemptions)
-
-    const { statusCode, body } = await makeGetRequest({
-      server: getServer(),
-      url: '/exemptions/send-to-emp',
-      isInternalUser: true
-    })
-
-    expect(statusCode).toBe(200)
-    expect(body).toHaveLength(3)
-    expect(body[0].projectName).toBe('Project A')
-    expect(body[1].projectName).toBe('Project B')
-    expect(body[2].projectName).toBe('Project C')
   })
 
   test('filters out exemptions that are already in the EMP queue', async () => {

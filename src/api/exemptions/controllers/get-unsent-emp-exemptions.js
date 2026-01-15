@@ -22,7 +22,7 @@ export const getUnsentEmpExemptionsController = {
       .find({
         status: 'ACTIVE'
       })
-      .sort({ projectName: 1 })
+      .sort({ submittedAt: -1 })
       .toArray()
 
     // Filter out exemptions that are already in the queue
