@@ -8,7 +8,7 @@ describe('transformExemptionToEmpRequest', () => {
     ({ dbRecord, expected }) => {
       const result = transformExemptionToEmpRequest({
         exemption: dbRecord,
-        applicantName: 'Test Applicant'
+        whoExemptionIsFor: 'Test Applicant'
       })
       expect(result).toEqual(expected)
     }

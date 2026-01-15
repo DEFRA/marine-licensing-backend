@@ -1,4 +1,3 @@
-import { isOrganisationEmployee } from '../../organisations.js'
 import { getProjectStartEndDates } from './get-project-start-end-dates.js'
 import { shortIsoDate } from './short-iso-date.js'
 import { transformSiteDetails } from './site-details.js'
@@ -6,13 +5,10 @@ import { config } from '../../../../config.js'
 
 export const transformExemptionToEmpRequest = ({
   exemption,
-  applicantName
+  whoExemptionIsFor
 }) => {
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
-  const { organisation, mcmsContext, publicRegister, siteDetails } = exemption
-  const applicantOrgName = isOrganisationEmployee(organisation)
-    ? organisation?.name
-    : undefined
+  const { mcmsContext, publicRegister, siteDetails } = exemption
 
   // this is counter-intuitive and we're going to ask the EMP team to change to
   //  'no' is 0 and 'yes' is 1
@@ -28,11 +24,7 @@ export const transformExemptionToEmpRequest = ({
     attributes: {
       CaseReference: exemption.applicationReference,
       ApplicationTy: 'Exemption notification',
-      ApplicantID: exemption.contactId,
-      ApplicantName: applicantName,
-      ApplicantOrg: applicantOrgName,
-      ClientOrgID: organisation?.id,
-      ClientOrgName: organisation?.name,
+      ApplicantName: whoExemptionIsFor,
       Project: exemption.projectName,
       ActivityTy: mcmsContext?.activity?.label,
       SubActTy: mcmsContext?.activity?.purpose,

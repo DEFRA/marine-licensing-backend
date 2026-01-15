@@ -109,7 +109,7 @@ export const sendExemptionToEmp = async (server, queueItem) => {
   try {
     const features = transformExemptionToEmpRequest({
       exemption,
-      applicantName: queueItem.userName
+      whoExemptionIsFor: queueItem.whoExemptionIsFor
     })
     // https://developers.arcgis.com/rest/services-reference/enterprise/add-features/
     const { addResults } = await addFeatures({
