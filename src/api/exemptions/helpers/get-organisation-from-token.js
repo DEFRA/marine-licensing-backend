@@ -21,6 +21,8 @@ export const getOrganisationIdFromAuthToken = (auth) => {
   return organisationId || null
 }
 
+const EXPECTED_RELATIONSHIP_PARTS_COUNT = 5
+
 export const getOrganisationDetailsFromAuthToken = (auth) => {
   const { currentRelationshipId, relationships } =
     auth?.artifacts?.decoded || {}
@@ -47,7 +49,7 @@ export const getOrganisationDetailsFromAuthToken = (auth) => {
   const parts = relationship.split(':')
   // Expected format: relationshipId:organisationId:organisationName:organisationLoa:relationshipType:relationshipLoa
   // We need at least 5 parts to safely extract organisationId (index 1), organisationName (index 2), and relationshipType (index 4)
-  if (parts.length < 5) {
+  if (parts.length < EXPECTED_RELATIONSHIP_PARTS_COUNT) {
     logger.warn(
       `Invalid relationship format: expected at least 5 parts, got ${parts.length}`
     )
