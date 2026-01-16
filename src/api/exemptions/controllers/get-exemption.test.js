@@ -1,5 +1,5 @@
 import { getExemptionController } from './get-exemption'
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 import {
   requestFromApplicantUser,
   requestFromInternalUser,
