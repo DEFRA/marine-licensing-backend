@@ -5,6 +5,7 @@ import { createTaskList } from '../helpers/createTaskList.js'
 import { ExemptionService } from '../services/exemption.service.js'
 import { isApplicantUser } from '../helpers/is-applicant-user.js'
 import { getContactId } from '../helpers/get-contact-id.js'
+import { getOrganisationIdFromAuthToken } from '../helpers/get-organisation-from-token.js'
 
 export const getExemptionController = ({ requiresAuth }) => ({
   options: {
@@ -24,15 +25,19 @@ export const getExemptionController = ({ requiresAuth }) => ({
       let exemption
 
       if (requiresAuth) {
-        // if the user is an applicant, they can only view their own exemptions
+        // if the user is an applicant, they can view their own exemptions or
+        // submitted exemptions from their organisation (colleagues' work)
         // alternatively they're an internal user (logged in with entra ID) and
         // can view any exemption
-        const currentUserId = isApplicantUser(request)
-          ? getContactId(request.auth)
+        const isApplicant = isApplicantUser(request)
+        const currentUserId = isApplicant ? getContactId(request.auth) : null
+        const currentOrganisationId = isApplicant
+          ? getOrganisationIdFromAuthToken(request.auth)
           : null
         exemption = await exemptionService.getExemptionById({
           id,
-          currentUserId
+          currentUserId,
+          currentOrganisationId
         })
       } else {
         exemption = await exemptionService.getPublicExemptionById(id)

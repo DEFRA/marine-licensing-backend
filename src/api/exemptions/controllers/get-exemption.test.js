@@ -174,6 +174,98 @@ describe('GET /exemption', () => {
       ).rejects.toThrow('Not authorized to request this resource')
     })
 
+    it('should allow colleague from same organisation to view submitted exemption', async () => {
+      const { mockMongo, mockHandler } = global
+      const orgId = 'org-123'
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return {
+          findOne: vi.fn().mockResolvedValue({
+            _id: mockId,
+            projectName: 'Test project',
+            contactId: 'different-user-id',
+            status: 'ACTIVE',
+            organisation: { id: orgId, name: 'Test Org' }
+          })
+        }
+      })
+
+      await getExemptionController({ requiresAuth: true }).handler(
+        requestFromApplicantUser({
+          userContactId: 'colleague-id',
+          organisationId: orgId,
+          params: { id: mockId }
+        }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'success',
+          value: expect.objectContaining({
+            id: mockId,
+            projectName: 'Test project',
+            contactId: 'different-user-id'
+          })
+        })
+      )
+    })
+
+    it('should not allow colleague from same organisation to view draft exemption', async () => {
+      const { mockMongo, mockHandler } = global
+      const orgId = 'org-123'
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return {
+          findOne: vi.fn().mockResolvedValue({
+            _id: mockId,
+            projectName: 'Test project',
+            contactId: 'different-user-id',
+            status: 'DRAFT',
+            organisation: { id: orgId, name: 'Test Org' }
+          })
+        }
+      })
+
+      await expect(
+        getExemptionController({ requiresAuth: true }).handler(
+          requestFromApplicantUser({
+            userContactId: 'colleague-id',
+            organisationId: orgId,
+            params: { id: mockId }
+          }),
+          mockHandler
+        )
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
+
+    it('should not allow user from different organisation to view exemption', async () => {
+      const { mockMongo, mockHandler } = global
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return {
+          findOne: vi.fn().mockResolvedValue({
+            _id: mockId,
+            projectName: 'Test project',
+            contactId: 'different-user-id',
+            status: 'ACTIVE',
+            organisation: { id: 'org-123', name: 'Test Org' }
+          })
+        }
+      })
+
+      await expect(
+        getExemptionController({ requiresAuth: true }).handler(
+          requestFromApplicantUser({
+            userContactId: 'other-user',
+            organisationId: 'different-org',
+            params: { id: mockId }
+          }),
+          mockHandler
+        )
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
+
     it('should get exemption by id if user is an internal user', async () => {
       const { mockMongo, mockHandler } = global
 

@@ -1,5 +1,7 @@
+import { vi } from 'vitest'
+
 const createMockRequest = (overrides = {}) => ({
-  db: global.mockMongo,
+  db: globalThis.mockMongo,
   logger: {
     info: vi.fn(),
     error: vi.fn()
@@ -12,12 +14,23 @@ export const requestFromInternalUser = (overrides = {}) => ({
   auth: { artifacts: { decoded: { tid: 'abc' } } }
 })
 
-export const requestFromApplicantUser = (overrides) => ({
-  ...createMockRequest(overrides),
-  auth: {
-    credentials: { contactId: overrides.userContactId || '1' },
-    artifacts: { decoded: {} }
+export const requestFromApplicantUser = (overrides) => {
+  const { userContactId, organisationId, ...rest } = overrides || {}
+  const relationships = organisationId
+    ? [`rel-id:${organisationId}:Org Name:0:Employee:0`]
+    : []
+  return {
+    ...createMockRequest(rest),
+    auth: {
+      credentials: { contactId: userContactId || '1' },
+      artifacts: {
+        decoded: {
+          ...(organisationId && { currentRelationshipId: 'rel-id' }),
+          relationships
+        }
+      }
+    }
   }
-})
+}
 
 export const requestFromPublicUser = (overrides) => createMockRequest(overrides)
