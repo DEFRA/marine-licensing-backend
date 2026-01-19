@@ -50,7 +50,7 @@ export const handleEmpQueueItemFailure = async (server, item) => {
       retries: maxRetries,
       status: REQUEST_QUEUE_STATUS.FAILED,
       updatedAt: new Date(),
-      whoExemptionIsFor: null
+      whoExemptionIsFor: null // so that Personally Identifiable Information is not stored permanently
     })
 
     await server.db.collection(collectionEmpQueue).deleteOne({ _id: item._id })
