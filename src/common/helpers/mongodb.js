@@ -4,6 +4,7 @@ import { LockManager } from 'mongo-locks'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import {
   coastalEnforcementAreas,
+  marineLicenses,
   marinePlanAreas
 } from '../constants/db-collections.js'
 
@@ -77,6 +78,8 @@ async function createIndexes(db) {
 
   await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
   await db.collection('exemption-dynamics-queue-failed').createIndex({ id: 1 })
+
+  await db.collection(marineLicenses).createIndex({ id: 1 })
 
   await db
     .collection(coastalEnforcementAreas)

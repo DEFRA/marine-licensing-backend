@@ -1,8 +1,8 @@
 import Boom from '@hapi/boom'
-import { updateProjectName } from '../../../models/project-name.js'
+import { updateProjectName } from '../../../models/marine-licenses/project-name.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
+import { authorizeOwnership } from '../helpers/authorize-ownership.js'
 
 export const updateProjectNameController = {
   options: {
@@ -23,14 +23,14 @@ export const updateProjectNameController = {
       const { projectName, id, updatedAt, updatedBy } = payload
 
       const result = await db
-        .collection('exemptions')
+        .collection('marine-licenses')
         .updateOne(
           { _id: ObjectId.createFromHexString(id) },
           { $set: { projectName, updatedAt, updatedBy } }
         )
 
       if (result.matchedCount === 0) {
-        throw Boom.notFound('Exemption not found')
+        throw Boom.notFound('Marine license not found')
       }
 
       return h

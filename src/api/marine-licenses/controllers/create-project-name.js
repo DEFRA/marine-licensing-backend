@@ -1,9 +1,10 @@
 import Boom from '@hapi/boom'
-import { createProjectName } from '../../../models/project-name.js'
+import { createProjectName } from '../../../models/marine-licenses/project-name.js'
 import { mcmsContext as mcmsContextPayload } from '../../../models/mcms-context.js'
 import { StatusCodes } from 'http-status-codes'
 import { getContactId } from '../../helpers/get-contact-id.js'
-import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { MARINE_LICENSE_STATUS } from '../../../common/constants/marine-license.js'
+import { marineLicenses } from '../../../common/constants/db-collections.js'
 import { transformMcmsContextForDb } from '../../../common/helpers/mcms/transform-mcms-for-db.js'
 
 export const createProjectNameController = {
@@ -53,13 +54,13 @@ export const createProjectNameController = {
         userRelationshipType
       } = payload
 
-      const result = await db.collection('exemptions').insertOne({
+      const result = await db.collection(marineLicenses).insertOne({
         projectName,
         createdBy,
         createdAt,
         updatedBy,
         updatedAt,
-        status: EXEMPTION_STATUS.DRAFT,
+        status: MARINE_LICENSE_STATUS.DRAFT,
         contactId,
         mcmsContext,
         ...(organisationId

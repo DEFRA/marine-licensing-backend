@@ -1,4 +1,4 @@
-import { getContactId } from '../../api/exemptions/helpers/get-contact-id.js'
+import { getContactId } from '../../api/helpers/get-contact-id.js'
 
 export const addCreateAuditFields = (auth, payload = {}) => {
   const userId = getContactId(auth)
