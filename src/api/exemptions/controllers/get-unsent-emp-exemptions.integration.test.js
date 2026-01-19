@@ -10,35 +10,38 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
   beforeEach(async () => {
     await globalThis.mockMongo.collection('exemptions').deleteMany({})
     await globalThis.mockMongo.collection('exemption-emp-queue').deleteMany({})
+    await globalThis.mockMongo
+      .collection('exemption-emp-queue-failed')
+      .deleteMany({})
   })
 
   test('returns only ACTIVE exemptions sorted by submitted date (newest first)', async () => {
-    // Create exemptions with different statuses
+    const exemptionId1 = new ObjectId()
     const activeExemption1 = createCompleteExemption({
-      _id: new ObjectId(),
+      _id: exemptionId1,
       status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Zebra Project',
       applicationReference: 'EXEMPTION-2024-003',
       submittedAt: '2023-01-04'
     })
-
+    const exemptionId2 = new ObjectId()
     const activeExemption2 = createCompleteExemption({
-      _id: new ObjectId(),
+      _id: exemptionId2,
       status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Alpha Project',
       applicationReference: 'EXEMPTION-2024-001',
       submittedAt: '2024-12-15'
     })
-
+    const exemptionId3 = new ObjectId()
     const draftExemption = createCompleteExemption({
-      _id: new ObjectId(),
+      _id: exemptionId3,
       status: EXEMPTION_STATUS.DRAFT,
       projectName: 'Draft Project',
       submittedAt: '2025-06-10'
     })
-
+    const exemptionId4 = new ObjectId()
     const activeExemption3 = createCompleteExemption({
-      _id: new ObjectId(),
+      _id: exemptionId4,
       status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Mango Project',
       applicationReference: 'EXEMPTION-2024-002',
@@ -61,12 +64,40 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toHaveLength(3)
+    expect(body.unsentExemptions).toHaveLength(3)
+    expect(body.failedPendingRetries).toEqual([])
 
     // Verify only ACTIVE exemptions are returned
-    expect(body.every((exemption) => exemption.status === 'ACTIVE')).toBe(true)
+    expect(body.unsentExemptions).toEqual([
+      {
+        _id: exemptionId4.toString(),
+        applicationReference: 'EXEMPTION-2024-002',
+        projectName: 'Mango Project',
+        status: 'ACTIVE',
+        submittedAt: '2026-01-15',
+        previouslyFailedAt: null
+      },
+      {
+        _id: exemptionId2.toString(),
+        applicationReference: 'EXEMPTION-2024-001',
+        projectName: 'Alpha Project',
+        status: 'ACTIVE',
+        submittedAt: '2024-12-15',
+        previouslyFailedAt: null
+      },
+      {
+        _id: exemptionId1.toString(),
+        applicationReference: 'EXEMPTION-2024-003',
+        projectName: 'Zebra Project',
+        status: 'ACTIVE',
+        submittedAt: '2023-01-04',
+        previouslyFailedAt: null
+      }
+    ])
 
-    const submittedDates = body.map((exemption) => exemption.submittedAt)
+    const submittedDates = body.unsentExemptions.map(
+      (exemption) => exemption.submittedAt
+    )
     expect(submittedDates).toEqual(['2026-01-15', '2024-12-15', '2023-01-04'])
   })
 
@@ -88,7 +119,8 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toEqual([])
+    expect(body.unsentExemptions).toEqual([])
+    expect(body.failedPendingRetries).toEqual([])
   })
 
   test('returns empty array when no exemptions exist', async () => {
@@ -99,46 +131,8 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toEqual([])
-  })
-
-  test('returns all fields for each exemption', async () => {
-    const exemption = createCompleteExemption({
-      _id: new ObjectId(),
-      status: EXEMPTION_STATUS.ACTIVE,
-      projectName: 'Complete Project',
-      applicationReference: 'EXEMPTION-2024-001',
-      organisation: {
-        id: 'org-123',
-        name: 'Test Organisation'
-      }
-    })
-
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
-
-    const { statusCode, body } = await makeGetRequest({
-      server: getServer(),
-      url: '/exemptions/send-to-emp',
-      isInternalUser: true
-    })
-
-    expect(statusCode).toBe(200)
-    expect(body).toHaveLength(1)
-
-    const returnedExemption = body[0]
-
-    // Verify all expected fields are present
-    expect(returnedExemption._id).toBe(exemption._id.toString())
-    expect(returnedExemption.projectName).toBe('Complete Project')
-    expect(returnedExemption.applicationReference).toBe('EXEMPTION-2024-001')
-    expect(returnedExemption.status).toBe('ACTIVE')
-    expect(returnedExemption.organisation).toEqual({
-      id: 'org-123',
-      name: 'Test Organisation'
-    })
-    expect(returnedExemption.contactId).toBe(exemption.contactId)
-    expect(returnedExemption.siteDetails).toBeDefined()
-    expect(returnedExemption.publicRegister).toBeDefined()
+    expect(body.unsentExemptions).toEqual([])
+    expect(body.failedPendingRetries).toEqual([])
   })
 
   test('handles exemptions without optional fields', async () => {
@@ -162,8 +156,9 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toHaveLength(1)
-    expect(body[0].projectName).toBe('Minimal Project')
+    expect(body.unsentExemptions).toHaveLength(1)
+    expect(body.unsentExemptions[0].projectName).toBe('Minimal Project')
+    expect(body.unsentExemptions[0].previouslyFailedAt).toBeNull()
   })
 
   test('filters out exemptions that are already in the EMP queue', async () => {
@@ -174,8 +169,9 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
       applicationReference: 'EXEMPTION-2024-001'
     })
 
+    const unqueuedId = new ObjectId()
     const unqueuedExemption = createCompleteExemption({
-      _id: new ObjectId(),
+      _id: unqueuedId,
       status: EXEMPTION_STATUS.ACTIVE,
       projectName: 'Unqueued Project',
       applicationReference: 'EXEMPTION-2024-002'
@@ -202,9 +198,15 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toHaveLength(1)
-    expect(body[0].projectName).toBe('Unqueued Project')
-    expect(body[0].applicationReference).toBe('EXEMPTION-2024-002')
+    expect(body.unsentExemptions).toHaveLength(1)
+    expect(body.unsentExemptions[0]._id).toBe(unqueuedId.toString())
+    expect(body.unsentExemptions[0].applicationReference).toBe(
+      'EXEMPTION-2024-002'
+    )
+    expect(body.unsentExemptions[0].projectName).toBe('Unqueued Project')
+    expect(body.unsentExemptions[0].status).toBe('ACTIVE')
+    expect(body.unsentExemptions[0].previouslyFailedAt).toBeNull()
+    expect(body.failedPendingRetries).toEqual([])
   })
 
   test('returns empty array when all ACTIVE exemptions are in the queue', async () => {
@@ -252,7 +254,8 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toEqual([])
+    expect(body.unsentExemptions).toEqual([])
+    expect(body.failedPendingRetries).toEqual([])
   })
 
   test('returns exemptions regardless of queue item status', async () => {
@@ -282,10 +285,10 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
       .collection('exemptions')
       .insertMany([exemption1, exemption2, exemption3])
 
-    // Add one to queue with FAILED status - should still be filtered out
+    // Add one to queue with failed status - should still be filtered out
     await globalThis.mockMongo.collection('exemption-emp-queue').insertOne({
       applicationReferenceNumber: 'EXEMPTION-2024-002',
-      status: 'FAILED',
+      status: 'failed',
       retries: 2,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -298,11 +301,16 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toHaveLength(2)
-    expect(body[0].projectName).toBe('Alpha Project')
-    expect(body[1].projectName).toBe('Gamma Project')
-    // Beta Project should be filtered out even though it has FAILED status in queue
-    expect(body.find((e) => e.projectName === 'Beta Project')).toBeUndefined()
+    expect(body.unsentExemptions).toHaveLength(2)
+    expect(body.unsentExemptions[0].projectName).toBe('Alpha Project')
+    expect(body.unsentExemptions[1].projectName).toBe('Gamma Project')
+    // Beta Project should be filtered out even though it has failed status in queue
+    expect(
+      body.unsentExemptions.find((e) => e.projectName === 'Beta Project')
+    ).toBeUndefined()
+    expect(body.failedPendingRetries).toEqual([
+      { applicationReference: 'EXEMPTION-2024-002', retries: 2 }
+    ])
   })
 
   test('handles exemptions without applicationReference gracefully', async () => {
@@ -333,8 +341,94 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body).toHaveLength(2)
-    expect(body.map((e) => e.projectName)).toContain('With Reference')
-    expect(body.map((e) => e.projectName)).toContain('Without Reference')
+    expect(body.unsentExemptions).toHaveLength(2)
+    expect(body.unsentExemptions.map((e) => e.projectName)).toContain(
+      'With Reference'
+    )
+    expect(body.unsentExemptions.map((e) => e.projectName)).toContain(
+      'Without Reference'
+    )
+  })
+
+  test('includes previouslyFailedAt for exemptions with failed history', async () => {
+    const failedDate = new Date('2024-01-10T15:30:00Z')
+    const exemption = createCompleteExemption({
+      _id: new ObjectId(),
+      status: EXEMPTION_STATUS.ACTIVE,
+      projectName: 'Previously Failed Project',
+      applicationReference: 'EXEMPTION-2024-001',
+      submittedAt: '2024-01-15'
+    })
+
+    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+
+    // Add failed queue item
+    await globalThis.mockMongo
+      .collection('exemption-emp-queue-failed')
+      .insertOne({
+        applicationReferenceNumber: 'EXEMPTION-2024-001',
+        status: 'failed',
+        retries: 3,
+        createdAt: new Date(),
+        updatedAt: failedDate
+      })
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: '/exemptions/send-to-emp',
+      isInternalUser: true
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body.unsentExemptions).toHaveLength(1)
+    expect(body.unsentExemptions[0].previouslyFailedAt).toBe(
+      failedDate.toISOString()
+    )
+  })
+
+  test('uses most recent failure date when multiple failed records exist', async () => {
+    const olderFailedDate = new Date('2024-01-10T15:30:00Z')
+    const newerFailedDate = new Date('2024-01-15T10:00:00Z')
+    const exemption = createCompleteExemption({
+      _id: new ObjectId(),
+      status: EXEMPTION_STATUS.ACTIVE,
+      projectName: 'Multiple Failures Project',
+      applicationReference: 'EXEMPTION-2024-001',
+      submittedAt: '2024-01-20'
+    })
+
+    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+
+    // Add multiple failed queue items
+    await globalThis.mockMongo
+      .collection('exemption-emp-queue-failed')
+      .insertMany([
+        {
+          applicationReferenceNumber: 'EXEMPTION-2024-001',
+          status: 'failed',
+          retries: 3,
+          createdAt: new Date(),
+          updatedAt: olderFailedDate
+        },
+        {
+          applicationReferenceNumber: 'EXEMPTION-2024-001',
+          status: 'failed',
+          retries: 3,
+          createdAt: new Date(),
+          updatedAt: newerFailedDate
+        }
+      ])
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: '/exemptions/send-to-emp',
+      isInternalUser: true
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body.unsentExemptions).toHaveLength(1)
+    expect(body.unsentExemptions[0].previouslyFailedAt).toBe(
+      newerFailedDate.toISOString()
+    )
   })
 })

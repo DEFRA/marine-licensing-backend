@@ -97,7 +97,7 @@ export const sendExemptionToEmp = async (server, queueItem) => {
   }
 
   await server.db.collection(collectionEmpQueue).updateOne(
-    { _id: exemption._id },
+    { _id: queueItem._id },
     {
       $set: {
         status: REQUEST_QUEUE_STATUS.IN_PROGRESS,

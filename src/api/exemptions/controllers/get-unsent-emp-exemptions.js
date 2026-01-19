@@ -1,39 +1,80 @@
 import { StatusCodes } from 'http-status-codes'
-import { collectionEmpQueue } from '../../../common/constants/db-collections.js'
+import {
+  collectionEmpQueue,
+  collectionEmpQueueFailed,
+  collectionExemptions
+} from '../../../common/constants/db-collections.js'
 
 export const getUnsentEmpExemptionsController = {
   handler: async (request, h) => {
     const { db } = request
 
-    // Get all application references that are already in the EMP queue
-    const queuedExemptions = await db
+    const unsentExemptions = await db
+      .collection(collectionExemptions)
+      .aggregate([
+        { $match: { status: 'ACTIVE' } },
+        {
+          $lookup: {
+            from: collectionEmpQueue,
+            localField: 'applicationReference',
+            foreignField: 'applicationReferenceNumber',
+            as: 'queueItems'
+          }
+        },
+        { $match: { queueItems: { $size: 0 } } },
+        {
+          $lookup: {
+            from: collectionEmpQueueFailed,
+            let: { appRef: '$applicationReference' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$applicationReferenceNumber', '$$appRef'] }
+                }
+              },
+              { $sort: { updatedAt: -1 } },
+              { $limit: 1 }
+            ],
+            as: 'failedItems'
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            projectName: 1,
+            applicationReference: 1,
+            status: 1,
+            submittedAt: 1,
+            previouslyFailedAt: {
+              $ifNull: [{ $arrayElemAt: ['$failedItems.updatedAt', 0] }, null]
+            }
+          }
+        },
+        { $sort: { submittedAt: -1 } }
+      ])
+      .toArray()
+
+    const failedPendingRetries = await db
       .collection(collectionEmpQueue)
-      .find({})
-      .project({ applicationReferenceNumber: 1 })
+      .aggregate([
+        { $match: { status: 'failed' } },
+        {
+          $project: {
+            _id: 0,
+            applicationReference: '$applicationReferenceNumber',
+            retries: 1
+          }
+        }
+      ])
       .toArray()
-
-    const queuedApplicationRefs = new Set(
-      queuedExemptions.map((item) => item.applicationReferenceNumber)
-    )
-
-    // Get all ACTIVE exemptions
-    const exemptions = await db
-      .collection('exemptions')
-      .find({
-        status: 'ACTIVE'
-      })
-      .sort({ submittedAt: -1 })
-      .toArray()
-
-    // Filter out exemptions that are already in the queue
-    const unsentExemptions = exemptions.filter(
-      (exemption) => !queuedApplicationRefs.has(exemption.applicationReference)
-    )
 
     return h
       .response({
         message: 'success',
-        value: unsentExemptions
+        value: {
+          unsentExemptions,
+          failedPendingRetries
+        }
       })
       .code(StatusCodes.OK)
   }
