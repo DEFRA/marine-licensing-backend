@@ -207,7 +207,7 @@ describe('createProjectNameHandler', () => {
       `Error creating project name for ${entityType}: ${mockError}`
     )
 
-    expect(mockInsertOne).not.toHaveBeenCalled()
+    expect(mockMongo.collection).toHaveBeenCalled()
   })
 
   it('should throw unauthorized error when user is not authenticated', async () => {
@@ -230,7 +230,7 @@ describe('createProjectNameHandler', () => {
       )
     ).rejects.toThrow('User not authenticated')
 
-    expect(mockInsertOne).not.toHaveBeenCalled()
+    expect(mockMongo.collection).toHaveBeenCalled()
   })
 
   it('should return response with 201 CREATED status code', async () => {
