@@ -105,6 +105,7 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10158',
       submittedAt: '2025-10-29T12:11:46.373Z'
     },
+    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10158',
@@ -244,6 +245,7 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10159',
       submittedAt: '2025-10-29T12:29:10.394Z'
     },
+    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10159',
@@ -400,6 +402,7 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10160',
       submittedAt: '2025-10-29T12:34:40.947Z'
     },
+    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10160',
@@ -509,11 +512,12 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10161',
       submittedAt: '2025-10-29T12:43:05.192Z'
     },
+    applicantName: undefined,
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10161',
         ApplicationTy: 'Exemption notification',
-        ApplicantName: 'Test Applicant',
+        ApplicantName: '',
         Project: 'Manual - circles',
         ActivityTy: undefined,
         SubActTy: undefined,

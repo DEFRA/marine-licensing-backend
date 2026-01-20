@@ -5,10 +5,10 @@ import { testExemptions } from './test-exemptions.fixture.js'
 describe('transformExemptionToEmpRequest', () => {
   test.each(testExemptions)(
     'transforms exemption: $dbRecord.projectName',
-    ({ dbRecord, expected }) => {
+    ({ dbRecord, applicantName, expected }) => {
       const result = transformExemptionToEmpRequest({
         exemption: dbRecord,
-        whoExemptionIsFor: 'Test Applicant'
+        whoExemptionIsFor: applicantName
       })
       expect(result).toEqual(expected)
     }

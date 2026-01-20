@@ -24,7 +24,7 @@ export const transformExemptionToEmpRequest = ({
     attributes: {
       CaseReference: exemption.applicationReference,
       ApplicationTy: 'Exemption notification',
-      ApplicantName: whoExemptionIsFor,
+      ApplicantName: whoExemptionIsFor || '',
       Project: exemption.projectName,
       ActivityTy: mcmsContext?.activity?.label,
       SubActTy: mcmsContext?.activity?.purpose,

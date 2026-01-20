@@ -258,7 +258,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     expect(body.failedPendingRetries).toEqual([])
   })
 
-  test('returns exemptions regardless of queue item status', async () => {
+  test('does not return exemptions that have failed to send and are retrying', async () => {
     const exemption1 = createCompleteExemption({
       _id: new ObjectId(),
       status: EXEMPTION_STATUS.ACTIVE,
