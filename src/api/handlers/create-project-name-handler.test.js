@@ -215,7 +215,6 @@ describe('createProjectNameHandler', () => {
       ...mockAuditPayload
     }
     const invalidAuth = { credentials: {} }
-    const collectionSpy = vi.spyOn(mockMongo, 'collection')
 
     await expect(
       handler(
@@ -229,7 +228,7 @@ describe('createProjectNameHandler', () => {
       )
     ).rejects.toThrow('User not authenticated')
 
-    expect(collectionSpy).not.toHaveBeenCalled()
+    expect(mockInsertOne).not.toHaveBeenCalled()
   })
 
   it('should return response with 201 CREATED status code', async () => {
