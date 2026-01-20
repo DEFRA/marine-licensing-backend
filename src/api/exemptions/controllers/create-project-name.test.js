@@ -301,6 +301,7 @@ describe('POST /exemptions/project-name', () => {
       ...mockAuditPayload
     }
     const invalidAuth = { credentials: {} }
+    const collectionSpy = vi.spyOn(mockMongo, 'collection')
 
     await expect(
       createProjectNameController.handler(
@@ -313,6 +314,8 @@ describe('POST /exemptions/project-name', () => {
         mockHandler
       )
     ).rejects.toThrow('User not authenticated')
+
+    expect(collectionSpy).not.toHaveBeenCalled()
   })
 
   it('should return response with 201 CREATED status code', async () => {
