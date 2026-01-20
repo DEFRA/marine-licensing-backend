@@ -206,6 +206,8 @@ describe('createProjectNameHandler', () => {
     ).rejects.toThrow(
       `Error creating project name for ${entityType}: ${mockError}`
     )
+
+    expect(mockInsertOne).not.toHaveBeenCalled()
   })
 
   it('should throw unauthorized error when user is not authenticated', async () => {
