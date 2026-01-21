@@ -1,11 +1,13 @@
 import { getExemptionController } from './controllers/get-exemption.js'
 import { getExemptionsController } from './controllers/get-exemptions.js'
+import { getUnsentEmpExemptionsController } from './controllers/get-unsent-emp-exemptions.js'
 import { createProjectNameController } from './controllers/create-project-name.js'
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
 import { submitExemptionController } from './controllers/submit-exemption.js'
 import { deleteExemptionController } from './controllers/delete-exemption.js'
+import { sendToEmpController } from './controllers/send-to-emp.js'
 
 export const exemptions = [
   {
@@ -17,6 +19,11 @@ export const exemptions = [
     method: 'GET',
     path: '/public/exemption/{id}',
     ...getExemptionController({ requiresAuth: false })
+  },
+  {
+    method: 'GET',
+    path: '/exemptions/send-to-emp',
+    ...getUnsentEmpExemptionsController
   },
   {
     method: 'GET',
@@ -47,6 +54,11 @@ export const exemptions = [
     method: 'POST',
     path: '/exemption/submit',
     ...submitExemptionController
+  },
+  {
+    method: 'POST',
+    path: '/exemption/send-to-emp',
+    ...sendToEmpController
   },
   {
     method: 'DELETE',
