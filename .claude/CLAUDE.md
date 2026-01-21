@@ -390,3 +390,4 @@ Tests are run via npm scripts (see package.json). Key patterns:
 - **.github/example.dependabot.yml** - Dependency updates configuration
 - After a refactor, ensure any related unit tests pass
 - When adding integration tests, not every edge case needs to be covered ie don't cover every validation scenario. Those will be covered by lower level unit tests.
+- Don't call vi.resetAllMocks() in individual test files because clearMocks is already set in vitest config

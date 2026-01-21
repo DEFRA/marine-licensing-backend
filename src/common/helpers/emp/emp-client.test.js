@@ -32,7 +32,7 @@ describe('Emp Client', () => {
   describe('sendExemptionToEmp', () => {
     const mockQueueItem = {
       applicationReferenceNumber: 'TEST-REF-001',
-      userName: 'Test User'
+      whoExemptionIsFor: 'Test User'
     }
 
     const mockExemption = {
