@@ -303,8 +303,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
-        ...rest,
-        whoExemptionIsFor: 'John Doe'
+        ...rest
       })
     })
 
@@ -451,8 +450,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
-        ...rest,
-        whoExemptionIsFor: 'John Doe'
+        ...rest
       })
     })
 
@@ -502,7 +500,9 @@ describe('POST /exemption/submit', () => {
           },
           mockHandler
         )
-      ).rejects.toThrow(Boom.notFound('Exemption not found'))
+      ).rejects.toThrow(
+        Boom.notFound(`#findExemptionById not found for id ${mockExemptionId}`)
+      )
 
       expect(generateApplicationReference).not.toHaveBeenCalled()
     })

@@ -5,6 +5,7 @@ import { transformExemptionToEmpRequest } from './transforms/exemption-to-emp.js
 import { collectionEmpQueue } from '../../constants/db-collections.js'
 import { addFeatures } from '@esri/arcgis-rest-feature-service'
 import { createLogger } from '../../helpers/logging/logger.js'
+import { ExemptionService } from '../../../api/exemptions/services/exemption.service.js'
 
 const logger = createLogger()
 
@@ -86,15 +87,10 @@ export const sendExemptionToEmp = async (server, queueItem) => {
   const { apiUrl, apiKey } = config.get('exploreMarinePlanning')
   const { applicationReferenceNumber } = queueItem
 
-  const exemption = await server.db.collection('exemptions').findOne({
+  const exemptionService = new ExemptionService({ db: server.db, logger })
+  const exemption = await exemptionService.getExemptionByApplicationReference({
     applicationReference: applicationReferenceNumber
   })
-
-  if (!exemption) {
-    throw Boom.notFound(
-      `Exemption not found for applicationReference: ${applicationReferenceNumber}`
-    )
-  }
 
   await server.db.collection(collectionEmpQueue).updateOne(
     { _id: queueItem._id },
@@ -108,8 +104,7 @@ export const sendExemptionToEmp = async (server, queueItem) => {
 
   try {
     const features = transformExemptionToEmpRequest({
-      exemption,
-      whoExemptionIsFor: queueItem.whoExemptionIsFor
+      exemption
     })
     // https://developers.arcgis.com/rest/services-reference/enterprise/add-features/
     const { addResults } = await addFeatures({

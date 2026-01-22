@@ -3,15 +3,10 @@ import { shortIsoDate } from './short-iso-date.js'
 import { transformSiteDetails } from './site-details.js'
 import { config } from '../../../../config.js'
 
-export const transformExemptionToEmpRequest = ({
-  exemption,
-  whoExemptionIsFor
-}) => {
+export const transformExemptionToEmpRequest = ({ exemption }) => {
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
   const { mcmsContext, publicRegister, siteDetails } = exemption
 
-  // this is counter-intuitive and we're going to ask the EMP team to change to
-  //  'no' is 0 and 'yes' is 1
   const publicConsent = publicRegister?.consent === 'no' ? '1' : '0'
 
   const { start: startDate, end: endDate } =
@@ -23,22 +18,26 @@ export const transformExemptionToEmpRequest = ({
   return {
     attributes: {
       CaseReference: exemption.applicationReference,
-      ApplicationTy: 'Exemption notification',
-      ApplicantName: whoExemptionIsFor || '',
+      ApplicationTy: 'Exempt activity notification',
+      ApplicantName: exemption.whoExemptionIsFor || '',
       Project: exemption.projectName,
       ActivityTy: mcmsContext?.activity?.label,
-      SubActTy: mcmsContext?.activity?.purpose,
-      ArticleNo: mcmsContext?.articleCode,
+      SubActTy: mcmsContext?.activity?.purpose || '',
+      ArticleNo: mcmsContext?.articleCode
+        ? `Article ${mcmsContext?.articleCode}`
+        : '',
       IAT_URL: mcmsContext?.pdfDownloadUrl,
       ProjStartDate: projStartDate,
       ProjEndDate: projEndDate,
-      Status: '',
       SubDate: shortIsoDate(new Date(exemption.submittedAt)),
       PubConsent: publicConsent,
       Exemptions_URL: new URL(
         `/exemption/view-public-details/${exemption._id}`,
         frontEndBaseUrl
-      ).toString()
+      ).toString(),
+      CoastalOperationsArea:
+        exemption.coastalEnforcementAreas?.join(', ') || '',
+      MarinePlanArea: exemption.marinePlanAreas?.join(', ') || ''
     },
     geometry: transformSiteDetails(siteDetails)
   }

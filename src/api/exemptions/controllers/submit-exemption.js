@@ -129,8 +129,7 @@ export const submitExemptionController = {
           db,
           fields: {
             ...payload,
-            applicationReference,
-            whoExemptionIsFor: userName
+            applicationReference
           },
           server: request.server
         })

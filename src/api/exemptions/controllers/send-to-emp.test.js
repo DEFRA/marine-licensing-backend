@@ -97,8 +97,7 @@ describe('POST /exemption/send-to-emp', () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
         applicationReference: 'APP-2025-001',
-        ...dbExemption,
-        whoExemptionIsFor: 'Dredging Co'
+        ...dbExemption
       }
 
       mockDb.collection().findOne.mockResolvedValue(mockExemption)
@@ -124,8 +123,7 @@ describe('POST /exemption/send-to-emp', () => {
           createdAt: dbExemption.createdAt,
           createdBy: dbExemption.createdBy,
           updatedAt: dbExemption.updatedAt,
-          updatedBy: dbExemption.updatedBy,
-          whoExemptionIsFor: 'Dredging Co'
+          updatedBy: dbExemption.updatedBy
         },
         server: mockServer
       })
@@ -152,7 +150,9 @@ describe('POST /exemption/send-to-emp', () => {
 
       await expect(
         sendToEmpController.handler(request, mockHandler)
-      ).rejects.toThrow(Boom.notFound('Exemption not found'))
+      ).rejects.toThrow(
+        Boom.notFound(`#findExemptionById not found for id ${mockExemptionId}`)
+      )
     })
 
     it('should throw error if exemption has not been submitted', async () => {

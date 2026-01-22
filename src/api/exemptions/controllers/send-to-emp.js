@@ -37,8 +37,7 @@ export const sendToEmpController = {
         createdAt,
         createdBy,
         updatedAt,
-        updatedBy,
-        whoExemptionIsFor
+        updatedBy
       } = exemption
 
       await addToEmpQueue({
@@ -48,8 +47,7 @@ export const sendToEmpController = {
           createdAt,
           createdBy,
           updatedAt,
-          updatedBy,
-          whoExemptionIsFor
+          updatedBy
         },
         server: request.server
       })
