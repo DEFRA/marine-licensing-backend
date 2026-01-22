@@ -1,3 +1,4 @@
+export const collectionExemptions = 'exemptions'
 export const collectionEmpQueue = 'exemption-emp-queue'
 export const collectionEmpQueueFailed = 'exemption-emp-queue-failed'
 

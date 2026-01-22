@@ -94,7 +94,7 @@ describe('EMP Processor', () => {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
             updatedAt: expect.any(Date),
-            userName: null
+            whoExemptionIsFor: null
           }
         }
       )
@@ -135,7 +135,7 @@ describe('EMP Processor', () => {
       expect(insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockItem,
-          userName: null,
+          whoExemptionIsFor: null,
           retries: 3
         })
       )
@@ -170,7 +170,7 @@ describe('EMP Processor', () => {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
             updatedAt: expect.any(Date),
-            userName: null
+            whoExemptionIsFor: null
           }
         }
       )
@@ -180,7 +180,7 @@ describe('EMP Processor', () => {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
             updatedAt: expect.any(Date),
-            userName: null
+            whoExemptionIsFor: null
           }
         }
       )
@@ -226,6 +226,145 @@ describe('EMP Processor', () => {
           $inc: { retries: 1 }
         }
       )
+    })
+  })
+
+  describe('addToEmpQueue', () => {
+    it('should insert a new item into the EMP queue with correct fields', async () => {
+      const insertOne = vi.fn().mockResolvedValue({})
+      const mockDb = {
+        collection: vi.fn().mockReturnValue({ insertOne })
+      }
+      const mockServer = {
+        methods: {
+          processEmpQueue: vi.fn().mockResolvedValue({})
+        },
+        logger: {
+          error: vi.fn()
+        }
+      }
+      const mockFields = {
+        applicationReference: 'APP-001',
+        createdAt: new Date('2023-01-01'),
+        createdBy: 'user-123',
+        updatedAt: new Date('2023-01-01'),
+        updatedBy: 'user-123',
+        whoExemptionIsFor: 'Test User'
+      }
+
+      await empModule.addToEmpQueue({
+        db: mockDb,
+        fields: mockFields,
+        server: mockServer
+      })
+
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
+      expect(insertOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'APP-001',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0,
+        createdAt: new Date('2023-01-01'),
+        createdBy: 'user-123',
+        updatedAt: new Date('2023-01-01'),
+        updatedBy: 'user-123',
+        whoExemptionIsFor: 'Test User'
+      })
+    })
+
+    it('should trigger async queue processing after insertion', async () => {
+      const processEmpQueue = vi.fn().mockResolvedValue({})
+      const mockDb = {
+        collection: vi.fn().mockReturnValue({
+          insertOne: vi.fn().mockResolvedValue({})
+        })
+      }
+      const mockServer = {
+        methods: { processEmpQueue },
+        logger: { error: vi.fn() }
+      }
+      const mockFields = {
+        applicationReference: 'APP-001',
+        createdAt: new Date(),
+        createdBy: 'user-123',
+        updatedAt: new Date(),
+        updatedBy: 'user-123',
+        whoExemptionIsFor: 'Test User'
+      }
+
+      await empModule.addToEmpQueue({
+        db: mockDb,
+        fields: mockFields,
+        server: mockServer
+      })
+
+      expect(processEmpQueue).toHaveBeenCalled()
+    })
+
+    it('should log error if processEmpQueue fails but not throw', async () => {
+      const mockError = new Error('Queue processing failed')
+      const processEmpQueue = vi.fn().mockRejectedValue(mockError)
+      const mockLogger = { error: vi.fn() }
+      const mockDb = {
+        collection: vi.fn().mockReturnValue({
+          insertOne: vi.fn().mockResolvedValue({})
+        })
+      }
+      const mockServer = {
+        methods: { processEmpQueue },
+        logger: mockLogger
+      }
+      const mockFields = {
+        applicationReference: 'APP-001',
+        createdAt: new Date(),
+        createdBy: 'user-123',
+        updatedAt: new Date(),
+        updatedBy: 'user-123',
+        whoExemptionIsFor: 'Test User'
+      }
+
+      await empModule.addToEmpQueue({
+        db: mockDb,
+        fields: mockFields,
+        server: mockServer
+      })
+
+      // Wait for the catch to be executed
+      await vi.waitFor(() => {
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          'Failed to process EMP queue, but exemption submission succeeded'
+        )
+      })
+    })
+
+    it('should throw error if database insertion fails', async () => {
+      const dbError = new Error('Database connection failed')
+      const mockDb = {
+        collection: vi.fn().mockReturnValue({
+          insertOne: vi.fn().mockRejectedValue(dbError)
+        })
+      }
+      const mockServer = {
+        methods: {
+          processEmpQueue: vi.fn()
+        },
+        logger: { error: vi.fn() }
+      }
+      const mockFields = {
+        applicationReference: 'APP-001',
+        createdAt: new Date(),
+        createdBy: 'user-123',
+        updatedAt: new Date(),
+        updatedBy: 'user-123',
+        whoExemptionIsFor: 'Test User'
+      }
+
+      await expect(
+        empModule.addToEmpQueue({
+          db: mockDb,
+          fields: mockFields,
+          server: mockServer
+        })
+      ).rejects.toThrow('Database connection failed')
     })
   })
 })

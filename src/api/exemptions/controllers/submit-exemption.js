@@ -5,6 +5,8 @@ import { ObjectId } from 'mongodb'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { generateApplicationReference } from '../helpers/reference-generator.js'
 import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
+import { getContactId } from '../helpers/get-contact-id.js'
+import { ExemptionService } from '../services/exemption.service.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { config } from '../../../config.js'
 import { sendUserEmailConfirmation } from '../helpers/send-user-email-confirmation.js'
@@ -12,21 +14,6 @@ import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
 import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalEnforcementAreas } from '../../../common/helpers/geo/update-coastal-enforcement-areas.js'
-
-const getExemptionWithId = async (db, id) => {
-  const exemption = await db
-    .collection('exemptions')
-    .findOne({ _id: ObjectId.createFromHexString(id) })
-
-  if (!exemption) {
-    throw Boom.notFound('Exemption not found')
-  }
-
-  if (exemption.applicationReference) {
-    throw Boom.conflict('Exemption has already been submitted')
-  }
-  return exemption
-}
 
 const checkForIncompleteTasks = (exemption) => {
   const taskList = createTaskList(exemption)
@@ -51,6 +38,48 @@ const updateMultiSiteEnabled = (exemption) => {
   return multipleSiteDetails
 }
 
+const getExemptionFromDb = async (request, exemptionId) => {
+  const { auth, db, logger } = request
+  const currentUserId = getContactId(auth)
+  const exemptionService = new ExemptionService({ db, logger })
+  const exemption = await exemptionService.getExemptionById({
+    id: exemptionId,
+    currentUserId
+  })
+
+  if (exemption.applicationReference) {
+    throw Boom.conflict('Exemption has already been submitted')
+  }
+  return exemption
+}
+
+const updateExemptionRecord = async ({
+  request,
+  payload,
+  applicationReference,
+  exemption,
+  submittedAt
+}) => {
+  const { db } = request
+  const { id, updatedAt, updatedBy } = payload
+  const updateResult = await db.collection('exemptions').updateOne(
+    { _id: ObjectId.createFromHexString(id) },
+    {
+      $set: {
+        applicationReference,
+        multipleSiteDetails: updateMultiSiteEnabled(exemption),
+        submittedAt,
+        status: EXEMPTION_STATUS.ACTIVE,
+        updatedAt,
+        updatedBy
+      }
+    }
+  )
+  if (updateResult.matchedCount === 0) {
+    throw Boom.notFound('Exemption not found during update')
+  }
+}
+
 export const submitExemptionController = {
   options: {
     payload: {
@@ -69,42 +98,26 @@ export const submitExemptionController = {
       const { isDynamicsEnabled } = config.get('dynamics')
       const { isEmpEnabled } = config.get('exploreMarinePlanning')
       const frontEndBaseUrl = config.get('frontEndBaseUrl')
-      const exemption = await getExemptionWithId(db, id)
+      const exemption = await getExemptionFromDb(request, id)
       checkForIncompleteTasks(exemption)
-
       const applicationReference = await generateApplicationReference(
         db,
         locker,
         'EXEMPTION'
       )
-
       const submittedAt = new Date()
-
-      const updateResult = await db.collection('exemptions').updateOne(
-        { _id: ObjectId.createFromHexString(id) },
-        {
-          $set: {
-            applicationReference,
-            multipleSiteDetails: updateMultiSiteEnabled(exemption),
-            submittedAt,
-            status: EXEMPTION_STATUS.ACTIVE,
-            updatedAt,
-            updatedBy
-          }
-        }
-      )
-
-      if (updateResult.matchedCount === 0) {
-        throw Boom.notFound('Exemption not found during update')
-      }
-
+      await updateExemptionRecord({
+        request,
+        payload,
+        applicationReference,
+        exemption,
+        submittedAt
+      })
       await updateCoastalEnforcementAreas(exemption, db, {
         updatedAt,
         updatedBy
       })
-
       await updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
-
       if (isDynamicsEnabled) {
         await addToDynamicsQueue({
           request,
@@ -113,8 +126,13 @@ export const submitExemptionController = {
       }
       if (isEmpEnabled) {
         await addToEmpQueue({
-          request,
-          applicationReference
+          db,
+          fields: {
+            ...payload,
+            applicationReference,
+            whoExemptionIsFor: userName
+          },
+          server: request.server
         })
       }
 

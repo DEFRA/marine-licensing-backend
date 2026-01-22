@@ -105,15 +105,12 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10158',
       submittedAt: '2025-10-29T12:11:46.373Z'
     },
+    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10158',
         ApplicationTy: 'Exemption notification',
-        ApplicantID: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
         ApplicantName: 'Test Applicant',
-        ApplicantOrg: 'Test Company',
-        ClientOrgID: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
-        ClientOrgName: 'Test Company',
         Project: 'File upload - KML',
         ActivityTy: 'Deposit of a substance or object',
         SubActTy: 'Scientific instruments and associated equipment',
@@ -248,15 +245,12 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10159',
       submittedAt: '2025-10-29T12:29:10.394Z'
     },
+    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10159',
         ApplicationTy: 'Exemption notification',
-        ApplicantID: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
         ApplicantName: 'Test Applicant',
-        ApplicantOrg: 'Test Company',
-        ClientOrgID: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
-        ClientOrgName: 'Test Company',
         Project: 'Manual - polygons',
         ActivityTy: undefined,
         SubActTy: undefined,
@@ -408,15 +402,12 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10160',
       submittedAt: '2025-10-29T12:34:40.947Z'
     },
+    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10160',
         ApplicationTy: 'Exemption notification',
-        ApplicantID: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
         ApplicantName: 'Test Applicant',
-        ApplicantOrg: 'Test Company',
-        ClientOrgID: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
-        ClientOrgName: 'Test Company',
         Project: 'File upload - shapefile',
         ActivityTy: undefined,
         SubActTy: undefined,
@@ -521,15 +512,12 @@ export const testExemptions = [
       applicationReference: 'EXE/2025/10161',
       submittedAt: '2025-10-29T12:43:05.192Z'
     },
+    applicantName: undefined,
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10161',
         ApplicationTy: 'Exemption notification',
-        ApplicantID: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
-        ApplicantName: 'Test Applicant',
-        ApplicantOrg: 'Test Company',
-        ClientOrgID: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
-        ClientOrgName: 'Test Company',
+        ApplicantName: '',
         Project: 'Manual - circles',
         ActivityTy: undefined,
         SubActTy: undefined,

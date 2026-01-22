@@ -31,6 +31,8 @@ describe('POST /exemption/submit', () => {
   let mockExemptionId
   let mockDate
   let mockServer
+  let mockAuth
+  let mockLogger
 
   const mockAuditPayload = {
     createdAt: new Date('2025-01-01T12:00:00Z'),
@@ -79,6 +81,17 @@ describe('POST /exemption/submit', () => {
       code: vi.fn().mockReturnThis()
     }
 
+    mockAuth = {
+      credentials: {
+        contactId: 'test-contact-id'
+      }
+    }
+
+    mockLogger = {
+      info: vi.fn(),
+      error: vi.fn()
+    }
+
     mockDb = {
       collection: vi.fn().mockReturnValue({
         findOne: vi.fn(),
@@ -92,9 +105,7 @@ describe('POST /exemption/submit', () => {
     }
 
     mockServer = {
-      logger: {
-        error: vi.fn()
-      },
+      logger: mockLogger,
       methods: {
         processDynamicsQueue: vi.fn().mockResolvedValue(undefined),
         processEmpQueue: vi.fn().mockResolvedValue(undefined)
@@ -151,6 +162,7 @@ describe('POST /exemption/submit', () => {
     it('should submit complete exemption and generate application reference', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -171,7 +183,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -233,6 +247,7 @@ describe('POST /exemption/submit', () => {
     it('should insert request queue document when exemption is submitted', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -256,7 +271,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -281,17 +298,20 @@ describe('POST /exemption/submit', () => {
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
+      const { userName, ...rest } = mockAuditPayload
       expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
-        ...mockAuditPayload
+        ...rest,
+        whoExemptionIsFor: 'John Doe'
       })
     })
 
     it('should log error and continue submit request if there is an error in request queue', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -320,7 +340,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -341,6 +363,7 @@ describe('POST /exemption/submit', () => {
     it('should not insert request queue document when dynamics and EMP are not enabled when exemption is submitted', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -366,7 +389,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -377,6 +402,7 @@ describe('POST /exemption/submit', () => {
     it('should insert dynamics and EMP queue documents regardless of organisation', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Marine Project',
         organisation: {
           id: 'org-123',
@@ -405,7 +431,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -423,13 +451,15 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
-        ...mockAuditPayload
+        ...rest,
+        whoExemptionIsFor: 'John Doe'
       })
     })
 
     it('should validate task completion before submission', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -445,7 +475,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -464,7 +496,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -476,6 +510,7 @@ describe('POST /exemption/submit', () => {
     it('should throw 404 when exemption is not found during update', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -492,7 +527,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -504,6 +541,7 @@ describe('POST /exemption/submit', () => {
     it('should prevent duplicate submission of same exemption', async () => {
       const mockSubmittedExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         applicationReference: 'EXE/2025/10001',
         submittedAt: new Date('2025-06-01'),
@@ -518,7 +556,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -532,6 +572,7 @@ describe('POST /exemption/submit', () => {
     it('should prevent submission of incomplete exemption - task not completed', async () => {
       const mockIncompleteExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [{ coordinatesType: 'point' }],
@@ -553,7 +594,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -569,6 +612,7 @@ describe('POST /exemption/submit', () => {
     it('should prevent submission with multiple incomplete sections', async () => {
       const mockIncompleteExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project'
       }
 
@@ -587,7 +631,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -601,6 +647,7 @@ describe('POST /exemption/submit', () => {
     it('should require all tasks to be completed for submission', async () => {
       const mockIncompleteExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' }
       }
@@ -620,7 +667,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -634,6 +683,7 @@ describe('POST /exemption/submit', () => {
     it('should automatically check any new tasks added to task list', async () => {
       const mockIncompleteExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -657,7 +707,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -675,6 +727,7 @@ describe('POST /exemption/submit', () => {
     it('should handle reference generation errors', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -693,7 +746,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -705,6 +760,7 @@ describe('POST /exemption/submit', () => {
     it('should handle database connection errors during reference generation', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -723,7 +779,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -745,7 +803,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -757,6 +817,7 @@ describe('POST /exemption/submit', () => {
     it('should handle database errors during exemption update', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -775,7 +836,9 @@ describe('POST /exemption/submit', () => {
             payload: { id: mockExemptionId },
             db: mockDb,
             locker: mockLocker,
-            server: mockServer
+            server: mockServer,
+            auth: mockAuth,
+            logger: mockLogger
           },
           mockHandler
         )
@@ -789,6 +852,7 @@ describe('POST /exemption/submit', () => {
     it('should pass correct parameters to reference generator', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -804,7 +868,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -819,6 +885,7 @@ describe('POST /exemption/submit', () => {
     it('should save generated reference to exemption document', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -837,7 +904,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -862,6 +931,7 @@ describe('POST /exemption/submit', () => {
     it('should return application reference and submission timestamp', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -877,7 +947,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -900,6 +972,7 @@ describe('POST /exemption/submit', () => {
     it('should not generate reference for draft exemptions', async () => {
       const mockDraftExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: false },
@@ -916,7 +989,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )
@@ -942,6 +1017,7 @@ describe('POST /exemption/submit', () => {
     it('Change multi site choice when one site', async () => {
       const mockDraftExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
         projectName: 'Test Project',
         publicRegister: { consent: 'no' },
         multipleSiteDetails: { multipleSitesEnabled: true },
@@ -958,7 +1034,9 @@ describe('POST /exemption/submit', () => {
           payload: { id: mockExemptionId },
           db: mockDb,
           locker: mockLocker,
-          server: mockServer
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
         },
         mockHandler
       )

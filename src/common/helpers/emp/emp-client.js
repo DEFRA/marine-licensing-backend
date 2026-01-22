@@ -97,7 +97,7 @@ export const sendExemptionToEmp = async (server, queueItem) => {
   }
 
   await server.db.collection(collectionEmpQueue).updateOne(
-    { _id: exemption._id },
+    { _id: queueItem._id },
     {
       $set: {
         status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
@@ -109,7 +109,7 @@ export const sendExemptionToEmp = async (server, queueItem) => {
   try {
     const features = transformExemptionToEmpRequest({
       exemption,
-      applicantName: queueItem.userName
+      whoExemptionIsFor: queueItem.whoExemptionIsFor
     })
     // https://developers.arcgis.com/rest/services-reference/enterprise/add-features/
     const { addResults } = await addFeatures({

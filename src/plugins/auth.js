@@ -33,8 +33,13 @@ export const getKeys = async (token) => {
 }
 
 export const validateToken = async (decoded) => {
-  const { contactId, email } = decoded
   const authStrategy = getJwtAuthStrategy(decoded)
+
+  // For Entra ID tokens, use 'oid' as contactId
+  // For defraId tokens, use 'contactId'
+  const contactId = authStrategy === 'entraId' ? decoded.oid : decoded.contactId
+  const { email } = decoded
+
   if (authStrategy === 'defraId' && !contactId) {
     return { isValid: false }
   }
