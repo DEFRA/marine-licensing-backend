@@ -18,6 +18,7 @@ export const transformExemptionToEmpRequest = ({ exemption }) => {
   return {
     attributes: {
       CaseReference: exemption.applicationReference,
+      Status: 'Active',
       ApplicationTy: 'Exempt activity notification',
       ApplicantName: exemption.whoExemptionIsFor || '',
       Project: exemption.projectName,

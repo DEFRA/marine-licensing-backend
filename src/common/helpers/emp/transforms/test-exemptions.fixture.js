@@ -126,7 +126,8 @@ export const testExemptions = [
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020200af9bd9354c7d3575',
         CoastalOperationsArea: 'South, South East',
-        MarinePlanArea: 'East inshore'
+        MarinePlanArea: 'East inshore',
+        Status: 'Active'
       },
       geometry: {
         rings: [
@@ -278,7 +279,8 @@ export const testExemptions = [
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578',
         CoastalOperationsArea: '',
-        MarinePlanArea: ''
+        MarinePlanArea: '',
+        Status: 'Active'
       },
       geometry: {
         rings: [
@@ -445,7 +447,8 @@ export const testExemptions = [
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/6902090baf9bd9354c7d357b',
         CoastalOperationsArea: '',
-        MarinePlanArea: ''
+        MarinePlanArea: '',
+        Status: 'Active'
       },
       geometry: {
         rings: [
@@ -566,7 +569,8 @@ export const testExemptions = [
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020b36af9bd9354c7d357e',
         CoastalOperationsArea: '',
-        MarinePlanArea: ''
+        MarinePlanArea: '',
+        Status: 'Active'
       },
       geometry: {
         rings: [
