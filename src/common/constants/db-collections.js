@@ -9,3 +9,5 @@ export const collectionDynamicsQueueFailed = 'exemption-dynamics-queue-failed'
 export const coastalEnforcementAreas = 'coastal-enforcement-areas'
 
 export const marinePlanAreas = 'marine-plan-areas'
+
+export const marineLicenses = 'marine-licenses'

@@ -1,8 +1,5 @@
-import {
-  projectName,
-  createProjectName,
-  updateProjectName
-} from './project-name.js'
+import { createProjectName, updateProjectName } from './project-name.js'
+import { projectName } from './shared/project-name.js'
 import {
   activityTypes,
   articleCodes

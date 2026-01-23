@@ -2,7 +2,7 @@ import Boom from '@hapi/boom'
 import { siteDetailsSchema } from '../../../models/site-details/site-details.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { authorizeOwnership } from '../helpers/authorize-ownership.js'
+import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
 
 // We found a valid real-life 23-site Shapefile that had 4MB of site data in the exemption (mostly geoJSON).10MB
 // was chosen as a reasonable limit to accommodate this file, with a decent overhead for contingency while not
