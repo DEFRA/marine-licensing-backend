@@ -7,7 +7,7 @@ export const transformExemptionToEmpRequest = ({ exemption }) => {
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
   const { mcmsContext, publicRegister, siteDetails } = exemption
 
-  const publicConsent = publicRegister?.consent === 'no' ? '1' : '0'
+  const publicConsent = publicRegister?.consent === 'no' ? 'No' : 'Yes'
 
   const { start: startDate, end: endDate } =
     getProjectStartEndDates(siteDetails)

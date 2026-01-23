@@ -122,7 +122,7 @@ export const testExemptions = [
         ProjStartDate: '2026-10-01',
         ProjEndDate: '2026-11-01',
         SubDate: '2025-10-29',
-        PubConsent: '0',
+        PubConsent: 'Yes',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020200af9bd9354c7d3575',
         CoastalOperationsArea: 'South, South East',
@@ -275,7 +275,7 @@ export const testExemptions = [
         ProjStartDate: '2026-10-01',
         ProjEndDate: '2026-11-01',
         SubDate: '2025-10-29',
-        PubConsent: '1',
+        PubConsent: 'No',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578',
         CoastalOperationsArea: '',
@@ -443,7 +443,7 @@ export const testExemptions = [
         ProjStartDate: '2026-11-30',
         ProjEndDate: '2026-12-01',
         SubDate: '2025-10-29',
-        PubConsent: '1',
+        PubConsent: 'No',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/6902090baf9bd9354c7d357b',
         CoastalOperationsArea: '',
@@ -565,7 +565,7 @@ export const testExemptions = [
         ProjStartDate: '2026-03-01',
         ProjEndDate: '2026-05-01',
         SubDate: '2025-10-29',
-        PubConsent: '0',
+        PubConsent: 'Yes',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020b36af9bd9354c7d357e',
         CoastalOperationsArea: '',
