@@ -10,7 +10,7 @@ const logger = createLogger()
 
 export const deleteExemptionController = {
   options: {
-    pre: [{ method: authorizeOwnership }],
+    pre: [{ method: authorizeOwnership('exemptions') }],
     validate: {
       params: getExemption
     }
