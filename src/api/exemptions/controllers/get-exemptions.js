@@ -75,14 +75,14 @@ export const getExemptionsController = {
       ]
       const ownerNames = await batchGetContactNames(contactIds)
 
-      const empTransformed = empExemptions
+      const employeeTransformed = empExemptions
         .map((e) => transformExemption(e, contactId, ownerNames))
         .sort(sortByStatus)
 
       return h
         .response({
           message: 'success',
-          value: empTransformed,
+          value: employeeTransformed,
           isEmployee: true,
           organisationId
         })
