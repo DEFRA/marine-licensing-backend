@@ -1,5 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
-import { getContactId } from '../helpers/get-contact-id.js'
+import { getContactId } from '../../helpers/get-contact-id.js'
 import { EXEMPTION_STATUS_LABEL } from '../../../common/constants/exemption.js'
 import { getOrganisationIdFromAuthToken } from '../helpers/get-organisation-from-token.js'
 

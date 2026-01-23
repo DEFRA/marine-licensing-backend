@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
-import { getContactId } from '../../api/exemptions/helpers/get-contact-id.js'
+import { getContactId } from '../../api/helpers/get-contact-id.js'
 
-vi.mock('../../api/exemptions/helpers/get-contact-id.js')
+vi.mock('../../api/helpers/get-contact-id.js')
 
 describe('mongo-audit', () => {
   const mockedGetContactId = vi.mocked(getContactId)

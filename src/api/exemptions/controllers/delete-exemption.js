@@ -2,7 +2,7 @@ import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
-import { authorizeOwnership } from '../helpers/authorize-ownership.js'
+import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 
