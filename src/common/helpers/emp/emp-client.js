@@ -77,7 +77,7 @@ const logEmpExceptionError = (error, applicationReference) => {
 }
 
 const handleEmpApiError = (result, applicationReference) => {
-  const errorMessage = `EMP addFeatures failed: ${result?.error?.description || ''}`
+  const errorMessage = `EMP addFeatures failed: ${result?.error?.description || 'Unknown error'}`
   const statusCode = result?.error?.code || null
   logEmpApiError(errorMessage, statusCode, applicationReference)
   throw Boom.badImplementation(errorMessage)

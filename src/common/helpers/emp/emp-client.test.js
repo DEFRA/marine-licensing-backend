@@ -133,7 +133,7 @@ describe('Emp Client', () => {
       })
       await expect(
         sendExemptionToEmp(mockServer, mockQueueItem)
-      ).rejects.toThrow('EMP addFeatures failed:')
+      ).rejects.toThrow('EMP addFeatures failed: Unknown error')
     })
 
     it('should throw error if exemption not found', async () => {
