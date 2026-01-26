@@ -101,6 +101,7 @@ describe('MarineLicenseService', () => {
       ).rejects.toThrow('Marine License not found')
 
       expect(getContactNameById).not.toHaveBeenCalled()
+      expect(global.mockMongo.collection).toHaveBeenCalled()
     })
 
     it("should throw a not authorized error if the current user is an applicant and didn't create the marine license", async () => {
@@ -117,6 +118,7 @@ describe('MarineLicenseService', () => {
       ).rejects.toThrow('Not authorized to request this resource')
 
       expect(getContactNameById).not.toHaveBeenCalled()
+      expect(global.mockMongo.collection).toHaveBeenCalled()
     })
   })
 })
