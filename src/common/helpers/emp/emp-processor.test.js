@@ -4,6 +4,7 @@ import * as empModule from './emp-processor.js'
 import { config } from '../../../config.js'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import Boom from '@hapi/boom'
+import * as empClient from './emp-client.js'
 
 vi.mock('../../../config.js')
 vi.mock('./emp-client.js')
@@ -153,6 +154,10 @@ describe('EMP Processor', () => {
         }
       ]
 
+      vi.spyOn(empClient, 'sendExemptionToEmp').mockResolvedValue({
+        objectId: 'test-feature-id'
+      })
+
       mockServer.db.collection().find.mockReturnValueOnce({
         toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
@@ -202,13 +207,15 @@ describe('EMP Processor', () => {
         { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 1 }
       ]
 
+      vi.spyOn(empClient, 'sendExemptionToEmp').mockRejectedValue(
+        new Error('Processing failed')
+      )
+
       mockServer.db.collection().find.mockReturnValueOnce({
         toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
 
-      mockServer.db
-        .collection()
-        .updateOne.mockRejectedValueOnce('Processing failed')
+      mockServer.db.collection().updateOne.mockResolvedValue({})
 
       await empModule.processEmpQueue(mockServer)
 
@@ -228,8 +235,9 @@ describe('EMP Processor', () => {
   describe('addToEmpQueue', () => {
     it('should insert a new item into the EMP queue with correct fields', async () => {
       const insertOne = vi.fn().mockResolvedValue({})
+      const findOne = vi.fn().mockResolvedValue(null)
       const mockDb = {
-        collection: vi.fn().mockReturnValue({ insertOne })
+        collection: vi.fn().mockReturnValue({ findOne, insertOne })
       }
       const mockServer = {
         methods: {
@@ -254,6 +262,9 @@ describe('EMP Processor', () => {
       })
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
+      expect(findOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'APP-001'
+      })
       expect(insertOne).toHaveBeenCalledWith({
         applicationReferenceNumber: 'APP-001',
         status: REQUEST_QUEUE_STATUS.PENDING,
@@ -269,6 +280,7 @@ describe('EMP Processor', () => {
       const processEmpQueue = vi.fn().mockResolvedValue({})
       const mockDb = {
         collection: vi.fn().mockReturnValue({
+          findOne: vi.fn().mockResolvedValue(null),
           insertOne: vi.fn().mockResolvedValue({})
         })
       }
@@ -299,6 +311,7 @@ describe('EMP Processor', () => {
       const mockLogger = { error: vi.fn() }
       const mockDb = {
         collection: vi.fn().mockReturnValue({
+          findOne: vi.fn().mockResolvedValue(null),
           insertOne: vi.fn().mockResolvedValue({})
         })
       }
@@ -332,6 +345,7 @@ describe('EMP Processor', () => {
       const dbError = new Error('Database connection failed')
       const mockDb = {
         collection: vi.fn().mockReturnValue({
+          findOne: vi.fn().mockResolvedValue(null),
           insertOne: vi.fn().mockRejectedValue(dbError)
         })
       }
@@ -356,6 +370,49 @@ describe('EMP Processor', () => {
           server: mockServer
         })
       ).rejects.toThrow('Database connection failed')
+    })
+
+    it('should throw conflict error if exemption already exists in queue', async () => {
+      const existingQueueItem = {
+        _id: 'existing-id',
+        applicationReferenceNumber: 'APP-001',
+        status: REQUEST_QUEUE_STATUS.PENDING
+      }
+      const mockDb = {
+        collection: vi.fn().mockReturnValue({
+          findOne: vi.fn().mockResolvedValue(existingQueueItem),
+          insertOne: vi.fn()
+        })
+      }
+      const mockServer = {
+        methods: {
+          processEmpQueue: vi.fn()
+        },
+        logger: { error: vi.fn() }
+      }
+      const mockFields = {
+        applicationReference: 'APP-001',
+        createdAt: new Date(),
+        createdBy: 'user-123',
+        updatedAt: new Date(),
+        updatedBy: 'user-123'
+      }
+
+      await expect(
+        empModule.addToEmpQueue({
+          db: mockDb,
+          fields: mockFields,
+          server: mockServer
+        })
+      ).rejects.toThrow(
+        Boom.conflict('Exemption APP-001 already exists in EMP queue')
+      )
+
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
+      expect(mockDb.collection().findOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'APP-001'
+      })
+      expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
     })
   })
 })
