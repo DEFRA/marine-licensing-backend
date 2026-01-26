@@ -93,7 +93,7 @@ describe('Emp Client', () => {
 
       const result = await sendExemptionToEmp(mockServer, mockQueueItem)
 
-      expect(result[0].objectId).toEqual('emp-record-id')
+      expect(result.objectId).toEqual('emp-record-id')
       expect(mockServer.db.collection).toHaveBeenCalledWith('exemptions')
       expect(mockServer.db.collection().findOne).toHaveBeenCalledWith({
         applicationReference: 'TEST-REF-001'
@@ -124,6 +124,16 @@ describe('Emp Client', () => {
       await expect(
         sendExemptionToEmp(mockServer, mockQueueItem)
       ).rejects.toThrow('EMP addFeatures failed: Error adding feature')
+    })
+
+    it('should throw error if EMP does not return an objectId for the new feature', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+      vi.mocked(addFeatures).mockResolvedValue({
+        addResults: [{ success: true, objectId: undefined }]
+      })
+      await expect(
+        sendExemptionToEmp(mockServer, mockQueueItem)
+      ).rejects.toThrow('EMP addFeatures failed: Unknown error')
     })
 
     it('should throw error if exemption not found', async () => {
