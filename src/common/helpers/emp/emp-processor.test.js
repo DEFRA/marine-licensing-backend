@@ -86,15 +86,21 @@ describe('EMP Processor', () => {
   describe('handleQueueItemSuccess', () => {
     it('should update the item status to SUCCESS and log info', async () => {
       mockServer.db.collection().updateOne.mockReturnValue({})
+      const empFeatureId = '1'
 
-      await empModule.handleEmpQueueItemSuccess(mockServer, mockItem)
+      await empModule.handleEmpQueueItemSuccess(
+        mockServer,
+        mockItem,
+        empFeatureId
+      )
 
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         mockItem,
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            empFeatureId
           }
         }
       )
@@ -172,7 +178,8 @@ describe('EMP Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            empFeatureId: 'test-feature-id'
           }
         }
       )
@@ -181,7 +188,8 @@ describe('EMP Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            empFeatureId: 'test-feature-id'
           }
         }
       )
