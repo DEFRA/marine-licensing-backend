@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { MarineLicenseService } from './marine-license.service.js'
+import { getContactNameById } from '../../../common/helpers/dynamics/get-contact-details.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
@@ -98,6 +99,8 @@ describe('MarineLicenseService', () => {
           id: marineLicenseIdNotInDb
         })
       ).rejects.toThrow('Marine License not found')
+
+      expect(getContactNameById).not.toHaveBeenCalled()
     })
 
     it("should throw a not authorized error if the current user is an applicant and didn't create the marine license", async () => {
@@ -112,6 +115,8 @@ describe('MarineLicenseService', () => {
           currentUserId
         })
       ).rejects.toThrow('Not authorized to request this resource')
+
+      expect(getContactNameById).not.toHaveBeenCalled()
     })
   })
 })

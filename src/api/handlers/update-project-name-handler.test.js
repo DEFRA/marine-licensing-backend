@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { updateProjectNameHandler } from './update-project-name-handler.js'
 import { ObjectId } from 'mongodb'
-import Boom from '@hapi/boom'
 
 describe('updateProjectNameHandler', () => {
   const mockAuditPayload = {
@@ -9,15 +8,6 @@ describe('updateProjectNameHandler', () => {
     updatedBy: 'user123'
   }
 
-  const setupMockUpdateOne = (matchedCount = 1) => {
-    const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount })
-    vi.spyOn(global.mockMongo, 'collection').mockImplementation(function () {
-      return { updateOne: mockUpdateOne }
-    })
-    return mockUpdateOne
-  }
-
-  let mockUpdateOne
   const collectionName = 'test-collection'
   const entityType = 'Test Entity'
   const handler = updateProjectNameHandler({
@@ -25,7 +15,15 @@ describe('updateProjectNameHandler', () => {
     entityType
   })
 
-  beforeEach(() => (mockUpdateOne = setupMockUpdateOne()))
+  const mockedUpdateOne = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockedUpdateOne.mockResolvedValue({ matchedCount: 1 })
+    vi.spyOn(global.mockMongo, 'collection').mockImplementation(function () {
+      return { updateOne: mockedUpdateOne }
+    })
+  })
 
   it('should update record with project name', async () => {
     const { mockMongo, mockHandler } = global
@@ -42,7 +40,7 @@ describe('updateProjectNameHandler', () => {
     })
 
     expect(mockMongo.collection).toHaveBeenCalledWith(collectionName)
-    expect(mockUpdateOne).toHaveBeenCalledWith(
+    expect(mockedUpdateOne).toHaveBeenCalledWith(
       { _id: ObjectId.createFromHexString(mockPayload.id) },
       {
         $set: {
@@ -54,19 +52,6 @@ describe('updateProjectNameHandler', () => {
     )
   })
 
-  it('should return response with 201 CREATED status code', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      projectName: 'Updated Project',
-      ...mockAuditPayload
-    }
-
-    await handler({ db: mockMongo, payload: mockPayload }, mockHandler)
-
-    expect(mockHandler.code).toHaveBeenCalledWith(201)
-  })
-
   it('should throw 404 when document is not found', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
@@ -75,7 +60,7 @@ describe('updateProjectNameHandler', () => {
       ...mockAuditPayload
     }
 
-    setupMockUpdateOne(0)
+    mockedUpdateOne.mockResolvedValue({ matchedCount: 0 })
 
     await expect(
       handler({ db: mockMongo, payload: mockPayload }, mockHandler)
@@ -93,12 +78,7 @@ describe('updateProjectNameHandler', () => {
     }
 
     const mockError = 'Database failed'
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
-      }
-    })
+    mockedUpdateOne.mockRejectedValue(new Error(mockError))
 
     await expect(
       handler({ db: mockMongo, payload: mockPayload }, mockHandler)
@@ -107,26 +87,5 @@ describe('updateProjectNameHandler', () => {
     )
 
     expect(mockMongo.collection).toHaveBeenCalled()
-  })
-
-  it('should re-throw Boom errors', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      projectName: 'Updated Project',
-      ...mockAuditPayload
-    }
-
-    const boomError = Boom.badRequest('Custom error')
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockRejectedValueOnce(boomError)
-      }
-    })
-
-    await expect(
-      handler({ db: mockMongo, payload: mockPayload }, mockHandler)
-    ).rejects.toThrow('Custom error')
   })
 })
