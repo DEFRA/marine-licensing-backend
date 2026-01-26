@@ -77,8 +77,8 @@ const logEmpExceptionError = (error, applicationReference) => {
 }
 
 const handleEmpApiError = (result, applicationReference) => {
-  const errorMessage = `EMP addFeatures failed: ${result?.error?.description}`
-  const statusCode = result?.error?.code
+  const errorMessage = `EMP addFeatures failed: ${result?.error?.description || 'Unknown error'}`
+  const statusCode = result?.error?.code || null
   logEmpApiError(errorMessage, statusCode, applicationReference)
   throw Boom.badImplementation(errorMessage)
 }
@@ -115,13 +115,13 @@ export const sendExemptionToEmp = async (server, queueItem) => {
       }
     })
     const result = addResults?.[0]
-    if (!result?.success) {
+    if (!result?.success || !result.objectId) {
       handleEmpApiError(result, applicationReferenceNumber)
     }
 
     logEmpSuccess(applicationReferenceNumber)
 
-    return addResults
+    return result
   } catch (error) {
     logEmpExceptionError(error, applicationReferenceNumber)
     throw Boom.badImplementation(`EMP addFeatures failed: ${error.message}`)
