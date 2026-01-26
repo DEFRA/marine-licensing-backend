@@ -51,6 +51,8 @@ describe('GET /marine-license', () => {
           mockHandler
         )
       ).rejects.toThrow('Marine License not found')
+
+      expect(mockedFindOne).toHaveBeenCalled()
     })
 
     it('should return an error message if the database operation fails', async () => {
