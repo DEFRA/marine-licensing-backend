@@ -86,7 +86,9 @@ describe('GET /exemption', () => {
           }),
           mockHandler
         )
-      ).rejects.toThrow('Exemption not found')
+      ).rejects.toThrow(
+        '#findExemptionById not found for id 123456789123456789123456'
+      )
     })
 
     it('should return an error message if the database operation fails', async () => {

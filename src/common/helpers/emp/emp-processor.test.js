@@ -93,8 +93,7 @@ describe('EMP Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date),
-            whoExemptionIsFor: null
+            updatedAt: expect.any(Date)
           }
         }
       )
@@ -135,7 +134,6 @@ describe('EMP Processor', () => {
       expect(insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockItem,
-          whoExemptionIsFor: null,
           retries: 3
         })
       )
@@ -169,8 +167,7 @@ describe('EMP Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date),
-            whoExemptionIsFor: null
+            updatedAt: expect.any(Date)
           }
         }
       )
@@ -179,8 +176,7 @@ describe('EMP Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date),
-            whoExemptionIsFor: null
+            updatedAt: expect.any(Date)
           }
         }
       )
@@ -248,8 +244,7 @@ describe('EMP Processor', () => {
         createdAt: new Date('2023-01-01'),
         createdBy: 'user-123',
         updatedAt: new Date('2023-01-01'),
-        updatedBy: 'user-123',
-        whoExemptionIsFor: 'Test User'
+        updatedBy: 'user-123'
       }
 
       await empModule.addToEmpQueue({
@@ -266,8 +261,7 @@ describe('EMP Processor', () => {
         createdAt: new Date('2023-01-01'),
         createdBy: 'user-123',
         updatedAt: new Date('2023-01-01'),
-        updatedBy: 'user-123',
-        whoExemptionIsFor: 'Test User'
+        updatedBy: 'user-123'
       })
     })
 
@@ -287,8 +281,7 @@ describe('EMP Processor', () => {
         createdAt: new Date(),
         createdBy: 'user-123',
         updatedAt: new Date(),
-        updatedBy: 'user-123',
-        whoExemptionIsFor: 'Test User'
+        updatedBy: 'user-123'
       }
 
       await empModule.addToEmpQueue({
@@ -318,8 +311,7 @@ describe('EMP Processor', () => {
         createdAt: new Date(),
         createdBy: 'user-123',
         updatedAt: new Date(),
-        updatedBy: 'user-123',
-        whoExemptionIsFor: 'Test User'
+        updatedBy: 'user-123'
       }
 
       await empModule.addToEmpQueue({
@@ -354,8 +346,7 @@ describe('EMP Processor', () => {
         createdAt: new Date(),
         createdBy: 'user-123',
         updatedAt: new Date(),
-        updatedBy: 'user-123',
-        whoExemptionIsFor: 'Test User'
+        updatedBy: 'user-123'
       }
 
       await expect(

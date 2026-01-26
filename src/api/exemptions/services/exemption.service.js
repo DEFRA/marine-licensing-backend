@@ -3,6 +3,8 @@ import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { getContactNameById } from '../../../common/helpers/dynamics/get-contact-details.js'
 
+const notAuthorizedMessage = 'Not authorized to request this resource'
+
 export class ExemptionService {
   constructor({ db, logger }) {
     this.db = db
@@ -14,7 +16,20 @@ export class ExemptionService {
     const result = await this.db.collection('exemptions').findOne({ _id })
 
     if (!result) {
-      throw Boom.notFound('Exemption not found')
+      throw Boom.notFound(`#findExemptionById not found for id ${id}`)
+    }
+    return result
+  }
+
+  async #findExemptionByApplicationReference(applicationReference) {
+    const result = await this.db
+      .collection('exemptions')
+      .findOne({ applicationReference })
+
+    if (!result) {
+      throw Boom.notFound(
+        `#findExemptionByApplicationReference not found for ${applicationReference}`
+      )
     }
     return result
   }
@@ -68,9 +83,32 @@ export class ExemptionService {
         { exemptionId: id },
         'Authorization error in getPublicExemptionById'
       )
-      throw Boom.forbidden('Not authorized to request this resource')
+      throw Boom.forbidden(notAuthorizedMessage)
     }
     exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
+    return exemption
+  }
+
+  async getExemptionByApplicationReference({
+    applicationReference,
+    currentUserId
+  }) {
+    const exemption =
+      await this.#findExemptionByApplicationReference(applicationReference)
+    if (currentUserId && currentUserId !== exemption.contactId) {
+      this.logger.info(
+        {
+          applicationReference,
+          currentUserId,
+          exemptionContactId: exemption.contactId
+        },
+        'Authorization error in getExemptionByApplicationReference'
+      )
+      throw Boom.forbidden(notAuthorizedMessage)
+    }
+    if (!currentUserId) {
+      exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
+    }
     return exemption
   }
 }
