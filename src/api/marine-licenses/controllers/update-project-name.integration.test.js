@@ -1,36 +1,21 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
-import { MARINE_LICENSE_STATUS } from '../../../common/constants/marine-license.js'
-
-const createCompleteMarineLicense = (overrides = {}) => {
-  const marineLicenseId = overrides._id || new ObjectId()
-  const contactId =
-    overrides.contactId || '123e4567-e89b-12d3-a456-426614174000'
-
-  return {
-    _id: marineLicenseId,
-    contactId,
-    projectName: 'Test Marine License Project',
-    status: MARINE_LICENSE_STATUS.DRAFT,
-    createdAt: new Date('2026-12-01'),
-    updatedAt: new Date('2026-12-01'),
-    ...overrides
-  }
-}
+import { mockMarineLicense } from '../../../models/marine-licenses/test-fixtures.js'
 
 describe('PATCH /marine-license/project-name - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
-  const differentContactId = '987e6543-e21b-12d3-a456-426614174000'
   const marineLicenseId = new ObjectId()
 
   test('successfully updates project name when requested by owner', async () => {
-    const marineLicense = createCompleteMarineLicense({
+    const marineLicense = {
+      ...mockMarineLicense,
       _id: marineLicenseId,
       contactId,
       projectName: 'Original Project Name'
-    })
+    }
+
     await globalThis.mockMongo
       .collection('marine-licenses')
       .insertOne(marineLicense)
@@ -77,11 +62,13 @@ describe('PATCH /marine-license/project-name - integration tests', async () => {
   })
 
   test('returns 403 when attempting to update another users marine license', async () => {
-    const marineLicense = createCompleteMarineLicense({
+    const marineLicense = {
+      ...mockMarineLicense,
       _id: marineLicenseId,
       contactId,
       projectName: 'Original Project Name'
-    })
+    }
+
     await globalThis.mockMongo
       .collection('marine-licenses')
       .insertOne(marineLicense)
@@ -94,7 +81,7 @@ describe('PATCH /marine-license/project-name - integration tests', async () => {
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
       url: '/marine-license/project-name',
-      contactId: differentContactId,
+      contactId: '987e6543-e21b-12d3-a456-426614174000',
       payload
     })
 
@@ -109,10 +96,12 @@ describe('PATCH /marine-license/project-name - integration tests', async () => {
   })
 
   test('returns 400 when projectName is missing', async () => {
-    const marineLicense = createCompleteMarineLicense({
+    const marineLicense = {
+      ...mockMarineLicense,
       _id: marineLicenseId,
       contactId
-    })
+    }
+
     await globalThis.mockMongo
       .collection('marine-licenses')
       .insertOne(marineLicense)
