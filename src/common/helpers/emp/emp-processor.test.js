@@ -4,6 +4,7 @@ import * as empModule from './emp-processor.js'
 import { config } from '../../../config.js'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import Boom from '@hapi/boom'
+import * as empClient from './emp-client.js'
 
 vi.mock('../../../config.js')
 vi.mock('./emp-client.js')
@@ -85,15 +86,21 @@ describe('EMP Processor', () => {
   describe('handleQueueItemSuccess', () => {
     it('should update the item status to SUCCESS and log info', async () => {
       mockServer.db.collection().updateOne.mockReturnValue({})
+      const empFeatureId = '1'
 
-      await empModule.handleEmpQueueItemSuccess(mockServer, mockItem)
+      await empModule.handleEmpQueueItemSuccess(
+        mockServer,
+        mockItem,
+        empFeatureId
+      )
 
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         mockItem,
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            empFeatureId
           }
         }
       )
@@ -153,6 +160,10 @@ describe('EMP Processor', () => {
         }
       ]
 
+      vi.spyOn(empClient, 'sendExemptionToEmp').mockResolvedValue({
+        objectId: 'test-feature-id'
+      })
+
       mockServer.db.collection().find.mockReturnValueOnce({
         toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
@@ -167,7 +178,8 @@ describe('EMP Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            empFeatureId: 'test-feature-id'
           }
         }
       )
@@ -176,7 +188,8 @@ describe('EMP Processor', () => {
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date)
+            updatedAt: expect.any(Date),
+            empFeatureId: 'test-feature-id'
           }
         }
       )
@@ -202,13 +215,15 @@ describe('EMP Processor', () => {
         { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 1 }
       ]
 
+      vi.spyOn(empClient, 'sendExemptionToEmp').mockRejectedValue(
+        new Error('Processing failed')
+      )
+
       mockServer.db.collection().find.mockReturnValueOnce({
         toArray: vi.fn().mockResolvedValue(mockQueueItems)
       })
 
-      mockServer.db
-        .collection()
-        .updateOne.mockRejectedValueOnce('Processing failed')
+      mockServer.db.collection().updateOne.mockResolvedValue({})
 
       await empModule.processEmpQueue(mockServer)
 
