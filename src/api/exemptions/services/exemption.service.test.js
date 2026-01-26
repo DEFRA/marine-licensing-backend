@@ -11,7 +11,8 @@ describe('ExemptionService', () => {
     contactId: '9687cdd5-49e7-4508-b56c-08a4d02c43c2',
     projectName: 'Test project',
     status: 'ACTIVE',
-    publicRegister: { consent: 'yes' }
+    publicRegister: { consent: 'yes' },
+    applicationReference: 'EXE/2026/10006'
   }
 
   const logger = {
@@ -24,8 +25,12 @@ describe('ExemptionService', () => {
   const createService = (mockMongo, exemption) => {
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
       return {
-        findOne: vi.fn().mockImplementation(({ _id }) => {
-          if (_id.toHexString() !== exemption._id) {
+        findOne: vi.fn().mockImplementation(({ _id, applicationReference }) => {
+          if (
+            (_id && _id.toHexString() !== exemption._id) ||
+            (applicationReference &&
+              applicationReference !== exemption.applicationReference)
+          ) {
             return null
           }
           return exemption
@@ -81,7 +86,9 @@ describe('ExemptionService', () => {
       const exemptionService = createService(global.mockMongo, exemption)
       await expect(() =>
         exemptionService.getExemptionById({ id: exemptionIdNotInDb })
-      ).rejects.toThrow('Exemption not found')
+      ).rejects.toThrow(
+        '#findExemptionById not found for id 111111111111111111111111'
+      )
     })
 
     it("should throw a not authorized error if the current user is an applicant and didn't create the exemption", async () => {
@@ -106,7 +113,9 @@ describe('ExemptionService', () => {
       const exemptionService = createService(global.mockMongo, exemption)
       await expect(() =>
         exemptionService.getPublicExemptionById(exemptionIdNotInDb)
-      ).rejects.toThrow('Exemption not found')
+      ).rejects.toThrow(
+        '#findExemptionById not found for id 111111111111111111111111'
+      )
     })
 
     it('should throw an unauthorized error if exemption is not public', async () => {
@@ -126,6 +135,65 @@ describe('ExemptionService', () => {
       })
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
+  })
+
+  describe('getExemptionByApplicationReference', () => {
+    it('should return exemption with individual contact name, if requested without a contact ID', async () => {
+      const exemptionService = createService(global.mockMongo, exemption)
+      const result = await exemptionService.getExemptionByApplicationReference({
+        applicationReference: exemption.applicationReference
+      })
+      expect(result).toEqual({
+        ...exemption,
+        whoExemptionIsFor: 'Dave Barnett'
+      })
+    })
+
+    it('should return exemption with organisation name, if requested without a contact ID', async () => {
+      const exemptionWithOrg = {
+        ...exemption,
+        organisation: { name: 'Dredging Co' }
+      }
+      const exemptionService = createService(global.mockMongo, exemptionWithOrg)
+      const result = await exemptionService.getExemptionByApplicationReference({
+        applicationReference: exemption.applicationReference
+      })
+      expect(result).toEqual({
+        ...exemptionWithOrg,
+        whoExemptionIsFor: 'Dredging Co'
+      })
+    })
+
+    it('should return exemption if requested with a contact ID', async () => {
+      const exemptionService = createService(global.mockMongo, exemption)
+      const result = await exemptionService.getExemptionByApplicationReference({
+        applicationReference: exemption.applicationReference,
+        contactId: exemption.contactId
+      })
+      expect(result).toEqual(exemption)
+    })
+
+    it('should throw a not found error if exemption not found', async () => {
+      const exemptionService = createService(global.mockMongo, exemption)
+      await expect(() =>
+        exemptionService.getExemptionByApplicationReference({
+          applicationReference: 'blah'
+        })
+      ).rejects.toThrow(
+        '#findExemptionByApplicationReference not found for blah'
+      )
+    })
+
+    it("should throw a not authorized error if the current user is an applicant and didn't create the exemption", async () => {
+      const exemptionService = createService(global.mockMongo, exemption)
+      const currentUserId = '1'
+      await expect(() =>
+        exemptionService.getExemptionByApplicationReference({
+          applicationReference: exemption.applicationReference,
+          currentUserId
+        })
       ).rejects.toThrow('Not authorized to request this resource')
     })
   })

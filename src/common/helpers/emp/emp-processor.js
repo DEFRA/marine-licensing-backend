@@ -30,8 +30,7 @@ export const handleEmpQueueItemSuccess = async (server, item) => {
     {
       $set: {
         status: REQUEST_QUEUE_STATUS.SUCCESS,
-        updatedAt: new Date(),
-        whoExemptionIsFor: null
+        updatedAt: new Date()
       }
     }
   )
@@ -49,8 +48,7 @@ export const handleEmpQueueItemFailure = async (server, item) => {
       ...item,
       retries: maxRetries,
       status: REQUEST_QUEUE_STATUS.FAILED,
-      updatedAt: new Date(),
-      whoExemptionIsFor: null // so that Personally Identifiable Information is not stored permanently
+      updatedAt: new Date()
     })
 
     await server.db.collection(collectionEmpQueue).deleteOne({ _id: item._id })
@@ -123,14 +121,8 @@ export const processEmpQueue = async (server) => {
 }
 
 export const addToEmpQueue = async ({ db, fields, server }) => {
-  const {
-    applicationReference,
-    createdAt,
-    createdBy,
-    updatedAt,
-    updatedBy,
-    whoExemptionIsFor
-  } = fields
+  const { applicationReference, createdAt, createdBy, updatedAt, updatedBy } =
+    fields
 
   await db.collection(collectionEmpQueue).insertOne({
     applicationReferenceNumber: applicationReference,
@@ -139,8 +131,7 @@ export const addToEmpQueue = async ({ db, fields, server }) => {
     createdAt,
     createdBy,
     updatedAt,
-    updatedBy,
-    whoExemptionIsFor
+    updatedBy
   })
 
   server.methods.processEmpQueue().catch(() => {

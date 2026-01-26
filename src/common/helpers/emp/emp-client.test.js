@@ -132,7 +132,7 @@ describe('Emp Client', () => {
       await expect(
         sendExemptionToEmp(mockServer, mockQueueItem)
       ).rejects.toThrow(
-        'Exemption not found for applicationReference: TEST-REF-001'
+        '#findExemptionByApplicationReference not found for TEST-REF-001'
       )
     })
 
