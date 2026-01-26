@@ -103,27 +103,31 @@ export const testExemptions = [
         consent: 'yes'
       },
       applicationReference: 'EXE/2025/10158',
-      submittedAt: '2025-10-29T12:11:46.373Z'
+      submittedAt: '2025-10-29T12:11:46.373Z',
+      coastalEnforcementAreas: ['South', 'South East'],
+      marinePlanAreas: ['East inshore'],
+      whoExemptionIsFor: 'Test Applicant'
     },
-    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10158',
-        ApplicationTy: 'Exemption notification',
+        ApplicationTy: 'Exempt activity notification',
         ApplicantName: 'Test Applicant',
         Project: 'File upload - KML',
         ActivityTy: 'Deposit of a substance or object',
         SubActTy: 'Scientific instruments and associated equipment',
-        ArticleNo: '17',
+        ArticleNo: 'Article 17',
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-10-01',
         ProjEndDate: '2026-11-01',
-        Status: '',
         SubDate: '2025-10-29',
-        PubConsent: '0',
+        PubConsent: 'Yes',
         Exemptions_URL:
-          'http://localhost:3000/exemption/view-public-details/69020200af9bd9354c7d3575'
+          'http://localhost:3000/exemption/view-public-details/69020200af9bd9354c7d3575',
+        CoastalOperationsArea: 'South, South East',
+        MarinePlanArea: 'East inshore',
+        Status: 'Active'
       },
       geometry: {
         rings: [
@@ -171,7 +175,16 @@ export const testExemptions = [
       updatedAt: '2025-10-29T12:29:10.365Z',
       status: 'ACTIVE',
       contactId: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
-      mcmsContext: null,
+      mcmsContext: {
+        activity: {
+          code: 'DREDGE',
+          label: 'Dredging',
+          purpose: 'Navigational dredging'
+        },
+        articleCode: '18A',
+        pdfDownloadUrl:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+      },
       organisation: {
         id: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
         name: 'Test Company',
@@ -240,29 +253,34 @@ export const testExemptions = [
       ],
       publicRegister: {
         reason: null,
-        consent: 'yes'
+        consent: 'no'
       },
       applicationReference: 'EXE/2025/10159',
-      submittedAt: '2025-10-29T12:29:10.394Z'
+      submittedAt: '2025-10-29T12:29:10.394Z',
+      coastalOperationsAreas: [],
+      marinePlanAreas: [],
+      whoExemptionIsFor: 'Test Applicant'
     },
-    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10159',
-        ApplicationTy: 'Exemption notification',
+        ApplicationTy: 'Exempt activity notification',
         ApplicantName: 'Test Applicant',
         Project: 'Manual - polygons',
-        ActivityTy: undefined,
-        SubActTy: undefined,
-        ArticleNo: undefined,
-        IAT_URL: undefined,
+        ActivityTy: 'Dredging',
+        SubActTy: 'Navigational dredging',
+        ArticleNo: 'Article 18A',
+        IAT_URL:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-10-01',
         ProjEndDate: '2026-11-01',
-        Status: '',
         SubDate: '2025-10-29',
-        PubConsent: '0',
+        PubConsent: 'No',
         Exemptions_URL:
-          'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578'
+          'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578',
+        CoastalOperationsArea: '',
+        MarinePlanArea: '',
+        Status: 'Active'
       },
       geometry: {
         rings: [
@@ -296,7 +314,15 @@ export const testExemptions = [
       updatedAt: '2025-10-29T12:34:40.916Z',
       status: 'ACTIVE',
       contactId: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
-      mcmsContext: null,
+      mcmsContext: {
+        activity: {
+          code: 'EXPLOSIVES',
+          label: 'Explosives'
+        },
+        articleCode: '35',
+        pdfDownloadUrl:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+      },
       organisation: {
         id: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
         name: 'Test Company',
@@ -400,26 +426,29 @@ export const testExemptions = [
         consent: 'no'
       },
       applicationReference: 'EXE/2025/10160',
-      submittedAt: '2025-10-29T12:34:40.947Z'
+      submittedAt: '2025-10-29T12:34:40.947Z',
+      whoExemptionIsFor: 'Test Applicant'
     },
-    applicantName: 'Test Applicant',
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10160',
-        ApplicationTy: 'Exemption notification',
+        ApplicationTy: 'Exempt activity notification',
         ApplicantName: 'Test Applicant',
         Project: 'File upload - shapefile',
-        ActivityTy: undefined,
-        SubActTy: undefined,
-        ArticleNo: undefined,
-        IAT_URL: undefined,
+        ActivityTy: 'Explosives',
+        SubActTy: '',
+        ArticleNo: 'Article 35',
+        IAT_URL:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-11-30',
         ProjEndDate: '2026-12-01',
-        Status: '',
         SubDate: '2025-10-29',
-        PubConsent: '1',
+        PubConsent: 'No',
         Exemptions_URL:
-          'http://localhost:3000/exemption/view-public-details/6902090baf9bd9354c7d357b'
+          'http://localhost:3000/exemption/view-public-details/6902090baf9bd9354c7d357b',
+        CoastalOperationsArea: '',
+        MarinePlanArea: '',
+        Status: 'Active'
       },
       geometry: {
         rings: [
@@ -460,7 +489,16 @@ export const testExemptions = [
       updatedAt: '2025-10-29T12:43:05.167Z',
       status: 'ACTIVE',
       contactId: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
-      mcmsContext: null,
+      mcmsContext: {
+        activity: {
+          code: 'REMOVAL',
+          label: 'Removal of a substance or object',
+          purpose: 'Accidental deposits'
+        },
+        articleCode: '17B',
+        pdfDownloadUrl:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+      },
       organisation: {
         id: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
         name: 'Test Company',
@@ -510,26 +548,29 @@ export const testExemptions = [
         consent: 'yes'
       },
       applicationReference: 'EXE/2025/10161',
-      submittedAt: '2025-10-29T12:43:05.192Z'
+      submittedAt: '2025-10-29T12:43:05.192Z',
+      applicantName: undefined
     },
-    applicantName: undefined,
     expected: {
       attributes: {
         CaseReference: 'EXE/2025/10161',
-        ApplicationTy: 'Exemption notification',
+        ApplicationTy: 'Exempt activity notification',
         ApplicantName: '',
         Project: 'Manual - circles',
-        ActivityTy: undefined,
-        SubActTy: undefined,
-        ArticleNo: undefined,
-        IAT_URL: undefined,
+        ActivityTy: 'Removal of a substance or object',
+        SubActTy: 'Accidental deposits',
+        ArticleNo: 'Article 17B',
+        IAT_URL:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-03-01',
         ProjEndDate: '2026-05-01',
-        Status: '',
         SubDate: '2025-10-29',
-        PubConsent: '0',
+        PubConsent: 'Yes',
         Exemptions_URL:
-          'http://localhost:3000/exemption/view-public-details/69020b36af9bd9354c7d357e'
+          'http://localhost:3000/exemption/view-public-details/69020b36af9bd9354c7d357e',
+        CoastalOperationsArea: '',
+        MarinePlanArea: '',
+        Status: 'Active'
       },
       geometry: {
         rings: [
