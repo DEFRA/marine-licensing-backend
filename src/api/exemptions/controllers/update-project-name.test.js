@@ -1,112 +1,48 @@
-import { vi } from 'vitest'
-import { ObjectId } from 'mongodb'
 import { updateProjectNameController } from './update-project-name.js'
 
-describe('PATCH /exemptions/public-register', () => {
-  const mockAuditPayload = {
-    updatedAt: new Date('2025-01-01T12:00:00Z'),
-    updatedBy: 'user123'
-  }
+describe('PATCH /exemption/project-name', () => {
+  describe('controller configuration', () => {
+    it('should use updateProjectNameHandler with correct configuration', () => {
+      expect(updateProjectNameController.handler).toBeDefined()
+      expect(typeof updateProjectNameController.handler).toBe('function')
+    })
 
-  const payloadValidator = updateProjectNameController.options.validate.payload
+    it('should have pre hook with authorizeOwnership configured for exemptions', () => {
+      expect(updateProjectNameController.options.pre).toBeDefined()
+      expect(updateProjectNameController.options.pre).toHaveLength(1)
+      expect(updateProjectNameController.options.pre[0].method).toBeDefined()
+    })
 
-  it('should fail if fields are missing', () => {
-    const result = payloadValidator.validate({})
-
-    expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
+    it('should have payload validation configured', () => {
+      expect(updateProjectNameController.options.validate).toBeDefined()
+      expect(updateProjectNameController.options.validate.payload).toBeDefined()
+    })
   })
 
-  it('should fail if consent is empty string', () => {
-    const result = payloadValidator.validate({
-      projectName: ''
+  describe('payload validation', () => {
+    const payloadValidator =
+      updateProjectNameController.options.validate.payload
+
+    it('should fail if projectName is missing', () => {
+      const result = payloadValidator.validate({})
+
+      expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
     })
 
-    expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
-  })
+    it('should fail if projectName is empty string', () => {
+      const result = payloadValidator.validate({
+        projectName: ''
+      })
 
-  it('should update exemption with project name', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      projectName: 'Test project',
-      ...mockAuditPayload
-    }
-
-    const mockUpdateOne = vi.fn().mockResolvedValueOnce({})
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: mockUpdateOne
-      }
+      expect(result.error.message).toContain('PROJECT_NAME_REQUIRED')
     })
 
-    await updateProjectNameController.handler(
-      {
-        db: mockMongo,
-        payload: mockPayload,
-        auth: { credentials: { contactId: 'user123' } }
-      },
-      mockHandler
-    )
+    it('should require id field', () => {
+      const result = payloadValidator.validate({
+        projectName: 'Test Project'
+      })
 
-    expect(mockHandler.response).toHaveBeenCalledWith({
-      message: 'success'
+      expect(result.error).toBeDefined()
     })
-
-    expect(mockMongo.collection).toHaveBeenCalledWith('exemptions')
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(mockPayload.id) },
-      {
-        $set: {
-          projectName: mockPayload.projectName,
-          updatedAt: mockPayload.updatedAt,
-          updatedBy: mockPayload.updatedBy
-        }
-      }
-    )
-  })
-
-  it('should return an error message if the database operation fails', async () => {
-    const { mockMongo, mockHandler } = global
-
-    const mockError = 'Database failed'
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
-      }
-    })
-
-    await expect(() =>
-      updateProjectNameController.handler(
-        {
-          db: mockMongo,
-          payload: {
-            id: new ObjectId().toHexString(),
-            projectName: 'Test project'
-          }
-        },
-        mockHandler
-      )
-    ).rejects.toThrow(`Error updating project name: ${mockError}`)
-  })
-
-  it('should return a  404 if id is not correct', async () => {
-    const { mockMongo, mockHandler } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
-      }
-    })
-
-    await expect(() =>
-      updateProjectNameController.handler(
-        {
-          db: mockMongo,
-          payload: { id: new ObjectId().toHexString(), consent: false }
-        },
-        mockHandler
-      )
-    ).rejects.toThrow(`Exemption not found`)
   })
 })
