@@ -120,8 +120,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-10-01',
+        ProjStartDateFormatted: '1 Oct 2026',
         ProjEndDate: '2026-11-01',
+        ProjEndDateFormatted: '1 Nov 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'Yes',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020200af9bd9354c7d3575',
@@ -273,8 +276,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-10-01',
+        ProjStartDateFormatted: '1 Oct 2026',
         ProjEndDate: '2026-11-01',
+        ProjEndDateFormatted: '1 Nov 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'No',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578',
@@ -441,8 +447,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-11-30',
+        ProjStartDateFormatted: '30 Nov 2026',
         ProjEndDate: '2026-12-01',
+        ProjEndDateFormatted: '1 Dec 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'No',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/6902090baf9bd9354c7d357b',
@@ -563,8 +572,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-03-01',
+        ProjStartDateFormatted: '1 Mar 2026',
         ProjEndDate: '2026-05-01',
+        ProjEndDateFormatted: '1 May 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'Yes',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020b36af9bd9354c7d357e',

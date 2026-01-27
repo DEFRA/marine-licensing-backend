@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import { getProjectStartEndDates } from './get-project-start-end-dates.js'
 import { shortIsoDate } from './short-iso-date.js'
 import { transformSiteDetails } from './site-details.js'
@@ -14,6 +15,19 @@ export const transformExemptionToEmpRequest = ({ exemption }) => {
 
   const projStartDate = startDate ? shortIsoDate(new Date(startDate)) : ''
   const projEndDate = endDate ? shortIsoDate(new Date(endDate)) : ''
+  const subDate = shortIsoDate(new Date(exemption.submittedAt))
+
+  const shortDateFormat = 'd MMM yyyy'
+  const projStartDateFormatted = startDate
+    ? format(new Date(startDate), shortDateFormat)
+    : ''
+  const projEndDateFormatted = endDate
+    ? format(new Date(endDate), shortDateFormat)
+    : ''
+  const subDateFormatted = format(
+    new Date(exemption.submittedAt),
+    shortDateFormat
+  )
 
   return {
     attributes: {
@@ -29,8 +43,11 @@ export const transformExemptionToEmpRequest = ({ exemption }) => {
         : '',
       IAT_URL: mcmsContext?.pdfDownloadUrl,
       ProjStartDate: projStartDate,
+      ProjStartDateFormatted: projStartDateFormatted,
       ProjEndDate: projEndDate,
-      SubDate: shortIsoDate(new Date(exemption.submittedAt)),
+      ProjEndDateFormatted: projEndDateFormatted,
+      SubDate: subDate,
+      SubDateFormatted: subDateFormatted,
       PubConsent: publicConsent,
       Exemptions_URL: new URL(
         `/exemption/view-public-details/${exemption._id}`,
