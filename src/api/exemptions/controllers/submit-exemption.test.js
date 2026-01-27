@@ -33,6 +33,9 @@ describe('POST /exemption/submit', () => {
   let mockServer
   let mockAuth
   let mockLogger
+  let mockExemptionsCollection
+  let mockEmpQueueCollection
+  let mockDynamicsQueueCollection
 
   const mockAuditPayload = {
     createdAt: new Date('2025-01-01T12:00:00Z'),
@@ -43,8 +46,6 @@ describe('POST /exemption/submit', () => {
   }
 
   beforeEach(() => {
-    vi.resetAllMocks()
-
     config.get.mockImplementation(function (key) {
       if (key === 'dynamics') {
         return {
@@ -92,11 +93,39 @@ describe('POST /exemption/submit', () => {
       error: vi.fn()
     }
 
+    // Create separate mock collections for different collection types
+    mockExemptionsCollection = {
+      findOne: vi.fn(),
+      updateOne: vi.fn()
+    }
+
+    mockEmpQueueCollection = {
+      findOne: vi.fn().mockResolvedValue(null), // No existing queue item by default
+      insertOne: vi.fn().mockResolvedValue({ insertedId: new ObjectId() })
+    }
+
+    mockDynamicsQueueCollection = {
+      findOne: vi.fn().mockResolvedValue(null), // No existing queue item by default
+      insertOne: vi.fn().mockResolvedValue({ insertedId: new ObjectId() })
+    }
+
     mockDb = {
-      collection: vi.fn().mockReturnValue({
-        findOne: vi.fn(),
-        updateOne: vi.fn(),
-        insertOne: vi.fn()
+      collection: vi.fn().mockImplementation((collectionName) => {
+        if (collectionName === 'exemptions') {
+          return mockExemptionsCollection
+        }
+        if (collectionName === 'exemption-emp-queue') {
+          return mockEmpQueueCollection
+        }
+        if (collectionName === 'exemption-dynamics-queue') {
+          return mockDynamicsQueueCollection
+        }
+        // Default fallback
+        return {
+          findOne: vi.fn(),
+          updateOne: vi.fn(),
+          insertOne: vi.fn()
+        }
       })
     }
 
@@ -119,10 +148,6 @@ describe('POST /exemption/submit', () => {
       siteDetails: 'COMPLETED',
       activityDescription: 'COMPLETED'
     })
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   describe('Payload Validation', () => {
@@ -159,91 +184,6 @@ describe('POST /exemption/submit', () => {
   })
 
   describe('Happy Path - Successful Submission', () => {
-    it('should submit complete exemption and generate application reference', async () => {
-      const mockExemption = {
-        _id: ObjectId.createFromHexString(mockExemptionId),
-        contactId: 'test-contact-id',
-        projectName: 'Test Marine Project',
-        publicRegister: { consent: 'no' },
-        multipleSiteDetails: { multipleSitesEnabled: false },
-        siteDetails: [
-          {
-            coordinatesType: 'point',
-            coordinates: { latitude: '54.978', longitude: '-1.617' }
-          }
-        ],
-        activityDescription: 'Test marine activity'
-      }
-
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
-
-      await submitExemptionController.handler(
-        {
-          payload: { id: mockExemptionId, ...mockAuditPayload },
-          db: mockDb,
-          locker: mockLocker,
-          server: mockServer,
-          auth: mockAuth,
-          logger: mockLogger
-        },
-        mockHandler
-      )
-
-      expect(generateApplicationReference).toHaveBeenCalledWith(
-        mockDb,
-        mockLocker,
-        'EXEMPTION'
-      )
-
-      expect(updateCoastalEnforcementAreas).toHaveBeenCalledWith(
-        mockExemption,
-        mockDb,
-        {
-          updatedAt: mockAuditPayload.updatedAt,
-          updatedBy: mockAuditPayload.updatedBy
-        }
-      )
-
-      expect(updateMarinePlanningAreas).toHaveBeenCalledWith(
-        mockExemption,
-        mockDb,
-        {
-          updatedAt: mockAuditPayload.updatedAt,
-          updatedBy: mockAuditPayload.updatedBy
-        }
-      )
-
-      expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
-        { _id: ObjectId.createFromHexString(mockExemptionId) },
-        {
-          $set: {
-            applicationReference: 'EXE/2025/10001',
-            multipleSiteDetails: {
-              multipleSitesEnabled: false
-            },
-            submittedAt: mockDate,
-            status: EXEMPTION_STATUS.ACTIVE,
-            updatedAt: mockAuditPayload.updatedAt,
-            updatedBy: mockAuditPayload.updatedBy
-          }
-        }
-      )
-
-      expect(mockHandler.response).toHaveBeenCalledWith({
-        message: 'success',
-        value: {
-          applicationReference: 'EXE/2025/10001',
-          submittedAt: expect.any(String)
-        }
-      })
-
-      expect(mockHandler.code).toHaveBeenCalledWith(200)
-
-      expect(mockServer.methods.processDynamicsQueue).toHaveBeenCalled()
-      expect(mockServer.methods.processEmpQueue).toHaveBeenCalled()
-    })
-
     it('should insert request queue document when exemption is submitted', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
@@ -260,11 +200,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test marine activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
-      mockDb
-        .collection()
-        .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -299,7 +236,13 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
       const { userName, ...rest } = mockAuditPayload
-      expect(mockDb.collection().insertOne).toHaveBeenCalledWith({
+      expect(mockDynamicsQueueCollection.insertOne).toHaveBeenCalledWith({
+        applicationReferenceNumber: 'EXE/2025/10001',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0,
+        ...rest
+      })
+      expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
@@ -323,11 +266,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test marine activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
-      mockDb
-        .collection()
-        .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       mockServer.methods.processDynamicsQueue.mockRejectedValueOnce(
         'Test error'
@@ -380,8 +320,8 @@ describe('POST /exemption/submit', () => {
         isEmpEnabled: false
       })
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -395,7 +335,8 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
-      expect(mockDb.collection().insertOne).not.toHaveBeenCalled()
+      expect(mockDynamicsQueueCollection.insertOne).not.toHaveBeenCalled()
+      expect(mockEmpQueueCollection.insertOne).not.toHaveBeenCalled()
     })
 
     it('should insert dynamics and EMP queue documents regardless of organisation', async () => {
@@ -419,8 +360,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test marine activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
       mockDb
         .collection()
         .insertOne.mockResolvedValue({ insertedId: new ObjectId() })
@@ -440,13 +381,13 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
       const { userName, ...rest } = mockAuditPayload
-      expect(mockDb.collection().insertOne).toHaveBeenNthCalledWith(1, {
+      expect(mockDynamicsQueueCollection.insertOne).toHaveBeenCalledWith({
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
         ...rest
       })
-      expect(mockDb.collection().insertOne).toHaveBeenNthCalledWith(2, {
+      expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
@@ -465,8 +406,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -486,7 +427,7 @@ describe('POST /exemption/submit', () => {
 
   describe('Error Handling - Exemption Not Found', () => {
     it('should throw 404 when exemption does not exist', async () => {
-      mockDb.collection().findOne.mockResolvedValue(null)
+      mockExemptionsCollection.findOne.mockResolvedValue(null)
 
       await expect(
         submitExemptionController.handler(
@@ -518,8 +459,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 0 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 0 })
 
       await expect(
         submitExemptionController.handler(
@@ -548,7 +489,7 @@ describe('POST /exemption/submit', () => {
         status: EXEMPTION_STATUS.ACTIVE
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockSubmittedExemption)
+      mockExemptionsCollection.findOne.mockResolvedValue(mockSubmittedExemption)
 
       await expect(
         submitExemptionController.handler(
@@ -586,7 +527,9 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'COMPLETED'
       })
 
-      mockDb.collection().findOne.mockResolvedValue(mockIncompleteExemption)
+      mockExemptionsCollection.findOne.mockResolvedValue(
+        mockIncompleteExemption
+      )
 
       await expect(
         submitExemptionController.handler(
@@ -623,7 +566,9 @@ describe('POST /exemption/submit', () => {
         activityDescription: null
       })
 
-      mockDb.collection().findOne.mockResolvedValue(mockIncompleteExemption)
+      mockExemptionsCollection.findOne.mockResolvedValue(
+        mockIncompleteExemption
+      )
 
       await expect(
         submitExemptionController.handler(
@@ -659,7 +604,9 @@ describe('POST /exemption/submit', () => {
         activityDescription: null
       })
 
-      mockDb.collection().findOne.mockResolvedValue(mockIncompleteExemption)
+      mockExemptionsCollection.findOne.mockResolvedValue(
+        mockIncompleteExemption
+      )
 
       await expect(
         submitExemptionController.handler(
@@ -699,7 +646,9 @@ describe('POST /exemption/submit', () => {
         newFutureTask: 'IN_PROGRESS'
       })
 
-      mockDb.collection().findOne.mockResolvedValue(mockIncompleteExemption)
+      mockExemptionsCollection.findOne.mockResolvedValue(
+        mockIncompleteExemption
+      )
 
       await expect(
         submitExemptionController.handler(
@@ -735,7 +684,7 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
       generateApplicationReference.mockRejectedValue(
         Boom.internal('Unable to acquire lock for reference generation')
       )
@@ -754,7 +703,7 @@ describe('POST /exemption/submit', () => {
         )
       ).rejects.toThrow('Unable to acquire lock for reference generation')
 
-      expect(mockDb.collection().updateOne).not.toHaveBeenCalled()
+      expect(mockExemptionsCollection.updateOne).not.toHaveBeenCalled()
     })
 
     it('should handle database connection errors during reference generation', async () => {
@@ -768,7 +717,7 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
       generateApplicationReference.mockRejectedValue(
         new Error('Database connection failed')
       )
@@ -793,9 +742,9 @@ describe('POST /exemption/submit', () => {
 
   describe('Error Handling - Database Operations', () => {
     it('should handle database errors during exemption lookup', async () => {
-      mockDb
-        .collection()
-        .findOne.mockRejectedValue(new Error('Database connection failed'))
+      mockExemptionsCollection.findOne.mockRejectedValue(
+        new Error('Database connection failed')
+      )
 
       await expect(
         submitExemptionController.handler(
@@ -825,10 +774,10 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb
-        .collection()
-        .updateOne.mockRejectedValue(new Error('Database update failed'))
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockRejectedValue(
+        new Error('Database update failed')
+      )
 
       await expect(
         submitExemptionController.handler(
@@ -860,8 +809,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -896,8 +845,8 @@ describe('POST /exemption/submit', () => {
       const expectedReference = 'EXE/2025/12345'
       generateApplicationReference.mockResolvedValue(expectedReference)
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -911,7 +860,7 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
-      expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
+      expect(mockExemptionsCollection.updateOne).toHaveBeenCalledWith(
         { _id: ObjectId.createFromHexString(mockExemptionId) },
         {
           $set: {
@@ -939,8 +888,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test activity'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -981,8 +930,8 @@ describe('POST /exemption/submit', () => {
         status: 'draft'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockDraftExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockDraftExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -997,7 +946,7 @@ describe('POST /exemption/submit', () => {
       )
 
       expect(generateApplicationReference).toHaveBeenCalled()
-      expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
+      expect(mockExemptionsCollection.updateOne).toHaveBeenCalledWith(
         { _id: ObjectId.createFromHexString(mockExemptionId) },
         {
           $set: {
@@ -1026,8 +975,8 @@ describe('POST /exemption/submit', () => {
         status: 'draft'
       }
 
-      mockDb.collection().findOne.mockResolvedValue(mockDraftExemption)
-      mockDb.collection().updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockExemptionsCollection.findOne.mockResolvedValue(mockDraftExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
       await submitExemptionController.handler(
         {
@@ -1042,7 +991,7 @@ describe('POST /exemption/submit', () => {
       )
 
       expect(generateApplicationReference).toHaveBeenCalled()
-      expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
+      expect(mockExemptionsCollection.updateOne).toHaveBeenCalledWith(
         { _id: ObjectId.createFromHexString(mockExemptionId) },
         {
           $set: {

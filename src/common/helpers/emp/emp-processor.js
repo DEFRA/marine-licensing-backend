@@ -125,6 +125,16 @@ export const addToEmpQueue = async ({ db, fields, server }) => {
   const { applicationReference, createdAt, createdBy, updatedAt, updatedBy } =
     fields
 
+  const existingQueueItem = await db
+    .collection(collectionEmpQueue)
+    .findOne({ applicationReferenceNumber: applicationReference })
+
+  if (existingQueueItem) {
+    throw Boom.conflict(
+      `Exemption ${applicationReference} already exists in EMP queue`
+    )
+  }
+
   await db.collection(collectionEmpQueue).insertOne({
     applicationReferenceNumber: applicationReference,
     status: REQUEST_QUEUE_STATUS.PENDING,
