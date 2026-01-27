@@ -718,5 +718,78 @@ export const testExemptions = [
         }
       }
     }
+  },
+  {
+    dbRecord: {
+      _id: '690204a0af9bd9354c7d3578',
+      projectName: 'Manual - polygons (no sites)',
+      createdBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
+      createdAt: '2025-10-29T12:12:16.243Z',
+      updatedBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
+      updatedAt: '2025-10-29T12:29:10.365Z',
+      status: 'ACTIVE',
+      contactId: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
+      mcmsContext: {
+        activity: {
+          code: 'DREDGE',
+          label: 'Dredging',
+          purpose: 'Navigational dredging'
+        },
+        articleCode: '18A',
+        pdfDownloadUrl:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+      },
+      organisation: {
+        id: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
+        name: 'Test Company',
+        userRelationshipType: 'Employee'
+      },
+      multipleSiteDetails: {
+        multipleSitesEnabled: true,
+        sameActivityDates: 'yes',
+        sameActivityDescription: 'yes'
+      },
+      siteDetails: [],
+      publicRegister: {
+        reason: null,
+        consent: 'no'
+      },
+      applicationReference: 'EXE/2025/10159',
+      submittedAt: '2025-10-29T12:29:10.394Z',
+      coastalOperationsAreas: [],
+      marinePlanAreas: [],
+      whoExemptionIsFor: 'Test Applicant'
+    },
+    expected: {
+      attributes: {
+        CaseReference: 'EXE/2025/10159',
+        ApplicationTy: 'Exempt activity notification',
+        ApplicantName: 'Test Applicant',
+        Project: 'Manual - polygons (no sites)',
+        ActivityTy: 'Dredging',
+        SubActTy: 'Navigational dredging',
+        ArticleNo: 'Article 18A',
+        IAT_URL:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
+        ProjStartDate: '',
+        ProjStartDateFormatted: '',
+        ProjEndDate: '',
+        ProjEndDateFormatted: '',
+        SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
+        PubConsent: 'No',
+        Exemptions_URL:
+          'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578',
+        CoastalOperationsArea: '',
+        MarinePlanArea: '',
+        Status: 'Active'
+      },
+      geometry: {
+        rings: [],
+        spatialReference: {
+          wkid: 4326
+        }
+      }
+    }
   }
 ]
