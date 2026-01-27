@@ -120,8 +120,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-10-01',
+        ProjStartDateFormatted: '1 Oct 2026',
         ProjEndDate: '2026-11-01',
+        ProjEndDateFormatted: '1 Nov 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'Yes',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020200af9bd9354c7d3575',
@@ -273,8 +276,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-10-01',
+        ProjStartDateFormatted: '1 Oct 2026',
         ProjEndDate: '2026-11-01',
+        ProjEndDateFormatted: '1 Nov 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'No',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578',
@@ -441,8 +447,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-11-30',
+        ProjStartDateFormatted: '30 Nov 2026',
         ProjEndDate: '2026-12-01',
+        ProjEndDateFormatted: '1 Dec 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'No',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/6902090baf9bd9354c7d357b',
@@ -563,8 +572,11 @@ export const testExemptions = [
         IAT_URL:
           'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
         ProjStartDate: '2026-03-01',
+        ProjStartDateFormatted: '1 Mar 2026',
         ProjEndDate: '2026-05-01',
+        ProjEndDateFormatted: '1 May 2026',
         SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
         PubConsent: 'Yes',
         Exemptions_URL:
           'http://localhost:3000/exemption/view-public-details/69020b36af9bd9354c7d357e',
@@ -701,6 +713,79 @@ export const testExemptions = [
             [-1.401726, 55.015069]
           ]
         ],
+        spatialReference: {
+          wkid: 4326
+        }
+      }
+    }
+  },
+  {
+    dbRecord: {
+      _id: '690204a0af9bd9354c7d3578',
+      projectName: 'Manual - polygons (no sites)',
+      createdBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
+      createdAt: '2025-10-29T12:12:16.243Z',
+      updatedBy: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
+      updatedAt: '2025-10-29T12:29:10.365Z',
+      status: 'ACTIVE',
+      contactId: '06b68b07-9296-4f7c-b74d-5fd59ef2a513',
+      mcmsContext: {
+        activity: {
+          code: 'DREDGE',
+          label: 'Dredging',
+          purpose: 'Navigational dredging'
+        },
+        articleCode: '18A',
+        pdfDownloadUrl:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f'
+      },
+      organisation: {
+        id: '7cc92559-c39f-449d-98b0-cc6057b34bcc',
+        name: 'Test Company',
+        userRelationshipType: 'Employee'
+      },
+      multipleSiteDetails: {
+        multipleSitesEnabled: true,
+        sameActivityDates: 'yes',
+        sameActivityDescription: 'yes'
+      },
+      siteDetails: [],
+      publicRegister: {
+        reason: null,
+        consent: 'no'
+      },
+      applicationReference: 'EXE/2025/10159',
+      submittedAt: '2025-10-29T12:29:10.394Z',
+      coastalOperationsAreas: [],
+      marinePlanAreas: [],
+      whoExemptionIsFor: 'Test Applicant'
+    },
+    expected: {
+      attributes: {
+        CaseReference: 'EXE/2025/10159',
+        ApplicationTy: 'Exempt activity notification',
+        ApplicantName: 'Test Applicant',
+        Project: 'Manual - polygons (no sites)',
+        ActivityTy: 'Dredging',
+        SubActTy: 'Navigational dredging',
+        ArticleNo: 'Article 18A',
+        IAT_URL:
+          'https://marinelicensingtest.marinemanagement.org.uk/mmofox5uat/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
+        ProjStartDate: '',
+        ProjStartDateFormatted: '',
+        ProjEndDate: '',
+        ProjEndDateFormatted: '',
+        SubDate: '2025-10-29',
+        SubDateFormatted: '29 Oct 2025',
+        PubConsent: 'No',
+        Exemptions_URL:
+          'http://localhost:3000/exemption/view-public-details/690204a0af9bd9354c7d3578',
+        CoastalOperationsArea: '',
+        MarinePlanArea: '',
+        Status: 'Active'
+      },
+      geometry: {
+        rings: [],
         spatialReference: {
           wkid: 4326
         }
