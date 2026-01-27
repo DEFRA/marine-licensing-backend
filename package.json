@@ -48,6 +48,7 @@
     "aws4": "1.13.2",
     "convict": "6.2.4",
     "convict-format-with-validator": "6.2.0",
+    "date-fns": "4.1.0",
     "dotenv": "17.2.3",
     "global-agent": "3.0.0",
     "hapi-auth-jwt2": "11.0.0",
