@@ -197,6 +197,32 @@ describe('POST /exemption/send-to-emp', () => {
       ).rejects.toThrow(Boom.badRequest('EMP integration is not enabled'))
     })
 
+    it('should throw error if the exemption is already in the queue', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        applicationReference: 'APP-2025-001',
+        ...dbExemption
+      }
+
+      mockDb.collection().findOne.mockResolvedValue(mockExemption)
+      addToEmpQueue.mockRejectedValue(
+        Boom.conflict('Exemption APP-2025-001 already exists in EMP queue')
+      )
+
+      const request = {
+        payload: { id: mockExemptionId },
+        db: mockDb,
+        server: mockServer,
+        logger: mockLogger
+      }
+
+      await expect(
+        sendToEmpController.handler(request, mockHandler)
+      ).rejects.toThrow(
+        Boom.conflict('Exemption APP-2025-001 already exists in EMP queue')
+      )
+    })
+
     it('should throw badImplementation error if addToEmpQueue fails', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),

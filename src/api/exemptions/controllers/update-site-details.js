@@ -16,7 +16,7 @@ export const updateSiteDetailsController = {
       output: 'data',
       maxBytes: tenMegaBytes
     },
-    pre: [{ method: authorizeOwnership }],
+    pre: [{ method: authorizeOwnership('exemptions') }],
     validate: {
       query: false,
       payload: siteDetailsSchema

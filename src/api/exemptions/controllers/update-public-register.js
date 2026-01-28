@@ -10,7 +10,7 @@ export const updatePublicRegisterController = {
       parse: true,
       output: 'data'
     },
-    pre: [{ method: authorizeOwnership }],
+    pre: [{ method: authorizeOwnership('exemptions') }],
     validate: {
       query: false,
       payload: publicRegister
