@@ -2,13 +2,14 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makeGetRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { ObjectId } from 'mongodb'
 
 describe('Get unsent EMP exemptions - integration tests', async () => {
   const getServer = await setupTestServer()
 
   beforeEach(async () => {
-    await globalThis.mockMongo.collection('exemptions').deleteMany({})
+    await globalThis.mockMongo.collection(collectionExemptions).deleteMany({})
     await globalThis.mockMongo.collection('exemption-emp-queue').deleteMany({})
     await globalThis.mockMongo
       .collection('exemption-emp-queue-failed')
@@ -49,7 +50,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .insertMany([
         activeExemption1,
         activeExemption2,
@@ -109,7 +110,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     })
 
     await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .insertOne(draftExemption)
 
     const { statusCode, body } = await makeGetRequest({
@@ -146,7 +147,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     }
 
     await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .insertOne(minimalExemption)
 
     const { statusCode, body } = await makeGetRequest({
@@ -179,7 +180,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
 
     // Insert both exemptions
     await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .insertMany([queuedExemption, unqueuedExemption])
 
     // Add one to the queue
@@ -226,7 +227,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
 
     // Insert exemptions
     await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .insertMany([exemption1, exemption2])
 
     // Add both to the queue
@@ -282,7 +283,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
 
     // Insert exemptions
     await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .insertMany([exemption1, exemption2, exemption3])
 
     // Add one to queue with failed status - should still be filtered out
@@ -331,7 +332,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
     }
 
     await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .insertMany([exemptionWithRef, exemptionWithoutRef])
 
     const { statusCode, body } = await makeGetRequest({
@@ -360,7 +361,9 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
       submittedAt: '2024-01-15'
     })
 
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     // Add failed queue item
     await globalThis.mockMongo
@@ -397,7 +400,9 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
       submittedAt: '2024-01-20'
     })
 
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     // Add multiple failed queue items
     await globalThis.mockMongo

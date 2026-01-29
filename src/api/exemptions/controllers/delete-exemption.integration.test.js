@@ -2,6 +2,7 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makeDeleteRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { ObjectId } from 'mongodb'
 
 describe('Delete exemption - integration tests', async () => {
@@ -16,7 +17,9 @@ describe('Delete exemption - integration tests', async () => {
       contactId,
       status: EXEMPTION_STATUS.DRAFT
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const { statusCode, body } = await makeDeleteRequest({
       server: getServer(),
@@ -29,7 +32,7 @@ describe('Delete exemption - integration tests', async () => {
 
     // Verify the exemption was actually deleted from the database
     const deletedExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
     expect(deletedExemption).toBeNull()
   })
@@ -53,7 +56,9 @@ describe('Delete exemption - integration tests', async () => {
       contactId,
       status: EXEMPTION_STATUS.ACTIVE
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const { statusCode, body } = await makeDeleteRequest({
       server: getServer(),
@@ -68,7 +73,7 @@ describe('Delete exemption - integration tests', async () => {
 
     // Verify the exemption was NOT deleted from the database
     const stillExistingExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
     expect(stillExistingExemption).not.toBeNull()
   })
@@ -79,7 +84,9 @@ describe('Delete exemption - integration tests', async () => {
       contactId,
       status: EXEMPTION_STATUS.DRAFT
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const { statusCode, body } = await makeDeleteRequest({
       server: getServer(),
@@ -92,7 +99,7 @@ describe('Delete exemption - integration tests', async () => {
 
     // Verify the exemption was NOT deleted from the database
     const stillExistingExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
     expect(stillExistingExemption).not.toBeNull()
   })

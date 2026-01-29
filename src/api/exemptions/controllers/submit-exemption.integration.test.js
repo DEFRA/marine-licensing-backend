@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import {
   createCompleteExemption,
   mockCredentials
@@ -29,7 +30,7 @@ describe('POST /exemption/submit', async () => {
       contactId: mockCredentials.contactId
     })
 
-    await db.collection('exemptions').insertOne(completeExemption)
+    await db.collection(collectionExemptions).insertOne(completeExemption)
   })
 
   it('should successfully submit a complete exemption', async () => {
@@ -62,7 +63,7 @@ describe('POST /exemption/submit', async () => {
     })
 
     const updatedExemption = await db
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
 
     expect(updatedExemption.status).toBe(EXEMPTION_STATUS.ACTIVE)
@@ -74,7 +75,7 @@ describe('POST /exemption/submit', async () => {
   })
 
   it('should return 404 if not found in database', async () => {
-    await db.collection('exemptions').deleteMany({})
+    await db.collection(collectionExemptions).deleteMany({})
 
     const response = await getServer().inject({
       method: 'POST',
@@ -156,7 +157,7 @@ describe('POST /exemption/submit', async () => {
     })
 
     const updatedExemption = await db
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
 
     expect(updatedExemption.status).toBe(EXEMPTION_STATUS.ACTIVE)

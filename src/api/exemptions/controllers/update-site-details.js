@@ -2,6 +2,7 @@ import Boom from '@hapi/boom'
 import { siteDetailsSchema } from '../../../models/site-details/site-details.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
 
 // We found a valid real-life 23-site Shapefile that had 4MB of site data in the exemption (mostly geoJSON).10MB
@@ -16,7 +17,7 @@ export const updateSiteDetailsController = {
       output: 'data',
       maxBytes: tenMegaBytes
     },
-    pre: [{ method: authorizeOwnership('exemptions') }],
+    pre: [{ method: authorizeOwnership(collectionExemptions) }],
     validate: {
       query: false,
       payload: siteDetailsSchema
@@ -29,7 +30,7 @@ export const updateSiteDetailsController = {
       const { multipleSiteDetails, siteDetails, id, updatedAt, updatedBy } =
         payload
 
-      const result = await db.collection('exemptions').updateOne(
+      const result = await db.collection(collectionExemptions).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {

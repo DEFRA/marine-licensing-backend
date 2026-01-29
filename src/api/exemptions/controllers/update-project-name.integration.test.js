@@ -2,6 +2,7 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 
 describe('PATCH /exemption/project-name - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -15,7 +16,9 @@ describe('PATCH /exemption/project-name - integration tests', async () => {
       contactId,
       projectName: 'Original Project Name'
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const payload = {
       id: exemptionId.toString(),
@@ -34,7 +37,7 @@ describe('PATCH /exemption/project-name - integration tests', async () => {
 
     // Verify the exemption was updated in the database
     const updatedExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
 
     expect(updatedExemption.projectName).toBe('Updated Project Name')
@@ -65,7 +68,9 @@ describe('PATCH /exemption/project-name - integration tests', async () => {
       contactId,
       projectName: 'Original Project Name'
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const payload = {
       id: exemptionId.toString(),
@@ -84,7 +89,7 @@ describe('PATCH /exemption/project-name - integration tests', async () => {
 
     // Verify the exemption was NOT updated
     const unchangedExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
 
     expect(unchangedExemption.projectName).toBe('Original Project Name')
@@ -95,7 +100,9 @@ describe('PATCH /exemption/project-name - integration tests', async () => {
       _id: exemptionId,
       contactId
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const payload = {
       id: exemptionId.toString()
