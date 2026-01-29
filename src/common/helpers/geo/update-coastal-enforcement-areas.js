@@ -1,14 +1,19 @@
 import { parseGeoAreas } from './geo-parse.js'
-import { coastalEnforcementAreas } from '../../constants/db-collections.js'
+import { collectionCoastalEnforcementAreas } from '../../constants/db-collections.js'
 
 export const updateCoastalEnforcementAreas = async (
   exemption,
   db,
   { updatedAt, updatedBy }
 ) => {
-  const result = await parseGeoAreas(exemption, db, coastalEnforcementAreas, {
-    displayName: 'Coastal Enforcement Areas'
-  })
+  const result = await parseGeoAreas(
+    exemption,
+    db,
+    collectionCoastalEnforcementAreas,
+    {
+      displayName: 'Coastal Enforcement Areas'
+    }
+  )
 
   await db.collection('exemptions').updateOne(
     { _id: exemption._id },

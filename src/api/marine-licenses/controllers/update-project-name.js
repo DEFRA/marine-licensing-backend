@@ -1,7 +1,7 @@
 import { updateProjectName } from '../../../models/marine-licenses/project-name.js'
 import { updateProjectNameHandler } from '../../handlers/update-project-name-handler.js'
 import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
-import { marineLicenses } from '../../../common/constants/db-collections.js'
+import { collectionMarineLicenses } from '../../../common/constants/db-collections.js'
 
 export const updateProjectNameController = {
   options: {
@@ -9,14 +9,14 @@ export const updateProjectNameController = {
       parse: true,
       output: 'data'
     },
-    pre: [{ method: authorizeOwnership(marineLicenses) }],
+    pre: [{ method: authorizeOwnership(collectionMarineLicenses) }],
     validate: {
       query: false,
       payload: updateProjectName
     }
   },
   handler: updateProjectNameHandler({
-    collectionName: marineLicenses,
+    collectionName: collectionMarineLicenses,
     entityType: 'Marine License'
   })
 }
