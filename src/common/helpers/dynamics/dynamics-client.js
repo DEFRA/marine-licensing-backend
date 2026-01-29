@@ -4,6 +4,7 @@ import { config } from '../../../config.js'
 import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
+import { collectionExemptions } from '../../constants/db-collections.js'
 import { isOrganisationEmployee } from '../organisations.js'
 import { createLogger } from '../../helpers/logging/logger.js'
 
@@ -16,7 +17,7 @@ const logger = createLogger()
  * @returns {Promise<Object>} The exemption document
  */
 const fetchExemption = async (db, applicationReferenceNumber) => {
-  const exemption = await db.collection('exemptions').findOne({
+  const exemption = await db.collection(collectionExemptions).findOne({
     applicationReference: applicationReferenceNumber
   })
 

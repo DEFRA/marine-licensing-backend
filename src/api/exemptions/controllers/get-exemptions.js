@@ -1,4 +1,5 @@
 import { StatusCodes } from 'http-status-codes'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { getContactId } from '../../helpers/get-contact-id.js'
 import { EXEMPTION_STATUS_LABEL } from '../../../common/constants/exemption.js'
 import { getOrganisationIdFromAuthToken } from '../helpers/get-organisation-from-token.js'
@@ -47,7 +48,7 @@ export const getExemptionsController = {
     const organisationId = getOrganisationIdFromAuthToken(auth)
 
     const exemptions = await db
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .find({
         contactId,
         ...(organisationId

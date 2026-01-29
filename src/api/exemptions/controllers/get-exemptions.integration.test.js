@@ -3,6 +3,7 @@ import { makeGetRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 
 describe('Get exemptions - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -21,7 +22,9 @@ describe('Get exemptions - integration tests', async () => {
       status: EXEMPTION_STATUS.DRAFT
     })
     const exemptions = [exemption1, exemption2]
-    await globalThis.mockMongo.collection('exemptions').insertMany(exemptions)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertMany(exemptions)
 
     const { statusCode, body } = await makeGetRequest({
       server: getServer(),

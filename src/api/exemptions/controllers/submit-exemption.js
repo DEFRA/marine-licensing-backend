@@ -10,6 +10,7 @@ import { ExemptionService } from '../services/exemption.service.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { config } from '../../../config.js'
 import { sendUserEmailConfirmation } from '../helpers/send-user-email-confirmation.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
 import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
@@ -62,7 +63,7 @@ const updateExemptionRecord = async ({
 }) => {
   const { db } = request
   const { id, updatedAt, updatedBy } = payload
-  const updateResult = await db.collection('exemptions').updateOne(
+  const updateResult = await db.collection(collectionExemptions).updateOne(
     { _id: ObjectId.createFromHexString(id) },
     {
       $set: {
@@ -86,7 +87,7 @@ export const submitExemptionController = {
       parse: true,
       output: 'data'
     },
-    pre: [{ method: authorizeOwnership('exemptions') }],
+    pre: [{ method: authorizeOwnership(collectionExemptions) }],
     validate: {
       payload: submitExemption
     }

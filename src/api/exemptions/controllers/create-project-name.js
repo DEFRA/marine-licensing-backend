@@ -1,6 +1,7 @@
 import { createProjectName } from '../../../models/project-name.js'
 import { createProjectNameHandler } from '../../handlers/create-project-name-handler.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 
 export const createProjectNameController = {
   options: {
@@ -14,7 +15,7 @@ export const createProjectNameController = {
     }
   },
   handler: createProjectNameHandler({
-    collectionName: 'exemptions',
+    collectionName: collectionExemptions,
     status: EXEMPTION_STATUS.DRAFT,
     entityType: 'Exemption'
   })

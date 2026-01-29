@@ -3,9 +3,10 @@ import { LockManager } from 'mongo-locks'
 
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import {
-  coastalEnforcementAreas,
-  marineLicenses,
-  marinePlanAreas
+  collectionCoastalEnforcementAreas,
+  collectionExemptions,
+  collectionMarineLicenses,
+  collectionMarinePlanAreas
 } from '../constants/db-collections.js'
 
 export const addAuditFields = (request, h) => {
@@ -71,7 +72,7 @@ export const mongoDb = {
 async function createIndexes(db) {
   await db.collection('mongo-locks').createIndex({ id: 1 })
 
-  await db.collection('exemptions').createIndex({ id: 1 })
+  await db.collection(collectionExemptions).createIndex({ id: 1 })
   await db
     .collection('reference-sequences')
     .createIndex({ key: 1 }, { unique: true })
@@ -79,11 +80,13 @@ async function createIndexes(db) {
   await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
   await db.collection('exemption-dynamics-queue-failed').createIndex({ id: 1 })
 
-  await db.collection(marineLicenses).createIndex({ id: 1 })
+  await db.collection(collectionMarineLicenses).createIndex({ id: 1 })
 
   await db
-    .collection(coastalEnforcementAreas)
+    .collection(collectionCoastalEnforcementAreas)
     .createIndex({ geometry: '2dsphere' })
 
-  await db.collection(marinePlanAreas).createIndex({ geometry: '2dsphere' })
+  await db
+    .collection(collectionMarinePlanAreas)
+    .createIndex({ geometry: '2dsphere' })
 }
