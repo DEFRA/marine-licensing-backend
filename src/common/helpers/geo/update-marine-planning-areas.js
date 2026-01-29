@@ -15,7 +15,7 @@ export const updateMarinePlanningAreas = async (
 
   if (marinePlanAreasCount === 0) {
     logger.info(
-      'No Marine Plan Areas exist in the collection so no data will not be parsed'
+      'No Marine Plan Areas exist in the collection so data will not be parsed'
     )
   }
 

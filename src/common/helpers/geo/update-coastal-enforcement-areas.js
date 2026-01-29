@@ -15,7 +15,7 @@ export const updateCoastalEnforcementAreas = async (
 
   if (coastalEnforcementAreasCount === 0) {
     logger.info(
-      'No Coastal Enforcement Areas exist in the collection so no data will not be parsed'
+      'No Coastal Enforcement Areas exist in the collection so data will not be parsed'
     )
   }
 

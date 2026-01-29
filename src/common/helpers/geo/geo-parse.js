@@ -35,7 +35,7 @@ export const convertMultipleCoordinates = (site) => {
 
   const polygonCoords = coordinates.map((coord) => {
     if (site.coordinateSystem === 'osgb36') {
-      return singleOSGB36toWGS84(coord.eastings, coord.northings)
+      return singleOSGB36toWGS84(coord)
     } else {
       return [
         Number.parseFloat(coord.longitude),

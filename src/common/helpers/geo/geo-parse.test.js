@@ -135,9 +135,18 @@ describe('geo-parse', () => {
       const result = convertMultipleCoordinates(mockSiteMultipleOSGB36)
 
       expect(singleOSGB36toWGS84).toHaveBeenCalledTimes(4)
-      expect(singleOSGB36toWGS84).toHaveBeenCalledWith('513967', '476895')
-      expect(singleOSGB36toWGS84).toHaveBeenCalledWith('514040', '476693')
-      expect(singleOSGB36toWGS84).toHaveBeenCalledWith('514193', '476835')
+      expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
+        eastings: '513967',
+        northings: '476895'
+      })
+      expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
+        eastings: '513967',
+        northings: '476895'
+      })
+      expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
+        eastings: '513967',
+        northings: '476895'
+      })
       expect(result).toEqual([
         {
           type: 'Polygon',
