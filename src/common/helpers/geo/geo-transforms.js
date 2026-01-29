@@ -1,5 +1,8 @@
 import { buffer } from '@turf/turf'
 
+const arcGisLabelProperty = 'Marine_Are'
+const environmentApiLabelProperty = 'info'
+
 export const formatGeoForStorage = (geoJson) => {
   /**
    * The buffer(0) operation forces a geometry rebuild that automatically resolves self-intersections
@@ -14,7 +17,9 @@ export const formatGeoForStorage = (geoJson) => {
 
   return processed.features.map((feature) => ({
     type: 'Feature',
-    name: feature.properties.info ?? feature.properties.name,
+    name:
+      feature.properties[arcGisLabelProperty] ??
+      feature.properties[environmentApiLabelProperty],
     geometry: {
       type: feature.geometry.type,
       coordinates: feature.geometry.coordinates

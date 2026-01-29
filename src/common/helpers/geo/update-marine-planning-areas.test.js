@@ -10,11 +10,13 @@ describe('updateMarinePlanningAreas', () => {
   let mockCollection
   let mockUpdatedAt
   let mockUpdatedBy
+  const mockCountDocuments = vi.fn().mockResolvedValue(4)
 
   beforeEach(() => {
     vi.clearAllMocks()
 
     mockCollection = {
+      countDocuments: mockCountDocuments,
       updateOne: vi.fn().mockResolvedValue({})
     }
 
@@ -51,6 +53,34 @@ describe('updateMarinePlanningAreas', () => {
       {
         $set: {
           marinePlanAreas: mockMarinePlanAreas,
+          updatedAt: mockUpdatedAt,
+          updatedBy: mockUpdatedBy
+        }
+      }
+    )
+  })
+
+  test('should update exemption but skip parsing when no Marine Plan areas exist in collection', async () => {
+    const mockExemption = {
+      _id: 'test-exemption-id',
+      location: { coordinates: [1, 2] }
+    }
+
+    mockCountDocuments.mockReturnValueOnce(0)
+    const parseMock = vi.mocked(parseGeoAreas)
+
+    await updateMarinePlanningAreas(mockExemption, mockDb, {
+      updatedAt: mockUpdatedAt,
+      updatedBy: mockUpdatedBy
+    })
+
+    expect(parseMock).not.toHaveBeenCalled()
+
+    expect(mockCollection.updateOne).toHaveBeenCalledWith(
+      { _id: 'test-exemption-id' },
+      {
+        $set: {
+          marinePlanAreas: [],
           updatedAt: mockUpdatedAt,
           updatedBy: mockUpdatedBy
         }

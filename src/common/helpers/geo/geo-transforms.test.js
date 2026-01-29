@@ -4,7 +4,7 @@ import { mockFeatureCollection } from './test.fixture.js'
 
 describe('geo-transforms', () => {
   describe('formatGeoForStorage', () => {
-    it('should correctly format all data', () => {
+    it('should correctly format all data from the Environment API data source', () => {
       const formattedGeoData = formatGeoForStorage(mockFeatureCollection)
 
       expect(formattedGeoData.length).toBe(2)
@@ -24,13 +24,13 @@ describe('geo-transforms', () => {
       })
     })
 
-    it('should correctly format all data using name field for Coastal Enforment Areas', () => {
+    it('should correctly format all data using ArcGis datasource for Coastal Enforment Areas', () => {
       const mockCoastalAreasCollection = {
         ...mockFeatureCollection,
         features: mockFeatureCollection.features.map((area) => {
           const coastalArea = {
             ...area,
-            properties: { name: area.properties.info }
+            properties: { Marine_Are: area.properties.info }
           }
           return coastalArea
         })
@@ -41,7 +41,7 @@ describe('geo-transforms', () => {
       expect(formattedGeoData.length).toBe(2)
 
       expect(formattedGeoData[0]).toEqual({
-        name: mockCoastalAreasCollection.features[0].properties.name,
+        name: mockCoastalAreasCollection.features[0].properties.Marine_Are,
         properties: mockCoastalAreasCollection.features[0].properties,
         geometry: { coordinates: expect.any(Array), type: 'Polygon' },
         type: 'Feature'
