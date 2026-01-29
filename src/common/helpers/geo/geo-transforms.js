@@ -1,5 +1,6 @@
 import { buffer } from '@turf/turf'
 
+// 'Marine_Are' is not a spelling error and is the property name of the data we are consuming
 const arcGisLabelProperty = 'Marine_Are'
 const environmentApiLabelProperty = 'info'
 
