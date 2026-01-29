@@ -1,7 +1,10 @@
 import { vi, afterAll, beforeAll, beforeEach } from 'vitest'
 import { MongoClient } from 'mongodb'
 import createFetchMock from 'vitest-fetch-mock'
-import { collectionMarineLicenses } from '../src/common/constants/db-collections'
+import {
+  collectionExemptions,
+  collectionMarineLicenses
+} from '../src/common/constants/db-collections'
 
 const fetchMock = createFetchMock(vi)
 
@@ -21,7 +24,7 @@ beforeAll(async () => {
 
 // Empty exemptions collection before each integration test
 beforeEach(async () => {
-  const collection = globalThis.mockMongo?.collection('exemptions')
+  const collection = globalThis.mockMongo?.collection(collectionExemptions)
   if (collection?.deleteMany) {
     await collection.deleteMany({})
   }

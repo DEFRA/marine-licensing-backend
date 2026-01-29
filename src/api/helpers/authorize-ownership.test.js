@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { authorizeOwnership } from './authorize-ownership.js'
+import { collectionExemptions } from '../../common/constants/db-collections.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 
@@ -42,7 +43,7 @@ describe('authorizeOwnership', () => {
 
         mockCollection.findOne.mockResolvedValue(document)
 
-        const handler = authorizeOwnership('exemptions')
+        const handler = authorizeOwnership(collectionExemptions)
 
         const result = await handler(
           {
@@ -54,7 +55,7 @@ describe('authorizeOwnership', () => {
           mockH
         )
 
-        expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
+        expect(mockDb.collection).toHaveBeenCalledWith(collectionExemptions)
         expect(mockCollection.findOne).toHaveBeenCalledWith({
           _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
         })
@@ -70,10 +71,10 @@ describe('authorizeOwnership', () => {
 
         mockCollection.findOne.mockResolvedValue(document)
 
-        const handler = authorizeOwnership('exemptions')
+        const handler = authorizeOwnership(collectionExemptions)
         const result = await handler(mockRequest, mockH)
 
-        expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
+        expect(mockDb.collection).toHaveBeenCalledWith(collectionExemptions)
         expect(mockCollection.findOne).toHaveBeenCalledWith({
           _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
         })
@@ -87,12 +88,12 @@ describe('authorizeOwnership', () => {
 
         const boomSpy = vi.spyOn(Boom, 'notFound')
 
-        const handler = authorizeOwnership('exemptions')
+        const handler = authorizeOwnership(collectionExemptions)
         await expect(handler(mockRequest, mockH)).rejects.toThrow()
 
         expect(boomSpy).toHaveBeenCalled()
 
-        expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
+        expect(mockDb.collection).toHaveBeenCalledWith(collectionExemptions)
         expect(mockCollection.findOne).toHaveBeenCalledWith({
           _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
         })
@@ -109,12 +110,12 @@ describe('authorizeOwnership', () => {
 
         mockCollection.findOne.mockResolvedValue(document)
 
-        const handler = authorizeOwnership('exemptions')
+        const handler = authorizeOwnership(collectionExemptions)
         await expect(handler(mockRequest, mockH)).rejects.toThrow(
           'Not authorized to request this resource'
         )
 
-        expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
+        expect(mockDb.collection).toHaveBeenCalledWith(collectionExemptions)
         expect(mockCollection.findOne).toHaveBeenCalledWith({
           _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
         })

@@ -1,6 +1,7 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePostRequest } from '../../../../tests/server-requests.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 
 describe('Create project name - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -28,7 +29,7 @@ describe('Create project name - integration tests', async () => {
 
     // Verify the exemption was created in the database with correct fields
     const createdExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ projectName: 'Test Project' })
 
     expect(body.id).toBe(createdExemption._id.toString())
@@ -66,7 +67,7 @@ describe('Create project name - integration tests', async () => {
 
     // Verify the exemption was created with organisation details
     const createdExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ projectName: 'Test Project with Org' })
 
     expect(createdExemption).not.toBeNull()
@@ -103,7 +104,7 @@ describe('Create project name - integration tests', async () => {
 
     // Verify mcmsContext was stored correctly (fallback to iatQueryString only due to invalid fields)
     const createdExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ projectName: 'Test Project' })
 
     expect(createdExemption.mcmsContext).toEqual({
@@ -135,7 +136,7 @@ describe('Create project name - integration tests', async () => {
 
     // Verify only iatQueryString was stored when validation fails
     const createdExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ projectName: 'Test Project Invalid MCMS' })
 
     expect(createdExemption.mcmsContext).toEqual({

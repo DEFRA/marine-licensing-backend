@@ -2,6 +2,7 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 
 describe('PATCH /exemption/public-register - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -15,7 +16,9 @@ describe('PATCH /exemption/public-register - integration tests', async () => {
       contactId,
       publicRegister: { consent: 'no', reason: 'Previous reason' }
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const payload = {
       id: exemptionId.toString(),
@@ -34,7 +37,7 @@ describe('PATCH /exemption/public-register - integration tests', async () => {
 
     // Verify the exemption was updated in the database
     const updatedExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
 
     expect(updatedExemption.publicRegister).toEqual({
@@ -49,7 +52,9 @@ describe('PATCH /exemption/public-register - integration tests', async () => {
       contactId,
       publicRegister: { consent: 'yes' }
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const payload = {
       id: exemptionId.toString(),
@@ -69,7 +74,7 @@ describe('PATCH /exemption/public-register - integration tests', async () => {
 
     // Verify the exemption was updated in the database
     const updatedExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
 
     expect(updatedExemption.publicRegister).toEqual({
@@ -103,7 +108,9 @@ describe('PATCH /exemption/public-register - integration tests', async () => {
       contactId,
       publicRegister: { consent: 'yes' }
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const payload = {
       id: exemptionId.toString(),
@@ -123,7 +130,7 @@ describe('PATCH /exemption/public-register - integration tests', async () => {
 
     // Verify the exemption was NOT updated
     const unchangedExemption = await globalThis.mockMongo
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ _id: exemptionId })
 
     expect(unchangedExemption.publicRegister.consent).toBe('yes')
@@ -134,7 +141,9 @@ describe('PATCH /exemption/public-register - integration tests', async () => {
       _id: exemptionId,
       contactId
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const payload = {
       id: exemptionId.toString()

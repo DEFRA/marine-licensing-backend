@@ -4,6 +4,7 @@ import { LockManager } from 'mongo-locks'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import {
   collectionCoastalEnforcementAreas,
+  collectionExemptions,
   collectionMarineLicenses,
   collectionMarinePlanAreas
 } from '../constants/db-collections.js'
@@ -71,7 +72,7 @@ export const mongoDb = {
 async function createIndexes(db) {
   await db.collection('mongo-locks').createIndex({ id: 1 })
 
-  await db.collection('exemptions').createIndex({ id: 1 })
+  await db.collection(collectionExemptions).createIndex({ id: 1 })
   await db
     .collection('reference-sequences')
     .createIndex({ key: 1 }, { unique: true })
