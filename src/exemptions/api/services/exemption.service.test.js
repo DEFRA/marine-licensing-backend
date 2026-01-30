@@ -1,9 +1,12 @@
 import { vi } from 'vitest'
 import { ExemptionService } from './exemption.service.js'
 
-vi.mock('../../../shared/common/helpers/dynamics/get-contact-details.js', () => ({
-  getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
-}))
+vi.mock(
+  '../../../shared/common/helpers/dynamics/get-contact-details.js',
+  () => ({
+    getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
+  })
+)
 
 describe('ExemptionService', () => {
   const exemption = {

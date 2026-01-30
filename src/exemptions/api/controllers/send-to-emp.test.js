@@ -7,9 +7,12 @@ import { addToEmpQueue } from '../../../shared/common/helpers/emp/emp-processor.
 
 vi.mock('../../../config.js')
 vi.mock('../../../shared/common/helpers/emp/emp-processor.js')
-vi.mock('../../../shared/common/helpers/dynamics/get-contact-details.js', () => ({
-  getContactNameById: vi.fn().mockResolvedValue('Test Contact Name')
-}))
+vi.mock(
+  '../../../shared/common/helpers/dynamics/get-contact-details.js',
+  () => ({
+    getContactNameById: vi.fn().mockResolvedValue('Test Contact Name')
+  })
+)
 
 describe('POST /exemption/send-to-emp', () => {
   let mockDb

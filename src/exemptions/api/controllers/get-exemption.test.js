@@ -5,9 +5,12 @@ import {
   requestFromInternalUser,
   requestFromPublicUser
 } from '../../../../.vite/mocks.js'
-vi.mock('../../../shared/common/helpers/dynamics/get-contact-details.js', () => ({
-  getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
-}))
+vi.mock(
+  '../../../shared/common/helpers/dynamics/get-contact-details.js',
+  () => ({
+    getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
+  })
+)
 
 describe('GET /exemption', () => {
   const paramsValidator = getExemptionController({ requiresAuth: true }).options

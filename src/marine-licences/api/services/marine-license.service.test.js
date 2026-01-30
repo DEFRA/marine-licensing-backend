@@ -2,9 +2,12 @@ import { vi } from 'vitest'
 import { MarineLicenseService } from './marine-license.service.js'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
 
-vi.mock('../../../shared/common/helpers/dynamics/get-contact-details.js', () => ({
-  getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
-}))
+vi.mock(
+  '../../../shared/common/helpers/dynamics/get-contact-details.js',
+  () => ({
+    getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
+  })
+)
 
 describe('MarineLicenseService', () => {
   const marineLicense = {
