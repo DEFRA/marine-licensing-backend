@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
-import { EXEMPTION_STATUS } from '../src/common/constants/exemption.js'
-import { COORDINATE_SYSTEMS } from '../src/common/constants/coordinates.js'
+import { EXEMPTION_STATUS } from '../src/shared/common/constants/exemption.js'
+import { COORDINATE_SYSTEMS } from '../src/shared/common/constants/coordinates.js'
 
 export const mockCredentials = {
   contactId: '123e4567-e89b-12d3-a456-426614174000'
