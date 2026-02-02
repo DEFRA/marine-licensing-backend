@@ -1,7 +1,6 @@
 import { buffer } from '@turf/turf'
 
-// 'Marine_Are' is not a spelling error and is the property name of the data we are consuming
-const coastalAreasLabelProperty = 'Marine_Are'
+const coastalAreasLabelProperty = 'marine_are'
 const marineAreaApiLabelProperty = 'info'
 
 export const formatGeoForStorage = (geoJson) => {

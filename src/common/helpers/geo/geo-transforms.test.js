@@ -30,7 +30,7 @@ describe('geo-transforms', () => {
         features: mockFeatureCollection.features.map((area) => {
           const coastalArea = {
             ...area,
-            properties: { Marine_Are: area.properties.info }
+            properties: { marine_are: area.properties.info }
           }
           return coastalArea
         })
@@ -41,7 +41,7 @@ describe('geo-transforms', () => {
       expect(formattedGeoData.length).toBe(2)
 
       expect(formattedGeoData[0]).toEqual({
-        name: mockCoastalAreasCollection.features[0].properties.Marine_Are,
+        name: mockCoastalAreasCollection.features[0].properties.marine_are,
         properties: mockCoastalAreasCollection.features[0].properties,
         geometry: { coordinates: expect.any(Array), type: 'Polygon' },
         type: 'Feature'
