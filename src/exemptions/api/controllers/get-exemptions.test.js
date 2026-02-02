@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import {
   EXEMPTION_STATUS,
   EXEMPTION_STATUS_LABEL
-} from '../../../shared/common/constants/exemption.js'
+} from '../../constants/exemption.js'
 
 describe('getExemptionsController', () => {
   let mockRequest

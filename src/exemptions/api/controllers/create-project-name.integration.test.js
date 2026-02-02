@@ -1,6 +1,6 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePostRequest } from '../../../../tests/server-requests.js'
-import { EXEMPTION_STATUS } from '../../../shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 
 describe('Create project name - integration tests', async () => {

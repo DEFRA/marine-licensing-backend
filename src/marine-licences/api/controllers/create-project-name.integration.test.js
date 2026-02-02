@@ -1,6 +1,6 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePostRequest } from '../../../../tests/server-requests.js'
-import { MARINE_LICENSE_STATUS } from '../../../shared/common/constants/marine-license.js'
+import { MARINE_LICENSE_STATUS } from '../../constants/marine-license.js'
 
 describe('Create project name - integration tests', async () => {
   const getServer = await setupTestServer()

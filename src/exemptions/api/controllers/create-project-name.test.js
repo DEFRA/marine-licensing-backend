@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { createProjectNameController } from './create-project-name'
 import { ObjectId } from 'mongodb'
-import { EXEMPTION_STATUS } from '../../../shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { activityTypes } from '../../../shared/common/constants/mcms-context.js'
 
 describe('POST /exemptions/project-name', () => {

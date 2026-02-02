@@ -1,4 +1,4 @@
-import { MARINE_LICENSE_STATUS } from '../../shared/common/constants/marine-license.js'
+import { MARINE_LICENSE_STATUS } from '../constants/marine-license.js'
 import { ObjectId } from 'mongodb'
 
 export const mockMarineLicense = {

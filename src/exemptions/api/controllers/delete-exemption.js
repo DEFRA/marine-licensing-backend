@@ -4,7 +4,7 @@ import { getExemption } from '../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { EXEMPTION_STATUS } from '../../../shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { createLogger } from '../../../shared/common/helpers/logging/logger.js'
 
 const logger = createLogger()

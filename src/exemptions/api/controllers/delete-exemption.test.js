@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { deleteExemptionController } from './delete-exemption'
-import { EXEMPTION_STATUS } from '../../../shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 
 describe('DELETE /exemption', () => {
   const paramsValidator = deleteExemptionController.options.validate.params

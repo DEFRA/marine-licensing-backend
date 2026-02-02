@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { EXEMPTION_STATUS } from '../../../shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import {
   createCompleteExemption,

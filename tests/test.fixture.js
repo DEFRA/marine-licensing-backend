@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { EXEMPTION_STATUS } from '../src/shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../src/exemptions/constants/exemption.js'
 import { COORDINATE_SYSTEMS } from '../src/shared/common/constants/coordinates.js'
 
 export const mockCredentials = {

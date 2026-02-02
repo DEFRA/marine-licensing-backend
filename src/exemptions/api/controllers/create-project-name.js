@@ -1,6 +1,6 @@
 import { createProjectName } from '../../models/project-name.js'
 import { createProjectNameHandler } from '../../../shared/handlers/create-project-name-handler.js'
-import { EXEMPTION_STATUS } from '../../../shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 
 export const createProjectNameController = {

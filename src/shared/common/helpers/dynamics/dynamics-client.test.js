@@ -3,7 +3,10 @@ import Wreck from '@hapi/wreck'
 
 import { config } from '../../../../config.js'
 import { sendExemptionToDynamics } from './dynamics-client.js'
-import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_TYPE
+} from '../../../../exemptions/constants/exemption.js'
 
 vi.mock('../../../../config.js')
 vi.mock('@hapi/wreck')

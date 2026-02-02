@@ -1,7 +1,10 @@
 import Boom from '@hapi/boom'
 import Wreck from '@hapi/wreck'
 import { config } from '../../../../config.js'
-import { EXEMPTION_STATUS, EXEMPTION_TYPE } from '../../constants/exemption.js'
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_TYPE
+} from '../../../../exemptions/constants/exemption.js'
 import { StatusCodes } from 'http-status-codes'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { collectionExemptions } from '../../constants/db-collections.js'

@@ -1,7 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
-import { EXEMPTION_STATUS_LABEL } from '../../../shared/common/constants/exemption.js'
+import { EXEMPTION_STATUS_LABEL } from '../../constants/exemption.js'
 import { getOrganisationIdFromAuthToken } from '../helpers/get-organisation-from-token.js'
 
 const transformedExemptions = (exemptions) =>

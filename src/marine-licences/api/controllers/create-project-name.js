@@ -1,6 +1,6 @@
 import { createProjectName } from '../../models/project-name.js'
 import { createProjectNameHandler } from '../../../shared/handlers/create-project-name-handler.js'
-import { MARINE_LICENSE_STATUS } from '../../../shared/common/constants/marine-license.js'
+import { MARINE_LICENSE_STATUS } from '../../constants/marine-license.js'
 import { collectionMarineLicenses } from '../../../shared/common/constants/db-collections.js'
 
 export const createProjectNameController = {
