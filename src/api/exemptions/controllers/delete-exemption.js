@@ -2,6 +2,7 @@ import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
@@ -10,7 +11,7 @@ const logger = createLogger()
 
 export const deleteExemptionController = {
   options: {
-    pre: [{ method: authorizeOwnership('exemptions') }],
+    pre: [{ method: authorizeOwnership(collectionExemptions) }],
     validate: {
       params: getExemption
     }
@@ -20,7 +21,7 @@ export const deleteExemptionController = {
       const { params, db } = request
 
       const exemption = await db
-        .collection('exemptions')
+        .collection(collectionExemptions)
         .findOne({ _id: ObjectId.createFromHexString(params.id) })
 
       if (!exemption) {
@@ -34,7 +35,7 @@ export const deleteExemptionController = {
       }
 
       await db
-        .collection('exemptions')
+        .collection(collectionExemptions)
         .deleteOne({ _id: ObjectId.createFromHexString(params.id) })
 
       logger.info({ exemptionId: params.id }, 'Exemption deleted successfully')

@@ -1,9 +1,9 @@
 import { createGeoAreaPopulatorPlugin } from './populate-geo-areas.js'
-import { marinePlanAreas } from '../../common/constants/db-collections.js'
+import { collectionMarinePlanAreas } from '../../common/constants/db-collections.js'
 
 export const populateMarinePlanAreasPlugin = createGeoAreaPopulatorPlugin({
   pluginName: 'populate-marine-plan-areas',
   configKey: 'marinePlanArea',
-  collectionName: marinePlanAreas,
+  collectionName: collectionMarinePlanAreas,
   areaDisplayName: 'Marine Plan Areas'
 })

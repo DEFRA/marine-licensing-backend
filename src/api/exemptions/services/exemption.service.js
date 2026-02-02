@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { getContactNameById } from '../../../common/helpers/dynamics/get-contact-details.js'
 
 const notAuthorizedMessage = 'Not authorized to request this resource'
@@ -13,7 +14,9 @@ export class ExemptionService {
 
   async #findExemptionById(id) {
     const _id = ObjectId.createFromHexString(id)
-    const result = await this.db.collection('exemptions').findOne({ _id })
+    const result = await this.db
+      .collection(collectionExemptions)
+      .findOne({ _id })
 
     if (!result) {
       throw Boom.notFound(`#findExemptionById not found for id ${id}`)
@@ -23,7 +26,7 @@ export class ExemptionService {
 
   async #findExemptionByApplicationReference(applicationReference) {
     const result = await this.db
-      .collection('exemptions')
+      .collection(collectionExemptions)
       .findOne({ applicationReference })
 
     if (!result) {

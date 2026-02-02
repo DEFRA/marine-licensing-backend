@@ -2,6 +2,7 @@ import Boom from '@hapi/boom'
 import { publicRegister } from '../../../models/public-register.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
 
 export const updatePublicRegisterController = {
@@ -10,7 +11,7 @@ export const updatePublicRegisterController = {
       parse: true,
       output: 'data'
     },
-    pre: [{ method: authorizeOwnership('exemptions') }],
+    pre: [{ method: authorizeOwnership(collectionExemptions) }],
     validate: {
       query: false,
       payload: publicRegister
@@ -22,7 +23,7 @@ export const updatePublicRegisterController = {
 
       const { reason, consent, id, updatedAt, updatedBy } = payload
 
-      const result = await db.collection('exemptions').updateOne(
+      const result = await db.collection(collectionExemptions).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: { publicRegister: { reason, consent }, updatedAt, updatedBy }

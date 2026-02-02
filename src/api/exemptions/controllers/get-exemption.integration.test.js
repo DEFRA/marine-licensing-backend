@@ -2,6 +2,7 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makeGetRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import Wreck from '@hapi/wreck'
 import { ObjectId } from 'mongodb'
 vi.mock('../../../common/helpers/dynamics/get-access-token.js', () => ({
@@ -51,7 +52,9 @@ describe('Get exemption - integration tests', async () => {
       _id: exemptionId,
       organisation: null
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
 
     const { statusCode, body } = await makeGetRequest({
       server: getServer(),
@@ -69,7 +72,9 @@ describe('Get exemption - integration tests', async () => {
       _id: exemptionId,
       organisation: null
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
     mockDynamicsContactDetailsApi()
 
     const { statusCode, body } = await makeGetRequest({
@@ -91,7 +96,9 @@ describe('Get exemption - integration tests', async () => {
       organisation: null,
       status: EXEMPTION_STATUS.ACTIVE
     })
-    await globalThis.mockMongo.collection('exemptions').insertOne(exemption)
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
     mockDynamicsContactDetailsApi()
 
     const { statusCode, body } = await makeGetRequest({
