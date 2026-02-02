@@ -140,13 +140,14 @@ describe('geo-parse', () => {
         northings: '476895'
       })
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
-        eastings: '513967',
-        northings: '476895'
+        eastings: '514040',
+        northings: '476693'
       })
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
-        eastings: '513967',
-        northings: '476895'
+        eastings: '514193',
+        northings: '476835'
       })
+
       expect(result).toEqual([
         {
           type: 'Polygon',
