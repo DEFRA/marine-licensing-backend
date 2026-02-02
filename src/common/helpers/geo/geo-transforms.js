@@ -1,8 +1,8 @@
 import { buffer } from '@turf/turf'
 
 // 'Marine_Are' is not a spelling error and is the property name of the data we are consuming
-const arcGisLabelProperty = 'Marine_Are'
-const environmentApiLabelProperty = 'info'
+const coastalAreasLabelProperty = 'Marine_Are'
+const marineAreaApiLabelProperty = 'info'
 
 export const formatGeoForStorage = (geoJson) => {
   /**
@@ -19,8 +19,8 @@ export const formatGeoForStorage = (geoJson) => {
   return processed.features.map((feature) => ({
     type: 'Feature',
     name:
-      feature.properties[arcGisLabelProperty] ??
-      feature.properties[environmentApiLabelProperty],
+      feature.properties[coastalAreasLabelProperty] ??
+      feature.properties[marineAreaApiLabelProperty],
     geometry: {
       type: feature.geometry.type,
       coordinates: feature.geometry.coordinates
