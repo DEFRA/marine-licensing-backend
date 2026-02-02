@@ -85,6 +85,9 @@
     "vitest-mongodb": "1.0.3"
   },
   "overrides": {
-    "axios": "^1.12.0"
+    "axios": "^1.12.0",
+    "@aws-sdk/xml-builder": {
+      "fast-xml-parser": "^5.3.4"
+    }
   }
 }
