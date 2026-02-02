@@ -28,8 +28,8 @@ describe('Get exemptions - integration tests', async () => {
       })
       const exemptions = [exemption1, exemption2]
       await globalThis.mockMongo
-      .collection(collectionExemptions)
-      .insertMany(exemptions)
+        .collection(collectionExemptions)
+        .insertMany(exemptions)
 
       const { statusCode, body, isEmployee } = await makeGetRequest({
         server: getServer(),
