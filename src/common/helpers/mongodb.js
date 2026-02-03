@@ -3,7 +3,7 @@ import { LockManager } from 'mongo-locks'
 
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import {
-  collectionCoastalEnforcementAreas,
+  collectionCoastalOperationsAreas,
   collectionExemptions,
   collectionMarineLicenses,
   collectionMarinePlanAreas
@@ -83,7 +83,7 @@ async function createIndexes(db) {
   await db.collection(collectionMarineLicenses).createIndex({ id: 1 })
 
   await db
-    .collection(collectionCoastalEnforcementAreas)
+    .collection(collectionCoastalOperationsAreas)
     .createIndex({ geometry: '2dsphere' })
 
   await db

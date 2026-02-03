@@ -350,18 +350,18 @@ const config = convict({
     }
   },
   externalGeoAreas: {
-    coastalEnforcementArea: {
+    coastalOperationsAreas: {
       geoJsonUrl: {
-        doc: 'URL for the Coastal Enforcement Areas GeoJSON API',
+        doc: 'URL for the Coastal Operations Areas GeoJSON API',
         format: String,
         default: '',
-        env: 'COASTAL_ENFORCEMENT_AREAS_API_URL'
+        env: 'COASTAL_OPERATIONS_AREAS_API_URL'
       },
       refreshAreas: {
-        doc: 'Force application to update Coastal Enforcement Areas',
+        doc: 'Force application to update Coastal Operations Areas',
         format: Boolean,
         default: false,
-        env: 'REFRESH_COASTAL_ENFORCEMENT_PLAN_AREAS'
+        env: 'REFRESH_COASTAL_OPERATIONS_AREAS'
       }
     },
     marinePlanArea: {

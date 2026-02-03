@@ -24,7 +24,7 @@ describe('geo-transforms', () => {
       })
     })
 
-    it('should correctly format all data for Coastal Enforcement Areas', () => {
+    it('should correctly format all data for Coastal Operations Areas', () => {
       const mockCoastalAreasCollection = {
         ...mockFeatureCollection,
         features: mockFeatureCollection.features.map((area) => {
