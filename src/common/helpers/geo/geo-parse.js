@@ -8,10 +8,7 @@ export const convertSingleCoordinates = (site) => {
   let latitude, longitude
 
   if (site.coordinateSystem === 'osgb36') {
-    ;[longitude, latitude] = singleOSGB36toWGS84(
-      site.coordinates.eastings,
-      site.coordinates.northings
-    )
+    ;[longitude, latitude] = singleOSGB36toWGS84(site.coordinates)
   } else {
     latitude = Number.parseFloat(site.coordinates.latitude)
     longitude = Number.parseFloat(site.coordinates.longitude)
@@ -38,7 +35,7 @@ export const convertMultipleCoordinates = (site) => {
 
   const polygonCoords = coordinates.map((coord) => {
     if (site.coordinateSystem === 'osgb36') {
-      return singleOSGB36toWGS84(coord.eastings, coord.northings)
+      return singleOSGB36toWGS84(coord)
     } else {
       return [
         Number.parseFloat(coord.longitude),

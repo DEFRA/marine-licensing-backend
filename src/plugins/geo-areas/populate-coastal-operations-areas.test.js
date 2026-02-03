@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest'
-import { collectionCoastalEnforcementAreas } from '../../common/constants/db-collections.js'
+import { collectionCoastalOperationsAreas } from '../../common/constants/db-collections.js'
 const { createGeoAreaPopulatorPlugin } = await import('./populate-geo-areas.js')
 
 vi.mock('./populate-geo-areas.js', () => ({
@@ -11,15 +11,15 @@ vi.mock('./populate-geo-areas.js', () => ({
   }))
 }))
 
-describe('populateCoastalEnforcementAreasPlugin', () => {
+describe('populateCoastalOperationsAreasPlugin', () => {
   test('creates plugin with correct parameters', async () => {
-    await import('./populate-coastal-enforcement-areas.js')
+    await import('./populate-coastal-operations-areas.js')
 
     expect(createGeoAreaPopulatorPlugin).toHaveBeenCalledWith({
-      pluginName: 'populate-coastal-enforcement-areas',
-      configKey: 'coastalEnforcementArea',
-      collectionName: collectionCoastalEnforcementAreas,
-      areaDisplayName: 'Coastal Enforcement Areas'
+      pluginName: 'populate-coastal-operations-areas',
+      configKey: 'coastalOperationsAreas',
+      collectionName: collectionCoastalOperationsAreas,
+      areaDisplayName: 'Coastal Operations Areas'
     })
   })
 })

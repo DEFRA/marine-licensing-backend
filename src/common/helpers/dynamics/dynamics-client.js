@@ -75,7 +75,7 @@ const buildDynamicsPayload = (
     ...(beneficiaryOrganisationId ? { beneficiaryOrganisationId } : {}),
     status: EXEMPTION_STATUS.SUBMITTED,
     marinePlanAreas: exemption.marinePlanAreas ?? [],
-    coastalEnforcementAreas: exemption.coastalEnforcementAreas ?? []
+    coastalOperationsAreas: exemption.coastalOperationsAreas ?? []
   }
 }
 

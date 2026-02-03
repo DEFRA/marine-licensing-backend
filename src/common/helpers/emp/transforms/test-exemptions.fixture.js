@@ -104,7 +104,7 @@ export const testExemptions = [
       },
       applicationReference: 'EXE/2025/10158',
       submittedAt: '2025-10-29T12:11:46.373Z',
-      coastalEnforcementAreas: ['South', 'South East'],
+      coastalOperationsAreas: ['South', 'South East'],
       marinePlanAreas: ['East inshore'],
       whoExemptionIsFor: 'Test Applicant'
     },
