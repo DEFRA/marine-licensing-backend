@@ -5,7 +5,7 @@ import { router } from './plugins/router.js'
 import { auth } from './plugins/auth.js'
 import { processDynamicsQueuePlugin } from './plugins/dynamics.js'
 import { processEmpQueuePlugin } from './plugins/emp.js'
-import { populateCoastalEnforcementAreasPlugin } from './plugins/geo-areas/populate-coastal-enforcement-areas.js'
+import { populateCoastalOperationsAreasPlugin } from './plugins/geo-areas/populate-coastal-operations-areas.js'
 import { populateMarinePlanAreasPlugin } from './plugins/geo-areas/populate-marine-plan-areas.js'
 import { requestLogger } from './common/helpers/logging/request-logger.js'
 import { mongoDb } from './common/helpers/mongodb.js'
@@ -50,7 +50,7 @@ async function createServer() {
   // secureContext  - loads CA certificates from environment config
   // pulse          - provides shutdown handlers
   // mongoDb        - sets up mongo connection pool and attaches to `server` and `request` objects
-  // populateCoastalEnforcementAreasPlugin - checks if coastal-enforcement-areas collection is empty and populates it
+  // populateCoastalOperationsAreasPlugin - checks if coastal-operations-areas collection is empty and populates it
   // populateMarinePlanAreasPlugin - checks if marine-plan-areas collection is empty and populates it
   // auth           - JWT authentication strategy
   // router         - routes used in the app
@@ -65,7 +65,7 @@ async function createServer() {
       plugin: mongoDb,
       options: config.get('mongo')
     },
-    populateCoastalEnforcementAreasPlugin,
+    populateCoastalOperationsAreasPlugin,
     populateMarinePlanAreasPlugin,
     hapiAuthJwt2,
     auth,

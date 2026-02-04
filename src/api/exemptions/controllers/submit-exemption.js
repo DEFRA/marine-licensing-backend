@@ -14,7 +14,7 @@ import { collectionExemptions } from '../../../common/constants/db-collections.j
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
 import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
-import { updateCoastalEnforcementAreas } from '../../../common/helpers/geo/update-coastal-enforcement-areas.js'
+import { updateCoastalOperationsAreas } from '../../../common/helpers/geo/update-coastal-operations-areas.js'
 
 const checkForIncompleteTasks = (exemption) => {
   const taskList = createTaskList(exemption)
@@ -114,7 +114,7 @@ export const submitExemptionController = {
         exemption,
         submittedAt
       })
-      await updateCoastalEnforcementAreas(exemption, db, {
+      await updateCoastalOperationsAreas(exemption, db, {
         updatedAt,
         updatedBy
       })
