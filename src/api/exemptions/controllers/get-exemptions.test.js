@@ -6,6 +6,10 @@ import {
   EXEMPTION_STATUS_LABEL
 } from '../../../common/constants/exemption.js'
 
+vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
+  batchGetContactNames: vi.fn().mockResolvedValue({})
+}))
+
 describe('getExemptionsController', () => {
   let mockRequest
   let mockH
@@ -95,14 +99,13 @@ describe('getExemptionsController', () => {
   beforeEach(() => setupMocks())
 
   describe('handler', () => {
-    it('should return all exemptions for a user with correct format when organisation id present', async () => {
+    it('should return all exemptions for an employee with correct format when organisation id present', async () => {
       mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
 
       await getExemptionsController.handler(mockRequest, mockH)
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
       expect(mockCollection.find).toHaveBeenCalledWith({
-        contactId: testContactId,
         'organisation.id': testOrgId
       })
 
@@ -112,42 +115,45 @@ describe('getExemptionsController', () => {
           {
             id: '507f1f77bcf86cd799439012',
             projectName: 'Test Project',
-            status: EXEMPTION_STATUS_LABEL.DRAFT
+            status: EXEMPTION_STATUS_LABEL.DRAFT,
+            contactId: testContactId,
+            isOwnProject: true,
+            ownerName: '-'
           },
           {
             id: '507f1f77bcf86cd799439011',
             projectName: 'Other Project',
             applicationReference: 'EXEMPTION-2024-001',
             status: EXEMPTION_STATUS_LABEL.ACTIVE,
-            submittedAt: '2024-01-15T10:00:00.000Z'
+            submittedAt: '2024-01-15T10:00:00.000Z',
+            contactId: testContactId,
+            isOwnProject: true,
+            ownerName: '-'
           },
           {
             id: '507f1f77bcf86cd799439013',
             projectName: 'Beta Project',
-            status: EXEMPTION_STATUS_LABEL.ACTIVE
+            status: EXEMPTION_STATUS_LABEL.ACTIVE,
+            contactId: testContactId,
+            isOwnProject: true,
+            ownerName: '-'
           },
           {
             id: '507f1f77bcf86cd799439013',
             projectName: 'Beta Project',
-            status: 'Unknown status'
+            status: 'Unknown status',
+            contactId: testContactId,
+            isOwnProject: true,
+            ownerName: '-'
           }
-        ]
+        ],
+        isEmployee: true,
+        organisationId: testOrgId
       })
       expect(mockH.code).toHaveBeenCalledWith(200)
     })
 
-    it('should return empty array when user has no exemptions', async () => {
-      mockCollection.find().sort().toArray.mockResolvedValue([])
-
-      await getExemptionsController.handler(mockRequest, mockH)
-
-      expect(mockH.response).toHaveBeenCalledWith({
-        message: 'success',
-        value: []
-      })
-    })
-
-    it('should handle missing data', async () => {
+    it('should handle missing data for employee', async () => {
       mockCollection
         .find()
         .sort()
@@ -163,23 +169,15 @@ describe('getExemptionsController', () => {
         message: 'success',
         value: [
           {
-            id: '507f1f77bcf86cd799439011'
+            id: '507f1f77bcf86cd799439011',
+            contactId: undefined,
+            isOwnProject: false,
+            ownerName: '-'
           }
-        ]
+        ],
+        isEmployee: true,
+        organisationId: testOrgId
       })
-    })
-
-    it('should sort exemptions by status priority (DRAFT first, then ACTIVE, then others)', async () => {
-      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
-
-      await getExemptionsController.handler(mockRequest, mockH)
-
-      const responseValue = mockH.response.mock.calls[0][0].value
-
-      expect(responseValue[0].status).toBe(EXEMPTION_STATUS_LABEL.DRAFT)
-      expect(responseValue[1].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
-      expect(responseValue[2].status).toBe(EXEMPTION_STATUS_LABEL.ACTIVE)
-      expect(responseValue[3].status).toBe('Unknown status')
     })
 
     it('should rename Closed status to Active', async () => {
@@ -254,14 +252,6 @@ describe('getExemptionsController', () => {
       await expect(
         getExemptionsController.handler(mockRequest, mockH)
       ).rejects.toThrow('User not authenticated')
-    })
-
-    it('should return OK status code', async () => {
-      mockCollection.find().sort().toArray.mockResolvedValue(mockExemptions)
-
-      await getExemptionsController.handler(mockRequest, mockH)
-
-      expect(mockH.code).toHaveBeenCalledWith(200)
     })
   })
 

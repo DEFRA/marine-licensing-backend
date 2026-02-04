@@ -44,19 +44,32 @@ export class ExemptionService {
     )
   }
 
-  async getExemptionById({ id, currentUserId }) {
+  async getExemptionById({ id, currentUserId, currentOrganisationId }) {
     const exemption = await this.#findExemptionById(id)
-    if (currentUserId && currentUserId !== exemption.contactId) {
-      this.logger.info(
-        {
-          exemptionId: id,
-          currentUserId,
-          exemptionContactId: exemption.contactId
-        },
-        'Authorization error in getExemptionById'
-      )
-      throw Boom.forbidden(notAuthorizedMessage)
+
+    if (currentUserId) {
+      const isOwner = currentUserId === exemption.contactId
+      const isSameOrganisation =
+        currentOrganisationId &&
+        exemption.organisation?.id === currentOrganisationId
+      const isSubmitted = exemption.status !== EXEMPTION_STATUS.DRAFT
+
+      if (!isOwner && !(isSameOrganisation && isSubmitted)) {
+        this.logger.info(
+          {
+            exemptionId: id,
+            currentUserId,
+            currentOrganisationId,
+            exemptionContactId: exemption.contactId,
+            exemptionOrganisationId: exemption.organisation?.id,
+            exemptionStatus: exemption.status
+          },
+          'Authorization error in getExemptionById'
+        )
+        throw Boom.forbidden('Not authorized to request this resource')
+      }
     }
+
     if (!currentUserId) {
       exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
     }
