@@ -6,7 +6,7 @@ export const collectionDynamicsQueue = 'exemption-dynamics-queue'
 
 export const collectionDynamicsQueueFailed = 'exemption-dynamics-queue-failed'
 
-export const collectionCoastalEnforcementAreas = 'coastal-enforcement-areas'
+export const collectionCoastalOperationsAreas = 'coastal-operations-areas'
 
 export const collectionMarinePlanAreas = 'marine-plan-areas'
 

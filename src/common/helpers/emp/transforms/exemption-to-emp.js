@@ -59,8 +59,7 @@ export const transformExemptionToEmpRequest = ({ exemption }) => {
         `/exemption/view-public-details/${exemption._id}`,
         frontEndBaseUrl
       ).toString(),
-      CoastalOperationsArea:
-        exemption.coastalEnforcementAreas?.join(', ') || '',
+      CoastalOperationsArea: exemption.coastalOperationsAreas?.join(', ') || '',
       MarinePlanArea: exemption.marinePlanAreas?.join(', ') || ''
     },
     geometry: transformSiteDetails(siteDetails)

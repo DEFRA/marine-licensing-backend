@@ -2,20 +2,31 @@ export const makeGetRequest = async ({
   url,
   server,
   contactId,
-  isInternalUser
+  isInternalUser,
+  relationships,
+  currentRelationshipId
 }) => {
   const response = await server.inject({
     auth: {
       strategy: 'jwt',
       credentials: { contactId },
-      artifacts: { decoded: { tid: isInternalUser ? 'abc' : undefined } }
+      artifacts: {
+        decoded: {
+          tid: isInternalUser ? 'abc' : undefined,
+          relationships,
+          currentRelationshipId
+        }
+      }
     },
     method: 'GET',
     url
   })
+  const parsed = JSON.parse(response.payload)
   return {
     statusCode: response.statusCode,
-    body: JSON.parse(response.payload).value
+    body: parsed.value,
+    isEmployee: parsed.isEmployee,
+    organisationId: parsed.organisationId
   }
 }
 
