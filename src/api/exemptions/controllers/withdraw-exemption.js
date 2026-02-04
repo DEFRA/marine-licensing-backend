@@ -5,6 +5,9 @@ import { ObjectId } from 'mongodb'
 import { authorizeOwnership } from '../../helpers/authorize-ownership.js'
 import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { collectionExemptions } from '../../../common/constants/db-collections.js'
+import { config } from '../../../config.js'
+import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
+import { DYNAMICS_REQUEST_ACTIONS } from '../../../common/constants/request-queue.js'
 
 const updateExemptionRecord = async ({
   request,
@@ -15,7 +18,7 @@ const updateExemptionRecord = async ({
   const { db } = request
   const { id } = params
   const { updatedAt, updatedBy } = payload
-  const updateResult = await db.collection(collectionExemptions).updateOne(
+  const exemption = await db.collection(collectionExemptions).findOneAndUpdate(
     { _id: ObjectId.createFromHexString(id) },
     {
       $set: {
@@ -24,11 +27,13 @@ const updateExemptionRecord = async ({
         updatedAt,
         updatedBy
       }
-    }
+    },
+    { returnDocument: 'after' }
   )
-  if (updateResult.matchedCount === 0) {
+  if (!exemption) {
     throw Boom.notFound('Exemption not found during update')
   }
+  return exemption
 }
 
 export const withdrawExemptionController = {
@@ -41,14 +46,23 @@ export const withdrawExemptionController = {
   handler: async (request, h) => {
     try {
       const { params, payload } = request
+      const { isDynamicsEnabled } = config.get('dynamics')
 
       const withdrawnAt = new Date()
-      await updateExemptionRecord({
+      const exemption = await updateExemptionRecord({
         request,
         params,
         payload,
         withdrawnAt
       })
+
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference: exemption.applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+        })
+      }
 
       return h
         .response({

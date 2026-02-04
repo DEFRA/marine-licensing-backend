@@ -34,7 +34,7 @@ describe('POST /exemption/{id}/withdraw', () => {
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
-        updateOne: vi.fn().mockResolvedValue({ matchedCount: 0 })
+        findOneAndUpdate: vi.fn().mockResolvedValue(null)
       }
     })
 
@@ -58,7 +58,7 @@ describe('POST /exemption/{id}/withdraw', () => {
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
-        updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
+        findOneAndUpdate: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
