@@ -1,7 +1,30 @@
 import { vi } from 'vitest'
 import { withdrawExemptionController } from './withdraw-exemption'
+import { addToDynamicsQueue } from '../../../common/helpers/dynamics'
+import { config } from '../../../config.js'
+
+vi.mock('../../../config.js')
+vi.mock('../../../common/helpers/dynamics/index.js')
 
 describe('POST /exemption/{id}/withdraw', () => {
+  let dynamicsMock
+
+  beforeEach(() => {
+    config.get.mockImplementation(function (key) {
+      if (key === 'dynamics') {
+        return {
+          isDynamicsEnabled: false,
+          apiKey: 'test-api-key',
+          retryIntervalSeconds: 1,
+          retries: 1
+        }
+      }
+      return {}
+    })
+
+    dynamicsMock = vi.mocked(addToDynamicsQueue)
+  })
+
   const paramsValidator = withdrawExemptionController.options.validate.params
 
   const mockId = '123456789123456789123456'
@@ -70,5 +93,48 @@ describe('POST /exemption/{id}/withdraw', () => {
     ).rejects.toThrow(
       `Error when attempting to withdraw exemption: ${mockError}`
     )
+  })
+
+  it('should insert dynamics and EMP queue documents regardless of organisation', async () => {
+    const { mockMongo, mockHandler } = global
+
+    const mockPayload = {
+      updatedAt: new Date(),
+      updatedBy: 'user123'
+    }
+
+    const mockExemption = { id: 'test', applicationReference: 'mock-ref' }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOneAndUpdate: vi.fn().mockResolvedValue(mockExemption)
+      }
+    })
+
+    config.get.mockImplementation(function (key) {
+      if (key === 'dynamics') {
+        return {
+          isDynamicsEnabled: true,
+          apiKey: 'test-api-key',
+          retryIntervalSeconds: 1,
+          retries: 1
+        }
+      }
+      return {}
+    })
+
+    const mockRequest = {
+      db: mockMongo,
+      params: { id: mockId },
+      payload: mockPayload
+    }
+
+    await withdrawExemptionController.handler(mockRequest, mockHandler)
+
+    expect(dynamicsMock).toHaveBeenCalledWith({
+      request: mockRequest,
+      applicationReference: 'mock-ref',
+      action: 'withdraw'
+    })
   })
 })
