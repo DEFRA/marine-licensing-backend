@@ -178,7 +178,7 @@ export const sendWithdrawToDynamics = async (
   queueItem
 ) => {
   const {
-    exemptions: { apiUrl }
+    exemptions: { withdrawUrl }
   } = config.get('dynamics')
   const { applicationReferenceNumber } = queueItem
 
@@ -189,7 +189,7 @@ export const sendWithdrawToDynamics = async (
     reference: applicationReferenceNumber
   }
 
-  const response = await Wreck.post(`${apiUrl}/exemptions`, {
+  const response = await Wreck.post(`${withdrawUrl}`, {
     payload,
     headers: {
       Authorization: `Bearer ${accessToken}`,

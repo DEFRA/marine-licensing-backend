@@ -37,7 +37,8 @@ describe('Dynamics Client', () => {
               scope: 'test-scope',
               maxRetries: 3,
               retryDelayMs: 60000,
-              apiUrl: 'https://localhost/api/data/v9.2'
+              apiUrl: 'https://localhost/api/data/v9.2',
+              withdrawUrl: 'https://localhost/api/data/v9.2'
             },
             tokenUrl: 'https://localhost/oauth2/token'
           }
@@ -291,7 +292,7 @@ describe('Dynamics Client', () => {
       expect(result).toEqual({ id: 'dynamics-record-id' })
 
       expect(mockWreckPost).toHaveBeenCalledWith(
-        'https://localhost/api/data/v9.2/exemptions',
+        'https://localhost/api/data/v9.2',
         expect.objectContaining({
           payload: { reference: 'TEST-REF-001', status: 'WITHDRAWN' },
           headers: {
@@ -394,7 +395,7 @@ describe('Dynamics Client', () => {
 
       expect(result).toEqual({ id: 'dynamics-record-id' })
       expect(mockWreckPost).toHaveBeenCalledWith(
-        'https://localhost/api/data/v9.2/exemptions',
+        'https://localhost/api/data/v9.2',
         expect.objectContaining({
           payload: { reference: 'TEST-REF-001', status: 'WITHDRAWN' },
           headers: {

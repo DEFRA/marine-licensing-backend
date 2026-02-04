@@ -302,6 +302,12 @@ const config = convict({
         default: '',
         env: 'DYNAMICS_API_CONTACT_DETAILS_URL'
       },
+      withdrawUrl: {
+        doc: 'URL for the Dynamics API to withdraw exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_CONTACT_DETAILS_URL'
+      },
       baseUrl: {
         doc: 'Base URL for the Dynamics API for batch contact queries',
         format: requiredFromEnvInCdp,
