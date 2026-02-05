@@ -89,8 +89,13 @@ const buildDynamicsPayload = (
  * Validates the Dynamics API response
  * @param {number} statusCode - HTTP status code
  * @param {string} applicationReferenceNumber - Application reference number
+ * @param {string} requestType - Type of request
  */
-const validateDynamicsResponse = (statusCode, applicationReferenceNumber) => {
+const validateDynamicsResponse = (
+  statusCode,
+  applicationReferenceNumber,
+  requestType
+) => {
   if (statusCode !== StatusCodes.ACCEPTED) {
     logger.error(
       {
@@ -104,7 +109,10 @@ const validateDynamicsResponse = (statusCode, applicationReferenceNumber) => {
           }
         },
         service: 'dynamics',
-        operation: 'sendExemption',
+        operation:
+          requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+            ? 'withdrawExemption'
+            : 'sendExemption',
         applicationReference: applicationReferenceNumber
       },
       `Dynamics API returned unexpected status ${statusCode}`
@@ -176,7 +184,11 @@ export const sendExemptionToDynamics = async (
 
   // Validate and log response
   const statusCode = response.res?.statusCode
-  validateDynamicsResponse(statusCode, applicationReferenceNumber)
+  validateDynamicsResponse(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+  )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
@@ -212,7 +224,11 @@ export const sendWithdrawToDynamics = async (
   })
 
   const statusCode = response.res?.statusCode
-  validateDynamicsResponse(statusCode, applicationReferenceNumber)
+  validateDynamicsResponse(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+  )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
