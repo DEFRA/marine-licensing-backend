@@ -117,8 +117,13 @@ const validateDynamicsResponse = (statusCode, applicationReferenceNumber) => {
  * Logs successful Dynamics API request
  * @param {number} statusCode - HTTP status code
  * @param {string} applicationReferenceNumber - Application reference number
+ * @param {string} requestType - Type of request
  */
-const logDynamicsSuccess = (statusCode, applicationReferenceNumber) => {
+const logDynamicsSuccess = (
+  statusCode,
+  applicationReferenceNumber,
+  requestType
+) => {
   logger.info(
     {
       http: {
@@ -127,10 +132,15 @@ const logDynamicsSuccess = (statusCode, applicationReferenceNumber) => {
         }
       },
       service: 'dynamics',
-      operation: 'sendExemption',
+      operation:
+        requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+          ? 'withdrawExemption'
+          : 'sendExemption',
       applicationReference: applicationReferenceNumber
     },
-    'Successfully sent exemption to Dynamics 365'
+    requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+      ? 'Successfully sent request to withdraw exemption to Dynamics 365'
+      : 'Successfully sent exemption to Dynamics 365'
   )
 }
 
@@ -167,7 +177,11 @@ export const sendExemptionToDynamics = async (
   // Validate and log response
   const statusCode = response.res?.statusCode
   validateDynamicsResponse(statusCode, applicationReferenceNumber)
-  logDynamicsSuccess(statusCode, applicationReferenceNumber)
+  logDynamicsSuccess(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+  )
 
   return response.payload
 }
@@ -199,7 +213,11 @@ export const sendWithdrawToDynamics = async (
 
   const statusCode = response.res?.statusCode
   validateDynamicsResponse(statusCode, applicationReferenceNumber)
-  logDynamicsSuccess(statusCode, applicationReferenceNumber)
+  logDynamicsSuccess(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+  )
 
   return response.payload
 }
