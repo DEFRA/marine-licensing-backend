@@ -264,6 +264,12 @@ const config = convict({
         default: '',
         env: 'DYNAMICS_API_URL'
       },
+      withdrawUrl: {
+        doc: 'URL for the Dynamics API to withdraw exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_WITHDRAW_URL'
+      },
       maxRetries: {
         doc: 'Maximum number of retries for failed Dynamics queue items',
         format: Number,
@@ -301,12 +307,6 @@ const config = convict({
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_API_CONTACT_DETAILS_URL'
-      },
-      withdrawUrl: {
-        doc: 'URL for the Dynamics API to withdraw exemption',
-        format: requiredFromEnvInCdp,
-        default: '',
-        env: 'DYNAMICS_API_WITHDRAW_URL'
       },
       baseUrl: {
         doc: 'Base URL for the Dynamics API for batch contact queries',
