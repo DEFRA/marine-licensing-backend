@@ -237,6 +237,7 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
       const { userName, ...rest } = mockAuditPayload
       expect(mockDynamicsQueueCollection.insertOne).toHaveBeenCalledWith({
+        action: 'submit',
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
@@ -382,6 +383,7 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
       const { userName, ...rest } = mockAuditPayload
       expect(mockDynamicsQueueCollection.insertOne).toHaveBeenCalledWith({
+        action: 'submit',
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,

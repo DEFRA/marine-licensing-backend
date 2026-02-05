@@ -4,3 +4,8 @@ export const REQUEST_QUEUE_STATUS = {
   SUCCESS: 'success',
   FAILED: 'failed'
 }
+
+export const DYNAMICS_REQUEST_ACTIONS = {
+  SUBMIT: 'submit',
+  WITHDRAW: 'withdraw'
+}

@@ -1,14 +1,16 @@
 export const EXEMPTION_STATUS = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
-  SUBMITTED: 'SUBMITTED'
+  SUBMITTED: 'SUBMITTED',
+  WITHDRAWN: 'WITHDRAWN'
 }
 
 export const EXEMPTION_STATUS_LABEL = {
   DRAFT: 'Draft',
   ACTIVE: 'Active',
   Closed: 'Active',
-  SUBMITTED: 'Submitted'
+  SUBMITTED: 'Submitted',
+  WITHDRAWN: 'Withdrawn'
 }
 
 export const EXEMPTION_TYPE = {

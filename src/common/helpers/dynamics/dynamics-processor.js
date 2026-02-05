@@ -1,7 +1,7 @@
 import Boom from '@hapi/boom'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { config } from '../../../config.js'
-import { sendExemptionToDynamics } from './dynamics-client.js'
+import { sendToDynamics } from './dynamics-client.js'
 import { structureErrorForECS } from '../../helpers/logging/logger.js'
 import {
   collectionDynamicsQueueFailed,
@@ -105,7 +105,7 @@ export const processDynamicsQueue = async (server) => {
 
     for (const item of queueItems) {
       try {
-        await sendExemptionToDynamics(server, accessToken, item)
+        await sendToDynamics(server, accessToken, item)
         await handleDynamicsQueueItemSuccess(server, item)
       } catch (err) {
         server.logger.error(
@@ -127,11 +127,16 @@ export const processDynamicsQueue = async (server) => {
   }
 }
 
-export const addToDynamicsQueue = async ({ request, applicationReference }) => {
+export const addToDynamicsQueue = async ({
+  request,
+  applicationReference,
+  action
+}) => {
   const { payload, db } = request
   const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
   await db.collection(collectionDynamicsQueue).insertOne({
+    action,
     applicationReferenceNumber: applicationReference,
     status: REQUEST_QUEUE_STATUS.PENDING,
     retries: 0,
