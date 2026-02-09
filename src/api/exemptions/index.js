@@ -8,6 +8,7 @@ import { updateSiteDetailsController } from './controllers/update-site-details.j
 import { submitExemptionController } from './controllers/submit-exemption.js'
 import { deleteExemptionController } from './controllers/delete-exemption.js'
 import { sendToEmpController } from './controllers/send-to-emp.js'
+import { withdrawExemptionController } from './controllers/withdraw-exemption.js'
 
 export const exemptions = [
   {
@@ -64,5 +65,10 @@ export const exemptions = [
     method: 'DELETE',
     path: '/exemption/{id}',
     ...deleteExemptionController
+  },
+  {
+    method: 'POST',
+    path: '/exemption/{id}/withdraw',
+    ...withdrawExemptionController
   }
 ]
