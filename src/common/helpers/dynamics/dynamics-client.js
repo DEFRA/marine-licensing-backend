@@ -11,7 +11,6 @@ import {
   collectionExemptions,
   collectionDynamicsQueue
 } from '../../constants/db-collections.js'
-import { isOrganisationEmployee } from '../organisations.js'
 import { createLogger } from '../../helpers/logging/logger.js'
 
 const logger = createLogger()
@@ -65,11 +64,7 @@ const buildDynamicsPayload = (
   applicationReferenceNumber,
   frontEndBaseUrl
 ) => {
-  const organisationId = exemption.organisation?.id
-  const beneficiaryOrganisationId = organisationId
-  const applicantOrganisationId = isOrganisationEmployee(exemption.organisation)
-    ? organisationId
-    : undefined
+  const applicantOrganisationId = exemption.organisation?.id
 
   return {
     contactid: exemption.contactId,
@@ -78,7 +73,6 @@ const buildDynamicsPayload = (
     type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
     applicationUrl: `${frontEndBaseUrl}/view-details/${exemption._id}`,
     ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
-    ...(beneficiaryOrganisationId ? { beneficiaryOrganisationId } : {}),
     status: EXEMPTION_STATUS.SUBMITTED,
     marinePlanAreas: exemption.marinePlanAreas ?? [],
     coastalOperationsAreas: exemption.coastalOperationsAreas ?? []
