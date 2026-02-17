@@ -6,6 +6,7 @@ import { ExemptionService } from '../services/exemption.service.js'
 import { isApplicantUser } from '../helpers/is-applicant-user.js'
 import { getContactId } from '../../helpers/get-contact-id.js'
 import { getOrganisationIdFromAuthToken } from '../helpers/get-organisation-from-token.js'
+import { EXEMPTION_STATUS_LABEL } from '../../../common/constants/exemption.js'
 
 export const getExemptionController = ({ requiresAuth }) => ({
   options: {
@@ -43,9 +44,14 @@ export const getExemptionController = ({ requiresAuth }) => ({
         exemption = await exemptionService.getPublicExemptionById(id)
       }
 
-      const { _id, ...rest } = exemption
+      const { _id, status, ...rest } = exemption
       const taskList = createTaskList(exemption)
-      const response = { id: _id.toString(), ...rest, taskList }
+      const response = {
+        id: _id.toString(),
+        ...rest,
+        status: EXEMPTION_STATUS_LABEL[status] || status,
+        taskList
+      }
 
       return h
         .response({ message: 'success', value: response })

@@ -1,7 +1,10 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makeGetRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
-import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_STATUS_LABEL
+} from '../../../common/constants/exemption.js'
 import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import Wreck from '@hapi/wreck'
 import { ObjectId } from 'mongodb'
@@ -17,11 +20,12 @@ const mockDynamicsContactDetailsApi = () => {
 }
 
 const compareResponseWithDbExemption = (response, dbExemption) => {
-  const { _id, ...rest } = dbExemption
+  const { _id, status, ...rest } = dbExemption
   const site = dbExemption.siteDetails[0]
   expect(response).toEqual({
     ...rest,
     id: _id.toString(),
+    status: EXEMPTION_STATUS_LABEL[status] || status,
     createdAt: dbExemption.createdAt.toISOString(),
     updatedAt: dbExemption.updatedAt.toISOString(),
     siteDetails: [

@@ -78,10 +78,11 @@ export class ExemptionService {
 
   async getPublicExemptionById(id) {
     const exemption = await this.#findExemptionById(id)
-    if (
-      exemption.status !== EXEMPTION_STATUS.ACTIVE ||
-      exemption.publicRegister?.consent === 'no'
-    ) {
+    const isViewableStatus =
+      exemption.status === EXEMPTION_STATUS.ACTIVE ||
+      exemption.status === EXEMPTION_STATUS.WITHDRAWN
+
+    if (!isViewableStatus || exemption.publicRegister?.consent === 'no') {
       this.logger.info(
         { exemptionId: id },
         'Authorization error in getPublicExemptionById'
