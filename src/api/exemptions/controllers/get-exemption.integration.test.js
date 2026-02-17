@@ -116,4 +116,28 @@ describe('Get exemption - integration tests', async () => {
       whoExemptionIsFor: 'Dave Barnett'
     })
   })
+
+  test('withdrawn exemption requested by a public user', async () => {
+    const exemption = createCompleteExemption({
+      _id: exemptionId,
+      organisation: null,
+      status: EXEMPTION_STATUS.WITHDRAWN,
+      withdrawnAt: new Date('2026-02-16')
+    })
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
+    mockDynamicsContactDetailsApi()
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: `/public/exemption/${exemption._id}`
+    })
+    expect(statusCode).toBe(200)
+    compareResponseWithDbExemption(body, {
+      ...exemption,
+      withdrawnAt: exemption.withdrawnAt.toISOString(),
+      whoExemptionIsFor: 'Dave Barnett'
+    })
+  })
 })
