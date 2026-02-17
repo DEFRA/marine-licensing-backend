@@ -82,7 +82,7 @@ export class ExemptionService {
       exemption.status === EXEMPTION_STATUS.ACTIVE ||
       exemption.status === EXEMPTION_STATUS.WITHDRAWN
 
-    if (!isViewableStatus || exemption.publicRegister?.consent === 'no') {
+    if (!isViewableStatus || exemption.publicRegister?.consent !== 'yes') {
       this.logger.info(
         { exemptionId: id },
         'Authorization error in getPublicExemptionById'
