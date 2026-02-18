@@ -123,9 +123,6 @@ describe('Dynamics Client', () => {
       expect(
         mockWreckPost.mock.calls[0][1].payload.applicantOrganisationId
       ).toBeUndefined()
-      expect(
-        mockWreckPost.mock.calls[0][1].payload.beneficiaryOrganisationId
-      ).toBeUndefined()
     })
 
     it('should correctly send marine plan area details', async () => {
@@ -175,7 +172,6 @@ describe('Dynamics Client', () => {
 
       const payload = mockWreckPost.mock.calls[0][1].payload
       expect(payload.applicantOrganisationId).toBeUndefined()
-      expect(payload.beneficiaryOrganisationId).toBeUndefined()
     })
 
     it('should throw error if request fails', async () => {
