@@ -1,31 +1,30 @@
+import { generateKeyPairSync } from 'node:crypto'
 import { vi } from 'vitest'
 import Hapi from '@hapi/hapi'
 import hapiAuthJwt2 from 'hapi-auth-jwt2'
 import Wreck from '@hapi/wreck'
-import jwkToPem from 'jwk-to-pem'
 import Boom from '@hapi/boom'
 import { auth, getKeys, validateToken } from './auth.js'
 import { config } from '../config.js'
 
 vi.mock('@hapi/wreck')
-vi.mock('jwk-to-pem')
 vi.mock('../config.js')
+
+const { publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
+const testJwk = publicKey.export({ format: 'jwk' })
+const testPem = publicKey.export({ type: 'spki', format: 'pem' })
 
 describe('Auth Plugin', () => {
   let server
   let mockWreckGet
-  let mockJwkToPem
 
   const testId = '123e4567-e89b-12d3-a456-426614174000'
-  const testKey =
-    '-----BEGIN PUBLIC KEY-----\ntest-pem-key\n-----END PUBLIC KEY-----'
   const jwt = {
     tid: 'abc'
   }
 
   beforeEach(async () => {
     mockWreckGet = vi.mocked(Wreck.get)
-    mockJwkToPem = vi.mocked(jwkToPem)
 
     config.get.mockImplementation(function (key) {
       return key === 'defraId'
@@ -41,22 +40,9 @@ describe('Auth Plugin', () => {
 
     mockWreckGet.mockResolvedValue({
       payload: {
-        keys: [
-          {
-            kty: 'RSA',
-            n: 'test-n',
-            e: 'AQAB'
-          },
-          {
-            kty: 'RSA',
-            n: 'test-o',
-            e: 'AQAB'
-          }
-        ]
+        keys: [testJwk, testJwk]
       }
     })
-
-    mockJwkToPem.mockReturnValue(testKey)
 
     server = Hapi.server()
     await server.register(hapiAuthJwt2)
@@ -96,7 +82,7 @@ describe('Auth Plugin', () => {
       const result = await getKeys(jwt)
 
       expect(result).toEqual({
-        key: [testKey, testKey]
+        key: [testPem, testPem]
       })
     })
 

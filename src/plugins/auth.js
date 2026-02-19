@@ -1,5 +1,5 @@
+import { createPublicKey } from 'node:crypto'
 import Wreck from '@hapi/wreck'
-import jwkToPem from 'jwk-to-pem'
 import { config } from '../config.js'
 import Boom from '@hapi/boom'
 import { createLogger } from '../common/helpers/logging/logger.js'
@@ -25,7 +25,12 @@ export const getKeys = async (token) => {
       logger.error('No keys found in JWKS response')
       return { key: null }
     }
-    const pems = keys.map((key) => jwkToPem(key))
+    const pems = keys.map((key) =>
+      createPublicKey({ key, format: 'jwk' }).export({
+        type: 'spki',
+        format: 'pem'
+      })
+    )
     return { key: pems }
   } catch (e) {
     throw Boom.internal('Cannot get JWT validation keys', e)
