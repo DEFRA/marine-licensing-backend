@@ -189,6 +189,36 @@ describe('ExemptionService', () => {
         exemptionService.getPublicExemptionById(exemption._id)
       ).rejects.toThrow('Not authorized to request this resource')
     })
+
+    it('should return withdrawn exemption with public consent', async () => {
+      const withdrawnExemption = {
+        ...exemption,
+        status: 'WITHDRAWN',
+        publicRegister: { consent: 'yes' }
+      }
+      const exemptionService = createService(
+        global.mockMongo,
+        withdrawnExemption
+      )
+      const result = await exemptionService.getPublicExemptionById(
+        exemption._id
+      )
+      expect(result).toEqual({
+        ...withdrawnExemption,
+        whoExemptionIsFor: 'Dave Barnett'
+      })
+    })
+
+    it('should throw forbidden for withdrawn exemption without public consent', async () => {
+      const exemptionService = createService(global.mockMongo, {
+        ...exemption,
+        status: 'WITHDRAWN',
+        publicRegister: { consent: 'no' }
+      })
+      await expect(() =>
+        exemptionService.getPublicExemptionById(exemption._id)
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
   })
 
   describe('getExemptionByApplicationReference', () => {
