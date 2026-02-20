@@ -207,7 +207,8 @@ describe('GET /exemption', () => {
           value: expect.objectContaining({
             id: mockId,
             projectName: 'Test project',
-            contactId: 'different-user-id'
+            contactId: 'different-user-id',
+            status: 'Active'
           })
         })
       )
@@ -338,7 +339,42 @@ describe('GET /exemption', () => {
           message: 'success',
           value: expect.objectContaining({
             id: mockId,
-            projectName: 'Test project'
+            projectName: 'Test project',
+            status: 'Active'
+          })
+        })
+      )
+    })
+
+    it('should return withdrawn exemption with mapped status label', async () => {
+      const { mockMongo, mockHandler } = global
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => {
+        return {
+          findOne: vi.fn().mockResolvedValue({
+            _id: mockId,
+            projectName: 'Withdrawn project',
+            status: 'WITHDRAWN',
+            publicRegister: { consent: 'yes' },
+            withdrawnAt: '2026-02-16T14:24:04.169Z'
+          })
+        }
+      })
+
+      await getExemptionController({ requiresAuth: false }).handler(
+        requestFromPublicUser({
+          params: { id: mockId }
+        }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'success',
+          value: expect.objectContaining({
+            id: mockId,
+            projectName: 'Withdrawn project',
+            status: 'Withdrawn'
           })
         })
       )
