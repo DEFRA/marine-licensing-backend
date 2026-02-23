@@ -103,7 +103,6 @@ describe('Dynamics Client', () => {
             type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             applicationUrl: 'http://localhost/view-details/123',
             applicantOrganisationId: 'test-org-id',
-            beneficiaryOrganisationId: 'test-org-id',
             status: EXEMPTION_STATUS.SUBMITTED,
             coastalOperationsAreas: [],
             marinePlanAreas: []
@@ -126,53 +125,6 @@ describe('Dynamics Client', () => {
       expect(
         mockWreckPost.mock.calls[0][1].payload.applicantOrganisationId
       ).toBeUndefined()
-      expect(
-        mockWreckPost.mock.calls[0][1].payload.beneficiaryOrganisationId
-      ).toBeUndefined()
-    })
-
-    it('should send beneficiary organisation id when user is not employee', async () => {
-      const exemptionWithBeneficiary = {
-        ...mockExemption,
-        organisation: {
-          id: 'test-beneficiary-org-id',
-          userRelationshipType: 'Non-Employee'
-        }
-      }
-      mockServer.db
-        .collection()
-        .findOne.mockResolvedValue(exemptionWithBeneficiary)
-
-      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
-
-      const payload = mockWreckPost.mock.calls[0][1].payload
-      expect(payload.beneficiaryOrganisationId).toBe('test-beneficiary-org-id')
-      expect(payload.applicantOrganisationId).toBeUndefined()
-    })
-
-    it('should send applicant organisation id when user is employee', async () => {
-      const exemptionWithEmployee = {
-        ...mockExemption,
-        organisation: {
-          id: 'test-applicant-org-id',
-          userRelationshipType: 'Employee'
-        }
-      }
-      mockServer.db
-        .collection()
-        .findOne.mockResolvedValue(exemptionWithEmployee)
-
-      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
-
-      expect(mockWreckPost).toHaveBeenCalledWith(
-        'https://localhost/api/data/v9.2/exemptions',
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            applicantOrganisationId: 'test-applicant-org-id',
-            beneficiaryOrganisationId: 'test-applicant-org-id'
-          })
-        })
-      )
     })
 
     it('should correctly send marine plan area details', async () => {
@@ -222,7 +174,6 @@ describe('Dynamics Client', () => {
 
       const payload = mockWreckPost.mock.calls[0][1].payload
       expect(payload.applicantOrganisationId).toBeUndefined()
-      expect(payload.beneficiaryOrganisationId).toBeUndefined()
     })
 
     it('should throw error if request fails', async () => {
@@ -374,7 +325,6 @@ describe('Dynamics Client', () => {
             type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
             applicationUrl: 'http://localhost/view-details/123',
             applicantOrganisationId: 'test-org-id',
-            beneficiaryOrganisationId: 'test-org-id',
             status: EXEMPTION_STATUS.SUBMITTED,
             coastalOperationsAreas: [],
             marinePlanAreas: []
