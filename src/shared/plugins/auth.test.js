@@ -8,7 +8,6 @@ import { auth, getKeys, validateToken } from './auth.js'
 import { config } from '../../config.js'
 
 vi.mock('@hapi/wreck')
-vi.mock('jwk-to-pem')
 vi.mock('../../config.js')
 
 const { publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
