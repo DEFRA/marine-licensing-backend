@@ -75,7 +75,7 @@ export class GeoParser {
     // Use worker threads for CPU-intensive parsing to prevent blocking
     return new Promise((resolve, reject) => {
       // This is relative to the project root
-      const worker = new Worker('./src/services/geo-parser/worker.js', {
+      const worker = new Worker('./src/shared/services/geo-parser/worker.js', {
         workerData: { filePath, fileType }
       })
 

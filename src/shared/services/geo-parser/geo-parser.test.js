@@ -303,10 +303,14 @@ describe('GeoParser', () => {
         }
       })
 
-      geoParser.parseFile(filePath, fileType)
+      let rejected = false
+      geoParser.parseFile(filePath, fileType).catch(() => {
+        rejected = true
+      })
 
-      // This test just ensures no error is thrown for exit code 0
       await new Promise((resolve) => setTimeout(resolve, 50))
+
+      expect(rejected).toBe(false)
     })
 
     it('should timeout after processing timeout', async () => {
