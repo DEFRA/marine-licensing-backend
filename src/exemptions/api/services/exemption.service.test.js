@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, expect } from 'vitest'
 import { ExemptionService } from './exemption.service.js'
 
 vi.mock(
@@ -101,6 +101,58 @@ describe('ExemptionService', () => {
         exemptionService.getExemptionById({ id: exemption._id, currentUserId })
       ).rejects.toThrow('Not authorized to request this resource')
     })
+
+    it('should allow colleague from same organisation to view submitted exemption', async () => {
+      const orgId = 'org-123'
+      const exemptionWithOrg = {
+        ...exemption,
+        status: 'ACTIVE',
+        organisation: { id: orgId, name: 'Test Org' }
+      }
+      const exemptionService = createService(global.mockMongo, exemptionWithOrg)
+      const result = await exemptionService.getExemptionById({
+        id: exemption._id,
+        currentUserId: 'different-user',
+        currentOrganisationId: orgId
+      })
+      expect(result).toEqual(exemptionWithOrg)
+    })
+
+    it('should not allow colleague from same organisation to view draft exemption', async () => {
+      const orgId = 'org-123'
+      const draftExemptionWithOrg = {
+        ...exemption,
+        status: 'DRAFT',
+        organisation: { id: orgId, name: 'Test Org' }
+      }
+      const exemptionService = createService(
+        global.mockMongo,
+        draftExemptionWithOrg
+      )
+      await expect(() =>
+        exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: 'different-user',
+          currentOrganisationId: orgId
+        })
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
+
+    it('should not allow user from different organisation to view exemption', async () => {
+      const exemptionWithOrg = {
+        ...exemption,
+        status: 'ACTIVE',
+        organisation: { id: 'org-123', name: 'Test Org' }
+      }
+      const exemptionService = createService(global.mockMongo, exemptionWithOrg)
+      await expect(() =>
+        exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: 'different-user',
+          currentOrganisationId: 'different-org'
+        })
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
   })
 
   describe('getPublicExemptionById', () => {
@@ -135,6 +187,36 @@ describe('ExemptionService', () => {
       const exemptionService = createService(global.mockMongo, {
         ...exemption,
         status: 'DRAFT'
+      })
+      await expect(() =>
+        exemptionService.getPublicExemptionById(exemption._id)
+      ).rejects.toThrow('Not authorized to request this resource')
+    })
+
+    it('should return withdrawn exemption with public consent', async () => {
+      const withdrawnExemption = {
+        ...exemption,
+        status: 'WITHDRAWN',
+        publicRegister: { consent: 'yes' }
+      }
+      const exemptionService = createService(
+        global.mockMongo,
+        withdrawnExemption
+      )
+      const result = await exemptionService.getPublicExemptionById(
+        exemption._id
+      )
+      expect(result).toEqual({
+        ...withdrawnExemption,
+        whoExemptionIsFor: 'Dave Barnett'
+      })
+    })
+
+    it('should throw forbidden for withdrawn exemption without public consent', async () => {
+      const exemptionService = createService(global.mockMongo, {
+        ...exemption,
+        status: 'WITHDRAWN',
+        publicRegister: { consent: 'no' }
       })
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)

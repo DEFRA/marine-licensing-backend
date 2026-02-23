@@ -8,7 +8,7 @@ import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { REQUEST_QUEUE_STATUS } from '../../../shared/common/constants/request-queue.js'
 import { config } from '../../../config.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
-import { updateCoastalEnforcementAreas } from '../../../shared/common/helpers/geo/update-coastal-enforcement-areas.js'
+import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn().mockImplementation(function () {
@@ -21,9 +21,7 @@ vi.mock('../helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
 vi.mock('../helpers/send-user-email-confirmation.js')
 vi.mock('../../../config.js')
-vi.mock(
-  '../../../shared/common/helpers/geo/update-coastal-enforcement-areas.js'
-)
+vi.mock('../../../shared/common/helpers/geo/update-coastal-operations-areas.js')
 vi.mock('../../../shared/common/helpers/geo/update-marine-planning-areas.js')
 
 describe('POST /exemption/submit', () => {
@@ -217,7 +215,7 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
-      expect(updateCoastalEnforcementAreas).toHaveBeenCalledWith(
+      expect(updateCoastalOperationsAreas).toHaveBeenCalledWith(
         mockExemption,
         mockDb,
         {
@@ -239,6 +237,7 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
       const { userName, ...rest } = mockAuditPayload
       expect(mockDynamicsQueueCollection.insertOne).toHaveBeenCalledWith({
+        action: 'submit',
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
@@ -384,6 +383,7 @@ describe('POST /exemption/submit', () => {
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
       const { userName, ...rest } = mockAuditPayload
       expect(mockDynamicsQueueCollection.insertOne).toHaveBeenCalledWith({
+        action: 'submit',
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,

@@ -264,6 +264,12 @@ const config = convict({
         default: '',
         env: 'DYNAMICS_API_URL'
       },
+      withdrawUrl: {
+        doc: 'URL for the Dynamics API to withdraw exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_WITHDRAW_URL'
+      },
       maxRetries: {
         doc: 'Maximum number of retries for failed Dynamics queue items',
         format: Number,
@@ -301,6 +307,12 @@ const config = convict({
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_API_CONTACT_DETAILS_URL'
+      },
+      baseUrl: {
+        doc: 'Base URL for the Dynamics API for batch contact queries',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_CONTACT_DETAILS_BASE_URL'
       }
     },
     tokenUrl: {
@@ -350,18 +362,18 @@ const config = convict({
     }
   },
   externalGeoAreas: {
-    coastalEnforcementArea: {
+    coastalOperationsAreas: {
       geoJsonUrl: {
-        doc: 'URL for the Coastal Enforcement Areas GeoJSON API',
+        doc: 'URL for the Coastal Operations Areas GeoJSON API',
         format: String,
         default: '',
-        env: 'COASTAL_ENFORCEMENT_AREAS_API_URL'
+        env: 'COASTAL_OPERATIONS_AREAS_API_URL'
       },
       refreshAreas: {
-        doc: 'Force application to update Coastal Enforcement Areas',
+        doc: 'Force application to update Coastal Operations Areas',
         format: Boolean,
         default: false,
-        env: 'REFRESH_COASTAL_ENFORCEMENT_PLAN_AREAS'
+        env: 'REFRESH_COASTAL_OPERATIONS_AREAS'
       }
     },
     marinePlanArea: {

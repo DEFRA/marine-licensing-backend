@@ -14,7 +14,8 @@ import { collectionExemptions } from '../../../shared/common/constants/db-collec
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../shared/common/helpers/emp/emp-processor.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
-import { updateCoastalEnforcementAreas } from '../../../shared/common/helpers/geo/update-coastal-enforcement-areas.js'
+import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
+import { DYNAMICS_REQUEST_ACTIONS } from '../../../shared/common/constants/request-queue.js'
 
 const checkForIncompleteTasks = (exemption) => {
   const taskList = createTaskList(exemption)
@@ -114,7 +115,7 @@ export const submitExemptionController = {
         exemption,
         submittedAt
       })
-      await updateCoastalEnforcementAreas(exemption, db, {
+      await updateCoastalOperationsAreas(exemption, db, {
         updatedAt,
         updatedBy
       })
@@ -122,7 +123,8 @@ export const submitExemptionController = {
       if (isDynamicsEnabled) {
         await addToDynamicsQueue({
           request,
-          applicationReference
+          applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT
         })
       }
       if (isEmpEnabled) {

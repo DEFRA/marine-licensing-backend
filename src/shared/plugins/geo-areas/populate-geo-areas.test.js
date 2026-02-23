@@ -50,9 +50,9 @@ describe('populateGeoAreas', () => {
     server.decorate('server', 'db', mockDb)
 
     vi.mocked(config.get).mockReturnValue({
-      coastalEnforcementArea: {
-        geoJsonUrl: 'http://localhost:3000/coastal-enforcement-areas.json',
-        refreshCoastalEnforcementArea: false
+      coastalOperationsAreasArea: {
+        geoJsonUrl: 'http://localhost:3000/coastal-operations-areas.json',
+        refreshcoastalOperationsAreasArea: false
       }
     })
   })
@@ -138,41 +138,41 @@ describe('populateGeoAreas', () => {
   })
 
   describe('createGeoAreaPopulatorPlugin', () => {
-    const mockCoastalEnforcementAreaSettings = {
-      pluginName: 'populate-coastal-enforcement-areas',
-      configKey: 'coastalEnforcementArea',
-      collectionName: 'coastal-enforcement-areas',
-      areaDisplayName: 'Coastal Enforcement Areas'
+    const mockcoastalOperationsAreasAreaSettings = {
+      pluginName: 'populate-coastal-operations-areas',
+      configKey: 'coastalOperationsAreasArea',
+      collectionName: 'coastal-operations-areas',
+      areaDisplayName: 'Coastal Operations Areas'
     }
 
     describe('Configuration validation', () => {
       test('should log error and return early when geoJsonUrl is blank', async () => {
         vi.mocked(config.get).mockReturnValue({
-          coastalEnforcementArea: {
+          coastalOperationsAreasArea: {
             geoJsonUrl: '',
             refresh: false
           }
         })
 
         await server.register(
-          createGeoAreaPopulatorPlugin(mockCoastalEnforcementAreaSettings)
+          createGeoAreaPopulatorPlugin(mockcoastalOperationsAreasAreaSettings)
         )
         expect(mockLogger.error).toHaveBeenCalledWith(
-          'Coastal Enforcement Areas API URL not configured'
+          'Coastal Operations Areas API URL not configured'
         )
         expect(mockDb.collection).not.toHaveBeenCalled()
       })
 
       test('should log error and return early when area config is undefined', async () => {
         vi.mocked(config.get).mockReturnValue({
-          coastalEnforcementArea: undefined
+          coastalOperationsAreasArea: undefined
         })
 
         await server.register(
-          createGeoAreaPopulatorPlugin(mockCoastalEnforcementAreaSettings)
+          createGeoAreaPopulatorPlugin(mockcoastalOperationsAreasAreaSettings)
         )
         expect(mockLogger.error).toHaveBeenCalledWith(
-          'Coastal Enforcement Areas API URL not configured'
+          'Coastal Operations Areas API URL not configured'
         )
         expect(mockDb.collection).not.toHaveBeenCalled()
       })
@@ -187,7 +187,7 @@ describe('populateGeoAreas', () => {
         mockDb.collection.mockReturnValue(mockCollection)
 
         await server.register(
-          createGeoAreaPopulatorPlugin(mockCoastalEnforcementAreaSettings)
+          createGeoAreaPopulatorPlugin(mockcoastalOperationsAreasAreaSettings)
         )
 
         expect(mockCollection.countDocuments).toHaveBeenCalled()
@@ -206,11 +206,11 @@ describe('populateGeoAreas', () => {
         })
 
         await server.register(
-          createGeoAreaPopulatorPlugin(mockCoastalEnforcementAreaSettings)
+          createGeoAreaPopulatorPlugin(mockcoastalOperationsAreasAreaSettings)
         )
 
         expect(mockWreckGet).toHaveBeenCalledWith(
-          'http://localhost:3000/coastal-enforcement-areas.json',
+          'http://localhost:3000/coastal-operations-areas.json',
           { json: true }
         )
         expect(mockLogger.error).toHaveBeenCalledWith(
@@ -221,7 +221,7 @@ describe('populateGeoAreas', () => {
               message: 'An internal server error occurred'
             }
           },
-          'Failed to populate Coastal Enforcement Areas collection'
+          'Failed to populate Coastal Operations Areas collection'
         )
       })
 
@@ -246,7 +246,7 @@ describe('populateGeoAreas', () => {
         vi.mocked(formatGeoForStorage).mockReturnValue(mockFormattedFeatures)
 
         await server.register(
-          createGeoAreaPopulatorPlugin(mockCoastalEnforcementAreaSettings)
+          createGeoAreaPopulatorPlugin(mockcoastalOperationsAreasAreaSettings)
         )
 
         expect(formatGeoForStorage).toHaveBeenCalledWith(mockPayload)
@@ -278,7 +278,7 @@ describe('populateGeoAreas', () => {
         })
 
         await server.register(
-          createGeoAreaPopulatorPlugin(mockCoastalEnforcementAreaSettings)
+          createGeoAreaPopulatorPlugin(mockcoastalOperationsAreasAreaSettings)
         )
 
         expect(formatGeoForStorage).toHaveBeenCalledWith(mockPayload)
@@ -286,13 +286,13 @@ describe('populateGeoAreas', () => {
           {
             error: 'Failed to format GeoJSON'
           },
-          'Failed to populate Coastal Enforcement Areas collection'
+          'Failed to populate Coastal Operations Areas collection'
         )
       })
     })
 
     describe('Refresh functionality', () => {
-      test('should clear and refresh collection when refreshCoastalEnforcementArea is true', async () => {
+      test('should clear and refresh collection when refreshcoastalOperationsAreasArea is true', async () => {
         const mockCollection = {
           countDocuments: vi.fn(),
           deleteMany: vi.fn().mockResolvedValue({}),
@@ -300,8 +300,8 @@ describe('populateGeoAreas', () => {
         }
 
         vi.mocked(config.get).mockReturnValue({
-          coastalEnforcementArea: {
-            geoJsonUrl: 'http://localhost:3000/coastal-enforcement-areas.json',
+          coastalOperationsAreasArea: {
+            geoJsonUrl: 'http://localhost:3000/coastal-operations-areas.json',
             refreshAreas: true
           }
         })
@@ -320,13 +320,13 @@ describe('populateGeoAreas', () => {
         vi.mocked(formatGeoForStorage).mockReturnValue(mockFormattedFeatures)
 
         await server.register(
-          createGeoAreaPopulatorPlugin(mockCoastalEnforcementAreaSettings)
+          createGeoAreaPopulatorPlugin(mockcoastalOperationsAreasAreaSettings)
         )
 
         expect(mockCollection.deleteMany).toHaveBeenCalledWith({})
         expect(mockCollection.countDocuments).not.toHaveBeenCalled()
         expect(mockWreckGet).toHaveBeenCalledWith(
-          'http://localhost:3000/coastal-enforcement-areas.json',
+          'http://localhost:3000/coastal-operations-areas.json',
           { json: true }
         )
         expect(mockCollection.insertMany).toHaveBeenCalledWith(
