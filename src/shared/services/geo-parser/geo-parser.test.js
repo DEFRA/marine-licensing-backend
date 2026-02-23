@@ -249,7 +249,7 @@ describe('GeoParser', () => {
 
       expect(result).toEqual(mockGeoJSON)
       expect(Worker).toHaveBeenCalledWith(
-        './src/services/geo-parser/worker.js',
+        './src/shared/services/geo-parser/worker.js',
         {
           workerData: { filePath, fileType }
         }
