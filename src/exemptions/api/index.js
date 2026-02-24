@@ -1,5 +1,4 @@
 import { getExemptionController } from './controllers/get-exemption.js'
-import { getExemptionsController } from './controllers/get-exemptions.js'
 import { getUnsentEmpExemptionsController } from './controllers/get-unsent-emp-exemptions.js'
 import { createProjectNameController } from './controllers/create-project-name.js'
 import { updateProjectNameController } from './controllers/update-project-name.js'
@@ -25,11 +24,6 @@ export const exemptions = [
     method: 'GET',
     path: '/exemptions/send-to-emp',
     ...getUnsentEmpExemptionsController
-  },
-  {
-    method: 'GET',
-    path: '/exemptions',
-    ...getExemptionsController
   },
   {
     method: 'POST',

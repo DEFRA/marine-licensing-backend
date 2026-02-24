@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../src/exemptions/constants/exemption.js'
+import { MARINE_LICENSE_STATUS } from '../src/marine-licences/constants/marine-license.js'
 import { COORDINATE_SYSTEMS } from '../src/shared/common/constants/coordinates.js'
 
 export const mockCredentials = {
@@ -43,6 +44,22 @@ export const createCompleteExemption = (overrides = {}) => {
       }
     ],
     status: EXEMPTION_STATUS.DRAFT,
+    createdAt: new Date('2026-12-01'),
+    updatedAt: new Date('2026-12-01'),
+    ...overrides
+  }
+}
+
+export const createCompleteMarineLicense = (overrides = {}) => {
+  const marineLicenseId = overrides._id || new ObjectId()
+  const contactId =
+    overrides.contactId || '123e4567-e89b-12d3-a456-426614174000'
+
+  return {
+    _id: marineLicenseId,
+    contactId,
+    projectName: 'Test Marine License Project',
+    status: MARINE_LICENSE_STATUS.DRAFT,
     createdAt: new Date('2026-12-01'),
     updatedAt: new Date('2026-12-01'),
     ...overrides
