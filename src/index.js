@@ -3,8 +3,8 @@ import process from 'node:process'
 import {
   createLogger,
   structureErrorForECS
-} from './common/helpers/logging/logger.js'
-import { startServer } from './common/helpers/start-server.js'
+} from './shared/common/helpers/logging/logger.js'
+import { startServer } from './shared/common/helpers/start-server.js'
 
 await startServer()
 
