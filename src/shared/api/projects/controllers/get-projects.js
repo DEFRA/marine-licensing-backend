@@ -135,11 +135,15 @@ export const getProjectsController = {
     const isEmployee = userRelationshipType === 'Employee'
 
     if (isEmployee && organisationId) {
-      const projects = await getEmployeeProjects(db, organisationId, contactId)
+      const employeeProjects = await getEmployeeProjects(
+        db,
+        organisationId,
+        contactId
+      )
       return h
         .response({
           message: 'success',
-          value: projects,
+          value: employeeProjects,
           isEmployee: true,
           organisationId
         })
