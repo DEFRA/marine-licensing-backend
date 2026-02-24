@@ -6,9 +6,12 @@ import {
   EXEMPTION_STATUS_LABEL
 } from '../../constants/exemption.js'
 
-vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
-  batchGetContactNames: vi.fn().mockResolvedValue({})
-}))
+vi.mock(
+  '../../../shared/common/helpers/dynamics/get-contact-details.js',
+  () => ({
+    batchGetContactNames: vi.fn().mockResolvedValue({})
+  })
+)
 
 describe('getExemptionsController', () => {
   let mockRequest

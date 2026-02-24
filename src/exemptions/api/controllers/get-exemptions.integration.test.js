@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 
-vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
+vi.mock('../../../shared/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn().mockResolvedValue({})
 }))
 
