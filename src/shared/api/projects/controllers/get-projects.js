@@ -11,12 +11,13 @@ import {
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 
-const transformProjectBase = (project) => {
+const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
     project
 
   return {
     id: _id.toString(),
+    projectType,
     ...(status && { status: PROJECT_STATUS_LABEL[status] || status }),
     ...(projectName && { projectName }),
     ...(applicationReference && { applicationReference }),
@@ -33,17 +34,15 @@ const transformProject = (
   const { contactId } = project
 
   return {
-    ...transformProjectBase(project),
-    projectType,
+    ...transformProjectBase(project, projectType),
     contactId,
-    test: 'test',
     isOwnProject: contactId === currentContactId,
     ownerName: ownerNames[contactId] || '-'
   }
 }
 
 const transformProjects = (projects, type) =>
-  projects.map((p) => transformProject(p, type))
+  projects.map((p) => transformProjectBase(p, type))
 
 export const sortByStatus = (a, b) => {
   const statusOrder = [PROJECT_STATUS_LABEL.DRAFT, PROJECT_STATUS_LABEL.ACTIVE]
