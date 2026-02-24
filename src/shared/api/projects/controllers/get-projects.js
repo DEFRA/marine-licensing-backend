@@ -59,6 +59,72 @@ export const sortByStatus = (a, b) => {
   return aSortIndex - bSortIndex
 }
 
+const getEmployeeProjects = async (db, organisationId, contactId) => {
+  const orgFilter = { 'organisation.id': organisationId }
+
+  const [empExemptions, empMarineLicenses] = await Promise.all([
+    db
+      .collection(collectionExemptions)
+      .find(orgFilter)
+      .sort({ projectName: 1 })
+      .toArray(),
+    db
+      .collection(collectionMarineLicenses)
+      .find(orgFilter)
+      .sort({ projectName: 1 })
+      .toArray()
+  ])
+
+  const contactIds = [
+    ...new Set(
+      [...empExemptions, ...empMarineLicenses]
+        .map((e) => e.contactId)
+        .filter(Boolean)
+    )
+  ]
+  const ownerNames = await batchGetContactNames(contactIds)
+
+  return [
+    ...empExemptions.map((e) =>
+      transformProject(e, PROJECT_TYPES.EXEMPTION, contactId, ownerNames)
+    ),
+    ...empMarineLicenses.map((m) =>
+      transformProject(m, PROJECT_TYPES.MARINE_LICENCE, contactId, ownerNames)
+    )
+  ].sort(sortByStatus)
+}
+
+const getCitizenProjects = async (db, contactId, organisationId) => {
+  const citizenFilter = {
+    contactId,
+    ...(organisationId
+      ? { 'organisation.id': organisationId }
+      : { 'organisation.id': { $exists: false } })
+  }
+
+  const [exemptions, marineLicenses] = await Promise.allSettled([
+    db
+      .collection(collectionExemptions)
+      .find(citizenFilter)
+      .sort({ projectName: 1 })
+      .toArray(),
+    db
+      .collection(collectionMarineLicenses)
+      .find(citizenFilter)
+      .sort({ projectName: 1 })
+      .toArray()
+  ]).then((responses) =>
+    responses.map((response) =>
+      response.status === 'fulfilled' ? response.value : null
+    )
+  )
+
+  return [
+    ...transformProjects(exemptions, PROJECT_TYPES.EXEMPTION),
+    ...transformProjects(marineLicenses, PROJECT_TYPES.MARINE_LICENCE)
+  ].sort(sortByStatus)
+}
+
 export const getProjectsController = {
   handler: async (request, h) => {
     const { db, auth } = request
@@ -69,89 +135,20 @@ export const getProjectsController = {
     const isEmployee = userRelationshipType === 'Employee'
 
     if (isEmployee && organisationId) {
-      const orgFilter = { 'organisation.id': organisationId }
-
-      const [empExemptions, empMarineLicenses] = await Promise.all([
-        db
-          .collection(collectionExemptions)
-          .find(orgFilter)
-          .sort({ projectName: 1 })
-          .toArray(),
-        db
-          .collection(collectionMarineLicenses)
-          .find(orgFilter)
-          .sort({ projectName: 1 })
-          .toArray()
-      ])
-
-      const contactIds = [
-        ...new Set(
-          [...empExemptions, ...empMarineLicenses]
-            .map((e) => e.contactId)
-            .filter(Boolean)
-        )
-      ]
-      const ownerNames = await batchGetContactNames(contactIds)
-
-      const employeeTransformed = [
-        ...empExemptions.map((e) =>
-          transformProject(e, PROJECT_TYPES.EXEMPTION, contactId, ownerNames)
-        ),
-        ...empMarineLicenses.map((m) =>
-          transformProject(
-            m,
-            PROJECT_TYPES.MARINE_LICENCE,
-            contactId,
-            ownerNames
-          )
-        )
-      ].sort(sortByStatus)
-
+      const projects = await getEmployeeProjects(db, organisationId, contactId)
       return h
         .response({
           message: 'success',
-          value: employeeTransformed,
+          value: projects,
           isEmployee: true,
           organisationId
         })
         .code(StatusCodes.OK)
     }
 
-    const citizenFilter = {
-      contactId,
-      ...(organisationId
-        ? { 'organisation.id': organisationId }
-        : { 'organisation.id': { $exists: false } })
-    }
-
-    const [exemptions, marineLicenses] = await Promise.allSettled([
-      db
-        .collection(collectionExemptions)
-        .find(citizenFilter)
-        .sort({ projectName: 1 })
-        .toArray(),
-      db
-        .collection(collectionMarineLicenses)
-        .find(citizenFilter)
-        .sort({ projectName: 1 })
-        .toArray()
-    ]).then((responses) => {
-      return responses.map((response) =>
-        response.status === 'fulfilled' ? response.value : null
-      )
-    })
-
-    const transformed = [
-      ...transformProjects(exemptions, PROJECT_TYPES.EXEMPTION),
-      ...transformProjects(marineLicenses, PROJECT_TYPES.MARINE_LICENCE)
-    ].sort(sortByStatus)
-
+    const projects = await getCitizenProjects(db, contactId, organisationId)
     return h
-      .response({
-        message: 'success',
-        value: transformed,
-        isEmployee: false
-      })
+      .response({ message: 'success', value: projects, isEmployee: false })
       .code(StatusCodes.OK)
   }
 }
