@@ -1,0 +1,243 @@
+import Boom from '@hapi/boom'
+import Wreck from '@hapi/wreck'
+import { config } from '../../../../config.js'
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_TYPE
+} from '../../../../exemptions/constants/exemption.js'
+import { StatusCodes } from 'http-status-codes'
+import {
+  DYNAMICS_REQUEST_ACTIONS,
+  REQUEST_QUEUE_STATUS
+} from '../../constants/request-queue.js'
+import {
+  collectionExemptions,
+  collectionDynamicsQueue
+} from '../../constants/db-collections.js'
+import { createLogger } from '../../helpers/logging/logger.js'
+
+const logger = createLogger()
+
+/**
+ * Fetches an exemption from the database by application reference
+ * @param {Object} db - Database connection
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @returns {Promise<Object>} The exemption document
+ */
+const fetchExemption = async (db, applicationReferenceNumber) => {
+  const exemption = await db.collection(collectionExemptions).findOne({
+    applicationReference: applicationReferenceNumber
+  })
+
+  if (!exemption) {
+    throw Boom.notFound(
+      `Exemption not found for applicationReference: ${applicationReferenceNumber}`
+    )
+  }
+
+  return exemption
+}
+
+/**
+ * Updates the queue status to IN_PROGRESS
+ * @param {Object} db - Database connection
+ * @param {Object} queueItemId - Queue id
+ */
+const updateQueueStatus = async (db, queueItemId) => {
+  await db.collection(collectionDynamicsQueue).updateOne(
+    { _id: queueItemId },
+    {
+      $set: {
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+        updatedAt: new Date()
+      }
+    }
+  )
+}
+
+/**
+ * Builds the Dynamics API payload
+ * @param {Object} exemption - The exemption document
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @param {string} frontEndBaseUrl - Frontend base URL
+ * @returns {Object} The payload for Dynamics API
+ */
+const buildDynamicsPayload = (
+  exemption,
+  applicationReferenceNumber,
+  frontEndBaseUrl
+) => {
+  const applicantOrganisationId = exemption.organisation?.id
+
+  return {
+    contactid: exemption.contactId,
+    projectName: exemption.projectName,
+    reference: applicationReferenceNumber,
+    type: EXEMPTION_TYPE.EXEMPT_ACTIVITY,
+    applicationUrl: `${frontEndBaseUrl}/view-details/${exemption._id}`,
+    ...(applicantOrganisationId ? { applicantOrganisationId } : {}),
+    status: EXEMPTION_STATUS.SUBMITTED,
+    marinePlanAreas: exemption.marinePlanAreas ?? [],
+    coastalOperationsAreas: exemption.coastalOperationsAreas ?? []
+  }
+}
+
+/**
+ * Validates the Dynamics API response
+ * @param {number} statusCode - HTTP status code
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @param {string} requestType - Type of request
+ */
+const validateDynamicsResponse = (
+  statusCode,
+  applicationReferenceNumber,
+  requestType
+) => {
+  if (statusCode !== StatusCodes.ACCEPTED) {
+    logger.error(
+      {
+        error: {
+          message: `Dynamics API returned status ${statusCode}`,
+          code: 'DYNAMICS_API_ERROR'
+        },
+        http: {
+          response: {
+            status_code: statusCode
+          }
+        },
+        service: 'dynamics',
+        operation:
+          requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+            ? 'withdrawExemption'
+            : 'sendExemption',
+        applicationReference: applicationReferenceNumber
+      },
+      `Dynamics API returned unexpected status ${statusCode}`
+    )
+    throw Boom.badImplementation(`Dynamics API returned status ${statusCode}`)
+  }
+}
+
+/**
+ * Logs successful Dynamics API request
+ * @param {number} statusCode - HTTP status code
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @param {string} requestType - Type of request
+ */
+const logDynamicsSuccess = (
+  statusCode,
+  applicationReferenceNumber,
+  requestType
+) => {
+  logger.info(
+    {
+      http: {
+        response: {
+          status_code: statusCode
+        }
+      },
+      service: 'dynamics',
+      operation:
+        requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+          ? 'withdrawExemption'
+          : 'sendExemption',
+      applicationReference: applicationReferenceNumber
+    },
+    requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+      ? 'Successfully sent request to withdraw exemption to Dynamics 365'
+      : 'Successfully sent exemption to Dynamics 365'
+  )
+}
+
+export const sendExemptionToDynamics = async (
+  server,
+  accessToken,
+  queueItem
+) => {
+  const {
+    exemptions: { apiUrl }
+  } = config.get('dynamics')
+  const frontEndBaseUrl = config.get('frontEndBaseUrl')
+  const { applicationReferenceNumber } = queueItem
+
+  // Fetch exemption and update queue status
+  await updateQueueStatus(server.db, queueItem._id)
+  const exemption = await fetchExemption(server.db, applicationReferenceNumber)
+
+  // Build payload and send to Dynamics
+  const payload = buildDynamicsPayload(
+    exemption,
+    applicationReferenceNumber,
+    frontEndBaseUrl
+  )
+
+  const response = await Wreck.post(`${apiUrl}/exemptions`, {
+    payload,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  // Validate and log response
+  const statusCode = response.res?.statusCode
+  validateDynamicsResponse(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+  )
+  logDynamicsSuccess(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+  )
+
+  return response.payload
+}
+
+export const sendWithdrawToDynamics = async (
+  server,
+  accessToken,
+  queueItem
+) => {
+  const {
+    exemptions: { withdrawUrl }
+  } = config.get('dynamics')
+  const { applicationReferenceNumber } = queueItem
+
+  await updateQueueStatus(server.db, queueItem._id)
+
+  const payload = {
+    status: EXEMPTION_STATUS.WITHDRAWN,
+    reference: applicationReferenceNumber
+  }
+
+  const response = await Wreck.post(`${withdrawUrl}`, {
+    payload,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  const statusCode = response.res?.statusCode
+  validateDynamicsResponse(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+  )
+  logDynamicsSuccess(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+  )
+
+  return response.payload
+}
+
+export const sendToDynamics = async (server, accessToken, queueItem) => {
+  if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.WITHDRAW) {
+    return sendWithdrawToDynamics(server, accessToken, queueItem)
+  }
+  return sendExemptionToDynamics(server, accessToken, queueItem)
+}

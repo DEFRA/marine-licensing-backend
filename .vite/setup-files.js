@@ -4,7 +4,7 @@ import createFetchMock from 'vitest-fetch-mock'
 import {
   collectionExemptions,
   collectionMarineLicenses
-} from '../src/common/constants/db-collections'
+} from '../src/shared/common/constants/db-collections'
 
 const fetchMock = createFetchMock(vi)
 
