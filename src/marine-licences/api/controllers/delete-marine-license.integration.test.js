@@ -11,16 +11,19 @@ describe('Delete marine license - integration tests', async () => {
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
   const differentContactId = '987e6543-e21b-12d3-a456-426614174000'
 
-  test('successfully deletes a draft marine license when requested by the owner', async () => {
+  beforeEach(async () => {
     const marineLicense = createCompleteMarineLicense({
       _id: marineLicenseId,
       contactId,
       status: MARINE_LICENSE_STATUS.DRAFT
     })
+
     await globalThis.mockMongo
       .collection(collectionMarineLicenses)
       .insertOne(marineLicense)
+  })
 
+  test('successfully deletes a draft marine license when requested by the owner', async () => {
     const { statusCode, body } = await makeDeleteRequest({
       server: getServer(),
       url: `/marine-license/${marineLicenseId}`,
@@ -50,14 +53,12 @@ describe('Delete marine license - integration tests', async () => {
   })
 
   test('returns 400 when attempting to delete an active marine license', async () => {
-    const marineLicense = createCompleteMarineLicense({
-      _id: marineLicenseId,
-      contactId,
-      status: MARINE_LICENSE_STATUS.ACTIVE
-    })
     await globalThis.mockMongo
       .collection(collectionMarineLicenses)
-      .insertOne(marineLicense)
+      .findOneAndUpdate(
+        { _id: marineLicenseId },
+        { $set: { status: MARINE_LICENSE_STATUS.ACTIVE } }
+      )
 
     const { statusCode, body } = await makeDeleteRequest({
       server: getServer(),
@@ -77,15 +78,6 @@ describe('Delete marine license - integration tests', async () => {
   })
 
   test('returns 403 when attempting to delete a marine license owned by another user', async () => {
-    const marineLicense = createCompleteMarineLicense({
-      _id: marineLicenseId,
-      contactId,
-      status: MARINE_LICENSE_STATUS.DRAFT
-    })
-    await globalThis.mockMongo
-      .collection(collectionMarineLicenses)
-      .insertOne(marineLicense)
-
     const { statusCode, body } = await makeDeleteRequest({
       server: getServer(),
       url: `/marine-license/${marineLicenseId}`,
