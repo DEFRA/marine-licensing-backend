@@ -12,6 +12,8 @@ import {
   collectionEmpQueueFailed
 } from '../../constants/db-collections.js'
 
+const QUEUE_DELAY_MS = 2_000
+
 export const startEmpQueuePolling = (server, intervalMs) => {
   processEmpQueue(server)
 
@@ -39,7 +41,7 @@ export const handleEmpQueueItemSuccess = async (server, item, empFeatureId) => {
     }
   )
   server.logger.info(
-    `Successfully processed item ${item.applicationReferenceNumber}`
+    `Successfully processed EMP queue item ${item._id} for application ${item.applicationReferenceNumber}`
   )
 }
 
@@ -77,7 +79,7 @@ export const handleEmpQueueItemFailure = async (
       }
     )
     server.logger.error(
-      `Incremented retries for EMP queue item ${item.applicationReferenceNumber} to ${retries}`
+      `Incremented retries for EMP queue item ${item._id} for application ${item.applicationReferenceNumber} to ${retries}`
     )
   }
 }
@@ -92,7 +94,7 @@ const processEmpQueueItem = async (server, item) => {
   } catch (err) {
     server.logger.error(
       structureErrorForECS(err),
-      `Failed to process EMP queue item ${item.applicationReferenceNumber}`
+      `Failed to process EMP queue item ${item._id} for application ${item.applicationReferenceNumber}`
     )
     const hardFail = err.message?.includes('no objectId found')
     await handleEmpQueueItemFailure(server, item, { hardFail })
@@ -110,7 +112,7 @@ export const processEmpQueue = async (server) => {
           { status: REQUEST_QUEUE_STATUS.PENDING },
           {
             status: REQUEST_QUEUE_STATUS.FAILED,
-            updatedAt: { $lte: new Date(now.getTime() - 2_000) }
+            updatedAt: { $lte: new Date(now.getTime() - QUEUE_DELAY_MS) }
           }
         ]
       })
