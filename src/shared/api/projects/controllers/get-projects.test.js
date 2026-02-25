@@ -136,6 +136,35 @@ describe('getProjectsController', () => {
       )
     })
 
+    it('should exclude null entries when a query is rejected', async () => {
+      mockRequest.auth = createAuthWithoutOrg()
+
+      mockExemptionCollection = {
+        find: vi.fn().mockReturnValue({
+          sort: vi.fn().mockReturnValue({
+            toArray: vi
+              .fn()
+              .mockRejectedValue(new Error('DB connection failed'))
+          })
+        })
+      }
+
+      mockDb.collection = vi.fn((name) => {
+        if (name === collectionExemptions) return mockExemptionCollection
+        if (name === collectionMarineLicenses) {
+          return mockMarineLicenseCollection
+        }
+        return createMockCollection([])
+      })
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(
+        responseValue.some((p) => p.projectType === 'MARINE_LICENCE')
+      ).toBe(true)
+    })
+
     it('should throw error when user is not authenticated', async () => {
       mockRequest.auth = {
         credentials: {},

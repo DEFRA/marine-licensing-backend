@@ -42,7 +42,7 @@ const transformProject = (
 }
 
 const transformProjects = (projects, type) =>
-  projects.map((p) => transformProjectBase(p, type))
+  (projects ?? []).filter(Boolean).map((p) => transformProjectBase(p, type))
 
 export const sortByStatus = (a, b) => {
   const statusOrder = [PROJECT_STATUS_LABEL.DRAFT, PROJECT_STATUS_LABEL.ACTIVE]
