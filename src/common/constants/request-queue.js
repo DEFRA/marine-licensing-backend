@@ -9,3 +9,8 @@ export const DYNAMICS_REQUEST_ACTIONS = {
   SUBMIT: 'submit',
   WITHDRAW: 'withdraw'
 }
+
+export const EMP_REQUEST_ACTIONS = {
+  ADD: 'add',
+  WITHDRAW: 'withdraw'
+}

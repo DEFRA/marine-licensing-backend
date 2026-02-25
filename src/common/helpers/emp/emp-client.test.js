@@ -1,8 +1,8 @@
 import { expect, vi } from 'vitest'
 
 import { config } from '../../../config.js'
-import { sendExemptionToEmp } from './emp-client.js'
-import { addFeatures } from '@esri/arcgis-rest-feature-service'
+import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
+import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
 
 vi.mock('../../../config.js')
 vi.mock('@esri/arcgis-rest-feature-service')
@@ -163,6 +163,86 @@ describe('Emp Client', () => {
       await expect(
         sendExemptionToEmp(mockServer, mockQueueItem)
       ).rejects.toThrow('EMP addFeatures failed: Coordinates missing')
+    })
+  })
+
+  describe('withdrawExemptionFromEmp', () => {
+    const mockWithdrawQueueItem = {
+      _id: 'withdraw-queue-id',
+      applicationReferenceNumber: 'TEST-REF-001',
+      action: 'withdraw'
+    }
+
+    it('should update exemption status in EMP successfully', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        empFeatureId: 'emp-object-id'
+      })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [{ success: true, objectId: 'emp-object-id' }]
+      })
+
+      const result = await withdrawExemptionFromEmp(
+        mockServer,
+        mockWithdrawQueueItem
+      )
+
+      expect(result.success).toBe(true)
+      expect(mockServer.db.collection).toHaveBeenCalledWith(
+        'exemption-emp-queue'
+      )
+      expect(updateFeatures).toHaveBeenCalledWith({
+        url: 'https://localhost/api/updateFeatures',
+        features: [
+          {
+            attributes: {
+              OBJECTID: 'emp-object-id',
+              Status: 'Withdrawn'
+            }
+          }
+        ],
+        params: { token: 'test-api-key' }
+      })
+    })
+
+    it('should throw error if no objectId found in queue', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(null)
+
+      await expect(
+        withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
+      ).rejects.toThrow(
+        'EMP withdraw failed: no objectId found for TEST-REF-001'
+      )
+
+      expect(updateFeatures).not.toHaveBeenCalled()
+    })
+
+    it('should throw error if updateFeatures returns failure', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        empFeatureId: 'emp-object-id'
+      })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [
+          {
+            success: false,
+            error: { code: 400, description: 'Update failed' }
+          }
+        ]
+      })
+
+      await expect(
+        withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
+      ).rejects.toThrow('EMP updateFeatures failed: Update failed')
+    })
+
+    it('should throw error if updateFeatures throws an exception', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        empFeatureId: 'emp-object-id'
+      })
+      vi.mocked(updateFeatures).mockRejectedValue(new Error('Network timeout'))
+
+      await expect(
+        withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
+      ).rejects.toThrow('EMP updateFeatures failed: Network timeout')
     })
   })
 })

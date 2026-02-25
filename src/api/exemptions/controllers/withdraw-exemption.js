@@ -7,7 +7,11 @@ import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
-import { DYNAMICS_REQUEST_ACTIONS } from '../../../common/constants/request-queue.js'
+import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
+import {
+  DYNAMICS_REQUEST_ACTIONS,
+  EMP_REQUEST_ACTIONS
+} from '../../../common/constants/request-queue.js'
 
 const updateExemptionRecord = async ({
   request,
@@ -61,6 +65,15 @@ export const withdrawExemptionController = {
           request,
           applicationReference: exemption.applicationReference,
           action: DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+        })
+      }
+
+      const { isEmpEnabled } = config.get('exploreMarinePlanning')
+      if (isEmpEnabled) {
+        await addToEmpQueue({
+          request,
+          applicationReference: exemption.applicationReference,
+          action: EMP_REQUEST_ACTIONS.WITHDRAW
         })
       }
 

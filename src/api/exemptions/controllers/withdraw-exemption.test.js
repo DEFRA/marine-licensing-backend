@@ -1,13 +1,16 @@
 import { vi } from 'vitest'
 import { withdrawExemptionController } from './withdraw-exemption'
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics'
+import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
 import { config } from '../../../config.js'
 
 vi.mock('../../../config.js')
 vi.mock('../../../common/helpers/dynamics/index.js')
+vi.mock('../../../common/helpers/emp/emp-processor.js')
 
 describe('POST /exemption/{id}/withdraw', () => {
   let dynamicsMock
+  let empMock
 
   beforeEach(() => {
     config.get.mockImplementation(function (key) {
@@ -19,10 +22,16 @@ describe('POST /exemption/{id}/withdraw', () => {
           retries: 1
         }
       }
+      if (key === 'exploreMarinePlanning') {
+        return {
+          isEmpEnabled: false
+        }
+      }
       return {}
     })
 
     dynamicsMock = vi.mocked(addToDynamicsQueue)
+    empMock = vi.mocked(addToEmpQueue)
   })
 
   const paramsValidator = withdrawExemptionController.options.validate.params
@@ -120,6 +129,11 @@ describe('POST /exemption/{id}/withdraw', () => {
           retries: 1
         }
       }
+      if (key === 'exploreMarinePlanning') {
+        return {
+          isEmpEnabled: true
+        }
+      }
       return {}
     })
 
@@ -136,5 +150,48 @@ describe('POST /exemption/{id}/withdraw', () => {
       applicationReference: 'mock-ref',
       action: 'withdraw'
     })
+
+    expect(empMock).toHaveBeenCalledWith({
+      request: mockRequest,
+      applicationReference: 'mock-ref',
+      action: 'withdraw'
+    })
+  })
+
+  it('should not insert EMP queue document when EMP is disabled', async () => {
+    const { mockMongo, mockHandler } = global
+
+    const mockPayload = {
+      updatedAt: new Date(),
+      updatedBy: 'user123'
+    }
+
+    const mockExemption = { id: 'test', applicationReference: 'mock-ref' }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOneAndUpdate: vi.fn().mockResolvedValue(mockExemption)
+      }
+    })
+
+    config.get.mockImplementation(function (key) {
+      if (key === 'dynamics') {
+        return { isDynamicsEnabled: false }
+      }
+      if (key === 'exploreMarinePlanning') {
+        return { isEmpEnabled: false }
+      }
+      return {}
+    })
+
+    const mockRequest = {
+      db: mockMongo,
+      params: { id: mockId },
+      payload: mockPayload
+    }
+
+    await withdrawExemptionController.handler(mockRequest, mockHandler)
+
+    expect(empMock).not.toHaveBeenCalled()
   })
 })

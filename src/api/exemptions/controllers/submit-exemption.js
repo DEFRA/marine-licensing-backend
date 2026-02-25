@@ -15,7 +15,10 @@ import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
 import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalOperationsAreas } from '../../../common/helpers/geo/update-coastal-operations-areas.js'
-import { DYNAMICS_REQUEST_ACTIONS } from '../../../common/constants/request-queue.js'
+import {
+  DYNAMICS_REQUEST_ACTIONS,
+  EMP_REQUEST_ACTIONS
+} from '../../../common/constants/request-queue.js'
 
 const checkForIncompleteTasks = (exemption) => {
   const taskList = createTaskList(exemption)
@@ -129,12 +132,9 @@ export const submitExemptionController = {
       }
       if (isEmpEnabled) {
         await addToEmpQueue({
-          db,
-          fields: {
-            ...payload,
-            applicationReference
-          },
-          server: request.server
+          request,
+          applicationReference,
+          action: EMP_REQUEST_ACTIONS.ADD
         })
       }
 
