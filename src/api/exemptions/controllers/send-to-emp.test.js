@@ -3,7 +3,7 @@ import { sendToEmpController } from './send-to-emp.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { config } from '../../../config.js'
-import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
+import { addToEmpQueue } from '../../../common/helpers/emp/index.js'
 
 vi.mock('../../../config.js')
 vi.mock('../../../common/helpers/emp/emp-processor.js')

@@ -61,8 +61,9 @@ export const handleEmpQueueItemFailure = async (
 
     await server.db.collection(collectionEmpQueue).deleteOne({ _id: item._id })
 
+    const failureReason = hardFail ? '(hard fail)' : `after ${retries} retries`
     server.logger.error(
-      `Moved EMP queue item ${item._id} for application ${item.applicationReferenceNumber} to failure queue${hardFail ? ' (hard fail)' : ` after ${retries} retries`}`
+      `Moved EMP queue item ${item._id} for application ${item.applicationReferenceNumber} to failure queue ${failureReason}`
     )
   } else {
     await server.db.collection(collectionEmpQueue).updateOne(
@@ -109,7 +110,7 @@ export const processEmpQueue = async (server) => {
           { status: REQUEST_QUEUE_STATUS.PENDING },
           {
             status: REQUEST_QUEUE_STATUS.FAILED,
-            updatedAt: { $lte: new Date(now.getTime() - 0) }
+            updatedAt: { $lte: new Date(now.getTime() - 2_000) }
           }
         ]
       })

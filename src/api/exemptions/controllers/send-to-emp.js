@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { sendToEmp } from '../../../models/send-to-emp.js'
 import { ExemptionService } from '../services/exemption.service.js'
 import { config } from '../../../config.js'
-import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
+import { addToEmpQueue } from '../../../common/helpers/emp/index.js'
 import { EMP_REQUEST_ACTIONS } from '../../../common/constants/request-queue.js'
 
 export const sendToEmpController = {

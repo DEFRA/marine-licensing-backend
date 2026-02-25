@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { withdrawExemptionController } from './withdraw-exemption'
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics'
-import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
+import { addToEmpQueue } from '../../../common/helpers/emp/index.js'
 import { config } from '../../../config.js'
 
 vi.mock('../../../config.js')

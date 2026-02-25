@@ -7,7 +7,7 @@ import { EXEMPTION_STATUS } from '../../../common/constants/exemption.js'
 import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
-import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
+import { addToEmpQueue } from '../../../common/helpers/emp/index.js'
 import {
   DYNAMICS_REQUEST_ACTIONS,
   EMP_REQUEST_ACTIONS

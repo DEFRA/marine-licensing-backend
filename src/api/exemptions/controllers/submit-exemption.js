@@ -12,7 +12,7 @@ import { config } from '../../../config.js'
 import { sendUserEmailConfirmation } from '../helpers/send-user-email-confirmation.js'
 import { collectionExemptions } from '../../../common/constants/db-collections.js'
 import { addToDynamicsQueue } from '../../../common/helpers/dynamics/index.js'
-import { addToEmpQueue } from '../../../common/helpers/emp/emp-processor.js'
+import { addToEmpQueue } from '../../../common/helpers/emp/index.js'
 import { updateMarinePlanningAreas } from '../../../common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalOperationsAreas } from '../../../common/helpers/geo/update-coastal-operations-areas.js'
 import {
