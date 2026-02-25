@@ -2,6 +2,7 @@
 
 The Marine Licensing Backend is part of a GDS-compliant replacement of the Marine Case Management System (MCMS).
 
+- [Directory structure](#directory-structure)
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
 - [Local development](#local-development)
@@ -32,6 +33,16 @@ Release of the marine licensing backend that will be accessed by marine licensin
 ### [1.0.0](https://eaflood.atlassian.net/projects/ML/versions/23736/tab/release-report-all-issues)
 
 Initial release of the marine licensing backend platform.
+
+## Directory structure
+
+The source code under `src/` is split into domain-aligned folders:
+
+| Folder            | Description                                                                       |
+| ----------------- | --------------------------------------------------------------------------------- |
+| `exemptions`      | All API routes, models, and business logic for marine exemptions                  |
+| `marine-licences` | All API routes, models, and business logic for marine licences                    |
+| `shared`          | Shared logic across both domains — config, helpers, plugins, routes, and services |
 
 ## Requirements
 
@@ -108,7 +119,11 @@ in [config.js](./src/config/config.js).
 
 ## API endpoints
 
-Under the index.js files in ./src/api/\*
+API routes are defined under the `api` folders in each domain:
+
+- `src/exemptions/api/`
+- `src/marine-licences/api/`
+- `src/shared/api/geo-parser/`
 
 ## Docker
 

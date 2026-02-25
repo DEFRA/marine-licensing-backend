@@ -38,7 +38,7 @@
     "@elastic/ecs-pino-format": "1.5.0",
     "@esri/arcgis-rest-feature-service": "4.8.0",
     "@hapi/boom": "10.0.1",
-    "@hapi/hapi": "21.4.4",
+    "@hapi/hapi": "21.4.6",
     "@hapi/wreck": "18.1.0",
     "@terraformer/arcgis": "2.1.2",
     "@tmcw/togeojson": "^7.1.2",
