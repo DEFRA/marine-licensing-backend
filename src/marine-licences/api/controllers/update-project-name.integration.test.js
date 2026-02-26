@@ -1,33 +1,33 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
-import { mockMarineLicense } from '../../models/test-fixtures.js'
+import { mockMarineLicence } from '../../models/test-fixtures.js'
 
-describe('PATCH /marine-license/project-name - integration tests', async () => {
+describe('PATCH /marine-licence/project-name - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
-  const marineLicenseId = new ObjectId()
+  const marineLicenceId = new ObjectId()
 
   test('successfully updates project name when requested by owner', async () => {
-    const marineLicense = {
-      ...mockMarineLicense,
-      _id: marineLicenseId,
+    const marineLicence = {
+      ...mockMarineLicence,
+      _id: marineLicenceId,
       contactId,
       projectName: 'Original Project Name'
     }
 
     await globalThis.mockMongo
-      .collection('marine-licenses')
-      .insertOne(marineLicense)
+      .collection('marine-licences')
+      .insertOne(marineLicence)
 
     const payload = {
-      id: marineLicenseId.toString(),
+      id: marineLicenceId.toString(),
       projectName: 'Updated Project Name'
     }
 
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId,
       payload
     })
@@ -35,14 +35,14 @@ describe('PATCH /marine-license/project-name - integration tests', async () => {
     expect(statusCode).toBe(201)
     expect(body).toEqual({ message: 'success' })
 
-    const updatedMarineLicense = await globalThis.mockMongo
-      .collection('marine-licenses')
-      .findOne({ _id: marineLicenseId })
+    const updatedmarineLicence = await globalThis.mockMongo
+      .collection('marine-licences')
+      .findOne({ _id: marineLicenceId })
 
-    expect(updatedMarineLicense.projectName).toBe('Updated Project Name')
+    expect(updatedmarineLicence.projectName).toBe('Updated Project Name')
   })
 
-  test('returns 404 when marine license does not exist', async () => {
+  test('returns 404 when marine licence does not exist', async () => {
     const nonExistentId = new ObjectId()
 
     const payload = {
@@ -52,7 +52,7 @@ describe('PATCH /marine-license/project-name - integration tests', async () => {
 
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId,
       payload
     })
@@ -61,26 +61,26 @@ describe('PATCH /marine-license/project-name - integration tests', async () => {
     expect(body.message).toBe('Not Found')
   })
 
-  test('returns 403 when attempting to update another users marine license', async () => {
-    const marineLicense = {
-      ...mockMarineLicense,
-      _id: marineLicenseId,
+  test('returns 403 when attempting to update another users marine licence', async () => {
+    const marineLicence = {
+      ...mockMarineLicence,
+      _id: marineLicenceId,
       contactId,
       projectName: 'Original Project Name'
     }
 
     await globalThis.mockMongo
-      .collection('marine-licenses')
-      .insertOne(marineLicense)
+      .collection('marine-licences')
+      .insertOne(marineLicence)
 
     const payload = {
-      id: marineLicenseId.toString(),
+      id: marineLicenceId.toString(),
       projectName: 'Malicious Update'
     }
 
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId: '987e6543-e21b-12d3-a456-426614174000',
       payload
     })
@@ -88,31 +88,31 @@ describe('PATCH /marine-license/project-name - integration tests', async () => {
     expect(statusCode).toBe(403)
     expect(body.message).toBe('Not authorized to request this resource')
 
-    const unchangedMarineLicense = await globalThis.mockMongo
-      .collection('marine-licenses')
-      .findOne({ _id: marineLicenseId })
+    const unchangedMarineLicence = await globalThis.mockMongo
+      .collection('marine-licences')
+      .findOne({ _id: marineLicenceId })
 
-    expect(unchangedMarineLicense.projectName).toBe('Original Project Name')
+    expect(unchangedMarineLicence.projectName).toBe('Original Project Name')
   })
 
   test('returns 400 when projectName is missing', async () => {
-    const marineLicense = {
-      ...mockMarineLicense,
-      _id: marineLicenseId,
+    const marineLicence = {
+      ...mockMarineLicence,
+      _id: marineLicenceId,
       contactId
     }
 
     await globalThis.mockMongo
-      .collection('marine-licenses')
-      .insertOne(marineLicense)
+      .collection('marine-licences')
+      .insertOne(marineLicence)
 
     const payload = {
-      id: marineLicenseId.toString()
+      id: marineLicenceId.toString()
     }
 
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId,
       payload
     })

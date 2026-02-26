@@ -5,7 +5,7 @@ import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import {
   collectionCoastalOperationsAreas,
   collectionExemptions,
-  collectionMarineLicenses,
+  collectionMarineLicences,
   collectionMarinePlanAreas
 } from '../constants/db-collections.js'
 
@@ -80,7 +80,7 @@ async function createIndexes(db) {
   await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
   await db.collection('exemption-dynamics-queue-failed').createIndex({ id: 1 })
 
-  await db.collection(collectionMarineLicenses).createIndex({ id: 1 })
+  await db.collection(collectionMarineLicences).createIndex({ id: 1 })
 
   await db
     .collection(collectionCoastalOperationsAreas)

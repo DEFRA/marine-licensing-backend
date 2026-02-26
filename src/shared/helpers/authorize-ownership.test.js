@@ -133,10 +133,10 @@ describe('authorizeOwnership', () => {
 
       mockCollection.findOne.mockResolvedValue(document)
 
-      const handler = authorizeOwnership('marine-licenses')
+      const handler = authorizeOwnership('marine-licences')
       const result = await handler(mockRequest, mockH)
 
-      expect(mockDb.collection).toHaveBeenCalledWith('marine-licenses')
+      expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
       expect(mockCollection.findOne).toHaveBeenCalledWith({
         _id: ObjectId.createFromHexString('507f1f77bcf86cd799439011')
       })
@@ -148,11 +148,11 @@ describe('authorizeOwnership', () => {
 
       const boomSpy = vi.spyOn(Boom, 'notFound')
 
-      const handler = authorizeOwnership('marine-licenses')
+      const handler = authorizeOwnership('marine-licences')
       await expect(handler(mockRequest, mockH)).rejects.toThrow()
 
       expect(boomSpy).toHaveBeenCalled()
-      expect(mockDb.collection).toHaveBeenCalledWith('marine-licenses')
+      expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
     })
 
     it('should throw 403 when user does not own document in specified collection', async () => {
@@ -164,12 +164,12 @@ describe('authorizeOwnership', () => {
 
       mockCollection.findOne.mockResolvedValue(document)
 
-      const handler = authorizeOwnership('marine-licenses')
+      const handler = authorizeOwnership('marine-licences')
       await expect(handler(mockRequest, mockH)).rejects.toThrow(
         'Not authorized to request this resource'
       )
 
-      expect(mockDb.collection).toHaveBeenCalledWith('marine-licenses')
+      expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
     })
   })
 })

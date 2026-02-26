@@ -1,11 +1,11 @@
-import { MARINE_LICENSE_STATUS } from '../constants/marine-license.js'
+import { MARINE_LICENCE_STATUS } from '../constants/marine-licence.js'
 import { ObjectId } from 'mongodb'
 
-export const mockMarineLicense = {
+export const mockMarineLicence = {
   _id: new ObjectId(),
   contactId: 'contact-123-abc',
-  projectName: 'Test Marine License Project',
-  status: MARINE_LICENSE_STATUS.DRAFT,
+  projectName: 'Test Marine Licence Project',
+  status: MARINE_LICENCE_STATUS.DRAFT,
   createdAt: new Date('2026-12-01'),
   updatedAt: new Date('2026-12-01')
 }

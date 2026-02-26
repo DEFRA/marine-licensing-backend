@@ -2,7 +2,7 @@ export const COMPLETED = 'COMPLETED'
 export const IN_PROGRESS = 'IN_PROGRESS'
 export const INCOMPLETE = 'INCOMPLETE'
 
-export const createTaskList = (marineLicense) => {
+export const createTaskList = (marineLicence) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE)
   }
@@ -10,7 +10,7 @@ export const createTaskList = (marineLicense) => {
   const taskList = {}
 
   for (const [taskName, decideStatus] of Object.entries(tasks)) {
-    const status = decideStatus(marineLicense[taskName])
+    const status = decideStatus(marineLicence[taskName])
     if (status) {
       taskList[taskName] = status
     }

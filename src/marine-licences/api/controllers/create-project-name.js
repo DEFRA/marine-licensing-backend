@@ -1,7 +1,7 @@
 import { createProjectName } from '../../models/project-name.js'
 import { createProjectNameHandler } from '../../../shared/handlers/create-project-name-handler.js'
-import { MARINE_LICENSE_STATUS } from '../../constants/marine-license.js'
-import { collectionMarineLicenses } from '../../../shared/common/constants/db-collections.js'
+import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
 export const createProjectNameController = {
   options: {
@@ -15,8 +15,8 @@ export const createProjectNameController = {
     }
   },
   handler: createProjectNameHandler({
-    collectionName: collectionMarineLicenses,
-    status: MARINE_LICENSE_STATUS.DRAFT,
-    entityType: 'Marine License'
+    collectionName: collectionMarineLicences,
+    status: MARINE_LICENCE_STATUS.DRAFT,
+    entityType: 'Marine Licence'
   })
 }

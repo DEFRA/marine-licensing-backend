@@ -1,14 +1,14 @@
 import { health } from '../routes/health.js'
 import { exemptions } from '../../exemptions/api/index.js'
 import { geoParser } from '../api/geo-parser/index.js'
-import { marineLicenses } from '../../marine-licences/api/index.js'
+import { marineLicences } from '../../marine-licences/api/index.js'
 
 const router = {
   plugin: {
     name: 'router',
     register: (server) => {
       server.route(
-        [health].concat(exemptions).concat(geoParser).concat(marineLicenses)
+        [health].concat(exemptions).concat(geoParser).concat(marineLicences)
       )
     }
   }
