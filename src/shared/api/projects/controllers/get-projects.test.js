@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { PROJECT_STATUS_LABEL } from '../../../constants/project-status.js'
 import {
   collectionExemptions,
-  collectionMarineLicenses
+  collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
@@ -16,7 +16,7 @@ describe('getProjectsController', () => {
   let mockH
   let mockDb
   let mockExemptionCollection
-  let mockMarineLicenseCollection
+  let mockMarineLicenceCollection
   const testContactId = 'contact-123-abc'
   const testOrgId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
 
@@ -56,15 +56,15 @@ describe('getProjectsController', () => {
     return mock
   }
 
-  const setupMocks = (exemptionResults = [], marineLicenseResults = []) => {
+  const setupMocks = (exemptionResults = [], marineLicenceResults = []) => {
     mockExemptionCollection = createMockCollection(exemptionResults)
-    mockMarineLicenseCollection = createMockCollection(marineLicenseResults)
+    mockMarineLicenceCollection = createMockCollection(marineLicenceResults)
 
     mockDb = {
       collection: vi.fn((name) => {
         if (name === collectionExemptions) return mockExemptionCollection
-        if (name === collectionMarineLicenses) {
-          return mockMarineLicenseCollection
+        if (name === collectionMarineLicences) {
+          return mockMarineLicenceCollection
         }
         return createMockCollection([])
       })
@@ -98,7 +98,7 @@ describe('getProjectsController', () => {
     }
   ]
 
-  const mockMarineLicenses = [
+  const mockMarineLicences = [
     {
       _id: new ObjectId('507f1f77bcf86cd799439013'),
       status: 'DRAFT',
@@ -107,7 +107,7 @@ describe('getProjectsController', () => {
     }
   ]
 
-  beforeEach(() => setupMocks(mockExemptions, mockMarineLicenses))
+  beforeEach(() => setupMocks(mockExemptions, mockMarineLicences))
 
   describe('handler', () => {
     it('should query employee collection with organisation filter', async () => {
@@ -116,7 +116,7 @@ describe('getProjectsController', () => {
       expect(mockExemptionCollection.find).toHaveBeenCalledWith({
         'organisation.id': testOrgId
       })
-      expect(mockMarineLicenseCollection.find).toHaveBeenCalledWith({
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
         'organisation.id': testOrgId
       })
     })
@@ -131,7 +131,7 @@ describe('getProjectsController', () => {
         'organisation.id': { $exists: false }
       }
       expect(mockExemptionCollection.find).toHaveBeenCalledWith(citizenFilter)
-      expect(mockMarineLicenseCollection.find).toHaveBeenCalledWith(
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith(
         citizenFilter
       )
     })
@@ -151,8 +151,8 @@ describe('getProjectsController', () => {
 
       mockDb.collection = vi.fn((name) => {
         if (name === collectionExemptions) return mockExemptionCollection
-        if (name === collectionMarineLicenses) {
-          return mockMarineLicenseCollection
+        if (name === collectionMarineLicences) {
+          return mockMarineLicenceCollection
         }
         return createMockCollection([])
       })

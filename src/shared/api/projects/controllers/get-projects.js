@@ -1,7 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 import {
   collectionExemptions,
-  collectionMarineLicenses
+  collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
 import { getContactId } from '../../../helpers/get-contact-id.js'
 import {
@@ -62,14 +62,14 @@ export const sortByStatus = (a, b) => {
 const getEmployeeProjects = async (db, organisationId, contactId) => {
   const orgFilter = { 'organisation.id': organisationId }
 
-  const [empExemptions, empMarineLicenses] = await Promise.all([
+  const [empExemptions, empMarineLicences] = await Promise.all([
     db
       .collection(collectionExemptions)
       .find(orgFilter)
       .sort({ projectName: 1 })
       .toArray(),
     db
-      .collection(collectionMarineLicenses)
+      .collection(collectionMarineLicences)
       .find(orgFilter)
       .sort({ projectName: 1 })
       .toArray()
@@ -77,7 +77,7 @@ const getEmployeeProjects = async (db, organisationId, contactId) => {
 
   const contactIds = [
     ...new Set(
-      [...empExemptions, ...empMarineLicenses]
+      [...empExemptions, ...empMarineLicences]
         .map((e) => e.contactId)
         .filter(Boolean)
     )
@@ -88,7 +88,7 @@ const getEmployeeProjects = async (db, organisationId, contactId) => {
     ...empExemptions.map((e) =>
       transformProject(e, PROJECT_TYPES.EXEMPTION, contactId, ownerNames)
     ),
-    ...empMarineLicenses.map((m) =>
+    ...empMarineLicences.map((m) =>
       transformProject(m, PROJECT_TYPES.MARINE_LICENCE, contactId, ownerNames)
     )
   ].sort(sortByStatus)
@@ -102,14 +102,14 @@ const getCitizenProjects = async (db, contactId, organisationId) => {
       : { 'organisation.id': { $exists: false } })
   }
 
-  const [exemptions, marineLicenses] = await Promise.allSettled([
+  const [exemptions, marineLicences] = await Promise.allSettled([
     db
       .collection(collectionExemptions)
       .find(citizenFilter)
       .sort({ projectName: 1 })
       .toArray(),
     db
-      .collection(collectionMarineLicenses)
+      .collection(collectionMarineLicences)
       .find(citizenFilter)
       .sort({ projectName: 1 })
       .toArray()
@@ -121,7 +121,7 @@ const getCitizenProjects = async (db, contactId, organisationId) => {
 
   return [
     ...transformProjects(exemptions, PROJECT_TYPES.EXEMPTION),
-    ...transformProjects(marineLicenses, PROJECT_TYPES.MARINE_LICENCE)
+    ...transformProjects(marineLicences, PROJECT_TYPES.MARINE_LICENCE)
   ].sort(sortByStatus)
 }
 

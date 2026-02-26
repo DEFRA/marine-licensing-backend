@@ -67,11 +67,11 @@ describe('MarineLicenceService', () => {
         ...marineLicence,
         organisation: { name: 'Dredging Co' }
       }
-      const marineLicenseService = createService(
+      const marineLicenceService = createService(
         global.mockMongo,
         marineLicenceWithOrg
       )
-      const result = await marineLicenseService.getMarineLicenceById({
+      const result = await marineLicenceService.getMarineLicenceById({
         id: marineLicence._id
       })
       expect(result).toEqual({
@@ -81,11 +81,11 @@ describe('MarineLicenceService', () => {
     })
 
     it('should return marine licence if requested with a contact ID', async () => {
-      const marineLicenseService = createService(
+      const marineLicenceService = createService(
         global.mockMongo,
         marineLicence
       )
-      const result = await marineLicenseService.getMarineLicenceById({
+      const result = await marineLicenceService.getMarineLicenceById({
         id: marineLicence._id,
         currentUserId: marineLicence.contactId
       })
@@ -93,12 +93,12 @@ describe('MarineLicenceService', () => {
     })
 
     it('should throw a not found error if marine licence not found', async () => {
-      const marineLicenseService = createService(
+      const marineLicenceService = createService(
         global.mockMongo,
         marineLicence
       )
       await expect(() =>
-        marineLicenseService.getMarineLicenceById({
+        marineLicenceService.getMarineLicenceById({
           id: marineLicenceIdNotInDb
         })
       ).rejects.toThrow('Marine Licence not found')
@@ -108,13 +108,13 @@ describe('MarineLicenceService', () => {
     })
 
     it("should throw a not authorized error if the current user is an applicant and didn't create the marine licence", async () => {
-      const marineLicenseService = createService(
+      const marineLicenceService = createService(
         global.mockMongo,
         marineLicence
       )
       const currentUserId = '1'
       await expect(() =>
-        marineLicenseService.getMarineLicenceById({
+        marineLicenceService.getMarineLicenceById({
           id: marineLicence._id,
           currentUserId
         })

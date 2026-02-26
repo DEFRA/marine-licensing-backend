@@ -1,7 +1,7 @@
 import { createProjectNameController } from './controllers/create-project-name.js'
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { getMarineLicenceController } from './controllers/get-marine-licence.js'
-import { deleteMarineLicenseController } from './controllers/delete-marine-license.js'
+import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
 
 export const marineLicences = [
   {
@@ -21,7 +21,7 @@ export const marineLicences = [
   },
   {
     method: 'DELETE',
-    path: '/marine-license/{id}',
-    ...deleteMarineLicenseController
+    path: '/marine-licence/{id}',
+    ...deleteMarineLicenceController
   }
 ]
