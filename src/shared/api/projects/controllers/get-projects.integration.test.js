@@ -1,21 +1,31 @@
-import { setupTestServer } from '../../../../tests/test-server.js'
-import { makeGetRequest } from '../../../../tests/server-requests.js'
-import { createCompleteExemption } from '../../../../tests/test.fixture.js'
+import { setupTestServer } from '../../../../../tests/test-server.js'
+import { makeGetRequest } from '../../../../../tests/server-requests.js'
+import {
+  createCompleteExemption,
+  createCompleteMarineLicense
+} from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
-import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
+import { EXEMPTION_STATUS } from '../../../../exemptions/constants/exemption.js'
+import { MARINE_LICENSE_STATUS } from '../../../../marine-licences/constants/marine-license.js'
+import {
+  collectionExemptions,
+  collectionMarineLicenses
+} from '../../../common/constants/db-collections.js'
+import { PROJECT_TYPES } from '../../../constants/project-status.js'
 
-vi.mock('../../../shared/helpers/dynamics/get-contact-details.js', () => ({
+vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn().mockResolvedValue({})
 }))
 
-describe('Get exemptions - integration tests', async () => {
+describe('Get projects - integration tests', async () => {
   const getServer = await setupTestServer()
 
   describe('Individual/Citizen user (no organisation)', () => {
-    test('returns a list of exemptions for citizen user', async () => {
+    test('returns combined list of exemptions and marine licenses for citizen user', async () => {
       const exemptionId1 = new ObjectId()
       const exemptionId2 = new ObjectId()
+      const marineLicenseId = new ObjectId()
+
       const exemption1 = createCompleteExemption({
         _id: exemptionId1,
         organisation: null,
@@ -26,30 +36,49 @@ describe('Get exemptions - integration tests', async () => {
         organisation: null,
         status: EXEMPTION_STATUS.DRAFT
       })
-      const exemptions = [exemption1, exemption2]
+      const marineLicense = createCompleteMarineLicense({
+        _id: marineLicenseId,
+        organisation: undefined,
+        status: MARINE_LICENSE_STATUS.DRAFT
+      })
+
       await globalThis.mockMongo
         .collection(collectionExemptions)
-        .insertMany(exemptions)
+        .insertMany([exemption1, exemption2])
+      await globalThis.mockMongo
+        .collection(collectionMarineLicenses)
+        .insertOne(marineLicense)
 
       const { statusCode, body, isEmployee } = await makeGetRequest({
         server: getServer(),
-        url: '/exemptions',
+        url: '/projects',
         contactId: exemption1.contactId
       })
+
       expect(statusCode).toBe(200)
       expect(isEmployee).toBe(false)
-      expect(body).toHaveLength(exemptions.length)
-      body.forEach((exemption) => {
-        const dbExemption = exemptions.find(
-          ({ _id }) => _id.toString() === exemption.id
-        )
-        expect(exemption).toEqual({
-          id: dbExemption._id.toString(),
-          status:
-            dbExemption.status === EXEMPTION_STATUS.DRAFT ? 'Draft' : 'Active',
-          projectName: dbExemption.projectName
-        })
+      expect(body).toHaveLength(3)
+
+      body.forEach((project) => {
+        expect(project).toHaveProperty('projectType')
+        expect(Object.values(PROJECT_TYPES)).toContain(project.projectType)
+        expect(project).toHaveProperty('id')
+        expect(project).toHaveProperty('status')
+        expect(project).toHaveProperty('projectName')
       })
+
+      const exemptionProjects = body.filter(
+        (p) => p.projectType === PROJECT_TYPES.EXEMPTION
+      )
+      expect(exemptionProjects).toHaveLength(2)
+
+      const marineLicenseProjects = body.filter(
+        (p) => p.projectType === PROJECT_TYPES.MARINE_LICENCE
+      )
+      expect(marineLicenseProjects).toHaveLength(1)
+      expect(marineLicenseProjects[0].projectName).toBe(
+        marineLicense.projectName
+      )
     })
   })
 
@@ -63,34 +92,37 @@ describe('Get exemptions - integration tests', async () => {
       `${relationshipId}:${testOrgId}:Test Org:0:Employee:0`
     ]
 
-    test('returns all organisation exemptions for employee user', async () => {
-      const exemptionId1 = new ObjectId()
-      const exemptionId2 = new ObjectId()
+    test('returns all organisation projects from both collections for employee user', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenseId = new ObjectId()
 
       const myExemption = createCompleteExemption({
-        _id: exemptionId1,
+        _id: exemptionId,
         contactId: employeeContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
-        projectName: 'My Project',
+        projectName: 'My Exemption',
         status: EXEMPTION_STATUS.DRAFT
       })
 
-      const colleagueExemption = createCompleteExemption({
-        _id: exemptionId2,
+      const colleagueMarineLicense = createCompleteMarineLicense({
+        _id: marineLicenseId,
         contactId: colleagueContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
-        projectName: 'Colleague Project',
-        status: EXEMPTION_STATUS.ACTIVE
+        projectName: 'Colleague Marine License',
+        status: MARINE_LICENSE_STATUS.ACTIVE
       })
 
       await globalThis.mockMongo
-        .collection('exemptions')
-        .insertMany([myExemption, colleagueExemption])
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicenses)
+        .insertOne(colleagueMarineLicense)
 
       const { statusCode, body, isEmployee, organisationId } =
         await makeGetRequest({
           server: getServer(),
-          url: '/exemptions',
+          url: '/projects',
           contactId: employeeContactId,
           relationships: employeeRelationships,
           currentRelationshipId: relationshipId
@@ -101,45 +133,50 @@ describe('Get exemptions - integration tests', async () => {
       expect(organisationId).toBe(testOrgId)
       expect(body).toHaveLength(2)
 
-      const myProject = body.find((e) => e.projectName === 'My Project')
+      const myProject = body.find((e) => e.projectName === 'My Exemption')
+      expect(myProject.projectType).toBe(PROJECT_TYPES.EXEMPTION)
       expect(myProject.isOwnProject).toBe(true)
       expect(myProject.contactId).toBe(employeeContactId)
 
       const colleagueProject = body.find(
-        (e) => e.projectName === 'Colleague Project'
+        (e) => e.projectName === 'Colleague Marine License'
       )
+      expect(colleagueProject.projectType).toBe(PROJECT_TYPES.MARINE_LICENCE)
       expect(colleagueProject.isOwnProject).toBe(false)
       expect(colleagueProject.contactId).toBe(colleagueContactId)
     })
 
-    test('returns only organisation exemptions, not other orgs', async () => {
-      const exemptionId1 = new ObjectId()
-      const exemptionId2 = new ObjectId()
+    test('returns only organisation projects, not other orgs', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenseId = new ObjectId()
       const otherOrgId = 'different-org-id'
 
       const orgExemption = createCompleteExemption({
-        _id: exemptionId1,
+        _id: exemptionId,
         contactId: employeeContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
-        projectName: 'Org Project',
+        projectName: 'Org Exemption',
         status: EXEMPTION_STATUS.DRAFT
       })
 
-      const otherOrgExemption = createCompleteExemption({
-        _id: exemptionId2,
+      const otherOrgMarineLicense = createCompleteMarineLicense({
+        _id: marineLicenseId,
         contactId: employeeContactId,
         organisation: { id: otherOrgId, name: 'Other Org' },
-        projectName: 'Other Org Project',
-        status: EXEMPTION_STATUS.DRAFT
+        projectName: 'Other Org ML',
+        status: MARINE_LICENSE_STATUS.DRAFT
       })
 
       await globalThis.mockMongo
-        .collection('exemptions')
-        .insertMany([orgExemption, otherOrgExemption])
+        .collection(collectionExemptions)
+        .insertOne(orgExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicenses)
+        .insertOne(otherOrgMarineLicense)
 
       const { statusCode, body } = await makeGetRequest({
         server: getServer(),
-        url: '/exemptions',
+        url: '/projects',
         contactId: employeeContactId,
         relationships: employeeRelationships,
         currentRelationshipId: relationshipId
@@ -147,13 +184,13 @@ describe('Get exemptions - integration tests', async () => {
 
       expect(statusCode).toBe(200)
       expect(body).toHaveLength(1)
-      expect(body[0].projectName).toBe('Org Project')
+      expect(body[0].projectName).toBe('Org Exemption')
     })
 
-    test('returns empty array when no exemptions exist for organisation', async () => {
+    test('returns empty array when no projects exist for organisation', async () => {
       const { statusCode, body, isEmployee } = await makeGetRequest({
         server: getServer(),
-        url: '/exemptions',
+        url: '/projects',
         contactId: employeeContactId,
         relationships: employeeRelationships,
         currentRelationshipId: relationshipId
@@ -164,29 +201,29 @@ describe('Get exemptions - integration tests', async () => {
       expect(body).toHaveLength(0)
     })
 
-    test('sorts exemptions by status (Draft first, then Active)', async () => {
+    test('sorts projects by status (Draft first, then Active)', async () => {
       const exemptionId1 = new ObjectId()
       const exemptionId2 = new ObjectId()
-      const exemptionId3 = new ObjectId()
+      const marineLicenseId = new ObjectId()
 
       const activeExemption = createCompleteExemption({
         _id: exemptionId1,
         contactId: employeeContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
-        projectName: 'Active Project',
+        projectName: 'Active Exemption',
         status: EXEMPTION_STATUS.ACTIVE
       })
 
-      const draftExemption = createCompleteExemption({
-        _id: exemptionId2,
+      const draftMarineLicense = createCompleteMarineLicense({
+        _id: marineLicenseId,
         contactId: employeeContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
-        projectName: 'Draft Project',
-        status: EXEMPTION_STATUS.DRAFT
+        projectName: 'Draft ML',
+        status: MARINE_LICENSE_STATUS.DRAFT
       })
 
       const anotherActiveExemption = createCompleteExemption({
-        _id: exemptionId3,
+        _id: exemptionId2,
         contactId: employeeContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
         projectName: 'Another Active',
@@ -194,12 +231,15 @@ describe('Get exemptions - integration tests', async () => {
       })
 
       await globalThis.mockMongo
-        .collection('exemptions')
-        .insertMany([activeExemption, draftExemption, anotherActiveExemption])
+        .collection(collectionExemptions)
+        .insertMany([activeExemption, anotherActiveExemption])
+      await globalThis.mockMongo
+        .collection(collectionMarineLicenses)
+        .insertOne(draftMarineLicense)
 
       const { body } = await makeGetRequest({
         server: getServer(),
-        url: '/exemptions',
+        url: '/projects',
         contactId: employeeContactId,
         relationships: employeeRelationships,
         currentRelationshipId: relationshipId
@@ -221,33 +261,36 @@ describe('Get exemptions - integration tests', async () => {
       `${relationshipId}:${testOrgId}:Test Org:0:Agent:0`
     ]
 
-    test('returns only own exemptions, not colleague exemptions', async () => {
-      const exemptionId1 = new ObjectId()
-      const exemptionId2 = new ObjectId()
+    test('returns only own projects, not colleague projects', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenseId = new ObjectId()
 
       const myExemption = createCompleteExemption({
-        _id: exemptionId1,
+        _id: exemptionId,
         contactId: agentContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
-        projectName: 'My Agent Project',
+        projectName: 'My Agent Exemption',
         status: EXEMPTION_STATUS.DRAFT
       })
 
-      const colleagueExemption = createCompleteExemption({
-        _id: exemptionId2,
+      const colleagueMarineLicense = createCompleteMarineLicense({
+        _id: marineLicenseId,
         contactId: colleagueContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
-        projectName: 'Colleague Project',
-        status: EXEMPTION_STATUS.ACTIVE
+        projectName: 'Colleague ML',
+        status: MARINE_LICENSE_STATUS.ACTIVE
       })
 
       await globalThis.mockMongo
-        .collection('exemptions')
-        .insertMany([myExemption, colleagueExemption])
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicenses)
+        .insertOne(colleagueMarineLicense)
 
       const { statusCode, body, isEmployee } = await makeGetRequest({
         server: getServer(),
-        url: '/exemptions',
+        url: '/projects',
         contactId: agentContactId,
         relationships: agentRelationships,
         currentRelationshipId: relationshipId
@@ -256,7 +299,7 @@ describe('Get exemptions - integration tests', async () => {
       expect(statusCode).toBe(200)
       expect(isEmployee).toBe(false)
       expect(body).toHaveLength(1)
-      expect(body[0].projectName).toBe('My Agent Project')
+      expect(body[0].projectName).toBe('My Agent Exemption')
     })
   })
 })
