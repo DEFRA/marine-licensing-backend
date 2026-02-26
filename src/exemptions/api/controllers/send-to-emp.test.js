@@ -3,7 +3,7 @@ import { sendToEmpController } from './send-to-emp.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { config } from '../../../config.js'
-import { addToEmpQueue } from '../../../shared/common/helpers/emp/emp-processor.js'
+import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
 
 vi.mock('../../../config.js')
 vi.mock('../../../shared/common/helpers/emp/emp-processor.js')
@@ -120,15 +120,17 @@ describe('POST /exemption/send-to-emp', () => {
       })
 
       expect(addToEmpQueue).toHaveBeenCalledWith({
-        db: mockDb,
-        fields: {
-          applicationReference: 'APP-2025-001',
-          createdAt: dbExemption.createdAt,
-          createdBy: dbExemption.createdBy,
-          updatedAt: dbExemption.updatedAt,
-          updatedBy: dbExemption.updatedBy
-        },
-        server: mockServer
+        request: expect.objectContaining({
+          payload: expect.objectContaining({
+            id: mockExemptionId,
+            createdAt: dbExemption.createdAt,
+            createdBy: dbExemption.createdBy,
+            updatedAt: dbExemption.updatedAt,
+            updatedBy: dbExemption.updatedBy
+          })
+        }),
+        applicationReference: 'APP-2025-001',
+        action: 'add'
       })
 
       expect(mockHandler.response).toHaveBeenCalledWith({

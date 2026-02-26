@@ -3,7 +3,8 @@ import { StatusCodes } from 'http-status-codes'
 import { sendToEmp } from '../../models/send-to-emp.js'
 import { ExemptionService } from '../services/exemption.service.js'
 import { config } from '../../../config.js'
-import { addToEmpQueue } from '../../../shared/common/helpers/emp/emp-processor.js'
+import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
+import { EMP_REQUEST_ACTIONS } from '../../../shared/common/constants/request-queue.js'
 
 export const sendToEmpController = {
   options: {
@@ -41,15 +42,18 @@ export const sendToEmpController = {
       } = exemption
 
       await addToEmpQueue({
-        db,
-        fields: {
-          applicationReference,
-          createdAt,
-          createdBy,
-          updatedAt,
-          updatedBy
+        request: {
+          ...request,
+          payload: {
+            ...payload,
+            createdAt,
+            createdBy,
+            updatedAt,
+            updatedBy
+          }
         },
-        server: request.server
+        applicationReference,
+        action: EMP_REQUEST_ACTIONS.ADD
       })
 
       return h
