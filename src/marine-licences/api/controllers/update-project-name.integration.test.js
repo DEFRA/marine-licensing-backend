@@ -35,11 +35,11 @@ describe('PATCH /marine-licence/project-name - integration tests', async () => {
     expect(statusCode).toBe(201)
     expect(body).toEqual({ message: 'success' })
 
-    const updatedmarineLicence = await globalThis.mockMongo
+    const updatedMarineLicence = await globalThis.mockMongo
       .collection('marine-licences')
       .findOne({ _id: marineLicenceId })
 
-    expect(updatedmarineLicence.projectName).toBe('Updated Project Name')
+    expect(updatedMarineLicence.projectName).toBe('Updated Project Name')
   })
 
   test('returns 404 when marine licence does not exist', async () => {

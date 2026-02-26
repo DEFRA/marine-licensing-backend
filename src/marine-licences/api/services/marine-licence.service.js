@@ -39,7 +39,7 @@ export class MarineLicenceService {
       throw Boom.forbidden('Not authorized to request this resource')
     }
     if (!currentUserId) {
-      marineLicence.whomarineLicenceIsFor =
+      marineLicence.whoMarineLicenceIsFor =
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }
     return marineLicence

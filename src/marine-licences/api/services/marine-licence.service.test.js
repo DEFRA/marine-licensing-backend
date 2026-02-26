@@ -58,7 +58,7 @@ describe('MarineLicenceService', () => {
       })
       expect(result).toEqual({
         ...marineLicence,
-        whomarineLicenceIsFor: 'Dave Barnett'
+        whoMarineLicenceIsFor: 'Dave Barnett'
       })
     })
 
@@ -76,7 +76,7 @@ describe('MarineLicenceService', () => {
       })
       expect(result).toEqual({
         ...marineLicenceWithOrg,
-        whomarineLicenceIsFor: 'Dredging Co'
+        whoMarineLicenceIsFor: 'Dredging Co'
       })
     })
 

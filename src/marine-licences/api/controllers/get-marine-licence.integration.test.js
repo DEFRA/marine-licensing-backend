@@ -36,6 +36,6 @@ describe('Get marine licence - integration tests', async () => {
       }
     })
 
-    expect(body.whomarineLicenceIsFor).toBeUndefined()
+    expect(body.whoMarineLicenceIsFor).toBeUndefined()
   })
 })
