@@ -89,6 +89,10 @@
     "axios": "1.13.5",
     "@aws-sdk/xml-builder": {
       "fast-xml-parser": "^5.3.6"
+    },
+    "rollup": "^4.59.0",
+    "eslint": {
+      "ajv": "^6.14.0"
     }
   }
 }
