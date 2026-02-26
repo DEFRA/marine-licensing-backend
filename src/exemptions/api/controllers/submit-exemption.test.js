@@ -244,6 +244,7 @@ describe('POST /exemption/submit', () => {
         ...rest
       })
       expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({
+        action: 'add',
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
@@ -390,6 +391,7 @@ describe('POST /exemption/submit', () => {
         ...rest
       })
       expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({
+        action: 'add',
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,

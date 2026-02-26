@@ -6,7 +6,11 @@ import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
-import { DYNAMICS_REQUEST_ACTIONS } from '../../../shared/common/constants/request-queue.js'
+import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
+import {
+  DYNAMICS_REQUEST_ACTIONS,
+  EMP_REQUEST_ACTIONS
+} from '../../../shared/common/constants/request-queue.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 
 const updateExemptionRecord = async ({
@@ -61,6 +65,15 @@ export const withdrawExemptionController = {
           request,
           applicationReference: exemption.applicationReference,
           action: DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+        })
+      }
+
+      const { isEmpEnabled } = config.get('exploreMarinePlanning')
+      if (isEmpEnabled) {
+        await addToEmpQueue({
+          request,
+          applicationReference: exemption.applicationReference,
+          action: EMP_REQUEST_ACTIONS.WITHDRAW
         })
       }
 

@@ -1,13 +1,18 @@
 import Boom from '@hapi/boom'
-import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
+import {
+  REQUEST_QUEUE_STATUS,
+  EMP_REQUEST_ACTIONS
+} from '../../constants/request-queue.js'
 import { config } from '../../../../config.js'
-import { sendExemptionToEmp } from './emp-client.js'
-import { structureErrorForECS } from '../../helpers/logging/logger.js'
+import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
+import { structureErrorForECS } from '../logging/logger.js'
 
 import {
   collectionEmpQueue,
   collectionEmpQueueFailed
 } from '../../constants/db-collections.js'
+
+const QUEUE_DELAY_MS = 2_000
 
 export const startEmpQueuePolling = (server, intervalMs) => {
   processEmpQueue(server)
@@ -36,26 +41,31 @@ export const handleEmpQueueItemSuccess = async (server, item, empFeatureId) => {
     }
   )
   server.logger.info(
-    `Successfully processed item ${item.applicationReferenceNumber}`
+    `Successfully processed EMP queue item ${item._id} for application ${item.applicationReferenceNumber}`
   )
 }
 
-export const handleEmpQueueItemFailure = async (server, item) => {
+export const handleEmpQueueItemFailure = async (
+  server,
+  item,
+  { hardFail = false } = {}
+) => {
   const { maxRetries } = config.get('exploreMarinePlanning')
 
   const retries = item.retries + 1
-  if (retries >= maxRetries) {
+  if (hardFail || retries >= maxRetries) {
     await server.db.collection(collectionEmpQueueFailed).insertOne({
       ...item,
-      retries: maxRetries,
+      retries: hardFail ? item.retries : maxRetries,
       status: REQUEST_QUEUE_STATUS.FAILED,
       updatedAt: new Date()
     })
 
     await server.db.collection(collectionEmpQueue).deleteOne({ _id: item._id })
 
+    const failureReason = hardFail ? '(hard fail)' : `after ${retries} retries`
     server.logger.error(
-      `Moved EMP queue item ${item._id} for application ${item.applicationReferenceNumber} to failure queue after ${retries} retries`
+      `Moved EMP queue item ${item._id} for application ${item.applicationReferenceNumber} to failure queue ${failureReason}`
     )
   } else {
     await server.db.collection(collectionEmpQueue).updateOne(
@@ -69,8 +79,25 @@ export const handleEmpQueueItemFailure = async (server, item) => {
       }
     )
     server.logger.error(
-      `Incremented retries for EMP queue item ${item.applicationReferenceNumber} to ${retries}`
+      `Incremented retries for EMP queue item ${item._id} for application ${item.applicationReferenceNumber} to ${retries}`
     )
+  }
+}
+
+const processEmpQueueItem = async (server, item) => {
+  try {
+    const result =
+      item.action === EMP_REQUEST_ACTIONS.WITHDRAW
+        ? await withdrawExemptionFromEmp(server, item)
+        : await sendExemptionToEmp(server, item)
+    await handleEmpQueueItemSuccess(server, item, result.objectId)
+  } catch (err) {
+    server.logger.error(
+      structureErrorForECS(err),
+      `Failed to process EMP queue item ${item._id} for application ${item.applicationReferenceNumber}`
+    )
+    const hardFail = err.message?.includes('no objectId found')
+    await handleEmpQueueItemFailure(server, item, { hardFail })
   }
 }
 
@@ -85,7 +112,7 @@ export const processEmpQueue = async (server) => {
           { status: REQUEST_QUEUE_STATUS.PENDING },
           {
             status: REQUEST_QUEUE_STATUS.FAILED,
-            updatedAt: { $lte: new Date(now.getTime() - 0) }
+            updatedAt: { $lte: new Date(now.getTime() - QUEUE_DELAY_MS) }
           }
         ]
       })
@@ -98,16 +125,7 @@ export const processEmpQueue = async (server) => {
     }
 
     for (const item of queueItems) {
-      try {
-        const result = await sendExemptionToEmp(server, item)
-        await handleEmpQueueItemSuccess(server, item, result.objectId)
-      } catch (err) {
-        server.logger.error(
-          structureErrorForECS(err),
-          `Failed to process EMP queue item ${item.applicationReferenceNumber}`
-        )
-        await handleEmpQueueItemFailure(server, item)
-      }
+      await processEmpQueueItem(server, item)
     }
   } catch (error) {
     server.logger.error(
@@ -121,21 +139,16 @@ export const processEmpQueue = async (server) => {
   }
 }
 
-export const addToEmpQueue = async ({ db, fields, server }) => {
-  const { applicationReference, createdAt, createdBy, updatedAt, updatedBy } =
-    fields
-
-  const existingQueueItem = await db
-    .collection(collectionEmpQueue)
-    .findOne({ applicationReferenceNumber: applicationReference })
-
-  if (existingQueueItem) {
-    throw Boom.conflict(
-      `Exemption ${applicationReference} already exists in EMP queue`
-    )
-  }
+export const addToEmpQueue = async ({
+  request,
+  applicationReference,
+  action = EMP_REQUEST_ACTIONS.ADD
+}) => {
+  const { payload, db } = request
+  const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
   await db.collection(collectionEmpQueue).insertOne({
+    action,
     applicationReferenceNumber: applicationReference,
     status: REQUEST_QUEUE_STATUS.PENDING,
     retries: 0,
@@ -145,8 +158,8 @@ export const addToEmpQueue = async ({ db, fields, server }) => {
     updatedBy
   })
 
-  server.methods.processEmpQueue().catch(() => {
-    server.logger.error(
+  request.server.methods.processEmpQueue().catch(() => {
+    request.server.logger.error(
       'Failed to process EMP queue, but exemption submission succeeded'
     )
   })
