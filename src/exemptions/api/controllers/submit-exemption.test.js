@@ -871,7 +871,8 @@ describe('POST /exemption/submit', () => {
               multipleSitesEnabled: false
             },
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.ACTIVE
+            status: EXEMPTION_STATUS.ACTIVE,
+            declarationAcceptedByContactId: 'test-contact-id'
           }
         }
       )
@@ -957,7 +958,8 @@ describe('POST /exemption/submit', () => {
               multipleSitesEnabled: false
             },
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.ACTIVE
+            status: EXEMPTION_STATUS.ACTIVE,
+            declarationAcceptedByContactId: 'test-contact-id'
           }
         }
       )
@@ -1002,7 +1004,8 @@ describe('POST /exemption/submit', () => {
               multipleSitesEnabled: false
             },
             submittedAt: mockDate,
-            status: EXEMPTION_STATUS.ACTIVE
+            status: EXEMPTION_STATUS.ACTIVE,
+            declarationAcceptedByContactId: 'test-contact-id'
           }
         }
       )
