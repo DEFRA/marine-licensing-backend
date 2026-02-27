@@ -1,9 +1,9 @@
-import { getMarineLicenseController } from './get-marine-license.js'
+import { getMarineLicenceController } from './get-marine-licence.js'
 import { vi } from 'vitest'
 import { requestFromApplicantUser } from '../../../../.vite/mocks.js'
 
-describe('GET /marine-license', () => {
-  const paramsValidator = getMarineLicenseController.options.validate.params
+describe('GET /marine-licence', () => {
+  const paramsValidator = getMarineLicenceController.options.validate.params
 
   const mockId = '123456789123456789123456'
 
@@ -21,19 +21,19 @@ describe('GET /marine-license', () => {
     it('should fail if fields are missing', () => {
       const result = paramsValidator.validate({})
 
-      expect(result.error.message).toContain('MARINE_LICENSE_ID_REQUIRED')
+      expect(result.error.message).toContain('MARINE_LICENCE_ID_REQUIRED')
     })
 
     it('should fail if fields are incorrect length', () => {
       const result = paramsValidator.validate({ id: '123' })
 
-      expect(result.error.message).toContain('MARINE_LICENSE_ID_REQUIRED')
+      expect(result.error.message).toContain('MARINE_LICENCE_ID_REQUIRED')
     })
 
     it('should fail if id has incorrect characters', () => {
       const result = paramsValidator.validate({ id: mockId.replace('1', '+') })
 
-      expect(result.error.message).toContain('MARINE_LICENSE_ID_INVALID')
+      expect(result.error.message).toContain('MARINE_LICENCE_ID_INVALID')
     })
   })
 
@@ -44,13 +44,13 @@ describe('GET /marine-license', () => {
       mockedFindOne.mockResolvedValue(null)
 
       await expect(
-        getMarineLicenseController.handler(
+        getMarineLicenceController.handler(
           requestFromApplicantUser({
             params: { id: mockId }
           }),
           mockHandler
         )
-      ).rejects.toThrow('Marine License not found')
+      ).rejects.toThrow('Marine Licence not found')
 
       expect(mockedFindOne).toHaveBeenCalled()
     })
@@ -62,18 +62,18 @@ describe('GET /marine-license', () => {
       mockedFindOne.mockRejectedValue(new Error(mockError))
 
       await expect(() =>
-        getMarineLicenseController.handler(
+        getMarineLicenceController.handler(
           requestFromApplicantUser({
             params: { id: mockId }
           }),
           mockHandler
         )
-      ).rejects.toThrow(`Error retrieving marine license: ${mockError}`)
+      ).rejects.toThrow(`Error retrieving marine licence: ${mockError}`)
 
       expect(mockedFindOne).toHaveBeenCalled()
     })
 
-    it('should get marine license by id if user created the marine license', async () => {
+    it('should get marine licence by id if user created the marine licence', async () => {
       const { mockHandler } = global
 
       const userContactId = 'abc'
@@ -83,7 +83,7 @@ describe('GET /marine-license', () => {
         contactId: userContactId
       })
 
-      await getMarineLicenseController.handler(
+      await getMarineLicenceController.handler(
         requestFromApplicantUser({
           userContactId,
           params: { id: mockId }
@@ -106,7 +106,7 @@ describe('GET /marine-license', () => {
       )
     })
 
-    it("should error if user didn't create the marine license", async () => {
+    it("should error if user didn't create the marine licence", async () => {
       const { mockHandler } = global
       const userContactId = 'abc'
 
@@ -117,7 +117,7 @@ describe('GET /marine-license', () => {
       })
 
       await expect(
-        getMarineLicenseController.handler(
+        getMarineLicenceController.handler(
           requestFromApplicantUser({
             userContactId,
             params: { id: mockId }

@@ -10,4 +10,4 @@ export const collectionCoastalOperationsAreas = 'coastal-operations-areas'
 
 export const collectionMarinePlanAreas = 'marine-plan-areas'
 
-export const collectionMarineLicenses = 'marine-licenses'
+export const collectionMarineLicences = 'marine-licences'
