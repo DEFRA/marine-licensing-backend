@@ -63,7 +63,8 @@ const updateExemptionRecord = async ({
   payload,
   applicationReference,
   exemption,
-  submittedAt
+  submittedAt,
+  declarationAcceptedByContactId
 }) => {
   const { db } = request
   const { id, updatedAt, updatedBy } = payload
@@ -76,7 +77,8 @@ const updateExemptionRecord = async ({
         submittedAt,
         status: EXEMPTION_STATUS.ACTIVE,
         updatedAt,
-        updatedBy
+        updatedBy,
+        declarationAcceptedByContactId
       }
     }
   )
@@ -103,6 +105,7 @@ export const submitExemptionController = {
       const { isDynamicsEnabled } = config.get('dynamics')
       const { isEmpEnabled } = config.get('exploreMarinePlanning')
       const frontEndBaseUrl = config.get('frontEndBaseUrl')
+      const declarationAcceptedByContactId = getContactId(request.auth)
       const exemption = await getExemptionFromDb(request, id)
       checkForIncompleteTasks(exemption)
       const applicationReference = await generateApplicationReference(
@@ -116,7 +119,8 @@ export const submitExemptionController = {
         payload,
         applicationReference,
         exemption,
-        submittedAt
+        submittedAt,
+        declarationAcceptedByContactId
       })
       await updateCoastalOperationsAreas(exemption, db, {
         updatedAt,
