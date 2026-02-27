@@ -1,6 +1,6 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePostRequest } from '../../../../tests/server-requests.js'
-import { MARINE_LICENSE_STATUS } from '../../constants/marine-license.js'
+import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 
 describe('Create project name - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -19,26 +19,26 @@ describe('Create project name - integration tests', async () => {
 
     const { statusCode, body } = await makePostRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId,
       payload
     })
 
     expect(statusCode).toBe(201)
 
-    // Verify the marine license was created in the database with correct fields
-    const createdMarineLicense = await globalThis.mockMongo
-      .collection('marine-licenses')
+    // Verify the marine licence was created in the database with correct fields
+    const createdMarineLicence = await globalThis.mockMongo
+      .collection('marine-licences')
       .findOne({ projectName: 'Test Project' })
 
-    expect(body.id).toBe(createdMarineLicense._id.toString())
-    expect(createdMarineLicense.status).toBe(MARINE_LICENSE_STATUS.DRAFT)
-    expect(createdMarineLicense.contactId).toBe(contactId)
-    expect(createdMarineLicense.projectName).toBe('Test Project')
-    expect(createdMarineLicense.mcmsContext).toEqual({
+    expect(body.id).toBe(createdMarineLicence._id.toString())
+    expect(createdMarineLicence.status).toBe(MARINE_LICENCE_STATUS.DRAFT)
+    expect(createdMarineLicence.contactId).toBe(contactId)
+    expect(createdMarineLicence.projectName).toBe('Test Project')
+    expect(createdMarineLicence.mcmsContext).toEqual({
       iatQueryString: 'test-query-string'
     })
-    expect(createdMarineLicense.organisation).toBeUndefined()
+    expect(createdMarineLicence.organisation).toBeUndefined()
   })
 
   test('successfully creates with organisation', async () => {
@@ -54,7 +54,7 @@ describe('Create project name - integration tests', async () => {
 
     const { statusCode, body } = await makePostRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId,
       payload
     })
@@ -64,13 +64,13 @@ describe('Create project name - integration tests', async () => {
       id: expect.any(String)
     })
 
-    // Verify the marine license was created with organisation details
-    const createdMarineLicense = await globalThis.mockMongo
-      .collection('marine-licenses')
+    // Verify the marine licence was created with organisation details
+    const createdMarineLicence = await globalThis.mockMongo
+      .collection('marine-licences')
       .findOne({ projectName: 'Test Project with Org' })
 
-    expect(createdMarineLicense).not.toBeNull()
-    expect(createdMarineLicense.organisation).toEqual({
+    expect(createdMarineLicence).not.toBeNull()
+    expect(createdMarineLicence.organisation).toEqual({
       id: organisationId,
       name: organisationName,
       userRelationshipType: 'Employee'
@@ -91,7 +91,7 @@ describe('Create project name - integration tests', async () => {
 
     const { statusCode, body } = await makePostRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId,
       payload
     })
@@ -102,11 +102,11 @@ describe('Create project name - integration tests', async () => {
     })
 
     // Verify mcmsContext was stored correctly (fallback to iatQueryString only due to invalid fields)
-    const createdMarineLicense = await globalThis.mockMongo
-      .collection('marine-licenses')
+    const createdMarineLicence = await globalThis.mockMongo
+      .collection('marine-licences')
       .findOne({ projectName: 'Test Project' })
 
-    expect(createdMarineLicense.mcmsContext).toEqual({
+    expect(createdMarineLicence.mcmsContext).toEqual({
       iatQueryString: 'test-query-string'
     })
   })
@@ -123,7 +123,7 @@ describe('Create project name - integration tests', async () => {
 
     const { statusCode, body } = await makePostRequest({
       server: getServer(),
-      url: '/marine-license/project-name',
+      url: '/marine-licence/project-name',
       contactId,
       payload
     })
@@ -134,11 +134,11 @@ describe('Create project name - integration tests', async () => {
     })
 
     // Verify only iatQueryString was stored when validation fails
-    const createdMarineLicense = await globalThis.mockMongo
-      .collection('marine-licenses')
+    const createdMarineLicence = await globalThis.mockMongo
+      .collection('marine-licences')
       .findOne({ projectName: 'Test Project Invalid MCMS' })
 
-    expect(createdMarineLicense.mcmsContext).toEqual({
+    expect(createdMarineLicence.mcmsContext).toEqual({
       iatQueryString: 'test-query-string'
     })
   })

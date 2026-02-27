@@ -1,14 +1,14 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
-import { getMarineLicense } from '../../models/get-marine-license.js'
+import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { createTaskList } from '../helpers/createTaskList.js'
-import { MarineLicenseService } from '../services/marine-license.service.js'
+import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 
-export const getMarineLicenseController = {
+export const getMarineLicenceController = {
   options: {
     validate: {
-      params: getMarineLicense
+      params: getMarineLicence
     }
   },
   handler: async (request, h) => {
@@ -18,16 +18,16 @@ export const getMarineLicenseController = {
         db,
         logger
       } = request
-      const marineLicenseService = new MarineLicenseService({ db, logger })
+      const marineLicenceService = new MarineLicenceService({ db, logger })
 
       const currentUserId = getContactId(request.auth)
-      const marineLicense = await marineLicenseService.getMarineLicenseById({
+      const marineLicence = await marineLicenceService.getMarineLicenceById({
         id,
         currentUserId
       })
 
-      const { _id, ...rest } = marineLicense
-      const taskList = createTaskList(marineLicense)
+      const { _id, ...rest } = marineLicence
+      const taskList = createTaskList(marineLicence)
       const response = { id: _id.toString(), ...rest, taskList }
 
       return h
@@ -37,7 +37,7 @@ export const getMarineLicenseController = {
       if (error.isBoom) {
         throw error
       }
-      throw Boom.internal(`Error retrieving marine license: ${error.message}`)
+      throw Boom.internal(`Error retrieving marine licence: ${error.message}`)
     }
   }
 }

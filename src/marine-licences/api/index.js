@@ -1,27 +1,27 @@
 import { createProjectNameController } from './controllers/create-project-name.js'
 import { updateProjectNameController } from './controllers/update-project-name.js'
-import { getMarineLicenseController } from './controllers/get-marine-license.js'
-import { deleteMarineLicenseController } from './controllers/delete-marine-license.js'
+import { getMarineLicenceController } from './controllers/get-marine-licence.js'
+import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
 
-export const marineLicenses = [
+export const marineLicences = [
   {
     method: 'GET',
-    path: '/marine-license/{id}',
-    ...getMarineLicenseController
+    path: '/marine-licence/{id}',
+    ...getMarineLicenceController
   },
   {
     method: 'POST',
-    path: '/marine-license/project-name',
+    path: '/marine-licence/project-name',
     ...createProjectNameController
   },
   {
     method: 'PATCH',
-    path: '/marine-license/project-name',
+    path: '/marine-licence/project-name',
     ...updateProjectNameController
   },
   {
     method: 'DELETE',
-    path: '/marine-license/{id}',
-    ...deleteMarineLicenseController
+    path: '/marine-licence/{id}',
+    ...deleteMarineLicenceController
   }
 ]

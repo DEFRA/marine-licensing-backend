@@ -2,7 +2,7 @@ import { health } from '../routes/health.js'
 import { exemptions } from '../../exemptions/api/index.js'
 import { projects } from '../api/projects/index.js'
 import { geoParser } from '../api/geo-parser/index.js'
-import { marineLicenses } from '../../marine-licences/api/index.js'
+import { marineLicences } from '../../marine-licences/api/index.js'
 
 const router = {
   plugin: {
@@ -13,7 +13,7 @@ const router = {
           .concat(exemptions)
           .concat(projects)
           .concat(geoParser)
-          .concat(marineLicenses)
+          .concat(marineLicences)
       )
     }
   }

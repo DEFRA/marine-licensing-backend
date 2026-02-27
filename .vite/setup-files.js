@@ -3,7 +3,7 @@ import { MongoClient } from 'mongodb'
 import createFetchMock from 'vitest-fetch-mock'
 import {
   collectionExemptions,
-  collectionMarineLicenses
+  collectionMarineLicences
 } from '../src/shared/common/constants/db-collections'
 
 const fetchMock = createFetchMock(vi)
@@ -28,11 +28,11 @@ beforeEach(async () => {
   if (collection?.deleteMany) {
     await collection.deleteMany({})
   }
-  const marineLicensesCollection = globalThis.mockMongo?.collection(
-    collectionMarineLicenses
+  const marineLicencesCollection = globalThis.mockMongo?.collection(
+    collectionMarineLicences
   )
-  if (marineLicensesCollection?.deleteMany) {
-    await marineLicensesCollection.deleteMany({})
+  if (marineLicencesCollection?.deleteMany) {
+    await marineLicencesCollection.deleteMany({})
   }
 })
 
