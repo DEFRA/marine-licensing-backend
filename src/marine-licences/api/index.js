@@ -2,6 +2,7 @@ import { createProjectNameController } from './controllers/create-project-name.j
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { getMarineLicenceController } from './controllers/get-marine-licence.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
+import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 
 export const marineLicences = [
   {
@@ -23,5 +24,10 @@ export const marineLicences = [
     method: 'DELETE',
     path: '/marine-licence/{id}',
     ...deleteMarineLicenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/submit',
+    ...submitMarineLicenceController
   }
 ]

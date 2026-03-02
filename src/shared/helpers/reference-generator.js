@@ -1,7 +1,8 @@
 import Boom from '@hapi/boom'
 
 const APPLICATION_TYPES = {
-  EXEMPTION: 'EXE'
+  EXEMPTION: 'EXE',
+  MARINE_LICENCE: 'MLA'
 }
 
 const SEQUENCE_SEED = 10001
@@ -32,8 +33,8 @@ export async function generateApplicationReference(
 
   try {
     // Shared sequence counter document - one per year/application type combination
-    // Upsert creates new document for first exemption of the year (e.g., EXEMPTION_2025)
-    // or finds existing document for subsequent exemptions in the same year
+    // Upsert creates new document for first use of the year (e.g., EXEMPTION_2025)
+    // or finds existing document for subsequent uses in the same year
     const sequenceDoc = await db
       .collection('reference-sequences')
       .findOneAndUpdate(

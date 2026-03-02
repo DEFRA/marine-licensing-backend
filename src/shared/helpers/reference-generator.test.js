@@ -42,19 +42,25 @@ describe('generateApplicationReference', () => {
   })
 
   describe('Happy Path - Reference Generation', () => {
-    it('should generate reference in correct format PREFIX/YYYY/NNNNN for exemption', async () => {
-      const mockSequenceDoc = { currentSequence: 10001 }
-      mockDb.collection().findOneAndUpdate.mockResolvedValue(mockSequenceDoc)
-      mockDb.collection().updateOne.mockResolvedValue({ acknowledged: true })
+    it.each([
+      ['EXEMPTION', 'EXE'],
+      ['MARINE_LICENCE', 'MLA']
+    ])(
+      'should generate reference in correct format PREFIX/YYYY/NNNNN for %s',
+      async (applicationType, expectedPrefix) => {
+        const mockSequenceDoc = { currentSequence: 10001 }
+        mockDb.collection().findOneAndUpdate.mockResolvedValue(mockSequenceDoc)
+        mockDb.collection().updateOne.mockResolvedValue({ acknowledged: true })
 
-      const result = await generateApplicationReference(
-        mockDb,
-        mockLocker,
-        'EXEMPTION'
-      )
+        const result = await generateApplicationReference(
+          mockDb,
+          mockLocker,
+          applicationType
+        )
 
-      expect(result).toBe('EXE/2025/10001')
-    })
+        expect(result).toBe(`${expectedPrefix}/2025/10001`)
+      }
+    )
 
     it('should increment sequence number for subsequent calls', async () => {
       const mockSequenceDoc = { currentSequence: 10002 }
@@ -154,6 +160,25 @@ describe('generateApplicationReference', () => {
           upsert: true,
           returnDocument: 'after'
         }
+      )
+    })
+
+    it('should use separate sequence keys per application type', async () => {
+      const mockSequenceDoc = { currentSequence: 10001 }
+      mockDb.collection().findOneAndUpdate.mockResolvedValue(mockSequenceDoc)
+      mockDb.collection().updateOne.mockResolvedValue({ acknowledged: true })
+
+      await generateApplicationReference(mockDb, mockLocker, 'MARINE_LICENCE')
+
+      expect(mockDb.collection().findOneAndUpdate).toHaveBeenCalledWith(
+        { key: 'MARINE_LICENCE_2025' },
+        expect.objectContaining({
+          $setOnInsert: expect.objectContaining({
+            key: 'MARINE_LICENCE_2025',
+            applicationType: 'MARINE_LICENCE'
+          })
+        }),
+        expect.any(Object)
       )
     })
 
@@ -258,27 +283,11 @@ describe('generateApplicationReference', () => {
 
       expect(result).toBe('EXE/2025/10001')
     })
-
-    it('should handle explicit exemption type', async () => {
-      const mockSequenceDoc = { currentSequence: 10001 }
-      mockDb.collection().findOneAndUpdate.mockResolvedValue(mockSequenceDoc)
-      mockDb.collection().updateOne.mockResolvedValue({ acknowledged: true })
-
-      const result = await generateApplicationReference(
-        mockDb,
-        mockLocker,
-        'EXEMPTION'
-      )
-
-      expect(result).toBe('EXE/2025/10001')
-    })
   })
 
   describe('Edge Cases', () => {
     it('should handle year boundary correctly', async () => {
       const year2025Doc = { currentSequence: 15000 }
-      const year2026Doc = { currentSequence: 10001 }
-
       mockDb.collection().findOneAndUpdate.mockResolvedValueOnce(year2025Doc)
       mockDb.collection().updateOne.mockResolvedValue({ acknowledged: true })
 
@@ -299,6 +308,7 @@ describe('generateApplicationReference', () => {
       })
       Date.now = vi.fn(() => mockNewYearDate.getTime())
 
+      const year2026Doc = { currentSequence: 10001 }
       mockDb.collection().findOneAndUpdate.mockResolvedValueOnce(year2026Doc)
 
       const result2026 = await generateApplicationReference(
