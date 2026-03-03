@@ -2,7 +2,10 @@ import { expect, vi } from 'vitest'
 import * as dynamicsModule from './dynamics-processor.js'
 
 import { config } from '../../../../config.js'
-import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
+import {
+  REQUEST_QUEUE_STATUS,
+  DYNAMICS_QUEUE_TYPES
+} from '../../constants/request-queue.js'
 import Boom from '@hapi/boom'
 import { getDynamicsAccessToken } from './get-access-token.js'
 import { sendToDynamics } from './dynamics-client.js'
@@ -235,6 +238,77 @@ describe('Dynamics Processor', () => {
           $inc: { retries: 1 }
         }
       )
+    })
+
+    describe('addToDynamicsQueue', () => {
+      it('should insert an exemption queue item with default type', async () => {
+        const insertOne = vi.fn().mockResolvedValue({})
+        mockServer.db.collection.mockReturnValue({ insertOne })
+        const processDynamicsQueue = vi.fn().mockResolvedValue({})
+        mockServer.methods = { processDynamicsQueue }
+
+        const mockRequest = {
+          payload: {
+            createdAt: new Date(),
+            createdBy: 'user1',
+            updatedAt: new Date(),
+            updatedBy: 'user1'
+          },
+          db: mockServer.db,
+          server: mockServer
+        }
+
+        await dynamicsModule.addToDynamicsQueue({
+          request: mockRequest,
+          applicationReference: 'EXE/2025/00001',
+          action: 'submit'
+        })
+
+        expect(insertOne).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+            action: 'submit',
+            applicationReferenceNumber: 'EXE/2025/00001',
+            status: REQUEST_QUEUE_STATUS.PENDING,
+            retries: 0
+          })
+        )
+      })
+
+      it('should insert a marine licence queue item with marineLicence type', async () => {
+        const insertOne = vi.fn().mockResolvedValue({})
+        mockServer.db.collection.mockReturnValue({ insertOne })
+        const processDynamicsQueue = vi.fn().mockResolvedValue({})
+        mockServer.methods = { processDynamicsQueue }
+
+        const mockRequest = {
+          payload: {
+            createdAt: new Date(),
+            createdBy: 'user1',
+            updatedAt: new Date(),
+            updatedBy: 'user1'
+          },
+          db: mockServer.db,
+          server: mockServer
+        }
+
+        await dynamicsModule.addToDynamicsQueue({
+          request: mockRequest,
+          applicationReference: 'MLA/2025/00001',
+          action: 'submit',
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+        })
+
+        expect(insertOne).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+            action: 'submit',
+            applicationReferenceNumber: 'MLA/2025/00001',
+            status: REQUEST_QUEUE_STATUS.PENDING,
+            retries: 0
+          })
+        )
+      })
     })
 
     it('should get access token before processing queue items', async () => {

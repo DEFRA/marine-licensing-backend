@@ -2,12 +2,20 @@ import { vi } from 'vitest'
 import { submitMarineLicenceController } from './submit-marine-licence.js'
 import { generateApplicationReference } from '../../../shared/helpers/reference-generator.js'
 import { createTaskList } from '../helpers/createTaskList.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/dynamics-processor.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import {
+  DYNAMICS_REQUEST_ACTIONS,
+  DYNAMICS_QUEUE_TYPES
+} from '../../../shared/common/constants/request-queue.js'
+import { config } from '../../../config.js'
 
 vi.mock('../../../shared/helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
+vi.mock('../../../shared/common/helpers/dynamics/dynamics-processor.js')
+vi.mock('../../../config.js')
 
 describe('POST /marine-licence/submit', () => {
   let mockDb
@@ -74,6 +82,9 @@ describe('POST /marine-licence/submit', () => {
     createTaskList.mockReturnValue({
       projectName: 'COMPLETED'
     })
+
+    config.get.mockReturnValue({ isDynamicsEnabled: false })
+    vi.mocked(addToDynamicsQueue).mockResolvedValue(undefined)
   })
 
   describe('Payload Validation', () => {
@@ -457,6 +468,68 @@ describe('POST /marine-licence/submit', () => {
           'Error submitting marine licence: Database connection failed'
         )
       )
+    })
+  })
+
+  describe('Dynamics Queue', () => {
+    it('should call addToDynamicsQueue with marineLicence type when Dynamics is enabled', async () => {
+      config.get.mockReturnValue({ isDynamicsEnabled: true })
+
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project'
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+
+      const mockRequest = {
+        payload: { id: mockMarineLicenceId, ...mockAuditPayload },
+        db: mockDb,
+        locker: mockLocker,
+        auth: mockAuth,
+        logger: mockLogger
+      }
+
+      await submitMarineLicenceController.handler(mockRequest, mockHandler)
+
+      expect(addToDynamicsQueue).toHaveBeenCalledWith({
+        request: mockRequest,
+        applicationReference: 'MLA/2025/10001',
+        action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+      })
+    })
+
+    it('should not call addToDynamicsQueue when Dynamics is disabled', async () => {
+      config.get.mockReturnValue({ isDynamicsEnabled: false })
+
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project'
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+
+      await submitMarineLicenceController.handler(
+        {
+          payload: { id: mockMarineLicenceId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+
+      expect(addToDynamicsQueue).not.toHaveBeenCalled()
     })
   })
 

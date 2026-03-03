@@ -9,6 +9,12 @@ import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import {
+  DYNAMICS_REQUEST_ACTIONS,
+  DYNAMICS_QUEUE_TYPES
+} from '../../../shared/common/constants/request-queue.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/dynamics-processor.js'
+import { config } from '../../../config.js'
 
 const checkForIncompleteTasks = (marineLicence) => {
   const taskList = createTaskList(marineLicence)
@@ -82,6 +88,8 @@ export const submitMarineLicenceController = {
       const { payload, db, locker } = request
       const { id } = payload
 
+      const { isDynamicsEnabled } = config.get('dynamics')
+
       const marineLicence = await getMarineLicenceFromDb(request, id)
 
       checkForIncompleteTasks(marineLicence)
@@ -100,6 +108,15 @@ export const submitMarineLicenceController = {
         applicationReference,
         submittedAt
       })
+
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+        })
+      }
 
       return h
         .response({

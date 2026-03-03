@@ -3,6 +3,7 @@ import Wreck from '@hapi/wreck'
 import { config } from '../../../../config.js'
 import {
   sendExemptionToDynamics,
+  sendMarineLicenceToDynamics,
   sendToDynamics,
   sendWithdrawToDynamics
 } from './dynamics-client.js'
@@ -10,7 +11,10 @@ import {
   EXEMPTION_STATUS,
   EXEMPTION_TYPE
 } from '../../../../exemptions/constants/exemption.js'
-import { DYNAMICS_REQUEST_ACTIONS } from '../../constants/request-queue.js'
+import {
+  DYNAMICS_REQUEST_ACTIONS,
+  DYNAMICS_QUEUE_TYPES
+} from '../../constants/request-queue.js'
 
 vi.mock('../../../../config.js')
 vi.mock('@hapi/wreck')
@@ -41,6 +45,9 @@ describe('Dynamics Client', () => {
               retryDelayMs: 60000,
               apiUrl: 'https://localhost/api/data/v9.2',
               withdrawUrl: 'https://localhost/api/data/v9.2'
+            },
+            marineLicence: {
+              apiUrl: 'https://localhost/api/data/v9.2/marine-licences'
             },
             tokenUrl: 'https://localhost/oauth2/token'
           }
@@ -279,6 +286,95 @@ describe('Dynamics Client', () => {
     })
   })
 
+  describe('sendMarineLicenceToDynamics', () => {
+    const mockQueueItem = {
+      _id: 'queue-item-id',
+      applicationReferenceNumber: 'MLA/2025/00001'
+    }
+
+    const mockMarineLicence = {
+      _id: 'ml-123',
+      contactId: 'test-contact-id',
+      projectName: 'Test Marine Project',
+      organisation: { id: 'test-org-id' }
+    }
+
+    const mockAccessToken = 'test-access-token'
+
+    beforeEach(() => {
+      mockWreckPost.mockResolvedValue({
+        payload: { id: 'dynamics-record-id' },
+        res: { statusCode: 202 }
+      })
+    })
+
+    it('should send marine licence data to Dynamics with correct payload and headers', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockMarineLicence)
+
+      const result = await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(result).toEqual({ id: 'dynamics-record-id' })
+      expect(mockServer.db.collection).toHaveBeenCalledWith('marine-licences')
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/marine-licences',
+        expect.objectContaining({
+          payload: {
+            contactid: 'test-contact-id',
+            projectName: 'Test Marine Project',
+            reference: 'MLA/2025/00001',
+            applicantOrganisationId: 'test-org-id'
+          },
+          headers: {
+            Authorization: 'Bearer test-access-token',
+            'Content-Type': 'application/json'
+          }
+        })
+      )
+    })
+
+    it('should omit applicantOrganisationId when no organisation present', async () => {
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue({ ...mockMarineLicence, organisation: null })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(
+        mockWreckPost.mock.calls[0][1].payload.applicantOrganisationId
+      ).toBeUndefined()
+    })
+
+    it('should throw error if marine licence not found', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(null)
+
+      await expect(
+        sendMarineLicenceToDynamics(mockServer, mockAccessToken, mockQueueItem)
+      ).rejects.toThrow(
+        'Marine licence not found for applicationReference: MLA/2025/00001'
+      )
+    })
+
+    it('should throw error if response status is not 202', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockMarineLicence)
+      mockWreckPost.mockResolvedValue({
+        payload: { error: 'Bad Request' },
+        res: { statusCode: 400 }
+      })
+
+      await expect(
+        sendMarineLicenceToDynamics(mockServer, mockAccessToken, mockQueueItem)
+      ).rejects.toThrow('Dynamics API returned status 400')
+    })
+  })
+
   describe('sendToDynamics', () => {
     const mockQueueItem = {
       applicationReferenceNumber: 'TEST-REF-001',
@@ -355,6 +451,30 @@ describe('Dynamics Client', () => {
             'Content-Type': 'application/json'
           }
         })
+      )
+    })
+
+    it('should route to sendMarineLicenceToDynamics when type is marineLicence', async () => {
+      const mockMarineLicence = {
+        _id: 'ml-123',
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        organisation: null
+      }
+
+      mockServer.db.collection().findOne.mockResolvedValue(mockMarineLicence)
+
+      const result = await sendToDynamics(mockServer, mockAccessToken, {
+        ...mockQueueItem,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+        applicationReferenceNumber: 'MLA/2025/00001'
+      })
+
+      expect(result).toEqual({ id: 'dynamics-record-id' })
+      expect(mockServer.db.collection).toHaveBeenCalledWith('marine-licences')
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/marine-licences',
+        expect.any(Object)
       )
     })
   })

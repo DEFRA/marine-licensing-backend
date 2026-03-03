@@ -283,6 +283,14 @@ const config = convict({
         env: 'DYNAMICS_RETRY_DELAY_MS'
       }
     },
+    marineLicence: {
+      apiUrl: {
+        doc: 'URL for the Dynamics API to send a Marine Licence',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_MARINE_LICENCE_API_URL'
+      }
+    },
     contactDetails: {
       clientId: {
         doc: 'The client ID.',

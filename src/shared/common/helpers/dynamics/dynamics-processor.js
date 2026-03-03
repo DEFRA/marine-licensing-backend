@@ -1,5 +1,8 @@
 import Boom from '@hapi/boom'
-import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
+import {
+  REQUEST_QUEUE_STATUS,
+  DYNAMICS_QUEUE_TYPES
+} from '../../constants/request-queue.js'
 import { config } from '../../../../config.js'
 import { sendToDynamics } from './dynamics-client.js'
 import { structureErrorForECS } from '../../helpers/logging/logger.js'
@@ -130,12 +133,14 @@ export const processDynamicsQueue = async (server) => {
 export const addToDynamicsQueue = async ({
   request,
   applicationReference,
-  action
+  action,
+  type = DYNAMICS_QUEUE_TYPES.EXEMPTION
 }) => {
   const { payload, db } = request
   const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
   await db.collection(collectionDynamicsQueue).insertOne({
+    type,
     action,
     applicationReferenceNumber: applicationReference,
     status: REQUEST_QUEUE_STATUS.PENDING,
@@ -148,7 +153,7 @@ export const addToDynamicsQueue = async ({
 
   request.server.methods.processDynamicsQueue().catch(() => {
     request.server.logger.error(
-      'Failed to process dynamics queue, but exemption submission succeeded'
+      `Failed to process dynamics queue, but ${type} submission succeeded`
     )
   })
 }

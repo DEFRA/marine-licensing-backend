@@ -8,11 +8,13 @@ import {
 import { StatusCodes } from 'http-status-codes'
 import {
   DYNAMICS_REQUEST_ACTIONS,
+  DYNAMICS_QUEUE_TYPES,
   REQUEST_QUEUE_STATUS
 } from '../../constants/request-queue.js'
 import {
   collectionExemptions,
-  collectionDynamicsQueue
+  collectionDynamicsQueue,
+  collectionMarineLicences
 } from '../../constants/db-collections.js'
 import { createLogger } from '../../helpers/logging/logger.js'
 
@@ -36,6 +38,26 @@ const fetchExemption = async (db, applicationReferenceNumber) => {
   }
 
   return exemption
+}
+
+/**
+ * Fetches a marine licence from the database by application reference
+ * @param {Object} db - Database connection
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @returns {Promise<Object>} The marine licence document
+ */
+const fetchMarineLicence = async (db, applicationReferenceNumber) => {
+  const marineLicence = await db
+    .collection(collectionMarineLicences)
+    .findOne({ applicationReference: applicationReferenceNumber })
+
+  if (!marineLicence) {
+    throw Boom.notFound(
+      `Marine licence not found for applicationReference: ${applicationReferenceNumber}`
+    )
+  }
+
+  return marineLicence
 }
 
 /**
@@ -235,7 +257,64 @@ export const sendWithdrawToDynamics = async (
   return response.payload
 }
 
+export const sendMarineLicenceToDynamics = async (
+  server,
+  accessToken,
+  queueItem
+) => {
+  const {
+    marineLicence: { apiUrl }
+  } = config.get('dynamics')
+  const { applicationReferenceNumber } = queueItem
+
+  await updateQueueStatus(server.db, queueItem._id)
+
+  const marineLicence = await fetchMarineLicence(
+    server.db,
+    applicationReferenceNumber
+  )
+
+  const payload = {
+    contactid: marineLicence.contactId,
+    projectName: marineLicence.projectName,
+    reference: applicationReferenceNumber,
+    ...(marineLicence.organisation?.id
+      ? { applicantOrganisationId: marineLicence.organisation.id }
+      : {})
+  }
+
+  const response = await Wreck.post(`${apiUrl}`, {
+    payload,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  const statusCode = response.res?.statusCode
+  validateDynamicsResponse(
+    statusCode,
+    applicationReferenceNumber,
+    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+  )
+
+  logger.info(
+    {
+      http: { response: { status_code: statusCode } },
+      service: 'dynamics',
+      operation: 'sendMarineLicence',
+      applicationReference: applicationReferenceNumber
+    },
+    'Successfully sent Marine Licence to Dynamics 365'
+  )
+
+  return response.payload
+}
+
 export const sendToDynamics = async (server, accessToken, queueItem) => {
+  if (queueItem.type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
+    return sendMarineLicenceToDynamics(server, accessToken, queueItem)
+  }
   if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.WITHDRAW) {
     return sendWithdrawToDynamics(server, accessToken, queueItem)
   }

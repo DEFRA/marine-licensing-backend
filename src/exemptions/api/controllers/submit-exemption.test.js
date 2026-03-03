@@ -241,6 +241,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
+        type: 'EXEMPTION',
         ...rest
       })
       expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({
@@ -292,7 +293,7 @@ describe('POST /exemption/submit', () => {
       expect(mockServer.methods.processEmpQueue).toHaveBeenCalled()
 
       expect(mockServer.logger.error).toHaveBeenCalledWith(
-        'Failed to process dynamics queue, but exemption submission succeeded'
+        'Failed to process dynamics queue, but EXEMPTION submission succeeded'
       )
       expect(mockServer.logger.error).toHaveBeenCalledWith(
         'Failed to process EMP queue, but exemption submission succeeded'
@@ -388,6 +389,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
+        type: 'EXEMPTION',
         ...rest
       })
       expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({
