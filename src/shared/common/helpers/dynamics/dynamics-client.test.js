@@ -328,7 +328,9 @@ describe('Dynamics Client', () => {
             contactid: 'test-contact-id',
             projectName: 'Test Marine Project',
             reference: 'MLA/2025/00001',
-            applicantOrganisationId: 'test-org-id'
+            applicantOrganisationId: 'test-org-id',
+            applicationUrl: 'http://localhost/view-details/ml-123',
+            status: 'SUBMITTED'
           },
           headers: {
             Authorization: 'Bearer test-access-token',

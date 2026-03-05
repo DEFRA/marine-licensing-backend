@@ -17,6 +17,7 @@ import {
   collectionMarineLicences
 } from '../../constants/db-collections.js'
 import { createLogger } from '../../helpers/logging/logger.js'
+import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
 
 const logger = createLogger()
 
@@ -265,7 +266,10 @@ export const sendMarineLicenceToDynamics = async (
   const {
     marineLicence: { apiUrl }
   } = config.get('dynamics')
+
   const { applicationReferenceNumber } = queueItem
+
+  const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
   await updateQueueStatus(server.db, queueItem._id)
 
@@ -278,9 +282,11 @@ export const sendMarineLicenceToDynamics = async (
     contactid: marineLicence.contactId,
     projectName: marineLicence.projectName,
     reference: applicationReferenceNumber,
+    applicationUrl: `${frontEndBaseUrl}/view-details/${marineLicence._id}`,
     ...(marineLicence.organisation?.id
       ? { applicantOrganisationId: marineLicence.organisation.id }
-      : {})
+      : {}),
+    status: MARINE_LICENCE_STATUS.SUBMITTED
   }
 
   const response = await Wreck.post(`${apiUrl}`, {
