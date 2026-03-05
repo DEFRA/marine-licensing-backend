@@ -59,7 +59,7 @@ export const handleDynamicsQueueItemSuccess = async (server, item) => {
 
 export const handleDynamicsQueueItemFailure = async (server, item) => {
   const {
-    exemptions: { maxRetries }
+    projects: { maxRetries }
   } = config.get('dynamics')
 
   const retries = item.retries + 1
@@ -101,13 +101,16 @@ export const handleDynamicsQueueItemFailure = async (server, item) => {
 export const processDynamicsQueue = async (server) => {
   try {
     const now = new Date()
+    const {
+      projects: { retryDelayMs }
+    } = config.get('dynamics')
 
     const query = {
       $or: [
         { status: REQUEST_QUEUE_STATUS.PENDING },
         {
           status: REQUEST_QUEUE_STATUS.FAILED,
-          updatedAt: { $lte: new Date(now.getTime() - 0) }
+          updatedAt: { $lte: new Date(now.getTime() - retryDelayMs) }
         }
       ]
     }

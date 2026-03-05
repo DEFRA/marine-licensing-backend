@@ -66,12 +66,11 @@ describe('Dynamics Processor', () => {
       projects: {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret',
-        scope: 'test-scope'
-      },
-      exemptions: {
+        scope: 'test-scope',
         maxRetries: 3,
         retryDelayMs: 60000
       },
+      exemptions: {},
       tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
     })
 
@@ -350,6 +349,28 @@ describe('Dynamics Processor', () => {
       await dynamicsModule.processDynamicsQueue(mockServer)
 
       expect(mockGetDynamicsAccessToken).not.toHaveBeenCalled()
+    })
+
+    it('should only retry FAILED items older than retryDelayMs', async () => {
+      vi.useFakeTimers()
+      const now = new Date('2025-01-01T12:00:00.000Z')
+      vi.setSystemTime(now)
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      const expectedCutoff = new Date(now.getTime() - 60000)
+      expect(collections[EXEMPTION_QUEUE].find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          $or: expect.arrayContaining([
+            {
+              status: REQUEST_QUEUE_STATUS.FAILED,
+              updatedAt: { $lte: expectedCutoff }
+            }
+          ])
+        })
+      )
+
+      vi.useRealTimers()
     })
 
     it('should log errors and process empty queue if all collection fetches fail', async () => {

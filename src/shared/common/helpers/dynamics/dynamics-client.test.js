@@ -19,6 +19,15 @@ import {
 vi.mock('../../../../config.js')
 vi.mock('@hapi/wreck')
 
+const mockLogger = vi.hoisted(() => ({
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn()
+}))
+vi.mock('../../helpers/logging/logger.js', () => ({
+  createLogger: vi.fn(() => mockLogger)
+}))
+
 describe('Dynamics Client', () => {
   let mockServer
   const mockWreckPost = vi.mocked(Wreck.post).mockResolvedValue({
@@ -30,7 +39,7 @@ describe('Dynamics Client', () => {
       db: {
         collection: vi.fn().mockReturnValue({
           findOne: vi.fn(),
-          updateOne: vi.fn()
+          updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 })
         })
       }
     }
@@ -40,11 +49,10 @@ describe('Dynamics Client', () => {
             projects: {
               clientId: 'test-client-id',
               clientSecret: 'test-client-secret',
-              scope: 'test-scope'
+              scope: 'test-scope',
+              maxRetries: 3
             },
             exemptions: {
-              maxRetries: 3,
-              retryDelayMs: 60000,
               apiUrl: 'https://localhost/api/data/v9.2',
               withdrawUrl: 'https://localhost/api/data/v9.2'
             },
@@ -224,17 +232,6 @@ describe('Dynamics Client', () => {
       applicationReferenceNumber: 'TEST-REF-001'
     }
 
-    const mockExemption = {
-      _id: '123',
-      contactId: 'test-contact-id',
-      projectName: 'Test Project',
-      reference: 'TEST-REF-001',
-      organisation: {
-        id: 'test-org-id',
-        userRelationshipType: 'Employee'
-      }
-    }
-
     const mockAccessToken = 'test-access-token'
 
     beforeEach(() => {
@@ -266,13 +263,12 @@ describe('Dynamics Client', () => {
     })
 
     it('should throw error if request fails', async () => {
-      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
       mockWreckPost.mockImplementation(function () {
         throw new Error('Dynamics API error')
       })
 
       await expect(
-        sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+        sendWithdrawToDynamics(mockServer, mockAccessToken, mockQueueItem)
       ).rejects.toThrow('Dynamics API error')
     })
 
@@ -321,6 +317,9 @@ describe('Dynamics Client', () => {
 
       expect(result).toEqual({ id: 'dynamics-record-id' })
       expect(mockServer.db.collection).toHaveBeenCalledWith('marine-licences')
+      expect(mockServer.db.collection).toHaveBeenCalledWith(
+        'marine-licence-dynamics-queue'
+      )
       expect(mockWreckPost).toHaveBeenCalledWith(
         'https://localhost/api/data/v9.2/marine-licences',
         expect.objectContaining({
@@ -376,6 +375,27 @@ describe('Dynamics Client', () => {
       await expect(
         sendMarineLicenceToDynamics(mockServer, mockAccessToken, mockQueueItem)
       ).rejects.toThrow('Dynamics API returned status 400')
+    })
+
+    it('should log an error when queue item is not found during status update', async () => {
+      mockServer.db
+        .collection()
+        .updateOne.mockResolvedValue({ matchedCount: 0 })
+      mockServer.db.collection().findOne.mockResolvedValue(mockMarineLicence)
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        {
+          queueItemId: mockQueueItem._id,
+          collection: 'marine-licence-dynamics-queue'
+        },
+        'Queue item not found when updating status to IN_PROGRESS'
+      )
     })
   })
 

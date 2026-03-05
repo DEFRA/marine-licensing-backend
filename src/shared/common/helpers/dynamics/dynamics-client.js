@@ -14,6 +14,7 @@ import {
 import {
   collectionExemptions,
   collectionDynamicsQueue,
+  collectionMarineLicenceDynamicsQueue,
   collectionMarineLicences
 } from '../../constants/db-collections.js'
 import { createLogger } from '../../helpers/logging/logger.js'
@@ -65,9 +66,10 @@ const fetchMarineLicence = async (db, applicationReferenceNumber) => {
  * Updates the queue status to IN_PROGRESS
  * @param {Object} db - Database connection
  * @param {Object} queueItemId - Queue id
+ * @param {string} collectionName - The queue collection to update
  */
-const updateQueueStatus = async (db, queueItemId) => {
-  await db.collection(collectionDynamicsQueue).updateOne(
+const updateQueueStatus = async (db, queueItemId, collectionName) => {
+  const result = await db.collection(collectionName).updateOne(
     { _id: queueItemId },
     {
       $set: {
@@ -76,6 +78,13 @@ const updateQueueStatus = async (db, queueItemId) => {
       }
     }
   )
+
+  if (result.matchedCount === 0) {
+    logger.error(
+      { queueItemId, collection: collectionName },
+      'Queue item not found when updating status to IN_PROGRESS'
+    )
+  }
 }
 
 /**
@@ -109,12 +118,12 @@ const buildDynamicsPayload = (
  * Validates the Dynamics API response
  * @param {number} statusCode - HTTP status code
  * @param {string} applicationReferenceNumber - Application reference number
- * @param {string} requestType - Type of request
+ * @param {string} operation - Operation name for logging
  */
 const validateDynamicsResponse = (
   statusCode,
   applicationReferenceNumber,
-  requestType
+  operation
 ) => {
   if (statusCode !== StatusCodes.ACCEPTED) {
     logger.error(
@@ -129,10 +138,7 @@ const validateDynamicsResponse = (
           }
         },
         service: 'dynamics',
-        operation:
-          requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
-            ? 'withdrawExemption'
-            : 'sendExemption',
+        operation,
         applicationReference: applicationReferenceNumber
       },
       `Dynamics API returned unexpected status ${statusCode}`
@@ -145,12 +151,14 @@ const validateDynamicsResponse = (
  * Logs successful Dynamics API request
  * @param {number} statusCode - HTTP status code
  * @param {string} applicationReferenceNumber - Application reference number
- * @param {string} requestType - Type of request
+ * @param {string} operation - Operation name for logging
+ * @param {string} message - Log message
  */
 const logDynamicsSuccess = (
   statusCode,
   applicationReferenceNumber,
-  requestType
+  operation,
+  message
 ) => {
   logger.info(
     {
@@ -160,15 +168,10 @@ const logDynamicsSuccess = (
         }
       },
       service: 'dynamics',
-      operation:
-        requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
-          ? 'withdrawExemption'
-          : 'sendExemption',
+      operation,
       applicationReference: applicationReferenceNumber
     },
-    requestType === DYNAMICS_REQUEST_ACTIONS.WITHDRAW
-      ? 'Successfully sent request to withdraw exemption to Dynamics 365'
-      : 'Successfully sent exemption to Dynamics 365'
+    message
   )
 }
 
@@ -184,7 +187,7 @@ export const sendExemptionToDynamics = async (
   const { applicationReferenceNumber } = queueItem
 
   // Fetch exemption and update queue status
-  await updateQueueStatus(server.db, queueItem._id)
+  await updateQueueStatus(server.db, queueItem._id, collectionDynamicsQueue)
   const exemption = await fetchExemption(server.db, applicationReferenceNumber)
 
   // Build payload and send to Dynamics
@@ -207,12 +210,13 @@ export const sendExemptionToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+    'sendExemption'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+    'sendExemption',
+    'Successfully sent exemption to Dynamics 365'
   )
 
   return response.payload
@@ -228,7 +232,7 @@ export const sendWithdrawToDynamics = async (
   } = config.get('dynamics')
   const { applicationReferenceNumber } = queueItem
 
-  await updateQueueStatus(server.db, queueItem._id)
+  await updateQueueStatus(server.db, queueItem._id, collectionDynamicsQueue)
 
   const payload = {
     status: EXEMPTION_STATUS.WITHDRAWN,
@@ -247,12 +251,13 @@ export const sendWithdrawToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+    'withdrawExemption'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+    'withdrawExemption',
+    'Successfully sent request to withdraw exemption to Dynamics 365'
   )
 
   return response.payload
@@ -271,7 +276,11 @@ export const sendMarineLicenceToDynamics = async (
 
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
-  await updateQueueStatus(server.db, queueItem._id)
+  await updateQueueStatus(
+    server.db,
+    queueItem._id,
+    collectionMarineLicenceDynamicsQueue
+  )
 
   const marineLicence = await fetchMarineLicence(
     server.db,
@@ -301,16 +310,12 @@ export const sendMarineLicenceToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    DYNAMICS_REQUEST_ACTIONS.SUBMIT
+    'sendMarineLicence'
   )
-
-  logger.info(
-    {
-      http: { response: { status_code: statusCode } },
-      service: 'dynamics',
-      operation: 'sendMarineLicence',
-      applicationReference: applicationReferenceNumber
-    },
+  logDynamicsSuccess(
+    statusCode,
+    applicationReferenceNumber,
+    'sendMarineLicence',
     'Successfully sent Marine Licence to Dynamics 365'
   )
 

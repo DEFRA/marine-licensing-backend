@@ -257,6 +257,18 @@ const config = convict({
         format: String,
         default: 'https://service.flow.microsoft.com//.default',
         env: 'DYNAMICS_SCOPE'
+      },
+      maxRetries: {
+        doc: 'Maximum number of retries for failed Dynamics queue items',
+        format: Number,
+        default: 3,
+        env: 'DYNAMICS_MAX_RETRIES'
+      },
+      retryDelayMs: {
+        doc: 'Delay in milliseconds before retrying a failed Dynamics queue item',
+        format: Number,
+        default: oneMinuteInMS,
+        env: 'DYNAMICS_RETRY_DELAY_MS'
       }
     },
     exemptions: {
@@ -271,18 +283,6 @@ const config = convict({
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_API_WITHDRAW_URL'
-      },
-      maxRetries: {
-        doc: 'Maximum number of retries for failed Dynamics queue items',
-        format: Number,
-        default: 3,
-        env: 'DYNAMICS_MAX_RETRIES'
-      },
-      retryDelayMs: {
-        doc: 'Delay in milliseconds before retrying a failed Dynamics queue item',
-        format: Number,
-        default: oneMinuteInMS,
-        env: 'DYNAMICS_RETRY_DELAY_MS'
       }
     },
     marineLicence: {
