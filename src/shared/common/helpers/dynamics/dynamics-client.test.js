@@ -37,10 +37,12 @@ describe('Dynamics Client', () => {
     config.get.mockImplementation(function (value) {
       return value === 'dynamics'
         ? {
-            exemptions: {
+            projects: {
               clientId: 'test-client-id',
               clientSecret: 'test-client-secret',
-              scope: 'test-scope',
+              scope: 'test-scope'
+            },
+            exemptions: {
               maxRetries: 3,
               retryDelayMs: 60000,
               apiUrl: 'https://localhost/api/data/v9.2',

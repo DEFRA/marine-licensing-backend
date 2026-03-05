@@ -239,25 +239,27 @@ const config = convict({
     }
   },
   dynamics: {
-    exemptions: {
+    projects: {
       clientId: {
-        doc: 'Dynamics client ID for exemptions',
+        doc: 'Dynamics client ID shared across projects (exemptions and marine licences)',
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_CLIENT_ID'
       },
       clientSecret: {
-        doc: 'Dynamics client secret for exemptions',
+        doc: 'Dynamics client secret shared across projects',
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_CLIENT_SECRET'
       },
       scope: {
-        doc: 'Scope Dynamics Exemption API',
+        doc: 'Dynamics API scope shared across projects',
         format: String,
         default: 'https://service.flow.microsoft.com//.default',
         env: 'DYNAMICS_SCOPE'
-      },
+      }
+    },
+    exemptions: {
       apiUrl: {
         doc: 'URL for the Dynamics API to send an exemption',
         format: requiredFromEnvInCdp,

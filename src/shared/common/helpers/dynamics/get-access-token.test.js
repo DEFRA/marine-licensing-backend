@@ -13,10 +13,10 @@ describe('getDynamicsAccessToken', () => {
 
   beforeEach(() => {
     config.get.mockReturnValue({
-      exemptions: {
-        clientId: 'exemption-client-id',
-        clientSecret: 'exemption-client-secret',
-        scope: 'exemption-scope'
+      projects: {
+        clientId: 'projects-client-id',
+        clientSecret: 'projects-client-secret',
+        scope: 'projects-scope'
       },
       contactDetails: {
         clientId: 'contactDetails-client-id',
@@ -27,14 +27,14 @@ describe('getDynamicsAccessToken', () => {
     })
   })
 
-  it('exemptions - should get token with correct params', async () => {
-    const result = await getDynamicsAccessToken({ type: 'exemptions' })
+  it('projects - should get token with correct params', async () => {
+    const result = await getDynamicsAccessToken()
     expect(result).toBe('test_token')
     expect(mockWreckPost).toHaveBeenCalledWith(
       'https://localhost/oauth2/token',
       expect.objectContaining({
         payload:
-          'client_id=exemption-client-id&client_secret=exemption-client-secret&grant_type=client_credentials&scope=exemption-scope',
+          'client_id=projects-client-id&client_secret=projects-client-secret&grant_type=client_credentials&scope=projects-scope',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
@@ -62,18 +62,16 @@ describe('getDynamicsAccessToken', () => {
       throw new Error('Network error')
     })
 
-    await expect(
-      getDynamicsAccessToken({ type: 'exemptions' })
-    ).rejects.toThrow('Network error')
+    await expect(getDynamicsAccessToken()).rejects.toThrow('Network error')
   })
 
   it('should throw error if response does not contain access_token', async () => {
     mockWreckPost.mockReturnValue({
       payload: Buffer.from('{}')
     })
-    await expect(
-      getDynamicsAccessToken({ type: 'exemptions' })
-    ).rejects.toThrow('Dynamics token request failed')
+    await expect(getDynamicsAccessToken()).rejects.toThrow(
+      'Dynamics token request failed'
+    )
   })
 
   it('should throw error with Dynamics error description when token request fails', async () => {
@@ -83,8 +81,8 @@ describe('getDynamicsAccessToken', () => {
       throw mockError
     })
 
-    await expect(
-      getDynamicsAccessToken({ type: 'exemptions' })
-    ).rejects.toThrow('Response Error: 400 Bad Request')
+    await expect(getDynamicsAccessToken()).rejects.toThrow(
+      'Response Error: 400 Bad Request'
+    )
   })
 })

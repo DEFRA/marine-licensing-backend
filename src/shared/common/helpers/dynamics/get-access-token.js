@@ -6,7 +6,7 @@ import { createLogger } from '../../helpers/logging/logger.js'
 
 const logger = createLogger()
 
-export const getDynamicsAccessToken = async ({ type }) => {
+export const getDynamicsAccessToken = async ({ type = 'projects' } = {}) => {
   const dynamics = config.get('dynamics')
   const { clientId, clientSecret, scope } = dynamics[type]
 
