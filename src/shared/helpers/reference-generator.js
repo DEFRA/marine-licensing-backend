@@ -33,8 +33,8 @@ export async function generateApplicationReference(
 
   try {
     // Shared sequence counter document - one per year/application type combination
-    // Upsert creates new document for first use of the year (e.g., EXEMPTION_2025)
-    // or finds existing document for subsequent uses in the same year
+    // Upsert creates new document for first application of the year (e.g., EXEMPTION_2025)
+    // or finds existing document for subsequent application in the same year
     const sequenceDoc = await db
       .collection('reference-sequences')
       .findOneAndUpdate(
