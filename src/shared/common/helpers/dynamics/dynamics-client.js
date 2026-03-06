@@ -298,7 +298,7 @@ export const sendMarineLicenceToDynamics = async (
     status: MARINE_LICENCE_STATUS.SUBMITTED
   }
 
-  const response = await Wreck.post(`${apiUrl}`, {
+  const response = await Wreck.post(apiUrl, {
     payload,
     headers: {
       Authorization: `Bearer ${accessToken}`,
