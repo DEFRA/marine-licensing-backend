@@ -70,7 +70,7 @@ describe('POST /marine-licence/submit', async () => {
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(updatedMarineLicence.status).toBe(MARINE_LICENCE_STATUS.ACTIVE)
+    expect(updatedMarineLicence.status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
     expect(updatedMarineLicence.applicationReference).toEqual(
       mockApplicationReference
     )
@@ -101,7 +101,7 @@ describe('POST /marine-licence/submit', async () => {
       {
         $set: {
           applicationReference: 'MLA/2025/10001',
-          status: MARINE_LICENCE_STATUS.ACTIVE
+          status: MARINE_LICENCE_STATUS.SUBMITTED
         }
       }
     )
