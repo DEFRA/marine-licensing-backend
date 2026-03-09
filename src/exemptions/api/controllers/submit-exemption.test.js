@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { submitExemptionController } from './submit-exemption.js'
-import { generateApplicationReference } from '../helpers/reference-generator.js'
+import { generateApplicationReference } from '../../../shared/helpers/reference-generator.js'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
@@ -17,7 +17,7 @@ vi.mock('notifications-node-client', () => ({
     }
   })
 }))
-vi.mock('../helpers/reference-generator.js')
+vi.mock('../../../shared/helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
 vi.mock('../helpers/send-user-email-confirmation.js')
 vi.mock('../../../config.js')
@@ -241,6 +241,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
+        type: 'EXEMPTION',
         ...rest
       })
       expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({
@@ -292,7 +293,7 @@ describe('POST /exemption/submit', () => {
       expect(mockServer.methods.processEmpQueue).toHaveBeenCalled()
 
       expect(mockServer.logger.error).toHaveBeenCalledWith(
-        'Failed to process dynamics queue, but exemption submission succeeded'
+        'Failed to process dynamics queue, but EXEMPTION submission succeeded'
       )
       expect(mockServer.logger.error).toHaveBeenCalledWith(
         'Failed to process EMP queue, but exemption submission succeeded'
@@ -388,6 +389,7 @@ describe('POST /exemption/submit', () => {
         applicationReferenceNumber: 'EXE/2025/10001',
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
+        type: 'EXEMPTION',
         ...rest
       })
       expect(mockEmpQueueCollection.insertOne).toHaveBeenCalledWith({

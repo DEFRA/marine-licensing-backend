@@ -4,7 +4,11 @@ import { LockManager } from 'mongo-locks'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import {
   collectionCoastalOperationsAreas,
+  collectionDynamicsQueue,
+  collectionDynamicsQueueFailed,
   collectionExemptions,
+  collectionMarineLicenceDynamicsQueue,
+  collectionMarineLicenceDynamicsQueueFailed,
   collectionMarineLicences,
   collectionMarinePlanAreas
 } from '../constants/db-collections.js'
@@ -77,8 +81,15 @@ async function createIndexes(db) {
     .collection('reference-sequences')
     .createIndex({ key: 1 }, { unique: true })
 
-  await db.collection('exemption-dynamics-queue').createIndex({ status: 1 })
-  await db.collection('exemption-dynamics-queue-failed').createIndex({ id: 1 })
+  await db.collection(collectionDynamicsQueue).createIndex({ status: 1 })
+  await db.collection(collectionDynamicsQueueFailed).createIndex({ id: 1 })
+
+  await db
+    .collection(collectionMarineLicenceDynamicsQueue)
+    .createIndex({ status: 1 })
+  await db
+    .collection(collectionMarineLicenceDynamicsQueueFailed)
+    .createIndex({ id: 1 })
 
   await db.collection(collectionMarineLicences).createIndex({ id: 1 })
 
