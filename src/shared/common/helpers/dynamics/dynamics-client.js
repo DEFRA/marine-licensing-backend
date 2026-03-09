@@ -269,7 +269,7 @@ export const sendMarineLicenceToDynamics = async (
   queueItem
 ) => {
   const {
-    marineLicence: { apiUrl }
+    marineLicences: { apiUrl }
   } = config.get('dynamics')
 
   const { applicationReferenceNumber } = queueItem

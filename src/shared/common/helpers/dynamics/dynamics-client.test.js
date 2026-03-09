@@ -56,7 +56,7 @@ describe('Dynamics Client', () => {
               apiUrl: 'https://localhost/api/data/v9.2',
               withdrawUrl: 'https://localhost/api/data/v9.2'
             },
-            marineLicence: {
+            marineLicences: {
               apiUrl: 'https://localhost/api/data/v9.2/marine-licences'
             },
             tokenUrl: 'https://localhost/oauth2/token'
