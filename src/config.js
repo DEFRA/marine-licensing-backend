@@ -285,7 +285,7 @@ const config = convict({
         env: 'DYNAMICS_API_WITHDRAW_URL'
       }
     },
-    marineLicence: {
+    marineLicences: {
       apiUrl: {
         doc: 'URL for the Dynamics API to send a Marine Licence',
         format: requiredFromEnvInCdp,
