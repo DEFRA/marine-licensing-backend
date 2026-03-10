@@ -1,6 +1,9 @@
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
+import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+
+import { notAuthorizedMessage } from '../../../shared/constants/errors.js'
 
 export class MarineLicenceService {
   constructor({ db, logger }) {
@@ -36,12 +39,28 @@ export class MarineLicenceService {
         },
         'Authorization error in getMarineLicenceById'
       )
-      throw Boom.forbidden('Not authorized to request this resource')
+      throw Boom.forbidden(notAuthorizedMessage)
     }
     if (!currentUserId) {
       marineLicence.whoMarineLicenceIsFor =
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }
+    return marineLicence
+  }
+
+  async getPublicMarineLicenceById(id) {
+    const marineLicence = await this.#findMarineLicenceById(id)
+
+    if (marineLicence.status !== MARINE_LICENCE_STATUS.SUBMITTED) {
+      this.logger.info(
+        { marineLicenceId: id },
+        'Authorization error in getPublicMarineLicenceById'
+      )
+      throw Boom.forbidden(notAuthorizedMessage)
+    }
+
+    marineLicence.whoMarineLicenceIsFor =
+      await this.#getWhoMarineLicenceIsFor(marineLicence)
     return marineLicence
   }
 }

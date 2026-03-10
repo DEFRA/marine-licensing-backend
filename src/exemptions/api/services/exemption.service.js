@@ -3,8 +3,7 @@ import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
-
-const notAuthorizedMessage = 'Not authorized to request this resource'
+import { notAuthorizedMessage } from '../../../shared/constants/errors.js'
 
 export class ExemptionService {
   constructor({ db, logger }) {

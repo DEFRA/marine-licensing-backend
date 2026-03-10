@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { MarineLicenceService } from './marine-licence.service.js'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
+import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 
 vi.mock(
   '../../../shared/common/helpers/dynamics/get-contact-details.js',
@@ -14,7 +15,7 @@ describe('MarineLicenceService', () => {
     _id: '6925a4dfc30cd032d1607963',
     contactId: '9687cdd5-49e7-4508-b56c-08a4d02c43c2',
     projectName: 'Test project',
-    status: 'ACTIVE'
+    status: MARINE_LICENCE_STATUS.SUBMITTED
   }
 
   const logger = {
@@ -122,6 +123,45 @@ describe('MarineLicenceService', () => {
 
       expect(getContactNameById).not.toHaveBeenCalled()
       expect(global.mockMongo.collection).toHaveBeenCalled()
+    })
+  })
+
+  describe('getPublicMarineLicenceById', () => {
+    it('should return marine licence with whoMarineLicenceIsFor when status is SUBMITTED', async () => {
+      const marineLicenceService = createService(
+        global.mockMongo,
+        marineLicence
+      )
+      const result = await marineLicenceService.getPublicMarineLicenceById(
+        marineLicence._id
+      )
+      expect(result).toEqual({
+        ...marineLicence,
+        whoMarineLicenceIsFor: 'Dave Barnett'
+      })
+    })
+
+    it('should throw a not found error if marine licence not found', async () => {
+      const marineLicenceService = createService(
+        global.mockMongo,
+        marineLicence
+      )
+      await expect(() =>
+        marineLicenceService.getPublicMarineLicenceById(marineLicenceIdNotInDb)
+      ).rejects.toThrow('Marine Licence not found')
+    })
+
+    it('should throw a forbidden error if status is not SUBMITTED', async () => {
+      const draftLicence = {
+        ...marineLicence,
+        status: MARINE_LICENCE_STATUS.DRAFT
+      }
+      const marineLicenceService = createService(global.mockMongo, draftLicence)
+      await expect(() =>
+        marineLicenceService.getPublicMarineLicenceById(marineLicence._id)
+      ).rejects.toThrow('Not authorized to request this resource')
+
+      expect(getContactNameById).not.toHaveBeenCalled()
     })
   })
 })

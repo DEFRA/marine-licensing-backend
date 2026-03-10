@@ -1,9 +1,14 @@
 import { getMarineLicenceController } from './get-marine-licence.js'
 import { vi } from 'vitest'
 import { requestFromApplicantUser } from '../../../../.vite/mocks.js'
+import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 
 describe('GET /marine-licence', () => {
-  const paramsValidator = getMarineLicenceController.options.validate.params
+  const authenticatedController = getMarineLicenceController({
+    requiresAuth: true
+  })
+  const publicController = getMarineLicenceController({ requiresAuth: false })
+  const paramsValidator = authenticatedController.options.validate.params
 
   const mockId = '123456789123456789123456'
 
@@ -44,7 +49,7 @@ describe('GET /marine-licence', () => {
       mockedFindOne.mockResolvedValue(null)
 
       await expect(
-        getMarineLicenceController.handler(
+        authenticatedController.handler(
           requestFromApplicantUser({
             params: { id: mockId }
           }),
@@ -62,7 +67,7 @@ describe('GET /marine-licence', () => {
       mockedFindOne.mockRejectedValue(new Error(mockError))
 
       await expect(() =>
-        getMarineLicenceController.handler(
+        authenticatedController.handler(
           requestFromApplicantUser({
             params: { id: mockId }
           }),
@@ -83,7 +88,7 @@ describe('GET /marine-licence', () => {
         contactId: userContactId
       })
 
-      await getMarineLicenceController.handler(
+      await authenticatedController.handler(
         requestFromApplicantUser({
           userContactId,
           params: { id: mockId }
@@ -117,7 +122,7 @@ describe('GET /marine-licence', () => {
       })
 
       await expect(
-        getMarineLicenceController.handler(
+        authenticatedController.handler(
           requestFromApplicantUser({
             userContactId,
             params: { id: mockId }
@@ -127,6 +132,76 @@ describe('GET /marine-licence', () => {
       ).rejects.toThrow('Not authorized to request this resource')
 
       expect(mockedFindOne).toHaveBeenCalled()
+    })
+  })
+
+  describe('Public endpoint', () => {
+    const mockPublicRequest = (overrides = {}) => ({
+      params: { id: mockId },
+      db: global.mockMongo,
+      logger: { info: vi.fn(), error: vi.fn() },
+      ...overrides
+    })
+
+    it('should return 404 if ID does not exist', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue(null)
+
+      await expect(
+        publicController.handler(mockPublicRequest(), mockHandler)
+      ).rejects.toThrow('Marine Licence not found')
+    })
+
+    it('should return an error message if the database operation fails', async () => {
+      const { mockHandler } = global
+
+      const mockError = 'Database failed'
+      mockedFindOne.mockRejectedValue(new Error(mockError))
+
+      await expect(() =>
+        publicController.handler(mockPublicRequest(), mockHandler)
+      ).rejects.toThrow(`Error retrieving marine licence: ${mockError}`)
+    })
+
+    it('should return marine licence for a SUBMITTED record', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: 'abc',
+        status: MARINE_LICENCE_STATUS.SUBMITTED,
+        organisation: { name: 'Dredging Co' }
+      })
+
+      await publicController.handler(mockPublicRequest(), mockHandler)
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'success',
+          value: expect.objectContaining({
+            id: mockId,
+            projectName: 'Test project',
+            whoMarineLicenceIsFor: 'Dredging Co'
+          })
+        })
+      )
+    })
+
+    it('should throw forbidden if status is not SUBMITTED', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: 'abc',
+        status: MARINE_LICENCE_STATUS.DRAFT
+      })
+
+      await expect(
+        publicController.handler(mockPublicRequest(), mockHandler)
+      ).rejects.toThrow('Not authorized to request this resource')
     })
   })
 })
