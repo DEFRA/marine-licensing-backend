@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-import { notAuthorizedMessage } from '../../../shared/constants/errors.js'
+import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 
 export class MarineLicenceService {
   constructor({ db, logger }) {
@@ -38,7 +38,7 @@ export class MarineLicenceService {
         },
         'Authorization error in getMarineLicenceById'
       )
-      throw Boom.forbidden(notAuthorizedMessage)
+      throw Boom.forbidden(notAuthorisedMessage)
     }
     if (!currentUserId) {
       marineLicence.whoMarineLicenceIsFor =
@@ -55,7 +55,7 @@ export class MarineLicenceService {
         { marineLicenceId: id },
         'Authorization error in getPublicMarineLicenceById'
       )
-      throw Boom.forbidden(notAuthorizedMessage)
+      throw Boom.forbidden(notAuthorisedMessage)
     }
 
     marineLicence.whoMarineLicenceIsFor =

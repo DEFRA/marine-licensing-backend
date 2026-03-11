@@ -1,1 +1,1 @@
-export const notAuthorizedMessage = 'Not authorized to request this resource'
+export const notAuthorisedMessage = 'Not authorised to request this resource'

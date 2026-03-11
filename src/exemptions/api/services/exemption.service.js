@@ -3,7 +3,7 @@ import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
-import { notAuthorizedMessage } from '../../../shared/constants/errors.js'
+import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 
 export class ExemptionService {
   constructor({ db, logger }) {
@@ -86,7 +86,7 @@ export class ExemptionService {
         { exemptionId: id },
         'Authorization error in getPublicExemptionById'
       )
-      throw Boom.forbidden(notAuthorizedMessage)
+      throw Boom.forbidden(notAuthorisedMessage)
     }
     exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
     return exemption
@@ -107,7 +107,7 @@ export class ExemptionService {
         },
         'Authorization error in getExemptionByApplicationReference'
       )
-      throw Boom.forbidden(notAuthorizedMessage)
+      throw Boom.forbidden(notAuthorisedMessage)
     }
     if (!currentUserId) {
       exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
