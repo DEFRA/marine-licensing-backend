@@ -119,7 +119,7 @@ describe('MarineLicenceService', () => {
           id: marineLicence._id,
           currentUserId
         })
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
 
       expect(getContactNameById).not.toHaveBeenCalled()
       expect(global.mockMongo.collection).toHaveBeenCalled()
@@ -159,7 +159,7 @@ describe('MarineLicenceService', () => {
       const marineLicenceService = createService(global.mockMongo, draftLicence)
       await expect(() =>
         marineLicenceService.getPublicMarineLicenceById(marineLicence._id)
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
 
       expect(getContactNameById).not.toHaveBeenCalled()
     })

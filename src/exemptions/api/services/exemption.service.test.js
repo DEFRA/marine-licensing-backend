@@ -99,7 +99,7 @@ describe('ExemptionService', () => {
       const currentUserId = '1'
       await expect(() =>
         exemptionService.getExemptionById({ id: exemption._id, currentUserId })
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should allow colleague from same organisation to view submitted exemption', async () => {
@@ -135,7 +135,7 @@ describe('ExemptionService', () => {
           currentUserId: 'different-user',
           currentOrganisationId: orgId
         })
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should not allow user from different organisation to view exemption', async () => {
@@ -151,7 +151,7 @@ describe('ExemptionService', () => {
           currentUserId: 'different-user',
           currentOrganisationId: 'different-org'
         })
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
   })
 
@@ -180,7 +180,7 @@ describe('ExemptionService', () => {
       })
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should throw an unauthorized error if exemption is not active', async () => {
@@ -190,7 +190,7 @@ describe('ExemptionService', () => {
       })
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should return withdrawn exemption with public consent', async () => {
@@ -220,7 +220,7 @@ describe('ExemptionService', () => {
       })
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
   })
 
@@ -279,7 +279,7 @@ describe('ExemptionService', () => {
           applicationReference: exemption.applicationReference,
           currentUserId
         })
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
   })
 })

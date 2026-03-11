@@ -65,7 +65,7 @@ export class ExemptionService {
           },
           'Authorization error in getExemptionById'
         )
-        throw Boom.forbidden('Not authorized to request this resource')
+        throw Boom.forbidden('Not authorised to request this resource')
       }
     }
 

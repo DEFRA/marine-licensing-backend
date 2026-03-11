@@ -85,7 +85,7 @@ describe('Delete marine licence - integration tests', async () => {
     })
 
     expect(statusCode).toBe(403)
-    expect(body.message).toBe('Not authorized to request this resource')
+    expect(body.message).toBe('Not authorised to request this resource')
 
     const stillExistingMarineLicence = await globalThis.mockMongo
       .collection(collectionMarineLicences)

@@ -129,7 +129,7 @@ describe('GET /marine-licence', () => {
           }),
           mockHandler
         )
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
 
       expect(mockedFindOne).toHaveBeenCalled()
     })
@@ -201,7 +201,7 @@ describe('GET /marine-licence', () => {
 
       await expect(
         publicController.handler(mockPublicRequest(), mockHandler)
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
   })
 })
