@@ -109,7 +109,7 @@ describe('Get projects - integration tests', async () => {
         contactId: colleagueContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
         projectName: 'Colleague Marine Licence',
-        status: MARINE_LICENCE_STATUS.ACTIVE
+        status: MARINE_LICENCE_STATUS.SUBMITTED
       })
 
       await globalThis.mockMongo
@@ -278,7 +278,7 @@ describe('Get projects - integration tests', async () => {
         contactId: colleagueContactId,
         organisation: { id: testOrgId, name: 'Test Org' },
         projectName: 'Colleague ML',
-        status: MARINE_LICENCE_STATUS.ACTIVE
+        status: MARINE_LICENCE_STATUS.SUBMITTED
       })
 
       await globalThis.mockMongo

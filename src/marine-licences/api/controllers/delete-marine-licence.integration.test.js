@@ -52,12 +52,12 @@ describe('Delete marine licence - integration tests', async () => {
     expect(body.message).toBe('Not Found')
   })
 
-  test('returns 400 when attempting to delete an active marine licence', async () => {
+  test('returns 400 when attempting to delete a submitted marine licence', async () => {
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
       .findOneAndUpdate(
         { _id: marineLicenceId },
-        { $set: { status: MARINE_LICENCE_STATUS.ACTIVE } }
+        { $set: { status: MARINE_LICENCE_STATUS.SUBMITTED } }
       )
 
     const { statusCode, body } = await makeDeleteRequest({
@@ -85,7 +85,7 @@ describe('Delete marine licence - integration tests', async () => {
     })
 
     expect(statusCode).toBe(403)
-    expect(body.message).toBe('Not authorized to request this resource')
+    expect(body.message).toBe('Not authorised to request this resource')
 
     const stillExistingMarineLicence = await globalThis.mockMongo
       .collection(collectionMarineLicences)

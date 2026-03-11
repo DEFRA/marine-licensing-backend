@@ -8,7 +8,12 @@ export const marineLicences = [
   {
     method: 'GET',
     path: '/marine-licence/{id}',
-    ...getMarineLicenceController
+    ...getMarineLicenceController({ requiresAuth: true })
+  },
+  {
+    method: 'GET',
+    path: '/public/marine-licence/{id}',
+    ...getMarineLicenceController({ requiresAuth: false })
   },
   {
     method: 'POST',

@@ -74,7 +74,7 @@ describe('Withdraw exemption - integration tests', async () => {
     })
 
     expect(statusCode).toBe(403)
-    expect(body.message).toBe('Not authorized to request this resource')
+    expect(body.message).toBe('Not authorised to request this resource')
 
     const stillSubmittedExemption = await globalThis.mockMongo
       .collection(collectionExemptions)

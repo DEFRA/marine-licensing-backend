@@ -112,7 +112,7 @@ describe('authorizeOwnership', () => {
 
         const handler = authorizeOwnership(collectionExemptions)
         await expect(handler(mockRequest, mockH)).rejects.toThrow(
-          'Not authorized to request this resource'
+          'Not authorised to request this resource'
         )
 
         expect(mockDb.collection).toHaveBeenCalledWith(collectionExemptions)
@@ -166,7 +166,7 @@ describe('authorizeOwnership', () => {
 
       const handler = authorizeOwnership('marine-licences')
       await expect(handler(mockRequest, mockH)).rejects.toThrow(
-        'Not authorized to request this resource'
+        'Not authorised to request this resource'
       )
 
       expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
