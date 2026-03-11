@@ -152,7 +152,7 @@ describe('POST /marine-licence/submit', () => {
           $set: {
             applicationReference: 'MLA/2025/10001',
             submittedAt: mockDate,
-            status: MARINE_LICENCE_STATUS.ACTIVE,
+            status: MARINE_LICENCE_STATUS.SUBMITTED,
             updatedAt: mockAuditPayload.updatedAt,
             updatedBy: mockAuditPayload.updatedBy
           }
@@ -233,7 +233,7 @@ describe('POST /marine-licence/submit', () => {
         projectName: 'Test Project',
         applicationReference: 'MLA/2025/10001',
         submittedAt: new Date('2025-06-01'),
-        status: MARINE_LICENCE_STATUS.ACTIVE
+        status: MARINE_LICENCE_STATUS.SUBMITTED
       }
 
       mockMarineLicencesCollection.findOne.mockResolvedValue(

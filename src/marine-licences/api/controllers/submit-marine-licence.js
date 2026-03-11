@@ -60,7 +60,7 @@ const updateMarineLicenceRecord = async ({
       $set: {
         applicationReference,
         submittedAt,
-        status: MARINE_LICENCE_STATUS.ACTIVE,
+        status: MARINE_LICENCE_STATUS.SUBMITTED,
         updatedAt,
         updatedBy
       }
