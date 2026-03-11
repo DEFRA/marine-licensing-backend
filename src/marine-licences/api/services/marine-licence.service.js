@@ -2,7 +2,6 @@ import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-
 import { notAuthorizedMessage } from '../../../shared/constants/errors.js'
 
 export class MarineLicenceService {
