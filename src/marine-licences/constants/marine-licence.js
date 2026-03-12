@@ -1,9 +1,11 @@
 export const MARINE_LICENCE_STATUS = {
   DRAFT: 'DRAFT',
-  ACTIVE: 'ACTIVE'
+  ACTIVE: 'ACTIVE',
+  SUBMITTED: 'SUBMITTED'
 }
 
 export const MARINE_LICENCE_STATUS_LABEL = {
   DRAFT: 'Draft',
-  ACTIVE: 'Active'
+  ACTIVE: 'Active',
+  SUBMITTED: 'Submitted'
 }

@@ -2,8 +2,10 @@ import { expect, vi } from 'vitest'
 import * as dynamicsModule from './dynamics-processor.js'
 
 import { config } from '../../../../config.js'
-import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
-import Boom from '@hapi/boom'
+import {
+  REQUEST_QUEUE_STATUS,
+  DYNAMICS_QUEUE_TYPES
+} from '../../constants/request-queue.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
 import { sendToDynamics } from './dynamics-client.js'
 
@@ -11,24 +13,42 @@ vi.mock('../../../../config.js')
 vi.mock('./get-access-token.js')
 vi.mock('./dynamics-client.js')
 
+const EXEMPTION_QUEUE = 'exemption-dynamics-queue'
+const EXEMPTION_QUEUE_FAILED = 'exemption-dynamics-queue-failed'
+const ML_QUEUE = 'marine-licence-dynamics-queue'
+const ML_QUEUE_FAILED = 'marine-licence-dynamics-queue-failed'
+
+const makeCollectionMock = () => ({
+  find: vi.fn().mockReturnValue({ toArray: vi.fn().mockResolvedValue([]) }),
+  updateOne: vi.fn().mockResolvedValue({}),
+  insertOne: vi.fn().mockResolvedValue({}),
+  deleteOne: vi.fn().mockResolvedValue({})
+})
+
 describe('Dynamics Processor', () => {
   let mockServer
   let mockDb
+  let collections
   const mockGetDynamicsAccessToken = vi.mocked(getDynamicsAccessToken)
-
-  const mockItem = { _id: 'abc123' }
 
   vi.useFakeTimers()
 
   beforeEach(() => {
     mockGetDynamicsAccessToken.mockReturnValue('test_token')
 
+    collections = {
+      [EXEMPTION_QUEUE]: makeCollectionMock(),
+      [EXEMPTION_QUEUE_FAILED]: makeCollectionMock(),
+      [ML_QUEUE]: makeCollectionMock(),
+      [ML_QUEUE_FAILED]: makeCollectionMock()
+    }
+
     mockDb = {
-      collection: vi.fn().mockReturnValue({
-        find: vi.fn().mockReturnValue({
-          toArray: vi.fn().mockResolvedValue([])
-        }),
-        updateOne: vi.fn().mockResolvedValue({})
+      collection: vi.fn().mockImplementation((name) => {
+        if (!collections[name]) {
+          collections[name] = makeCollectionMock()
+        }
+        return collections[name]
       })
     }
 
@@ -43,20 +63,21 @@ describe('Dynamics Processor', () => {
     }
 
     config.get.mockReturnValue({
-      exemptions: {
+      projects: {
         clientId: 'test-client-id',
         clientSecret: 'test-client-secret',
         scope: 'test-scope',
         maxRetries: 3,
-        retryDelayMs: 60000,
-        tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
-      }
+        retryDelayMs: 60000
+      },
+      exemptions: {},
+      tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
     })
 
     vi.clearAllTimers()
   })
 
-  describe('startExemptionsQueuePolling', () => {
+  describe('startDynamicsQueuePolling', () => {
     it('should start polling with the specified interval', () => {
       const intervalMs = 5000
       const setIntervalSpy = vi.spyOn(global, 'setInterval')
@@ -72,12 +93,10 @@ describe('Dynamics Processor', () => {
     })
   })
 
-  describe('stopExemptionsQueuePolling', () => {
+  describe('stopDynamicsQueuePolling', () => {
     it('should stop polling and clear the timer', () => {
       dynamicsModule.startDynamicsQueuePolling(mockServer, 5000)
-
       mockServer.logger.info.mockClear()
-
       dynamicsModule.stopDynamicsQueuePolling(mockServer)
 
       expect(mockServer.logger.info).not.toHaveBeenCalledWith(
@@ -92,14 +111,30 @@ describe('Dynamics Processor', () => {
     })
   })
 
-  describe('handleQueueItemSuccess', () => {
-    it('should update the item status to SUCCESS and log info', async () => {
-      mockServer.db.collection().updateOne.mockReturnValue({})
+  describe('handleDynamicsQueueItemSuccess', () => {
+    it('should update the exemption queue item status to SUCCESS', async () => {
+      const item = { _id: 'abc123', _sourceCollection: EXEMPTION_QUEUE }
 
-      await dynamicsModule.handleDynamicsQueueItemSuccess(mockServer, mockItem)
+      await dynamicsModule.handleDynamicsQueueItemSuccess(mockServer, item)
 
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
-        mockItem,
+      expect(collections[EXEMPTION_QUEUE].updateOne).toHaveBeenCalledWith(
+        { _id: 'abc123' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.SUCCESS,
+            updatedAt: expect.any(Date)
+          }
+        }
+      )
+    })
+
+    it('should update the marine licence queue item status to SUCCESS', async () => {
+      const item = { _id: 'ml123', _sourceCollection: ML_QUEUE }
+
+      await dynamicsModule.handleDynamicsQueueItemSuccess(mockServer, item)
+
+      expect(collections[ML_QUEUE].updateOne).toHaveBeenCalledWith(
+        { _id: 'ml123' },
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
@@ -110,14 +145,18 @@ describe('Dynamics Processor', () => {
     })
   })
 
-  describe('handleQueueItemFailure', () => {
-    it('should increment retries and update status', async () => {
-      const item = { ...mockItem, retries: 1 }
+  describe('handleDynamicsQueueItemFailure', () => {
+    it('should increment retries on an exemption queue item', async () => {
+      const item = {
+        _id: 'abc123',
+        retries: 1,
+        _sourceCollection: EXEMPTION_QUEUE
+      }
 
       await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, item)
 
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
-        mockItem,
+      expect(collections[EXEMPTION_QUEUE].updateOne).toHaveBeenCalledWith(
+        { _id: 'abc123' },
         {
           $set: {
             status: REQUEST_QUEUE_STATUS.FAILED,
@@ -128,51 +167,103 @@ describe('Dynamics Processor', () => {
       )
     })
 
-    it('should move to dead letter queue if retries hit the maximum', async () => {
-      const insertOne = vi.fn().mockResolvedValue({})
-      const deleteOne = vi.fn().mockResolvedValue({})
-      mockServer.db.collection.mockImplementation(function (name) {
-        if (name === 'exemption-dynamics-queue') return { deleteOne }
-        if (name === 'exemption-dynamics-queue-failed') return { insertOne }
-        throw new Error('Unexpected collection')
-      })
-
-      const item = { ...mockItem, retries: 2 }
+    it('should increment retries on a marine licence queue item', async () => {
+      const item = {
+        _id: 'ml123',
+        retries: 1,
+        _sourceCollection: ML_QUEUE
+      }
 
       await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, item)
 
-      expect(insertOne).toHaveBeenCalledWith(
+      expect(collections[ML_QUEUE].updateOne).toHaveBeenCalledWith(
+        { _id: 'ml123' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.FAILED,
+            updatedAt: expect.any(Date)
+          },
+          $inc: { retries: 1 }
+        }
+      )
+    })
+
+    it('should move exemption item to exemption dead letter queue after max retries', async () => {
+      const item = {
+        _id: 'abc123',
+        applicationReferenceNumber: 'EXE/2025/00001',
+        retries: 2,
+        _sourceCollection: EXEMPTION_QUEUE
+      }
+
+      await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, item)
+
+      expect(
+        collections[EXEMPTION_QUEUE_FAILED].insertOne
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
-          ...mockItem,
-          retries: 3
+          _id: 'abc123',
+          retries: 3,
+          status: REQUEST_QUEUE_STATUS.FAILED
         })
       )
-      expect(deleteOne).toHaveBeenCalledWith(mockItem)
+      expect(
+        collections[EXEMPTION_QUEUE_FAILED].insertOne.mock.calls[0][0]
+      ).not.toHaveProperty('_sourceCollection')
+      expect(collections[EXEMPTION_QUEUE].deleteOne).toHaveBeenCalledWith({
+        _id: 'abc123'
+      })
+    })
+
+    it('should move marine licence item to marine licence dead letter queue after max retries', async () => {
+      const item = {
+        _id: 'ml123',
+        applicationReferenceNumber: 'MLA/2025/00001',
+        retries: 2,
+        _sourceCollection: ML_QUEUE
+      }
+
+      await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, item)
+
+      expect(collections[ML_QUEUE_FAILED].insertOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _id: 'ml123',
+          retries: 3,
+          status: REQUEST_QUEUE_STATUS.FAILED
+        })
+      )
+      expect(
+        collections[ML_QUEUE_FAILED].insertOne.mock.calls[0][0]
+      ).not.toHaveProperty('_sourceCollection')
+      expect(collections[ML_QUEUE].deleteOne).toHaveBeenCalledWith({
+        _id: 'ml123'
+      })
     })
   })
 
   describe('processDynamicsQueue', () => {
-    it('should call handleQueueItemSuccess for each queue item', async () => {
-      const mockQueueItems = [
-        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 },
-        {
-          _id: '2',
-          status: REQUEST_QUEUE_STATUS.FAILED,
-          retries: 1,
-          updatedAt: new Date(Date.now() - 70000)
-        }
-      ]
+    it('should query both collections and process combined results', async () => {
+      const exemptionItem = {
+        _id: '1',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0
+      }
+      const mlItem = {
+        _id: '2',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0
+      }
 
-      mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: vi.fn().mockResolvedValue(mockQueueItems)
+      collections[EXEMPTION_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([exemptionItem])
       })
-
-      mockServer.db.collection().updateOne.mockResolvedValue({})
+      collections[ML_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([mlItem])
+      })
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledTimes(2)
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+      expect(collections[EXEMPTION_QUEUE].updateOne).toHaveBeenCalledWith(
         { _id: '1' },
         {
           $set: {
@@ -181,7 +272,7 @@ describe('Dynamics Processor', () => {
           }
         }
       )
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+      expect(collections[ML_QUEUE].updateOne).toHaveBeenCalledWith(
         { _id: '2' },
         {
           $set: {
@@ -192,40 +283,41 @@ describe('Dynamics Processor', () => {
       )
     })
 
-    it('should handle database errors during processing', async () => {
-      mockServer.db.collection.mockImplementation(function () {
-        throw new Error('Database error')
+    it('should tag items with _sourceCollection when processing', async () => {
+      const exemptionItem = {
+        _id: '1',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0
+      }
+
+      collections[EXEMPTION_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([exemptionItem])
       })
 
-      const boomSpy = vi.spyOn(Boom, 'badImplementation')
+      await dynamicsModule.processDynamicsQueue(mockServer)
 
-      await expect(
-        dynamicsModule.processDynamicsQueue(mockServer)
-      ).rejects.toThrow()
-
-      expect(boomSpy).toHaveBeenCalledWith(
-        'Error during processing dynamics queue',
-        'Database error'
-      )
+      const [, , itemPassedToSend] = vi.mocked(sendToDynamics).mock.calls[0]
+      expect(itemPassedToSend._sourceCollection).toBe(EXEMPTION_QUEUE)
     })
 
-    it('should call handleQueueItemFailure when processing fails', async () => {
-      const mockQueueItems = [
-        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 1 }
-      ]
+    it('should call handleQueueItemFailure when sendToDynamics fails', async () => {
+      const item = {
+        _id: '1',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 1
+      }
 
-      mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: vi.fn().mockResolvedValue(mockQueueItems)
+      collections[EXEMPTION_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([item])
       })
 
-      // Mock sendToDynamics to fail for this test
       vi.mocked(sendToDynamics).mockRejectedValueOnce(
         new Error('Processing failed')
       )
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+      expect(collections[EXEMPTION_QUEUE].updateOne).toHaveBeenCalledWith(
         { _id: '1' },
         {
           $set: {
@@ -237,19 +329,154 @@ describe('Dynamics Processor', () => {
       )
     })
 
-    it('should get access token before processing queue items', async () => {
-      const mockQueueItems = [
-        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 }
-      ]
-      mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: vi.fn().mockResolvedValue(mockQueueItems)
-      })
+    it('should get access token when there are items to process', async () => {
+      const item = {
+        _id: '1',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0
+      }
 
-      mockServer.db.collection().updateOne.mockResolvedValue({})
+      collections[EXEMPTION_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([item])
+      })
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
       expect(mockGetDynamicsAccessToken).toHaveBeenCalled()
+    })
+
+    it('should not get access token when both queues are empty', async () => {
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      expect(mockGetDynamicsAccessToken).not.toHaveBeenCalled()
+    })
+
+    it('should only retry FAILED items older than retryDelayMs', async () => {
+      vi.useFakeTimers()
+      const now = new Date('2025-01-01T12:00:00.000Z')
+      vi.setSystemTime(now)
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      const expectedCutoff = new Date(now.getTime() - 60000)
+      expect(collections[EXEMPTION_QUEUE].find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          $or: expect.arrayContaining([
+            {
+              status: REQUEST_QUEUE_STATUS.FAILED,
+              updatedAt: { $lte: expectedCutoff }
+            }
+          ])
+        })
+      )
+
+      vi.useRealTimers()
+    })
+
+    it('should log errors and process empty queue if all collection fetches fail', async () => {
+      collections[EXEMPTION_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockRejectedValue(new Error('Database error'))
+      })
+      collections[ML_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockRejectedValue(new Error('Database error'))
+      })
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      expect(mockServer.logger.error).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(sendToDynamics)).not.toHaveBeenCalled()
+    })
+
+    it('should still process the successful collection if one query fails', async () => {
+      const exemptionItem = {
+        _id: '1',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        retries: 0
+      }
+
+      collections[EXEMPTION_QUEUE].find.mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([exemptionItem])
+      })
+      collections[ML_QUEUE].find.mockReturnValue({
+        toArray: vi
+          .fn()
+          .mockRejectedValue(new Error('ML collection unavailable'))
+      })
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      expect(mockServer.logger.error).toHaveBeenCalledWith(
+        expect.anything(),
+        `Failed to fetch dynamics queue items from ${ML_QUEUE}`
+      )
+      expect(collections[EXEMPTION_QUEUE].updateOne).toHaveBeenCalledWith(
+        { _id: '1' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.SUCCESS,
+            updatedAt: expect.any(Date)
+          }
+        }
+      )
+    })
+  })
+
+  describe('addToDynamicsQueue', () => {
+    const makeRequest = (server) => ({
+      payload: {
+        createdAt: new Date(),
+        createdBy: 'user1',
+        updatedAt: new Date(),
+        updatedBy: 'user1'
+      },
+      db: server.db,
+      server
+    })
+
+    it('should insert into the exemption queue by default', async () => {
+      mockServer.methods = {
+        processDynamicsQueue: vi.fn().mockResolvedValue({})
+      }
+
+      await dynamicsModule.addToDynamicsQueue({
+        request: makeRequest(mockServer),
+        applicationReference: 'EXE/2025/00001',
+        action: 'submit'
+      })
+
+      expect(collections[EXEMPTION_QUEUE].insertOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+          action: 'submit',
+          applicationReferenceNumber: 'EXE/2025/00001',
+          status: REQUEST_QUEUE_STATUS.PENDING,
+          retries: 0
+        })
+      )
+    })
+
+    it('should insert into the marine licence queue when type is marineLicence', async () => {
+      mockServer.methods = {
+        processDynamicsQueue: vi.fn().mockResolvedValue({})
+      }
+
+      await dynamicsModule.addToDynamicsQueue({
+        request: makeRequest(mockServer),
+        applicationReference: 'MLA/2025/00001',
+        action: 'submit',
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+      })
+
+      expect(collections[ML_QUEUE].insertOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+          action: 'submit',
+          applicationReferenceNumber: 'MLA/2025/00001',
+          status: REQUEST_QUEUE_STATUS.PENDING,
+          retries: 0
+        })
+      )
+      expect(collections[EXEMPTION_QUEUE].insertOne).not.toHaveBeenCalled()
     })
   })
 })

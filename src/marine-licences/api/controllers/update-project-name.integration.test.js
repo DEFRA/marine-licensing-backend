@@ -86,7 +86,7 @@ describe('PATCH /marine-licence/project-name - integration tests', async () => {
     })
 
     expect(statusCode).toBe(403)
-    expect(body.message).toBe('Not authorized to request this resource')
+    expect(body.message).toBe('Not authorised to request this resource')
 
     const unchangedMarineLicence = await globalThis.mockMongo
       .collection('marine-licences')

@@ -95,7 +95,7 @@ describe('Delete exemption - integration tests', async () => {
     })
 
     expect(statusCode).toBe(403)
-    expect(body.message).toBe('Not authorized to request this resource')
+    expect(body.message).toBe('Not authorised to request this resource')
 
     // Verify the exemption was NOT deleted from the database
     const stillExistingExemption = await globalThis.mockMongo

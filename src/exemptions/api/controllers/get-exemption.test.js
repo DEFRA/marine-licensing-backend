@@ -176,7 +176,7 @@ describe('GET /exemption', () => {
           }),
           mockHandler
         )
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should allow colleague from same organisation to view submitted exemption', async () => {
@@ -242,7 +242,7 @@ describe('GET /exemption', () => {
           }),
           mockHandler
         )
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should not allow user from different organisation to view exemption', async () => {
@@ -269,7 +269,7 @@ describe('GET /exemption', () => {
           }),
           mockHandler
         )
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should get exemption by id if user is an internal user', async () => {
@@ -404,7 +404,7 @@ describe('GET /exemption', () => {
           }),
           mockHandler
         )
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should throw 403 when exemption is not complete', async () => {
@@ -428,7 +428,7 @@ describe('GET /exemption', () => {
           }),
           mockHandler
         )
-      ).rejects.toThrow('Not authorized to request this resource')
+      ).rejects.toThrow('Not authorised to request this resource')
     })
   })
 })

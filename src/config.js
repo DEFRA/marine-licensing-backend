@@ -239,36 +239,24 @@ const config = convict({
     }
   },
   dynamics: {
-    exemptions: {
+    projects: {
       clientId: {
-        doc: 'Dynamics client ID for exemptions',
+        doc: 'Dynamics client ID shared across projects (exemptions and marine licences)',
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_CLIENT_ID'
       },
       clientSecret: {
-        doc: 'Dynamics client secret for exemptions',
+        doc: 'Dynamics client secret shared across projects',
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_CLIENT_SECRET'
       },
       scope: {
-        doc: 'Scope Dynamics Exemption API',
+        doc: 'Dynamics API scope shared across projects',
         format: String,
         default: 'https://service.flow.microsoft.com//.default',
         env: 'DYNAMICS_SCOPE'
-      },
-      apiUrl: {
-        doc: 'URL for the Dynamics API to send an exemption',
-        format: requiredFromEnvInCdp,
-        default: '',
-        env: 'DYNAMICS_API_URL'
-      },
-      withdrawUrl: {
-        doc: 'URL for the Dynamics API to withdraw exemption',
-        format: requiredFromEnvInCdp,
-        default: '',
-        env: 'DYNAMICS_API_WITHDRAW_URL'
       },
       maxRetries: {
         doc: 'Maximum number of retries for failed Dynamics queue items',
@@ -281,6 +269,28 @@ const config = convict({
         format: Number,
         default: oneMinuteInMS,
         env: 'DYNAMICS_RETRY_DELAY_MS'
+      }
+    },
+    exemptions: {
+      apiUrl: {
+        doc: 'URL for the Dynamics API to send an exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_URL'
+      },
+      withdrawUrl: {
+        doc: 'URL for the Dynamics API to withdraw exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_WITHDRAW_URL'
+      }
+    },
+    marineLicences: {
+      apiUrl: {
+        doc: 'URL for the Dynamics API to send a Marine Licence',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_MARINE_LICENCE_API_URL'
       }
     },
     contactDetails: {

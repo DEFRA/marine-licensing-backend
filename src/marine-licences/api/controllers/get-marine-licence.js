@@ -5,11 +5,12 @@ import { createTaskList } from '../helpers/createTaskList.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 
-export const getMarineLicenceController = {
+export const getMarineLicenceController = ({ requiresAuth }) => ({
   options: {
     validate: {
       params: getMarineLicence
-    }
+    },
+    ...(requiresAuth ? {} : { auth: false })
   },
   handler: async (request, h) => {
     try {
@@ -19,12 +20,18 @@ export const getMarineLicenceController = {
         logger
       } = request
       const marineLicenceService = new MarineLicenceService({ db, logger })
+      let marineLicence
 
-      const currentUserId = getContactId(request.auth)
-      const marineLicence = await marineLicenceService.getMarineLicenceById({
-        id,
-        currentUserId
-      })
+      if (requiresAuth) {
+        const currentUserId = getContactId(request.auth)
+        marineLicence = await marineLicenceService.getMarineLicenceById({
+          id,
+          currentUserId
+        })
+      } else {
+        marineLicence =
+          await marineLicenceService.getPublicMarineLicenceById(id)
+      }
 
       const { _id, ...rest } = marineLicence
       const taskList = createTaskList(marineLicence)
@@ -40,4 +47,4 @@ export const getMarineLicenceController = {
       throw Boom.internal(`Error retrieving marine licence: ${error.message}`)
     }
   }
-}
+})

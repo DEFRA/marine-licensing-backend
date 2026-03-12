@@ -17,7 +17,7 @@ export const authorizeOwnership = (collectionName) => {
       throw Boom.notFound()
     }
     if (document.contactId !== contactId) {
-      throw Boom.forbidden('Not authorized to request this resource')
+      throw Boom.forbidden('Not authorised to request this resource')
     }
 
     return h.continue
