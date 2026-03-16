@@ -11,11 +11,13 @@ import {
   DYNAMICS_QUEUE_TYPES
 } from '../../../shared/common/constants/request-queue.js'
 import { config } from '../../../config.js'
+import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
 
 vi.mock('../../../shared/helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
 vi.mock('../../../shared/common/helpers/dynamics/dynamics-processor.js')
 vi.mock('../../../config.js')
+vi.mock('../../../shared/helpers/send-email-confirmation.js')
 
 describe('POST /marine-licence/submit', () => {
   let mockDb
@@ -83,8 +85,15 @@ describe('POST /marine-licence/submit', () => {
       projectName: 'COMPLETED'
     })
 
-    config.get.mockReturnValue({ isDynamicsEnabled: false })
+    config.get.mockImplementation((key) => {
+      if (key === 'dynamics') return { isDynamicsEnabled: false }
+      if (key === 'frontEndBaseUrl') {
+        return 'https://marine-licensing.defra.gov.uk'
+      }
+      return {}
+    })
     vi.mocked(addToDynamicsQueue).mockResolvedValue(undefined)
+    vi.mocked(sendEmailConfirmation).mockResolvedValue(undefined)
   })
 
   describe('Payload Validation', () => {
@@ -110,7 +119,11 @@ describe('POST /marine-licence/submit', () => {
       const payloadValidator =
         submitMarineLicenceController.options.validate.payload
 
-      const result = payloadValidator.validate({ id: mockMarineLicenceId })
+      const result = payloadValidator.validate({
+        id: mockMarineLicenceId,
+        userEmail: 'test@example.com',
+        userName: 'Test User'
+      })
 
       expect(result.error).toBeUndefined()
     })
@@ -184,6 +197,48 @@ describe('POST /marine-licence/submit', () => {
       )
 
       expect(createTaskList).toHaveBeenCalledWith(mockMarineLicence)
+    })
+  })
+
+  describe('Email Confirmation', () => {
+    it('should send confirmation email on successful submission', async () => {
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        organisation: { name: 'Test Org', userRelationshipType: 'Employee' }
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+
+      await submitMarineLicenceController.handler(
+        {
+          payload: {
+            id: mockMarineLicenceId,
+            userName: 'Jane Doe',
+            userEmail: 'jane@example.com',
+            ...mockAuditPayload
+          },
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+
+      expect(sendEmailConfirmation).toHaveBeenCalledWith({
+        db: mockDb,
+        userName: 'Jane Doe',
+        userEmail: 'jane@example.com',
+        organisation: mockMarineLicence.organisation,
+        applicationReference: 'MLA/2025/10001',
+        viewDetailsUrl: `https://marine-licensing.defra.gov.uk/marine-licence/view-details/${mockMarineLicenceId}`,
+        projectType: 'marine-licence'
+      })
     })
   })
 
@@ -473,7 +528,13 @@ describe('POST /marine-licence/submit', () => {
 
   describe('Dynamics Queue', () => {
     it('should call addToDynamicsQueue with marineLicence type when Dynamics is enabled', async () => {
-      config.get.mockReturnValue({ isDynamicsEnabled: true })
+      config.get.mockImplementation((key) => {
+        if (key === 'dynamics') return { isDynamicsEnabled: true }
+        if (key === 'frontEndBaseUrl') {
+          return 'https://marine-licensing.defra.gov.uk'
+        }
+        return {}
+      })
 
       const mockMarineLicence = {
         _id: ObjectId.createFromHexString(mockMarineLicenceId),

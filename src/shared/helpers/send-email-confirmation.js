@@ -1,22 +1,25 @@
-import { config } from '../../../config.js'
+import { config } from '../../config.js'
 import { NotifyClient } from 'notifications-node-client'
 import {
   createLogger,
   structureErrorForECS
-} from '../../../shared/common/helpers/logging/logger.js'
-import { retryAsyncOperation } from '../../../shared/common/helpers/retry-async-operation.js'
-import { ErrorWithData } from '../../../shared/common/helpers/error-with-data.js'
-import { isOrganisationEmployee } from '../../../shared/common/helpers/organisations.js'
+} from '../common/helpers/logging/logger.js'
+import { retryAsyncOperation } from '../common/helpers/retry-async-operation.js'
+import { ErrorWithData } from '../common/helpers/error-with-data.js'
+import { isOrganisationEmployee } from '../common/helpers/organisations.js'
 import { StatusCodes } from 'http-status-codes'
 
-const getNotifyTemplateId = (organisation) => {
+const getNotifyTemplateId = (organisation, projectType) => {
+  if (projectType === 'marine-licence') {
+    return config.get('notify.notifyMarineLicenceTemplateId')
+  }
   if (isOrganisationEmployee(organisation)) {
-    return config.get('notify.notifyTemplateIdEmployee')
+    return config.get('notify.notifyExemptionTemplateIdEmployee')
   }
   if (organisation?.userRelationshipType === 'Agent') {
-    return config.get('notify.notifyTemplateIdAgent')
+    return config.get('notify.notifyExemptionTemplateIdAgent')
   }
-  return config.get('notify.notifyTemplateId')
+  return config.get('notify.notifyExemptionTemplateId')
 }
 
 const extractStatusCode = (error) => {
@@ -47,7 +50,12 @@ const buildHttpLogContext = (statusCode) => {
     : undefined
 }
 
-const logEmailSuccess = (logger, applicationReference, statusCode) => {
+const logEmailSuccess = (
+  logger,
+  applicationReference,
+  statusCode,
+  projectType
+) => {
   logger.info(
     {
       http: {
@@ -59,7 +67,7 @@ const logEmailSuccess = (logger, applicationReference, statusCode) => {
       operation: 'sendEmail',
       applicationReference
     },
-    `Sent confirmation email for exemption ${applicationReference}`
+    `Sent confirmation email for ${projectType} ${applicationReference}`
   )
 }
 
@@ -67,7 +75,8 @@ const logEmailError = (
   logger,
   emailError,
   statusCode,
-  applicationReference
+  applicationReference,
+  projectType
 ) => {
   logger.error(
     {
@@ -77,7 +86,7 @@ const logEmailError = (
       operation: 'sendEmail',
       applicationReference
     },
-    `Error sending email for exemption ${applicationReference}`
+    `Error sending email for ${projectType} ${applicationReference}`
   )
 }
 
@@ -86,8 +95,8 @@ const sendEmail = async ({
   userEmail,
   organisation,
   applicationReference,
-  frontEndBaseUrl,
-  exemptionId
+  viewDetailsUrl,
+  projectType
 }) => {
   const logger = createLogger()
   const { apiKey, retryIntervalSeconds, retries } = config.get('notify')
@@ -96,7 +105,6 @@ const sendEmail = async ({
   }
   const notifyClient = new NotifyClient(apiKey)
   const emailSendReference = applicationReference
-  const viewDetailsUrl = `${frontEndBaseUrl}/exemption/view-details/${exemptionId}`
   const options = {
     personalisation: {
       name: userName,
@@ -110,7 +118,7 @@ const sendEmail = async ({
     const result = await retryAsyncOperation({
       operation: async () => {
         try {
-          const templateId = getNotifyTemplateId(organisation)
+          const templateId = getNotifyTemplateId(organisation, projectType)
           return await notifyClient.sendEmail(templateId, userEmail, options)
         } catch (error) {
           throw wrapNotifyError(error)
@@ -121,19 +129,32 @@ const sendEmail = async ({
     })
     const { id } = result.data
     // Gov Notify returns CREATED (201) status on successful email creation
-    logEmailSuccess(logger, applicationReference, StatusCodes.CREATED)
+    logEmailSuccess(
+      logger,
+      applicationReference,
+      StatusCodes.CREATED,
+      projectType
+    )
     return { status: 'success', id, reference: emailSendReference }
   } catch (error) {
     const emailError =
       error instanceof Error
         ? error
-        : new Error(`Error sending email for exemption ${applicationReference}`)
+        : new Error(
+            `Error sending email for ${projectType} ${applicationReference}`
+          )
     if (!emailError.code) {
       emailError.code = 'EMAIL_SEND_ERROR'
     }
 
     const statusCode = extractStatusCode(error)
-    logEmailError(logger, emailError, statusCode, applicationReference)
+    logEmailError(
+      logger,
+      emailError,
+      statusCode,
+      applicationReference,
+      projectType
+    )
 
     const errors =
       error instanceof ErrorWithData && error.data
@@ -147,22 +168,22 @@ const sendEmail = async ({
   }
 }
 
-export const sendUserEmailConfirmation = async ({
+export const sendEmailConfirmation = async ({
   db,
   userName,
   userEmail,
   organisation,
   applicationReference,
-  frontEndBaseUrl,
-  exemptionId
+  viewDetailsUrl,
+  projectType
 }) => {
   const result = await sendEmail({
     userName,
     userEmail,
     organisation,
     applicationReference,
-    frontEndBaseUrl,
-    exemptionId
+    viewDetailsUrl,
+    projectType
   })
   db.collection('email-queue')?.insertOne({
     applicationReferenceNumber: applicationReference,

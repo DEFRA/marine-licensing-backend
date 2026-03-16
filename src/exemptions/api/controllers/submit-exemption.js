@@ -9,7 +9,7 @@ import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { ExemptionService } from '../services/exemption.service.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { config } from '../../../config.js'
-import { sendUserEmailConfirmation } from '../helpers/send-user-email-confirmation.js'
+import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
@@ -140,14 +140,14 @@ export const submitExemptionController = {
 
       const { organisation } = exemption
       // async; don't wait for this to complete
-      sendUserEmailConfirmation({
+      sendEmailConfirmation({
         db,
         userName,
         userEmail,
         organisation,
         applicationReference,
-        frontEndBaseUrl,
-        exemptionId: id
+        viewDetailsUrl: `${frontEndBaseUrl}/exemption/view-details/${id}`,
+        projectType: 'exemption'
       })
 
       return h
