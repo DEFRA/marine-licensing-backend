@@ -420,29 +420,45 @@ const config = convict({
       default: 3,
       env: 'NOTIFY_RETRIES'
     },
-    notifyExemptionTemplateId: {
-      doc: 'Notify template ID',
-      format: String,
-      default: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
-      env: 'NOTIFY_TEMPLATE_ID'
+    exemption: {
+      notifyTemplateId: {
+        doc: 'Notify template ID for exemption confirmation',
+        format: String,
+        default: 'a9f8607a-1a1b-4c49-87c0-b260824d2e12',
+        env: 'NOTIFY_TEMPLATE_ID'
+      },
+      notifyTemplateIdEmployee: {
+        doc: 'Notify template ID for exemption confirmation (employee)',
+        format: String,
+        default: 'acaa23a2-a7df-4d77-be68-a37b1253d3c8',
+        env: 'NOTIFY_TEMPLATE_ID_EMPLOYEE'
+      },
+      notifyTemplateIdAgent: {
+        doc: 'Notify template ID for exemption confirmation (agent)',
+        format: String,
+        default: 'e7ad2882-ca12-44fa-b56d-0afbb18d9ccc',
+        env: 'NOTIFY_TEMPLATE_ID_AGENT'
+      }
     },
-    notifyExemptionTemplateIdEmployee: {
-      doc: 'Notify template ID for employee',
-      format: String,
-      default: 'acaa23a2-a7df-4d77-be68-a37b1253d3c8',
-      env: 'NOTIFY_TEMPLATE_ID_EMPLOYEE'
-    },
-    notifyExemptionTemplateIdAgent: {
-      doc: 'Notify template ID for agent',
-      format: String,
-      default: 'e7ad2882-ca12-44fa-b56d-0afbb18d9ccc',
-      env: 'NOTIFY_TEMPLATE_ID_AGENT'
-    },
-    notifyMarineLicenceTemplateId: {
-      doc: 'Notify template ID for marine licence confirmation',
-      format: String,
-      default: '',
-      env: 'NOTIFY_MARINE_LICENCE_TEMPLATE_ID'
+    marineLicence: {
+      notifyTemplateId: {
+        doc: 'Notify template ID for marine licence confirmation',
+        format: String,
+        default: '',
+        env: 'NOTIFY_MARINE_LICENCE_TEMPLATE_ID'
+      },
+      notifyTemplateIdEmployee: {
+        doc: 'Notify template ID for marine licence confirmation (employee)',
+        format: String,
+        default: '',
+        env: 'NOTIFY_MARINE_LICENCE_TEMPLATE_ID_EMPLOYEE'
+      },
+      notifyTemplateIdAgent: {
+        doc: 'Notify template ID for marine licence confirmation (agent)',
+        format: String,
+        default: '',
+        env: 'NOTIFY_MARINE_LICENCE_TEMPLATE_ID_AGENT'
+      }
     }
   }
 })

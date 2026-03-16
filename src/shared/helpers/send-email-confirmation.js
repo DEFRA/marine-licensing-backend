@@ -10,16 +10,17 @@ import { isOrganisationEmployee } from '../common/helpers/organisations.js'
 import { StatusCodes } from 'http-status-codes'
 
 const getNotifyTemplateId = (organisation, projectType) => {
-  if (projectType === 'marine-licence') {
-    return config.get('notify.notifyMarineLicenceTemplateId')
-  }
+  const { exemption, marineLicence } = config.get('notify')
+  const notifyConfig =
+    projectType === 'marine-licence' ? marineLicence : exemption
+
   if (isOrganisationEmployee(organisation)) {
-    return config.get('notify.notifyExemptionTemplateIdEmployee')
+    return notifyConfig.notifyTemplateIdEmployee
   }
   if (organisation?.userRelationshipType === 'Agent') {
-    return config.get('notify.notifyExemptionTemplateIdAgent')
+    return notifyConfig.notifyTemplateIdAgent
   }
-  return config.get('notify.notifyExemptionTemplateId')
+  return notifyConfig.notifyTemplateId
 }
 
 const extractStatusCode = (error) => {

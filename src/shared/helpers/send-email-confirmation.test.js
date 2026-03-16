@@ -41,26 +41,20 @@ describe('sendEmailConfirmation', () => {
       apiKey: 'test-api-key',
       retryIntervalSeconds: 1,
       retries: 1,
-      notifyTemplateId: '123',
-      notifyTemplateIdEmployee: '456',
-      notifyTemplateIdAgent: '789',
-      notifyMarineLicenceTemplateId: 'ml-template-id'
+      exemption: {
+        notifyTemplateId: '123',
+        notifyTemplateIdEmployee: '456',
+        notifyTemplateIdAgent: '789'
+      },
+      marineLicence: {
+        notifyTemplateId: 'ml-123',
+        notifyTemplateIdEmployee: 'ml-456',
+        notifyTemplateIdAgent: 'ml-789'
+      }
     }
 
     config.get.mockImplementation((key) => {
       if (key === 'notify') return mockConfig
-      if (key === 'notify.notifyExemptionTemplateId') {
-        return mockConfig.notifyTemplateId
-      }
-      if (key === 'notify.notifyExemptionTemplateIdEmployee') {
-        return mockConfig.notifyTemplateIdEmployee
-      }
-      if (key === 'notify.notifyExemptionTemplateIdAgent') {
-        return mockConfig.notifyTemplateIdAgent
-      }
-      if (key === 'notify.notifyMarineLicenceTemplateId') {
-        return mockConfig.notifyMarineLicenceTemplateId
-      }
       return {}
     })
     NotifyClient.mockImplementation(function () {
@@ -83,7 +77,7 @@ describe('sendEmailConfirmation', () => {
     })
 
     expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-      mockConfig.notifyMarineLicenceTemplateId,
+      mockConfig.marineLicence.notifyTemplateId,
       'jane@example.com',
       {
         personalisation: {
@@ -169,7 +163,7 @@ describe('sendEmailConfirmation', () => {
     })
 
     expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-      mockConfig.notifyTemplateIdEmployee,
+      mockConfig.exemption.notifyTemplateIdEmployee,
       'bob@org.com',
       expect.objectContaining({
         personalisation: expect.objectContaining({
@@ -179,7 +173,7 @@ describe('sendEmailConfirmation', () => {
     )
   })
 
-  it('should use marine-licence template for marine-licence regardless of organisation type', async () => {
+  it('should use marine-licence employee template for marine-licence employee organisations', async () => {
     mockNotifyClient.sendEmail.mockResolvedValue({ data: { id: 'id-ml' } })
 
     await sendEmailConfirmation({
@@ -193,7 +187,7 @@ describe('sendEmailConfirmation', () => {
     })
 
     expect(mockNotifyClient.sendEmail).toHaveBeenCalledWith(
-      mockConfig.notifyMarineLicenceTemplateId,
+      mockConfig.marineLicence.notifyTemplateIdEmployee,
       'bob@org.com',
       expect.any(Object)
     )
