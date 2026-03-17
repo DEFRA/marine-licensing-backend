@@ -291,7 +291,7 @@ export const sendMarineLicenceToDynamics = async (
     contactid: marineLicence.contactId,
     projectName: marineLicence.projectName,
     reference: applicationReferenceNumber,
-    applicationUrl: `${frontEndBaseUrl}/view-details/${marineLicence._id}`,
+    applicationUrl: `${frontEndBaseUrl}/view-marine-licence-details/${marineLicence._id}`,
     ...(marineLicence.organisation?.id
       ? { applicantOrganisationId: marineLicence.organisation.id }
       : {}),

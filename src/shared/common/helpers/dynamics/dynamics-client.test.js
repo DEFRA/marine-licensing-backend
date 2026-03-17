@@ -328,7 +328,8 @@ describe('Dynamics Client', () => {
             projectName: 'Test Marine Project',
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',
-            applicationUrl: 'http://localhost/view-details/ml-123',
+            applicationUrl:
+              'http://localhost/view-marine-licence-details/ml-123',
             status: 'SUBMITTED'
           },
           headers: {
