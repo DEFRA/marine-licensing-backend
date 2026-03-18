@@ -3,13 +3,15 @@ import { createTaskList, COMPLETED } from './createTaskList'
 describe('createTaskList', () => {
   it('should mark tasks as COMPLETED when corresponding marineLicence properties exist', () => {
     const marineLicence = {
-      projectName: 'Test Project'
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers'
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      projectName: COMPLETED
+      projectName: COMPLETED,
+      specialLegalPowers: COMPLETED
     })
   })
 
@@ -19,19 +21,22 @@ describe('createTaskList', () => {
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      projectName: 'INCOMPLETE'
+      projectName: 'INCOMPLETE',
+      specialLegalPowers: 'INCOMPLETE'
     })
   })
 
   it('should correctly handle an empty object', () => {
     const marineLicence = {
-      projectName: 'Test Project'
+      projectName: 'Test Project',
+      specialLegalPowers: 'some powers'
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      projectName: COMPLETED
+      projectName: COMPLETED,
+      specialLegalPowers: COMPLETED
     })
   })
 })
