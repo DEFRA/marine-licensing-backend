@@ -14,7 +14,7 @@ describe('PATCH /marine-licence/special-legal-powers', () => {
   it('should fail if fields are missing', () => {
     const result = payloadValidator.validate({})
     expect(result.error.message).toContain(
-      'SPECIAL_LEGAL_POWERS_DETAILS_REQUIRED'
+      'SPECIAL_LEGAL_POWERS_AGREE_REQUIRED'
     )
   })
 
@@ -23,7 +23,7 @@ describe('PATCH /marine-licence/special-legal-powers', () => {
       agree: 'maybe'
     })
     expect(result.error.message).toContain(
-      'SPECIAL_LEGAL_POWERS_DETAILS_REQUIRED'
+      'SPECIAL_LEGAL_POWERS_AGREE_REQUIRED'
     )
   })
 
@@ -32,7 +32,7 @@ describe('PATCH /marine-licence/special-legal-powers', () => {
       agree: ''
     })
     expect(result.error.message).toContain(
-      'SPECIAL_LEGAL_POWERS_DETAILS_REQUIRED'
+      'SPECIAL_LEGAL_POWERS_AGREE_REQUIRED'
     )
   })
 
