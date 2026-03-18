@@ -47,7 +47,8 @@ describe('Get marine licence - integration tests', async () => {
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
       taskList: {
-        projectName: 'COMPLETED'
+        projectName: 'COMPLETED',
+        specialLegalPowers: 'INCOMPLETE'
       }
     })
 
@@ -83,7 +84,8 @@ describe('Get marine licence - integration tests', async () => {
       updatedAt: marineLicence.updatedAt.toISOString(),
       whoMarineLicenceIsFor: 'Dave Barnett',
       taskList: {
-        projectName: 'COMPLETED'
+        projectName: 'COMPLETED',
+        specialLegalPowers: 'INCOMPLETE'
       }
     })
   })

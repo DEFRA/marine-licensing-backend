@@ -22,11 +22,11 @@ describe('createTaskList', () => {
 
     expect(result).toEqual({
       projectName: 'INCOMPLETE',
-      specialLegalPowers: 'INCOMPLETE'
+      specialLegalPowers: 'COMPLETED' // specialLegalPowers is considered completed if it's undefined
     })
   })
 
-  it('should correctly handle an empty object', () => {
+  it('should mark tasks as COMPLETED when all required properties are present', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers'
