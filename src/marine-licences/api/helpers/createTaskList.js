@@ -5,8 +5,7 @@ export const INCOMPLETE = 'INCOMPLETE'
 export const createTaskList = (marineLicence) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
-    specialLegalPowers: (value) =>
-      value === undefined || value ? COMPLETED : INCOMPLETE
+    specialLegalPowers: (value) => (value ? COMPLETED : INCOMPLETE)
   }
 
   const taskList = {}

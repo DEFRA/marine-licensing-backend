@@ -22,7 +22,7 @@ describe('createTaskList', () => {
 
     expect(result).toEqual({
       projectName: 'INCOMPLETE',
-      specialLegalPowers: 'COMPLETED' // specialLegalPowers is considered completed if it's undefined
+      specialLegalPowers: 'INCOMPLETE'
     })
   })
 
