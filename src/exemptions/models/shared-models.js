@@ -8,3 +8,5 @@ export const exemptionId = {
     'any.required': 'EXEMPTION_ID_REQUIRED'
   })
 }
+
+export const exemptionIdOnly = joi.object(exemptionId)
