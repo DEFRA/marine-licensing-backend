@@ -51,6 +51,11 @@ describe('POST /exemption/backfill-areas', async () => {
         message: 'Backfill for Exemption is successful'
       }
     })
+
+    const updated = await db
+      .collection(collectionExemptions)
+      .findOne({ _id: exemptionId })
+    expect(updated.areaBackfillCompleteAt).toBeDefined()
   })
 
   it('should return 400 when no id is provided', async () => {

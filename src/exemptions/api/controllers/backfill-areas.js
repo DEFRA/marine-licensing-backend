@@ -5,6 +5,7 @@ import { exemptionIdOnly } from '../../models/shared-models.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
+import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 
 export const backfillAreasController = {
   options: {
@@ -43,6 +44,13 @@ export const backfillAreasController = {
         updatedAt,
         updatedBy
       })
+
+      await db
+        .collection(collectionExemptions)
+        .updateOne(
+          { _id: exemption._id },
+          { $set: { areaBackfillCompleteAt: new Date().toISOString() } }
+        )
 
       return h
         .response({

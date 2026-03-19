@@ -39,7 +39,8 @@ describe('POST /exemption/backfill-areas', () => {
 
     mockDb = {
       collection: vi.fn().mockReturnValue({
-        findOne: vi.fn()
+        findOne: vi.fn(),
+        updateOne: vi.fn().mockResolvedValue(undefined)
       })
     }
 
@@ -67,6 +68,11 @@ describe('POST /exemption/backfill-areas', () => {
       activeExemption,
       mockDb,
       { updatedAt: undefined, updatedBy: undefined }
+    )
+
+    expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
+      { _id: activeExemption._id },
+      { $set: { areaBackfillCompleteAt: expect.any(String) } }
     )
 
     expect(mockHandler.response).toHaveBeenCalledWith({

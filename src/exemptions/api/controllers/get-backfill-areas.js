@@ -10,6 +10,7 @@ export const getBackfillAreasExemptionsController = {
       .collection(collectionExemptions)
       .find({
         status: EXEMPTION_STATUS.ACTIVE,
+        areaBackfillCompleteAt: { $exists: false },
         $or: [
           { coastalOperationsAreas: { $exists: false } },
           { marinePlanAreas: { $exists: false } }

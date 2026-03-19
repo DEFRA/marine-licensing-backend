@@ -70,6 +70,29 @@ describe('Get backfill for exemptions - integration tests', async () => {
     ])
   })
 
+  test('does not return exemptions that have already been backfilled', async () => {
+    activeExemption1 = {
+      ...activeExemption1,
+      areaBackfillCompleteAt: new Date().toISOString()
+    }
+
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertMany([activeExemption1, activeExemption2])
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: '/exemptions/backfill-areas',
+      isInternalUser: true
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body.backfillAreas).toHaveLength(1)
+    expect(body.backfillAreas[0].applicationReference).toBe(
+      activeExemption2.applicationReference
+    )
+  })
+
   test('does not return when we already have values for areas', async () => {
     activeExemption1 = {
       ...activeExemption1,
