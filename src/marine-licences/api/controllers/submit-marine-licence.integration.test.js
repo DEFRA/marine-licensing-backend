@@ -44,7 +44,9 @@ describe('POST /marine-licence/submit', async () => {
       method: 'POST',
       url: '/marine-licence/submit',
       payload: {
-        id: marineLicenceId.toHexString()
+        id: marineLicenceId.toHexString(),
+        userEmail: 'test@example.com',
+        userName: 'Test User'
       },
       auth: {
         strategy: 'jwt',
@@ -84,7 +86,9 @@ describe('POST /marine-licence/submit', async () => {
       method: 'POST',
       url: '/marine-licence/submit',
       payload: {
-        id: marineLicenceId.toHexString()
+        id: marineLicenceId.toHexString(),
+        userEmail: 'test@example.com',
+        userName: 'Test User'
       },
       auth: {
         strategy: 'jwt',
@@ -110,7 +114,9 @@ describe('POST /marine-licence/submit', async () => {
       method: 'POST',
       url: '/marine-licence/submit',
       payload: {
-        id: marineLicenceId.toHexString()
+        id: marineLicenceId.toHexString(),
+        userEmail: 'test@example.com',
+        userName: 'Test User'
       },
       auth: {
         strategy: 'jwt',

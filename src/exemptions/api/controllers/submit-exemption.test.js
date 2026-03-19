@@ -19,7 +19,7 @@ vi.mock('notifications-node-client', () => ({
 }))
 vi.mock('../../../shared/helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
-vi.mock('../helpers/send-user-email-confirmation.js')
+vi.mock('../../../shared/helpers/send-email-confirmation.js')
 vi.mock('../../../config.js')
 vi.mock('../../../shared/common/helpers/geo/update-coastal-operations-areas.js')
 vi.mock('../../../shared/common/helpers/geo/update-marine-planning-areas.js')
