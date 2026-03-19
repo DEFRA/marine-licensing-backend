@@ -15,6 +15,7 @@ import {
 } from '../../../shared/common/constants/request-queue.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/dynamics-processor.js'
 import { config } from '../../../config.js'
+import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
 
 const checkForIncompleteTasks = (marineLicence) => {
   const taskList = createTaskList(marineLicence)
@@ -86,9 +87,10 @@ export const submitMarineLicenceController = {
   handler: async (request, h) => {
     try {
       const { payload, db, locker } = request
-      const { id } = payload
+      const { id, userName, userEmail } = payload
 
       const { isDynamicsEnabled } = config.get('dynamics')
+      const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
       const marineLicence = await getMarineLicenceFromDb(request, id)
 
@@ -117,6 +119,18 @@ export const submitMarineLicenceController = {
           type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
         })
       }
+
+      const { organisation } = marineLicence
+      // async; don't wait for this to complete
+      sendEmailConfirmation({
+        db,
+        userName,
+        userEmail,
+        organisation,
+        applicationReference,
+        viewDetailsUrl: `${frontEndBaseUrl}/marine-licence/view-details/${id}`,
+        projectType: 'marine-licence'
+      })
 
       return h
         .response({
