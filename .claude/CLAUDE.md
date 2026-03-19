@@ -234,7 +234,7 @@ DYNAMICS_CLIENT_SECRET=***
 - **Service:** GOV.UK Notify API
 - **Configuration:** Template IDs for user and organisation emails
 - **Retry:** Configured with backoff logic
-- **Usage:** `src/api/exemptions/helpers/send-user-email-confirmation.js`
+- **Usage:** `src/shared/helpers/send-email-confirmation.js`
 
 ### Proxy & Network
 
