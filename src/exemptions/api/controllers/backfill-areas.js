@@ -6,6 +6,9 @@ import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
+import { DYNAMICS_REQUEST_ACTIONS } from '../../../shared/common/constants/request-queue.js'
+import { config } from '../../../config.js'
 
 export const backfillAreasController = {
   options: {
@@ -21,6 +24,7 @@ export const backfillAreasController = {
     try {
       const { payload, db, logger } = request
       const { id, updatedAt, updatedBy } = payload
+      const { isDynamicsEnabled } = config.get('dynamics')
 
       const exemptionService = new ExemptionService({ db, logger })
       const exemption = await exemptionService.getExemptionById({ id })
@@ -51,6 +55,14 @@ export const backfillAreasController = {
           { _id: exemption._id },
           { $set: { areaBackfillCompleteAt: new Date().toISOString() } }
         )
+
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.UPDATE
+        })
+      }
 
       return h
         .response({

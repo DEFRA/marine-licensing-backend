@@ -5,9 +5,14 @@ import Boom from '@hapi/boom'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
+import { config } from '../../../config.js'
+import { DYNAMICS_REQUEST_ACTIONS } from '../../../shared/common/constants/request-queue.js'
 
 vi.mock('../../../shared/common/helpers/geo/update-coastal-operations-areas.js')
 vi.mock('../../../shared/common/helpers/geo/update-marine-planning-areas.js')
+vi.mock('../../../shared/common/helpers/dynamics/index.js')
+vi.mock('../../../config.js')
 
 describe('POST /exemption/backfill-areas', () => {
   let mockDb
@@ -46,6 +51,8 @@ describe('POST /exemption/backfill-areas', () => {
 
     updateCoastalOperationsAreas.mockResolvedValue(undefined)
     updateMarinePlanningAreas.mockResolvedValue(undefined)
+    vi.mocked(addToDynamicsQueue).mockResolvedValue(undefined)
+    config.get.mockReturnValue({ isDynamicsEnabled: false })
   })
 
   it('should successfully backfill exemption areas', async () => {
@@ -155,5 +162,39 @@ describe('POST /exemption/backfill-areas', () => {
       expect(error.output.statusCode).toBe(500)
       expect(error.message).toContain('Failed to backfill exemption')
     }
+  })
+
+  it('should call addToDynamicsQueue with UPDATE action when Dynamics is enabled', async () => {
+    config.get.mockReturnValue({ isDynamicsEnabled: true })
+    mockDb.collection().findOne.mockResolvedValue(activeExemption)
+
+    const request = {
+      payload: { id: mockExemptionId },
+      db: mockDb,
+      logger: mockLogger
+    }
+
+    await backfillAreasController.handler(request, mockHandler)
+
+    expect(addToDynamicsQueue).toHaveBeenCalledWith({
+      request,
+      applicationReference: activeExemption.applicationReference,
+      action: DYNAMICS_REQUEST_ACTIONS.UPDATE
+    })
+  })
+
+  it('should not call addToDynamicsQueue when Dynamics is disabled', async () => {
+    config.get.mockReturnValue({ isDynamicsEnabled: false })
+    mockDb.collection().findOne.mockResolvedValue(activeExemption)
+
+    const request = {
+      payload: { id: mockExemptionId },
+      db: mockDb,
+      logger: mockLogger
+    }
+
+    await backfillAreasController.handler(request, mockHandler)
+
+    expect(addToDynamicsQueue).not.toHaveBeenCalled()
   })
 })
