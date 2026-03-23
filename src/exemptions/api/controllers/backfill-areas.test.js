@@ -114,8 +114,7 @@ describe('POST /exemption/backfill-areas', () => {
   it('should throw error if exemption already has correct data', async () => {
     mockDb.collection().findOne.mockResolvedValue({
       ...activeExemption,
-      marinePlanAreas: undefined,
-      coastalOperationsAreas: undefined
+      coastalOperationsAreas: ['South west Inshore']
     })
 
     const request = {

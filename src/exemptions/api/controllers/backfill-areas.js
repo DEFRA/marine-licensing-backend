@@ -33,7 +33,7 @@ export const backfillAreasController = {
         throw Boom.badRequest(`Exemption is not in ${EXEMPTION_STATUS.ACTIVE}`)
       }
 
-      if (!exemption.marinePlanAreas && !exemption.coastalOperationsAreas) {
+      if (exemption.marinePlanAreas && exemption.coastalOperationsAreas) {
         throw Boom.badRequest('Exemption already has correct data')
       }
 
