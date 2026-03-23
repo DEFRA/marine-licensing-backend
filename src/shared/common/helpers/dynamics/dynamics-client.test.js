@@ -5,7 +5,8 @@ import {
   sendExemptionToDynamics,
   sendMarineLicenceToDynamics,
   sendToDynamics,
-  sendWithdrawToDynamics
+  sendWithdrawToDynamics,
+  sendUpdateExemptionToDynamics
 } from './dynamics-client.js'
 import {
   EXEMPTION_STATUS,
@@ -54,7 +55,8 @@ describe('Dynamics Client', () => {
             },
             exemptions: {
               apiUrl: 'https://localhost/api/data/v9.2',
-              withdrawUrl: 'https://localhost/api/data/v9.2'
+              withdrawUrl: 'https://localhost/api/data/v9.2',
+              updateUrl: 'https://localhost/api/data/v9.2/exemptions/update'
             },
             marineLicences: {
               apiUrl: 'https://localhost/api/data/v9.2/marine-licences'
@@ -284,6 +286,117 @@ describe('Dynamics Client', () => {
     })
   })
 
+  describe('sendUpdateExemptionToDynamics', () => {
+    const mockQueueItem = {
+      _id: 'queue-item-id',
+      applicationReferenceNumber: 'TEST-REF-001'
+    }
+
+    const mockExemption = {
+      _id: '123',
+      marinePlanAreas: ['North east inshore'],
+      coastalOperationsAreas: ['North']
+    }
+
+    const mockAccessToken = 'test-access-token'
+
+    beforeEach(() => {
+      mockWreckPost.mockResolvedValue({
+        payload: { id: 'dynamics-record-id' },
+        res: { statusCode: 202 }
+      })
+    })
+
+    it('should send update data to Dynamics with correct payload and headers', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+
+      const result = await sendUpdateExemptionToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(result).toEqual({ id: 'dynamics-record-id' })
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/exemptions/update',
+        expect.objectContaining({
+          payload: {
+            reference: 'TEST-REF-001',
+            marinePlanAreas: ['North east inshore'],
+            coastalOperationsAreas: ['North']
+          },
+          headers: {
+            Authorization: 'Bearer test-access-token',
+            'Content-Type': 'application/json'
+          }
+        })
+      )
+    })
+
+    it('should default marinePlanAreas and coastalOperationsAreas to empty arrays when absent', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockExemption,
+        marinePlanAreas: undefined,
+        coastalOperationsAreas: undefined
+      })
+
+      await sendUpdateExemptionToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      const payload = mockWreckPost.mock.calls[0][1].payload
+      expect(payload.marinePlanAreas).toEqual([])
+      expect(payload.coastalOperationsAreas).toEqual([])
+    })
+
+    it('should throw error if exemption not found', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(null)
+
+      await expect(
+        sendUpdateExemptionToDynamics(
+          mockServer,
+          mockAccessToken,
+          mockQueueItem
+        )
+      ).rejects.toThrow(
+        'Exemption not found for applicationReference: TEST-REF-001'
+      )
+    })
+
+    it('should throw error if request fails', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+      mockWreckPost.mockImplementation(function () {
+        throw new Error('Dynamics API error')
+      })
+
+      await expect(
+        sendUpdateExemptionToDynamics(
+          mockServer,
+          mockAccessToken,
+          mockQueueItem
+        )
+      ).rejects.toThrow('Dynamics API error')
+    })
+
+    it('should throw error if response status is not 202', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+      mockWreckPost.mockResolvedValue({
+        payload: { error: 'Bad Request' },
+        res: { statusCode: 400 }
+      })
+
+      await expect(
+        sendUpdateExemptionToDynamics(
+          mockServer,
+          mockAccessToken,
+          mockQueueItem
+        )
+      ).rejects.toThrow('Dynamics API returned status 400')
+    })
+  })
+
   describe('sendMarineLicenceToDynamics', () => {
     const mockQueueItem = {
       _id: 'queue-item-id',
@@ -474,6 +587,34 @@ describe('Dynamics Client', () => {
           headers: {
             Authorization: 'Bearer test-access-token',
             'Content-Type': 'application/json'
+          }
+        })
+      )
+    })
+
+    it('should route to sendUpdateExemptionToDynamics when action is update', async () => {
+      const mockExemptionForUpdate = {
+        _id: '123',
+        marinePlanAreas: ['North east inshore'],
+        coastalOperationsAreas: ['North']
+      }
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValue(mockExemptionForUpdate)
+
+      const result = await sendToDynamics(mockServer, mockAccessToken, {
+        ...mockQueueItem,
+        action: DYNAMICS_REQUEST_ACTIONS.UPDATE
+      })
+
+      expect(result).toEqual({ id: 'dynamics-record-id' })
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/exemptions/update',
+        expect.objectContaining({
+          payload: {
+            reference: 'TEST-REF-001',
+            marinePlanAreas: ['North east inshore'],
+            coastalOperationsAreas: ['North']
           }
         })
       )

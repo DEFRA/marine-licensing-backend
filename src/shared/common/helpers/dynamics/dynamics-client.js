@@ -88,6 +88,18 @@ const updateQueueStatus = async (db, queueItemId, collectionName) => {
 }
 
 /**
+ * Builds the Dynamics API payload for exemption update
+ * @param {Object} exemption - The exemption document
+ * @param {string} applicationReferenceNumber - Application reference number
+ * @returns {Object} The payload for Dynamics update API
+ */
+const buildUpdateDynamicsPayload = (exemption, applicationReferenceNumber) => ({
+  reference: applicationReferenceNumber,
+  marinePlanAreas: exemption.marinePlanAreas ?? [],
+  coastalOperationsAreas: exemption.coastalOperationsAreas ?? []
+})
+
+/**
  * Builds the Dynamics API payload
  * @param {Object} exemption - The exemption document
  * @param {string} applicationReferenceNumber - Application reference number
@@ -263,6 +275,48 @@ export const sendWithdrawToDynamics = async (
   return response.payload
 }
 
+export const sendUpdateExemptionToDynamics = async (
+  server,
+  accessToken,
+  queueItem
+) => {
+  const {
+    exemptions: { updateUrl }
+  } = config.get('dynamics')
+  const { applicationReferenceNumber } = queueItem
+
+  await updateQueueStatus(server.db, queueItem._id, collectionDynamicsQueue)
+  const exemption = await fetchExemption(server.db, applicationReferenceNumber)
+
+  const payload = buildUpdateDynamicsPayload(
+    exemption,
+    applicationReferenceNumber
+  )
+
+  const response = await Wreck.post(updateUrl, {
+    payload,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  })
+
+  const statusCode = response.res?.statusCode
+  validateDynamicsResponse(
+    statusCode,
+    applicationReferenceNumber,
+    'updateExemption'
+  )
+  logDynamicsSuccess(
+    statusCode,
+    applicationReferenceNumber,
+    'updateExemption',
+    'Successfully sent exemption update to Dynamics 365'
+  )
+
+  return response.payload
+}
+
 export const sendMarineLicenceToDynamics = async (
   server,
   accessToken,
@@ -322,12 +376,20 @@ export const sendMarineLicenceToDynamics = async (
   return response.payload
 }
 
-export const sendToDynamics = async (server, accessToken, queueItem) => {
+const getHandler = (queueItem) => {
   if (queueItem.type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
-    return sendMarineLicenceToDynamics(server, accessToken, queueItem)
+    return sendMarineLicenceToDynamics
   }
   if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.WITHDRAW) {
-    return sendWithdrawToDynamics(server, accessToken, queueItem)
+    return sendWithdrawToDynamics
   }
-  return sendExemptionToDynamics(server, accessToken, queueItem)
+  if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.UPDATE) {
+    return sendUpdateExemptionToDynamics
+  }
+  return sendExemptionToDynamics
+}
+
+export const sendToDynamics = async (server, accessToken, queueItem) => {
+  const handler = getHandler(queueItem)
+  return handler(server, accessToken, queueItem)
 }
