@@ -8,6 +8,8 @@ import { submitExemptionController } from './controllers/submit-exemption.js'
 import { deleteExemptionController } from './controllers/delete-exemption.js'
 import { sendToEmpController } from './controllers/send-to-emp.js'
 import { withdrawExemptionController } from './controllers/withdraw-exemption.js'
+import { getBackfillAreasExemptionsController } from './controllers/get-backfill-areas.js'
+import { backfillAreasController } from './controllers/backfill-areas.js'
 
 export const exemptions = [
   {
@@ -24,6 +26,11 @@ export const exemptions = [
     method: 'GET',
     path: '/exemptions/send-to-emp',
     ...getUnsentEmpExemptionsController
+  },
+  {
+    method: 'GET',
+    path: '/exemptions/backfill-areas',
+    ...getBackfillAreasExemptionsController
   },
   {
     method: 'POST',
@@ -54,6 +61,11 @@ export const exemptions = [
     method: 'POST',
     path: '/exemption/send-to-emp',
     ...sendToEmpController
+  },
+  {
+    method: 'POST',
+    path: '/exemption/backfill-areas',
+    ...backfillAreasController
   },
   {
     method: 'DELETE',
