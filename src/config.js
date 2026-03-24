@@ -283,6 +283,12 @@ const config = convict({
         format: requiredFromEnvInCdp,
         default: '',
         env: 'DYNAMICS_API_WITHDRAW_URL'
+      },
+      updateUrl: {
+        doc: 'URL for the Dynamics API to update an exemption',
+        format: requiredFromEnvInCdp,
+        default: '',
+        env: 'DYNAMICS_API_UPDATE_EXEMPTION_URL'
       }
     },
     marineLicences: {

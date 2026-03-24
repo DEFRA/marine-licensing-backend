@@ -7,7 +7,8 @@ export const REQUEST_QUEUE_STATUS = {
 
 export const DYNAMICS_REQUEST_ACTIONS = {
   SUBMIT: 'submit',
-  WITHDRAW: 'withdraw'
+  WITHDRAW: 'withdraw',
+  UPDATE: 'update'
 }
 
 export const DYNAMICS_QUEUE_TYPES = {
