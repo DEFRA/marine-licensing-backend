@@ -16,9 +16,10 @@ import {
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/dynamics-processor.js'
 import { config } from '../../../config.js'
 import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
+import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 
-const checkForIncompleteTasks = (marineLicence) => {
-  const taskList = createTaskList(marineLicence)
+const checkForIncompleteTasks = (marineLicence, isCitizen) => {
+  const taskList = createTaskList(marineLicence, isCitizen)
   const incompleteTasks = Object.entries(taskList)
     .filter(([_task, status]) => status !== 'COMPLETED')
     .map(([task]) => task)
@@ -86,15 +87,19 @@ export const submitMarineLicenceController = {
   },
   handler: async (request, h) => {
     try {
-      const { payload, db, locker } = request
+      const { payload, db, locker, auth } = request
       const { id, userName, userEmail } = payload
+
+      const { userRelationshipType } = getOrganisationDetailsFromAuthToken(auth)
+
+      const isCitizen = userRelationshipType === 'Citizen'
 
       const { isDynamicsEnabled } = config.get('dynamics')
       const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
       const marineLicence = await getMarineLicenceFromDb(request, id)
 
-      checkForIncompleteTasks(marineLicence)
+      checkForIncompleteTasks(marineLicence, isCitizen)
 
       const applicationReference = await generateApplicationReference(
         db,
