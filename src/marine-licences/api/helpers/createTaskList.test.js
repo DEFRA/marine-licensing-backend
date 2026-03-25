@@ -15,6 +15,19 @@ describe('createTaskList', () => {
     })
   })
 
+  it('should not include specialLegalPowers task for citizens', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers'
+    }
+
+    const result = createTaskList(marineLicence, true)
+
+    expect(result).toEqual({
+      projectName: COMPLETED
+    })
+  })
+
   it('should return tasks as INCOMPLETE when corresponding marineLicence properties are missing', () => {
     const marineLicence = {}
 
