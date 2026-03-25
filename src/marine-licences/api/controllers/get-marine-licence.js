@@ -4,6 +4,7 @@ import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
+import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 
 export const getMarineLicenceController = ({ requiresAuth }) => ({
   options: {
@@ -17,7 +18,8 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       const {
         params: { id },
         db,
-        logger
+        logger,
+        auth
       } = request
       const marineLicenceService = new MarineLicenceService({ db, logger })
       let marineLicence
@@ -33,8 +35,12 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
           await marineLicenceService.getPublicMarineLicenceById(id)
       }
 
+      const { userRelationshipType } = getOrganisationDetailsFromAuthToken(auth)
+
+      const isCitizen = userRelationshipType === 'Citizen'
+
       const { _id, ...rest } = marineLicence
-      const taskList = createTaskList(marineLicence)
+      const taskList = createTaskList(marineLicence, isCitizen)
       const response = { id: _id.toString(), ...rest, taskList }
 
       return h
