@@ -51,6 +51,14 @@ describe('POST /marine-licence/submit', () => {
     mockAuth = {
       credentials: {
         contactId: 'test-contact-id'
+      },
+      artifacts: {
+        decoded: {
+          currentRelationshipId: '81d48d6c-6e94-f011-b4cc-000d3ac28f39',
+          relationships: [
+            `81d48d6c-6e94-f011-b4cc-000d3ac28f39:27d48d6c-6e94-f011-b4cc-000d3ac28f39:CDP Child Org 1:0:Employee:0`
+          ]
+        }
       }
     }
 
@@ -196,7 +204,7 @@ describe('POST /marine-licence/submit', () => {
         mockHandler
       )
 
-      expect(createTaskList).toHaveBeenCalledWith(mockMarineLicence)
+      expect(createTaskList).toHaveBeenCalledWith(mockMarineLicence, false)
     })
   })
 

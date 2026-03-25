@@ -2,9 +2,12 @@ export const COMPLETED = 'COMPLETED'
 export const IN_PROGRESS = 'IN_PROGRESS'
 export const INCOMPLETE = 'INCOMPLETE'
 
-export const createTaskList = (marineLicence) => {
+export const createTaskList = (marineLicence, isCitizen = false) => {
   const tasks = {
-    projectName: (value) => (value ? COMPLETED : INCOMPLETE)
+    projectName: (value) => (value ? COMPLETED : INCOMPLETE),
+    ...(!isCitizen && {
+      specialLegalPowers: (value) => (value ? COMPLETED : INCOMPLETE)
+    })
   }
 
   const taskList = {}
