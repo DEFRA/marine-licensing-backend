@@ -3,16 +3,6 @@ import { LockManager } from 'mongo-locks'
 import { up, status } from 'migrate-mongo'
 
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
-import {
-  collectionCoastalOperationsAreas,
-  collectionDynamicsQueue,
-  collectionDynamicsQueueFailed,
-  collectionExemptions,
-  collectionMarineLicenceDynamicsQueue,
-  collectionMarineLicenceDynamicsQueueFailed,
-  collectionMarineLicences,
-  collectionMarinePlanAreas
-} from '../constants/db-collections.js'
 
 export const addAuditFields = (request, h) => {
   const requestMethod = request.method.toUpperCase()
@@ -54,7 +44,6 @@ export const mongoDb = {
       const db = client.db(databaseName)
       const locker = new LockManager(db.collection('mongo-locks'))
 
-      await createIndexes(db)
       await logMigrationStatus(server.logger, db)
       await runMigrations(server.logger, db, client)
 
@@ -97,33 +86,4 @@ async function runMigrations(logger, db, client) {
     logger.error(error, 'Migration failed')
     throw error
   }
-}
-
-async function createIndexes(db) {
-  await db.collection('mongo-locks').createIndex({ id: 1 })
-
-  await db.collection(collectionExemptions).createIndex({ id: 1 })
-  await db
-    .collection('reference-sequences')
-    .createIndex({ key: 1 }, { unique: true })
-
-  await db.collection(collectionDynamicsQueue).createIndex({ status: 1 })
-  await db.collection(collectionDynamicsQueueFailed).createIndex({ id: 1 })
-
-  await db
-    .collection(collectionMarineLicenceDynamicsQueue)
-    .createIndex({ status: 1 })
-  await db
-    .collection(collectionMarineLicenceDynamicsQueueFailed)
-    .createIndex({ id: 1 })
-
-  await db.collection(collectionMarineLicences).createIndex({ id: 1 })
-
-  await db
-    .collection(collectionCoastalOperationsAreas)
-    .createIndex({ geometry: '2dsphere' })
-
-  await db
-    .collection(collectionMarinePlanAreas)
-    .createIndex({ geometry: '2dsphere' })
 }
