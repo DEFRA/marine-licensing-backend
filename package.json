@@ -25,10 +25,10 @@
     "server:debug": "nodemon --inspect-brk=0.0.0.0 --ext js,json --legacy-watch ./src",
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
-    "migrate:create": "echo 'not yet implemented'",
-    "migrate:up": "echo 'not yet implemented'",
-    "migrate:down": "echo 'not yet implemented'",
-    "migrate:status": "echo 'not yet implemented'"
+    "migrate:create": "migrate-mongo create ",
+    "migrate:up": "migrate-mongo up ",
+    "migrate:down": "migrate-mongo down ",
+    "migrate:status": "migrate-mongo status"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",

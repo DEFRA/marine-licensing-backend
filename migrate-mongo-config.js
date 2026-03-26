@@ -1,4 +1,4 @@
-import { config as appConfig } from '../src/config.js'
+import { config as appConfig } from './src/config.js'
 
 const migrateMongoConfig = {
   mongodb: {
