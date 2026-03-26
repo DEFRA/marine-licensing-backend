@@ -46,7 +46,7 @@
     "adm-zip": "^0.5.16",
     "aws-embedded-metrics": "4.2.1",
     "aws4": "1.13.2",
-    "convict": "6.2.4",
+    "convict": "6.2.5",
     "convict-format-with-validator": "6.2.0",
     "date-fns": "4.1.0",
     "dotenv": "17.3.1",
