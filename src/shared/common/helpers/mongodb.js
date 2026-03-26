@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
+import { up } from 'migrate-mongo'
 
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 import {
@@ -54,6 +55,7 @@ export const mongoDb = {
       const locker = new LockManager(db.collection('mongo-locks'))
 
       await createIndexes(db)
+      await runMigrations(server.logger, db, client)
 
       server.logger.info(`MongoDb connected to ${databaseName}`)
 
@@ -70,6 +72,22 @@ export const mongoDb = {
         await client.close(true)
       })
     }
+  }
+}
+
+async function runMigrations(logger, db, client) {
+  try {
+    const migrated = await up(db, client)
+    if (migrated.length) {
+      logger.info(
+        `Migrations applied: ${migrated.map((m) => m.fileName).join(', ')}`
+      )
+    } else {
+      logger.info('No pending migrations')
+    }
+  } catch (error) {
+    logger.error(error, 'Migration failed')
+    throw error
   }
 }
 
