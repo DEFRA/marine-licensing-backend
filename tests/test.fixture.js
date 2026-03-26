@@ -59,6 +59,10 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     _id: marineLicenceId,
     contactId,
     projectName: 'Test Marine Licence Project',
+    otherAuthorities: {
+      agree: true,
+      details: 'Test other authorities details'
+    },
     specialLegalPowers: {
       agree: true,
       details: 'Test special legal powers details'
