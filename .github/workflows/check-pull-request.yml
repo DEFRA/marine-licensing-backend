@@ -34,7 +34,18 @@ jobs:
           npm test
       - name: Security audit
         run: npm audit --audit-level=high || (echo 'Vulnerabilities found!' && exit 1)
-          
+
+      # Reuses node_modules from npm ci above (same job). Scans root package.json + package-lock.json; .snyk is picked up automatically.
+      # --org=<ORG_ID> routes scans to a specific Snyk org (limits/credits). Add only if you set repo secret SNYK_ORG; see:
+      # https://docs.snyk.io/developer-tools/snyk-ci-cd-integrations/snyk-ci-cd-integration-deployment-and-strategies/snyk-test-and-snyk-monitor-in-ci-cd-integration
+      - name: Run Snyk test
+        if: github.actor != 'dependabot[bot]'
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
       - name: Test Docker Image Build
         run: |
           set +e
@@ -47,7 +58,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  
   test-journey:
     name: Run Journey Tests
     runs-on: ubuntu-latest
