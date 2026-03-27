@@ -8,6 +8,7 @@ import {
   collectionMarineLicences,
   collectionMarinePlanAreas
 } from '../src/shared/common/constants/db-collections.js'
+import { safeDropIndex } from './helpers/utils.js'
 
 export const up = async (db) => {
   await db.collection('mongo-locks').createIndex({ id: 1 })
@@ -33,20 +34,14 @@ export const up = async (db) => {
 }
 
 export const down = async (db) => {
-  await db.collection('mongo-locks').dropIndex('id_1')
-  await db.collection(collectionExemptions).dropIndex('id_1')
-  await db.collection('reference-sequences').dropIndex('key_1')
-  await db.collection(collectionDynamicsQueue).dropIndex('status_1')
-  await db.collection(collectionDynamicsQueueFailed).dropIndex('id_1')
-  await db
-    .collection(collectionMarineLicenceDynamicsQueue)
-    .dropIndex('status_1')
-  await db
-    .collection(collectionMarineLicenceDynamicsQueueFailed)
-    .dropIndex('id_1')
-  await db.collection(collectionMarineLicences).dropIndex('id_1')
-  await db
-    .collection(collectionCoastalOperationsAreas)
-    .dropIndex('geometry_2dsphere')
-  await db.collection(collectionMarinePlanAreas).dropIndex('geometry_2dsphere')
+  await safeDropIndex(db, 'mongo-locks', 'id_1')
+  await safeDropIndex(db, collectionExemptions, 'id_1')
+  await safeDropIndex(db, 'reference-sequences', 'key_1')
+  await safeDropIndex(db, collectionDynamicsQueue, 'status_1')
+  await safeDropIndex(db, collectionDynamicsQueueFailed, 'id_1')
+  await safeDropIndex(db, collectionMarineLicenceDynamicsQueue, 'status_1')
+  await safeDropIndex(db, collectionMarineLicenceDynamicsQueueFailed, 'id_1')
+  await safeDropIndex(db, collectionMarineLicences, 'id_1')
+  await safeDropIndex(db, collectionCoastalOperationsAreas, 'geometry_2dsphere')
+  await safeDropIndex(db, collectionMarinePlanAreas, 'geometry_2dsphere')
 }
