@@ -60,11 +60,11 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     contactId,
     projectName: 'Test Marine Licence Project',
     otherAuthorities: {
-      agree: true,
+      agree: 'yes',
       details: 'Test other authorities details'
     },
     specialLegalPowers: {
-      agree: true,
+      agree: 'yes',
       details: 'Test special legal powers details'
     },
     status: MARINE_LICENCE_STATUS.DRAFT,
