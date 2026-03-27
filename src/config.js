@@ -161,7 +161,7 @@ const config = convict({
     migrationLockTtl: {
       doc: 'TTL in seconds for the migration lock. If a migration takes longer than this, another instance may run concurrently.',
       format: Number,
-      default: 100,
+      default: 600,
       env: 'MONGO_MIGRATION_LOCK_TTL'
     },
     mongoOptions: {
