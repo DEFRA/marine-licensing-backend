@@ -9,6 +9,8 @@ export async function safeDropIndex(db, collectionName, indexName) {
   try {
     await db.collection(collectionName).dropIndex(indexName)
   } catch (error) {
-    if (error.codeName !== 'IndexNotFound') { throw error }
+    if (error.codeName !== 'IndexNotFound') {
+      throw error
+    }
   }
 }
