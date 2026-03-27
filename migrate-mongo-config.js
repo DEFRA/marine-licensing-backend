@@ -17,7 +17,6 @@ const migrateMongoConfig = {
   lockCollectionName: 'changelog_lock',
 
   // The value in seconds for the TTL index that will be used for the lock. Value of 0 will disable the feature.
-  // Set to 10 mins (600s) to allow for data migrations on large collections
   // without the lock expiring and allowing a second cluster instance to run concurrently.
   lockTtl: appConfig.get('mongo.migrationLockTtl'),
 
