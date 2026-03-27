@@ -71,6 +71,7 @@ async function logMigrationStatus(logger, db) {
     logger.info(migrationStatus, 'Migration status')
   } catch (error) {
     logger.error(error, 'Failed to get migration status')
+    throw error
   }
 }
 
