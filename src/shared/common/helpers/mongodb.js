@@ -65,7 +65,7 @@ export const mongoDb = {
   }
 }
 
-async function logMigrationStatus(logger, db) {
+export async function logMigrationStatus(logger, db) {
   try {
     const migrationStatus = await status(db)
     logger.info(migrationStatus, 'Migration status')
@@ -75,11 +75,11 @@ async function logMigrationStatus(logger, db) {
   }
 }
 
-async function runMigrations(logger, db, client) {
+export async function runMigrations(logger, db, client) {
   try {
     const migrated = await up(db, client)
     if (migrated.length) {
-      logger.info(migrated, `Migrations applied`)
+      logger.info(migrated, 'Migrations applied')
     } else {
       logger.info('No pending migrations')
     }
