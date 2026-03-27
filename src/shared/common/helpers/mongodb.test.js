@@ -2,7 +2,12 @@ import { vi } from 'vitest'
 import { Db, MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
 import { up, status } from 'migrate-mongo'
-import { addAuditFields, logMigrationStatus, runMigrations } from './mongodb.js'
+import {
+  addAuditFields,
+  logMigrationStatus,
+  runMigrations,
+  runMigrationsWithLock
+} from './mongodb.js'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 
 vi.mock('./mongo-audit.js')
@@ -142,6 +147,83 @@ describe('#mongoDb migrations', () => {
       ).rejects.toThrow('migration failed')
 
       expect(mockLogger.error).toHaveBeenCalledWith(error, 'Migration failed')
+    })
+  })
+
+  describe('runMigrationsWithLock', () => {
+    const createMockLocker = (lockOnAttempt = 1) => {
+      let attempt = 0
+      const mockLock = { free: vi.fn().mockResolvedValue(true) }
+      return {
+        locker: {
+          lock: vi.fn().mockImplementation(() => {
+            attempt++
+            return Promise.resolve(attempt >= lockOnAttempt ? mockLock : null)
+          })
+        },
+        mockLock
+      }
+    }
+
+    test('should acquire lock, run migrations, then release lock', async () => {
+      const { locker, mockLock } = createMockLocker()
+      mockUp.mockResolvedValue(['migration.js'])
+
+      await runMigrationsWithLock(
+        mockLogger,
+        mockDb,
+        mockClient,
+        locker,
+        lockTtlSeconds
+      )
+
+      expect(locker.lock).toHaveBeenCalledWith('migration-lock')
+      expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
+      expect(mockLock.free).toHaveBeenCalled()
+    })
+
+    test('should retry when lock is not available', async () => {
+      vi.useFakeTimers()
+
+      const { locker, mockLock } = createMockLocker(3)
+      mockUp.mockResolvedValue([])
+
+      const promise = runMigrationsWithLock(
+        mockLogger,
+        mockDb,
+        mockClient,
+        locker,
+        lockTtlSeconds
+      )
+
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.advanceTimersByTimeAsync(5_000)
+      await promise
+
+      expect(locker.lock).toHaveBeenCalledTimes(3)
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Another instance is running migrations, waiting for lock...'
+      )
+      expect(mockLock.free).toHaveBeenCalled()
+
+      vi.useRealTimers()
+    })
+
+    test('should release lock even when migration fails', async () => {
+      const { locker, mockLock } = createMockLocker()
+      mockUp.mockRejectedValue(new Error('migration failed'))
+
+      await expect(
+        runMigrationsWithLock(
+          mockLogger,
+          mockDb,
+          mockClient,
+          locker,
+          lockTtlSeconds
+        )
+      ).rejects.toThrow('migration failed')
+
+      expect(mockLock.free).toHaveBeenCalled()
     })
   })
 })

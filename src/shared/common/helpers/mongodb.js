@@ -46,8 +46,20 @@ export const mongoDb = {
 
       const lockTtlSeconds = options.migrationLockTtl
 
+      // Ensure the mongo-locks unique index exists before we attempt to acquire a lock.
+      // LockManager creates it in its constructor but does not await it.
+      await db
+        .collection('mongo-locks')
+        .createIndex({ action: 1 }, { unique: true })
+
       await logMigrationStatus(server.logger, db)
-      await runMigrations(server.logger, db, client, lockTtlSeconds)
+      await runMigrationsWithLock(
+        server.logger,
+        db,
+        client,
+        locker,
+        lockTtlSeconds
+      )
 
       server.logger.info(`MongoDb connected to ${databaseName}`)
 
@@ -74,6 +86,33 @@ export async function logMigrationStatus(logger, db) {
   } catch (error) {
     logger.error(error, 'Failed to get migration status')
     throw error
+  }
+}
+
+const MIGRATION_LOCK_KEY = 'migration-lock'
+const MIGRATION_LOCK_RETRY_INTERVAL_MS = 5_000
+
+export async function runMigrationsWithLock(
+  logger,
+  db,
+  client,
+  locker,
+  lockTtlSeconds
+) {
+  let lock = await locker.lock(MIGRATION_LOCK_KEY)
+
+  while (!lock) {
+    logger.info('Another instance is running migrations, waiting for lock...')
+    await new Promise((resolve) =>
+      setTimeout(resolve, MIGRATION_LOCK_RETRY_INTERVAL_MS)
+    )
+    lock = await locker.lock(MIGRATION_LOCK_KEY)
+  }
+
+  try {
+    await runMigrations(logger, db, client, lockTtlSeconds)
+  } finally {
+    await lock.free()
   }
 }
 
