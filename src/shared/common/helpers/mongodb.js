@@ -125,9 +125,7 @@ export async function runMigrations(logger, db, client, lockTtlSeconds) {
     const startTime = performance.now()
     const migrated = await up(db, client)
     const durationMs = performance.now() - startTime
-    const durationSeconds = Number.parseFloat(
-      Math.round(durationMs / 1000).toFixed(2)
-    )
+    const durationSeconds = Number.parseFloat((durationMs / 1000).toFixed(2))
 
     if (migrated.length) {
       logger.info(
