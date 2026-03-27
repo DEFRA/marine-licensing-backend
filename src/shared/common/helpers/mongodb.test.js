@@ -17,7 +17,13 @@ const mockStatus = vi.mocked(status)
 describe('#mongoDb migrations', () => {
   const mockDb = {}
   const mockClient = {}
-  const mockLogger = { info: vi.fn(), error: vi.fn() }
+  const mockLogger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    fatal: vi.fn(),
+    error: vi.fn()
+  }
+  const lockTtlSeconds = 600
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -66,22 +72,65 @@ describe('#mongoDb migrations', () => {
       const migrated = ['20260326-create-indexes.js']
       mockUp.mockResolvedValue(migrated)
 
-      await runMigrations(mockLogger, mockDb, mockClient)
+      await runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
 
       expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
       expect(mockLogger.info).toHaveBeenCalledWith(
-        migrated,
-        'Migrations applied'
+        expect.objectContaining({
+          migrated,
+          durationSeconds: expect.any(Number)
+        }),
+        'Migrations applied successfully'
       )
     })
 
     test('should log no pending migrations when none applied', async () => {
       mockUp.mockResolvedValue([])
 
-      await runMigrations(mockLogger, mockDb, mockClient)
+      await runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
 
       expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
       expect(mockLogger.info).toHaveBeenCalledWith('No pending migrations')
+    })
+
+    test('should warn when migration duration approaches lock TTL', async () => {
+      const migrated = ['20260326-create-indexes.js']
+      mockUp.mockResolvedValue(migrated)
+
+      // 500s is >= 80% of 600s (warning threshold)
+      vi.spyOn(performance, 'now')
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(500 * 1000)
+
+      await runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          durationSeconds: expect.any(Number),
+          lockTtlSeconds,
+          warningThreshold: 480
+        }),
+        'Migration success: NOTE THAT MIGRATIONS ARE APPROACHING LOCK TTL'
+      )
+    })
+
+    test('should log fatal when migration duration exceeds lock TTL', async () => {
+      const migrated = ['20260326-create-indexes.js']
+      mockUp.mockResolvedValue(migrated)
+
+      vi.spyOn(performance, 'now')
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(700 * 1000)
+
+      await runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
+
+      expect(mockLogger.fatal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          durationSeconds: expect.any(Number),
+          lockTtlSeconds
+        }),
+        'THE MIGRATIONS COMPLETED BUT EXCEEDED THE LOCK TTL — OTHER INSTANCES MAY HAVE RUN MIGRATIONS CONCURRENTLY'
+      )
     })
 
     test('should propagate error when up fails', async () => {
@@ -89,7 +138,7 @@ describe('#mongoDb migrations', () => {
       mockUp.mockRejectedValue(error)
 
       await expect(
-        runMigrations(mockLogger, mockDb, mockClient)
+        runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
       ).rejects.toThrow('migration failed')
 
       expect(mockLogger.error).toHaveBeenCalledWith(error, 'Migration failed')

@@ -44,8 +44,10 @@ export const mongoDb = {
       const db = client.db(databaseName)
       const locker = new LockManager(db.collection('mongo-locks'))
 
+      const lockTtlSeconds = options.migrationLockTtl
+
       await logMigrationStatus(server.logger, db)
-      await runMigrations(server.logger, db, client)
+      await runMigrations(server.logger, db, client, lockTtlSeconds)
 
       server.logger.info(`MongoDb connected to ${databaseName}`)
 
@@ -75,13 +77,41 @@ export async function logMigrationStatus(logger, db) {
   }
 }
 
-export async function runMigrations(logger, db, client) {
+// Log at WARNING once migrations take 80% or more of the migration locktime TTL.
+const TTL_LOCK_WARNING_THRESHOLD = 0.8
+
+export async function runMigrations(logger, db, client, lockTtlSeconds) {
   try {
+    logger.info('Applying migrations...')
+    const startTime = performance.now()
     const migrated = await up(db, client)
+    const durationMs = performance.now() - startTime
+    const durationSeconds = Number.parseFloat(
+      Math.round(durationMs / 1000).toFixed(2)
+    )
+
     if (migrated.length) {
-      logger.info(migrated, 'Migrations applied')
+      logger.info(
+        { migrated, durationSeconds },
+        'Migrations applied successfully'
+      )
     } else {
       logger.info('No pending migrations')
+    }
+
+    const warningThreshold = lockTtlSeconds * TTL_LOCK_WARNING_THRESHOLD
+    if (migrated.length && durationSeconds >= lockTtlSeconds) {
+      logger.fatal(
+        { durationSeconds, lockTtlSeconds },
+        'THE MIGRATIONS COMPLETED BUT EXCEEDED THE LOCK TTL — OTHER INSTANCES MAY HAVE RUN MIGRATIONS CONCURRENTLY'
+      )
+    } else if (migrated.length && durationSeconds >= warningThreshold) {
+      logger.warn(
+        { durationSeconds, lockTtlSeconds, warningThreshold },
+        'Migration success: NOTE THAT MIGRATIONS ARE APPROACHING LOCK TTL'
+      )
+    } else {
+      // no-op for sonar
     }
   } catch (error) {
     logger.error(error, 'Migration failed')
