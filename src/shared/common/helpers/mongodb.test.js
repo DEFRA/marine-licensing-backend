@@ -184,7 +184,9 @@ describe('#mongoDb', () => {
     await server.initialize()
     // LockManager fires a createIndex during construction that isn't awaited.
     // Wait for it to settle so it doesn't reject during vitest-mongodb teardown.
-    await server.db.collection('mongo-locks').createIndex({ id: 1 })
+    await server.db
+      .collection('mongo-locks')
+      .createIndex({ action: 1 }, { unique: true })
   })
 
   describe('Set up', () => {
