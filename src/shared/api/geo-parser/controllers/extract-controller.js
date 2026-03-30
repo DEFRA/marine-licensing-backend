@@ -1,6 +1,6 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
-import { geoParserExtract } from '../../../../exemptions/models/geo-parser-extract.js'
+import { geoParserExtract } from '../models/geo-parser-extract.js'
 import { geoParser } from '../../../services/geo-parser/geo-parser.js'
 import { config } from '../../../../config.js'
 import {
