@@ -20,7 +20,7 @@ import {
   featureCountFieldSchema,
   uploadedFileFieldSchema,
   s3LocationFieldSchema
-} from './file-upload.js'
+} from '../../../shared/models/site-details/file-upload.js'
 import { multipleSiteDetailsSchema } from './multiple-site-details.js'
 import { siteNameFieldSchema } from './site-name.js'
 import { activityDatesSchema } from '../activity-dates.js'
