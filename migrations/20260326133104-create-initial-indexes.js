@@ -32,7 +32,7 @@ export const up = async (db, _client) => {
     .createIndex({ geometry: '2dsphere' })
 }
 
-export const down = async (db) => {
+export const down = async (db, _client) => {
   await safeDropIndex(db, collectionExemptions, 'id_1')
   await safeDropIndex(db, 'reference-sequences', 'key_1')
   await safeDropIndex(db, collectionDynamicsQueue, 'status_1')
