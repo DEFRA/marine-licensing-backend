@@ -127,6 +127,6 @@ export async function runMigrations(logger, db, client) {
     }
   } catch (error) {
     logger.error(error, 'Migration failed')
-    throw error
+    throw error // prevents server start
   }
 }
