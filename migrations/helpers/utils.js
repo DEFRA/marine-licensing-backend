@@ -9,7 +9,11 @@ export async function safeDropIndex(db, collectionName, indexName) {
   try {
     await db.collection(collectionName).dropIndex(indexName)
   } catch (error) {
-    if (error.codeName !== 'IndexNotFound') {
+    // Avoid throwing if the index or the collection does not exist
+    if (
+      error.codeName !== 'IndexNotFound' &&
+      error.codeName !== 'NamespaceNotFound'
+    ) {
       throw error
     }
   }
