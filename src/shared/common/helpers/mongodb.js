@@ -44,8 +44,6 @@ export const mongoDb = {
       const db = client.db(databaseName)
       const locker = new LockManager(db.collection('mongo-locks'))
 
-      const lockTtlSeconds = options.migrationLockTtl
-
       // Ensure the mongo-locks unique index exists before we attempt to acquire a lock.
       // LockManager creates it in its constructor but does not await it.
       await db
@@ -53,13 +51,7 @@ export const mongoDb = {
         .createIndex({ action: 1 }, { unique: true })
 
       await logMigrationStatus(server.logger, db)
-      await runMigrationsWithLock(
-        server.logger,
-        db,
-        client,
-        locker,
-        lockTtlSeconds
-      )
+      await runMigrationsWithLock(server.logger, db, client, locker)
 
       server.logger.info(`MongoDb connected to ${databaseName}`)
 
@@ -92,13 +84,7 @@ export async function logMigrationStatus(logger, db) {
 const MIGRATION_LOCK_KEY = 'migration-lock'
 const MIGRATION_LOCK_RETRY_INTERVAL_MS = 5_000
 
-export async function runMigrationsWithLock(
-  logger,
-  db,
-  client,
-  locker,
-  lockTtlSeconds
-) {
+export async function runMigrationsWithLock(logger, db, client, locker) {
   let lock = await locker.lock(MIGRATION_LOCK_KEY)
 
   while (!lock) {
@@ -110,16 +96,13 @@ export async function runMigrationsWithLock(
   }
 
   try {
-    await runMigrations(logger, db, client, lockTtlSeconds)
+    await runMigrations(logger, db, client)
   } finally {
     await lock.free()
   }
 }
 
-// Log at WARNING once migrations take 80% or more of the migration locktime TTL.
-const TTL_LOCK_WARNING_THRESHOLD = 0.8
-
-export async function runMigrations(logger, db, client, lockTtlSeconds) {
+export async function runMigrations(logger, db, client) {
   try {
     logger.info('Applying migrations...')
     const startTime = performance.now()
@@ -134,21 +117,6 @@ export async function runMigrations(logger, db, client, lockTtlSeconds) {
       )
     } else {
       logger.info('No pending migrations')
-    }
-
-    const warningThreshold = lockTtlSeconds * TTL_LOCK_WARNING_THRESHOLD
-    if (migrated.length && durationSeconds >= lockTtlSeconds) {
-      logger.fatal(
-        { durationSeconds, lockTtlSeconds },
-        'THE MIGRATIONS COMPLETED BUT EXCEEDED THE LOCK TTL — OTHER INSTANCES MAY HAVE RUN MIGRATIONS CONCURRENTLY'
-      )
-    } else if (migrated.length && durationSeconds >= warningThreshold) {
-      logger.warn(
-        { durationSeconds, lockTtlSeconds, warningThreshold },
-        'Migration success: NOTE THAT MIGRATIONS ARE APPROACHING LOCK TTL'
-      )
-    } else {
-      // no-op for sonar
     }
   } catch (error) {
     logger.error(error, 'Migration failed')

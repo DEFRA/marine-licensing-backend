@@ -158,12 +158,6 @@ const config = convict({
       default: 'marine-licensing-backend',
       env: 'MONGO_DATABASE'
     },
-    migrationLockTtl: {
-      doc: 'TTL in seconds for the migration lock. If a migration takes longer than this, another instance may run concurrently.',
-      format: Number,
-      default: 600,
-      env: 'MONGO_MIGRATION_LOCK_TTL'
-    },
     mongoOptions: {
       retryWrites: {
         doc: 'Enable Mongo write retries, overrides mongo URI when set.',
