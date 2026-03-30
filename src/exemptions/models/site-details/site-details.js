@@ -14,13 +14,7 @@ import {
   osgb36ValidationSchema,
   osgb36MultipleValidationSchema
 } from './osgb36.js'
-import {
-  fileUploadTypeFieldSchema,
-  geoJSONFieldSchema,
-  featureCountFieldSchema,
-  uploadedFileFieldSchema,
-  s3LocationFieldSchema
-} from '../../../shared/models/site-details/file-upload.js'
+import { fileUploadConditionalSiteItemFields } from '../../../shared/models/site-details/file-upload.js'
 import { multipleSiteDetailsSchema } from './multiple-site-details.js'
 import { siteNameFieldSchema } from './site-name.js'
 import { activityDatesSchema } from '../activity-dates.js'
@@ -53,32 +47,7 @@ export const siteDetailsSchema = joi
           }),
           otherwise: joi.forbidden()
         }),
-        // File upload fields (conditional)
-        fileUploadType: joi.when('coordinatesType', {
-          is: 'file',
-          then: fileUploadTypeFieldSchema,
-          otherwise: joi.forbidden()
-        }),
-        geoJSON: joi.when('coordinatesType', {
-          is: 'file',
-          then: geoJSONFieldSchema,
-          otherwise: joi.forbidden()
-        }),
-        featureCount: joi.when('coordinatesType', {
-          is: 'file',
-          then: featureCountFieldSchema,
-          otherwise: joi.forbidden()
-        }),
-        uploadedFile: joi.when('coordinatesType', {
-          is: 'file',
-          then: uploadedFileFieldSchema,
-          otherwise: joi.forbidden()
-        }),
-        s3Location: joi.when('coordinatesType', {
-          is: 'file',
-          then: s3LocationFieldSchema,
-          otherwise: joi.forbidden()
-        }),
+        ...fileUploadConditionalSiteItemFields,
         // Manual coordinate fields (conditional)
         coordinatesEntry: joi.when('coordinatesType', {
           is: 'coordinates',
