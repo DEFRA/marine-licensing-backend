@@ -88,6 +88,8 @@ const MIGRATION_LOCK_RETRY_INTERVAL_MS = 5_000
 export async function runMigrationsWithLock(logger, db, client, locker) {
   let lock = await locker.lock(MIGRATION_LOCK_KEY)
 
+  // mongo-locks sets a 60s TTL with auto-refresh, a stale lock from a crashed instance will expire
+  // within ~60-120 seconds. The retry loop will eventually succeed.
   while (!lock) {
     logger.info('Another instance is running migrations, waiting for lock...')
     await new Promise((resolve) =>
@@ -99,7 +101,11 @@ export async function runMigrationsWithLock(logger, db, client, locker) {
   try {
     await runMigrations(logger, db, client)
   } finally {
-    await lock.free()
+    try {
+      await lock.free()
+    } catch (error) {
+      logger.error(error, 'Failed to release migration lock')
+    }
   }
 }
 
