@@ -4,6 +4,7 @@ import { getMarineLicenceController } from './controllers/get-marine-licence.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
+import { updatePublicRegisterController } from './controllers/update-public-register.js'
 
 export const marineLicences = [
   {
@@ -40,5 +41,10 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/special-legal-powers',
     ...updateSpecialLegalPowersController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/public-register',
+    ...updatePublicRegisterController
   }
 ]
