@@ -17,7 +17,6 @@ const migrateMongoConfig = {
   lockCollectionName: 'changelog_lock',
 
   // The value in seconds for the TTL index that will be used for the lock. Value of 0 will disable the feature.
-  // without the lock expiring and allowing a second cluster instance to run concurrently.
   lockTtl: 0,
 
   // The file extension to create migrations and search for in migration dir
