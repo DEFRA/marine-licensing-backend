@@ -33,7 +33,6 @@ export const up = async (db, _client) => {
 }
 
 export const down = async (db) => {
-  await safeDropIndex(db, 'mongo-locks', 'id_1')
   await safeDropIndex(db, collectionExemptions, 'id_1')
   await safeDropIndex(db, 'reference-sequences', 'key_1')
   await safeDropIndex(db, collectionDynamicsQueue, 'status_1')
