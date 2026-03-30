@@ -46,6 +46,7 @@ export const mongoDb = {
 
       // Ensure the mongo-locks unique index exists before we attempt to acquire a lock.
       // LockManager creates it in its constructor but does not await it.
+      // See: node_modules/mongo-locks/dist/index.js:87-88
       await db
         .collection('mongo-locks')
         .createIndex({ action: 1 }, { unique: true })
