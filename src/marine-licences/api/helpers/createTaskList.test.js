@@ -4,27 +4,31 @@ describe('createTaskList', () => {
   it('should mark tasks as COMPLETED when corresponding marineLicence properties exist', () => {
     const marineLicence = {
       projectName: 'Test Project',
-      specialLegalPowers: 'Some powers'
+      specialLegalPowers: 'Some powers',
+      publicRegister: 'Public Register Info'
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
       projectName: COMPLETED,
-      specialLegalPowers: COMPLETED
+      specialLegalPowers: COMPLETED,
+      publicRegister: COMPLETED
     })
   })
 
   it('should not include specialLegalPowers task for citizens', () => {
     const marineLicence = {
       projectName: 'Test Project',
-      specialLegalPowers: 'Some powers'
+      specialLegalPowers: 'Some powers',
+      publicRegister: 'Public Register Info'
     }
 
     const result = createTaskList(marineLicence, true)
 
     expect(result).toEqual({
-      projectName: COMPLETED
+      projectName: COMPLETED,
+      publicRegister: COMPLETED
     })
   })
 
@@ -35,21 +39,24 @@ describe('createTaskList', () => {
 
     expect(result).toEqual({
       projectName: 'INCOMPLETE',
-      specialLegalPowers: 'INCOMPLETE'
+      specialLegalPowers: 'INCOMPLETE',
+      publicRegister: 'INCOMPLETE'
     })
   })
 
   it('should mark tasks as COMPLETED when all required properties are present', () => {
     const marineLicence = {
       projectName: 'Test Project',
-      specialLegalPowers: 'some powers'
+      specialLegalPowers: 'some powers',
+      publicRegister: 'Public Register Info'
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
       projectName: COMPLETED,
-      specialLegalPowers: COMPLETED
+      specialLegalPowers: COMPLETED,
+      publicRegister: COMPLETED
     })
   })
 })

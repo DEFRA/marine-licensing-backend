@@ -85,6 +85,10 @@ describe('GET /marine-licence', () => {
       mockedFindOne.mockResolvedValue({
         _id: mockId,
         projectName: 'Test project',
+        publicRegister: {
+          consent: 'yes',
+          details: 'Test public register details'
+        },
         contactId: userContactId
       })
 
@@ -103,8 +107,13 @@ describe('GET /marine-licence', () => {
             id: mockId,
             contactId: userContactId,
             projectName: 'Test project',
+            publicRegister: {
+              consent: 'yes',
+              details: 'Test public register details'
+            },
             taskList: {
-              projectName: 'COMPLETED'
+              projectName: 'COMPLETED',
+              publicRegister: 'COMPLETED'
             }
           }
         })
