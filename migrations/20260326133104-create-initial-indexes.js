@@ -11,7 +11,6 @@ import {
 import { safeDropIndex } from './helpers/utils.js'
 
 export const up = async (db, _client) => {
-  await db.collection('mongo-locks').createIndex({ id: 1 })
   await db.collection(collectionExemptions).createIndex({ id: 1 })
   await db
     .collection('reference-sequences')
