@@ -28,7 +28,6 @@ describe('#mongoDb migrations', () => {
     fatal: vi.fn(),
     error: vi.fn()
   }
-  const lockTtlSeconds = 600
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -77,7 +76,7 @@ describe('#mongoDb migrations', () => {
       const migrated = ['20260326-create-indexes.js']
       mockUp.mockResolvedValue(migrated)
 
-      await runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
+      await runMigrations(mockLogger, mockDb, mockClient)
 
       expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -92,7 +91,7 @@ describe('#mongoDb migrations', () => {
     test('should log no pending migrations when none applied', async () => {
       mockUp.mockResolvedValue([])
 
-      await runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
+      await runMigrations(mockLogger, mockDb, mockClient)
 
       expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
       expect(mockLogger.info).toHaveBeenCalledWith('No pending migrations')
@@ -103,7 +102,7 @@ describe('#mongoDb migrations', () => {
       mockUp.mockRejectedValue(error)
 
       await expect(
-        runMigrations(mockLogger, mockDb, mockClient, lockTtlSeconds)
+        runMigrations(mockLogger, mockDb, mockClient)
       ).rejects.toThrow('migration failed')
 
       expect(mockLogger.error).toHaveBeenCalledWith(error, 'Migration failed')
@@ -129,13 +128,7 @@ describe('#mongoDb migrations', () => {
       const { locker, mockLock } = createMockLocker()
       mockUp.mockResolvedValue(['migration.js'])
 
-      await runMigrationsWithLock(
-        mockLogger,
-        mockDb,
-        mockClient,
-        locker,
-        lockTtlSeconds
-      )
+      await runMigrationsWithLock(mockLogger, mockDb, mockClient, locker)
 
       expect(locker.lock).toHaveBeenCalledWith('migration-lock')
       expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
@@ -152,8 +145,7 @@ describe('#mongoDb migrations', () => {
         mockLogger,
         mockDb,
         mockClient,
-        locker,
-        lockTtlSeconds
+        locker
       )
 
       await vi.advanceTimersByTimeAsync(5_000)
@@ -174,13 +166,7 @@ describe('#mongoDb migrations', () => {
       mockUp.mockRejectedValue(new Error('migration failed'))
 
       await expect(
-        runMigrationsWithLock(
-          mockLogger,
-          mockDb,
-          mockClient,
-          locker,
-          lockTtlSeconds
-        )
+        runMigrationsWithLock(mockLogger, mockDb, mockClient, locker)
       ).rejects.toThrow('migration failed')
 
       expect(mockLock.free).toHaveBeenCalled()
