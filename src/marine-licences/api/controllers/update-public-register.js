@@ -43,9 +43,7 @@ export const updatePublicRegisterController = {
       if (error.isBoom) {
         throw error
       }
-      throw Boom.internal(
-        `Error updating public register: ${error.message}`
-      )
+      throw Boom.internal(`Error updating public register: ${error.message}`)
     }
   }
 }
