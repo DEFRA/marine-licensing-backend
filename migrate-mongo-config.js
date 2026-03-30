@@ -17,6 +17,9 @@ const migrateMongoConfig = {
   lockCollectionName: 'changelog_lock',
 
   // The value in seconds for the TTL index that will be used for the lock. Value of 0 will disable the feature.
+  // migrate-mongo's built-in lock is not safe for concurrent startup: it checks for an existing
+  // lock document and then inserts one in two separate operations (TOCTOU race). We use
+  // mongo-locks instead, which inserts with a unique index constraint for atomic mutual exclusion.
   lockTtl: 0,
 
   // The file extension to create migrations and search for in migration dir
