@@ -31,14 +31,20 @@ const validateSite = (site) => {
 }
 
 const getSiteDetailsStatus = (siteDetails) => {
-  if (!siteDetails || siteDetails.length === 0) return INCOMPLETE
+  if (!siteDetails || siteDetails.length === 0) {
+    return INCOMPLETE
+  }
 
   let hasInProgress = false
 
   for (const site of siteDetails) {
     const result = validateSite(site)
-    if (result === INCOMPLETE) return INCOMPLETE
-    if (result === IN_PROGRESS) hasInProgress = true
+    if (result === INCOMPLETE) {
+      return INCOMPLETE
+    }
+    if (result === IN_PROGRESS) {
+      hasInProgress = true
+    }
   }
 
   return hasInProgress ? IN_PROGRESS : COMPLETED

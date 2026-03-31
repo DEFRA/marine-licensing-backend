@@ -98,14 +98,20 @@ const validateSite = (site, multipleSitesEnabled) => {
 }
 
 const getSiteDetailsStatus = (siteDetails, multipleSitesEnabled) => {
-  if (!siteDetails || siteDetails.length === 0) return INCOMPLETE
+  if (!siteDetails || siteDetails.length === 0) {
+    return INCOMPLETE
+  }
 
   let hasInProgress = false
 
   for (const site of siteDetails) {
     const result = validateSite(site, multipleSitesEnabled)
-    if (result === INCOMPLETE) return INCOMPLETE
-    if (result === IN_PROGRESS) hasInProgress = true
+    if (result === INCOMPLETE) {
+      return INCOMPLETE
+    }
+    if (result === IN_PROGRESS) {
+      hasInProgress = true
+    }
   }
 
   return hasInProgress ? IN_PROGRESS : COMPLETED
