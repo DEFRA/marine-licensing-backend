@@ -24,7 +24,7 @@ export const mockMarineLicenceFileUploadSiteDetails = [
           type: 'Feature',
           geometry: {
             type: 'Point',
-            coordinates: [testLatitude, testLongitude]
+            coordinates: [testLongitude, testLatitude]
           },
           properties: {}
         }
