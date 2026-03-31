@@ -2,7 +2,7 @@ import Boom from '@hapi/boom'
 import { siteDetailsSchema } from '../../models/site-details/site-details.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
+import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { tenMegaBytes } from '../../../shared/constants/site-details.js'
 
@@ -13,7 +13,7 @@ export const updateSiteDetailsController = {
       output: 'data',
       maxBytes: tenMegaBytes
     },
-    pre: [{ method: authorizeOwnership(collectionExemptions) }],
+    pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
       payload: siteDetailsSchema
@@ -26,7 +26,7 @@ export const updateSiteDetailsController = {
       const { multipleSiteDetails, siteDetails, id, updatedAt, updatedBy } =
         payload
 
-      const result = await db.collection(collectionExemptions).updateOne(
+      const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
@@ -39,14 +39,14 @@ export const updateSiteDetailsController = {
       )
 
       if (result.matchedCount === 0) {
-        throw Boom.notFound('Exemption not found')
+        throw Boom.notFound('Marine licence not found')
       }
 
       return h
         .response({
           message: 'success'
         })
-        .code(StatusCodes.CREATED)
+        .code(StatusCodes.OK)
     } catch (error) {
       if (error.isBoom) {
         throw error
