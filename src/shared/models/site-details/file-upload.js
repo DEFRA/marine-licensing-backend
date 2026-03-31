@@ -84,6 +84,34 @@ export const s3LocationFieldSchema = joi
     'object.base': 'S3_LOCATION_INVALID'
   })
 
+export const fileUploadConditionalSiteItemFields = {
+  fileUploadType: joi.when('coordinatesType', {
+    is: 'file',
+    then: fileUploadTypeFieldSchema,
+    otherwise: joi.forbidden()
+  }),
+  geoJSON: joi.when('coordinatesType', {
+    is: 'file',
+    then: geoJSONFieldSchema,
+    otherwise: joi.forbidden()
+  }),
+  featureCount: joi.when('coordinatesType', {
+    is: 'file',
+    then: featureCountFieldSchema,
+    otherwise: joi.forbidden()
+  }),
+  uploadedFile: joi.when('coordinatesType', {
+    is: 'file',
+    then: uploadedFileFieldSchema,
+    otherwise: joi.forbidden()
+  }),
+  s3Location: joi.when('coordinatesType', {
+    is: 'file',
+    then: s3LocationFieldSchema,
+    otherwise: joi.forbidden()
+  })
+}
+
 export const fileUploadValidationSchema = joi.object({
   coordinatesType: joi.string().valid('file').required(),
   fileUploadType: fileUploadTypeFieldSchema,
