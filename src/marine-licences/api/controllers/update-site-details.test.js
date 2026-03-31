@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateSiteDetailsController } from './update-site-details.js'
 import Boom from '@hapi/boom'
-import { mockMarineLicenceFileUploadSiteDetails } from '../../models/test-fixtures.js'
+import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 
 describe('PATCH /marine-licences/site-details', () => {
   const payloadValidator = updateSiteDetailsController.options.validate.payload
@@ -20,7 +20,7 @@ describe('PATCH /marine-licences/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      siteDetails: mockMarineLicenceFileUploadSiteDetails,
+      siteDetails: [mockFileUploadSite],
       ...mockAuditPayload
     }
 
@@ -60,7 +60,7 @@ describe('PATCH /marine-licences/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      siteDetails: mockMarineLicenceFileUploadSiteDetails,
+      siteDetails: [mockFileUploadSite],
       ...mockAuditPayload
     }
 
@@ -87,7 +87,7 @@ describe('PATCH /marine-licences/site-details', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      siteDetails: mockMarineLicenceFileUploadSiteDetails,
+      siteDetails: [mockFileUploadSite],
       ...mockAuditPayload
     }
 

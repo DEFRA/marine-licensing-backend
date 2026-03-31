@@ -1,9 +1,16 @@
-import { createTaskList, COMPLETED } from './createTaskList'
+import {
+  createTaskList,
+  COMPLETED,
+  INCOMPLETE,
+  IN_PROGRESS
+} from './createTaskList'
+import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 
 describe('createTaskList', () => {
   it('should mark tasks as COMPLETED when corresponding marineLicence properties exist', () => {
     const marineLicence = {
       projectName: 'Test Project',
+      siteDetails: [mockFileUploadSite],
       specialLegalPowers: 'Some powers'
     }
 
@@ -11,6 +18,7 @@ describe('createTaskList', () => {
 
     expect(result).toEqual({
       projectName: COMPLETED,
+      siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED
     })
   })
@@ -18,37 +26,62 @@ describe('createTaskList', () => {
   it('should not include specialLegalPowers task for citizens', () => {
     const marineLicence = {
       projectName: 'Test Project',
-      specialLegalPowers: 'Some powers'
+      specialLegalPowers: 'Some powers',
+      siteDetails: [mockFileUploadSite]
     }
 
     const result = createTaskList(marineLicence, true)
 
     expect(result).toEqual({
-      projectName: COMPLETED
+      projectName: COMPLETED,
+      siteDetails: COMPLETED
     })
   })
 
   it('should return tasks as INCOMPLETE when corresponding marineLicence properties are missing', () => {
-    const marineLicence = {}
+    const incompleteMockFileUploadSite = { ...mockFileUploadSite }
 
-    const result = createTaskList(marineLicence)
+    delete incompleteMockFileUploadSite.siteName
 
-    expect(result).toEqual({
-      projectName: 'INCOMPLETE',
-      specialLegalPowers: 'INCOMPLETE'
-    })
-  })
-
-  it('should mark tasks as COMPLETED when all required properties are present', () => {
     const marineLicence = {
       projectName: 'Test Project',
-      specialLegalPowers: 'some powers'
+      specialLegalPowers: 'Some powers',
+      siteDetails: [incompleteMockFileUploadSite]
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
       projectName: COMPLETED,
+      siteDetails: IN_PROGRESS,
+      specialLegalPowers: COMPLETED
+    })
+  })
+
+  it('should return site details as IN_PROGRESS when only some fields are present', () => {
+    const marineLicence = {}
+
+    const result = createTaskList(marineLicence)
+
+    expect(result).toEqual({
+      projectName: INCOMPLETE,
+      siteDetails: INCOMPLETE,
+      specialLegalPowers: INCOMPLETE
+    })
+  })
+
+  it('should mark tasks as COMPLETED when all required properties are present', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'some powers',
+      siteDetails: [mockFileUploadSite]
+    }
+
+    const result = createTaskList(marineLicence)
+
+    expect(result).toEqual({
+      projectName: COMPLETED,
+      siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED
     })
   })

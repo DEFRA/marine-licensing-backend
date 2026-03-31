@@ -104,7 +104,8 @@ describe('GET /marine-licence', () => {
             contactId: userContactId,
             projectName: 'Test project',
             taskList: {
-              projectName: 'COMPLETED'
+              projectName: 'COMPLETED',
+              siteDetails: 'INCOMPLETE'
             }
           }
         })
