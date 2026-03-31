@@ -1,9 +1,9 @@
+import { createTaskList } from './createTaskList'
 import {
-  createTaskList,
-  COMPLETED,
   INCOMPLETE,
-  IN_PROGRESS
-} from './createTaskList'
+  IN_PROGRESS,
+  COMPLETED
+} from '../../../shared/helpers/task-list-utils.js'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 
 describe('createTaskList', () => {

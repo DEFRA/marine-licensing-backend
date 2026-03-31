@@ -6,8 +6,6 @@ import {
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
 
-export { COMPLETED, IN_PROGRESS, INCOMPLETE }
-
 const checkSiteDetailsFileUpload = (siteDetails) => {
   const requiredValues = [
     'fileUploadType',
