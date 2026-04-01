@@ -54,7 +54,8 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     ...(!isCitizen && {
       specialLegalPowers: (value) => (value ? COMPLETED : INCOMPLETE)
     }),
-    siteDetails: getSiteDetailsStatus
+    siteDetails: (value) => getSiteDetailsStatus(value),
+    otherAuthorities: (value) => (value ? COMPLETED : INCOMPLETE)
   }
 
   return buildTaskList(marineLicence, tasks)

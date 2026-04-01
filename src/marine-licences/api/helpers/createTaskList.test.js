@@ -11,7 +11,8 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       siteDetails: [mockFileUploadSite],
-      specialLegalPowers: 'Some powers'
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities'
     }
 
     const result = createTaskList(marineLicence)
@@ -19,22 +20,25 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: COMPLETED,
       siteDetails: COMPLETED,
-      specialLegalPowers: COMPLETED
+      specialLegalPowers: COMPLETED,
+      otherAuthorities: COMPLETED
     })
   })
 
-  it('should not include specialLegalPowers task for citizens', () => {
+  it('should not include specialLegalPowers task for citizens but should include otherAuthorities', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      siteDetails: [mockFileUploadSite]
+      siteDetails: [mockFileUploadSite],
+      otherAuthorities: 'Some authorities'
     }
 
     const result = createTaskList(marineLicence, true)
 
     expect(result).toEqual({
       projectName: COMPLETED,
-      siteDetails: COMPLETED
+      siteDetails: COMPLETED,
+      otherAuthorities: COMPLETED
     })
   })
 
@@ -46,12 +50,14 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
+      otherAuthorities: 'INCOMPLETE',
       siteDetails: [incompleteMockFileUploadSite]
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
+      otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED
@@ -64,6 +70,7 @@ describe('createTaskList', () => {
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
+      otherAuthorities: INCOMPLETE,
       projectName: INCOMPLETE,
       siteDetails: INCOMPLETE,
       specialLegalPowers: INCOMPLETE
@@ -74,12 +81,14 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
+      otherAuthorities: 'Some authorities',
       siteDetails: [mockFileUploadSite]
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
+      otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED
