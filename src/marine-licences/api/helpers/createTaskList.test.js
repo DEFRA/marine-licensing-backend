@@ -5,7 +5,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      publicRegister: 'Public Register Info'
+      publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities'
     }
 
@@ -14,7 +14,7 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
-      publicRegister: COMPLETED
+      publicRegister: COMPLETED,
       otherAuthorities: COMPLETED
     })
   })
@@ -23,7 +23,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      publicRegister: 'Public Register Info'
+      publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities'
     }
 
@@ -31,7 +31,7 @@ describe('createTaskList', () => {
 
     expect(result).toEqual({
       projectName: COMPLETED,
-      publicRegister: COMPLETED
+      publicRegister: COMPLETED,
       otherAuthorities: COMPLETED
     })
   })
@@ -44,7 +44,7 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: 'INCOMPLETE',
       specialLegalPowers: 'INCOMPLETE',
-      publicRegister: 'INCOMPLETE'
+      publicRegister: 'INCOMPLETE',
       otherAuthorities: 'INCOMPLETE'
     })
   })
@@ -53,7 +53,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
-      publicRegister: 'Public Register Info'
+      publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities'
     }
 
@@ -62,7 +62,7 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
-      publicRegister: COMPLETED
+      publicRegister: COMPLETED,
       otherAuthorities: COMPLETED
     })
   })
