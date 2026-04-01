@@ -58,7 +58,7 @@ describe('createTaskList', () => {
     })
   })
 
-  it('should return site details as IN_PROGRESS when only some fields are present', () => {
+  it('should return site details as IN_PROGRESS when fields are all missing', () => {
     const marineLicence = {}
 
     const result = createTaskList(marineLicence)
