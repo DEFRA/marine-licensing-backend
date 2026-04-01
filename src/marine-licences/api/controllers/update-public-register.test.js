@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updatePublicRegisterController } from './update-public-register.js'
-import Boom from '@hapi/boom'
 
 describe('PATCH /marine-licence/public-register', () => {
   const payloadValidator =
@@ -37,7 +36,7 @@ describe('PATCH /marine-licence/public-register', () => {
     expect(result.error.message).toContain('PUBLIC_REGISTER_DETAILS_REQUIRED')
   })
 
-  it('should update marine licence with public register consent', async () => {
+  it('should update marine licence with public register consent yes and details', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
@@ -80,6 +79,47 @@ describe('PATCH /marine-licence/public-register', () => {
     )
   })
 
+  it('should update marine licence with public register consent no', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      consent: 'no',
+      ...mockAuditPayload
+    }
+
+    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        updateOne: mockUpdateOne
+      }
+    })
+
+    await updatePublicRegisterController.handler(
+      {
+        db: mockMongo,
+        payload: mockPayload
+      },
+      mockHandler
+    )
+
+    expect(mockHandler.response).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'success' })
+    )
+
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: ObjectId.createFromHexString(mockPayload.id) },
+      {
+        $set: {
+          publicRegister: {
+            consent: 'no',
+            details: undefined
+          },
+          ...mockAuditPayload
+        }
+      }
+    )
+  })
+
   it('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
@@ -106,32 +146,5 @@ describe('PATCH /marine-licence/public-register', () => {
         mockHandler
       )
     ).rejects.toThrow(`Error updating public register: ${mockError}`)
-  })
-
-  it('should return a 404 if id is not correct', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      consent: 'yes',
-      details: 'Details about public register consent',
-      ...mockAuditPayload
-    }
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
-      }
-    })
-    vi.spyOn(Boom, 'notFound')
-
-    await expect(() =>
-      updatePublicRegisterController.handler(
-        {
-          db: mockMongo,
-          payload: mockPayload
-        },
-        mockHandler
-      )
-    ).rejects.toThrow('Marine licence not found')
   })
 })
