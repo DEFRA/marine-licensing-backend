@@ -147,4 +147,30 @@ describe('PATCH /marine-licence/public-register', () => {
       )
     ).rejects.toThrow(`Error updating public register: ${mockError}`)
   })
+
+  it('should return a 404 if id is not correct', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      consent: 'yes',
+      details: 'Details about public register consent',
+      ...mockAuditPayload
+    }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
+      }
+    })
+
+    await expect(() =>
+      updatePublicRegisterController.handler(
+        {
+          db: mockMongo,
+          payload: mockPayload
+        },
+        mockHandler
+      )
+    ).rejects.toThrow('Marine licence not found')
+  })
 })
