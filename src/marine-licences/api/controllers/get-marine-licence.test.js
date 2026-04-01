@@ -85,6 +85,7 @@ describe('GET /marine-licence', () => {
       mockedFindOne.mockResolvedValue({
         _id: mockId,
         projectName: 'Test project',
+        otherAuthorities: 'Test authority',
         contactId: userContactId
       })
 
@@ -103,8 +104,10 @@ describe('GET /marine-licence', () => {
             id: mockId,
             contactId: userContactId,
             projectName: 'Test project',
+            otherAuthorities: 'Test authority',
             taskList: {
-              projectName: 'COMPLETED'
+              projectName: 'COMPLETED',
+              otherAuthorities: 'COMPLETED'
             }
           }
         })
