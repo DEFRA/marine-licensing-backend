@@ -6,6 +6,7 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
       publicRegister: 'Public Register Info'
+      otherAuthorities: 'Some authorities'
     }
 
     const result = createTaskList(marineLicence)
@@ -14,14 +15,16 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       publicRegister: COMPLETED
+      otherAuthorities: COMPLETED
     })
   })
 
-  it('should not include specialLegalPowers task for citizens', () => {
+  it('should not include specialLegalPowers task for citizens but should include otherAuthorities', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
       publicRegister: 'Public Register Info'
+      otherAuthorities: 'Some authorities'
     }
 
     const result = createTaskList(marineLicence, true)
@@ -29,6 +32,7 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: COMPLETED,
       publicRegister: COMPLETED
+      otherAuthorities: COMPLETED
     })
   })
 
@@ -41,6 +45,7 @@ describe('createTaskList', () => {
       projectName: 'INCOMPLETE',
       specialLegalPowers: 'INCOMPLETE',
       publicRegister: 'INCOMPLETE'
+      otherAuthorities: 'INCOMPLETE'
     })
   })
 
@@ -49,6 +54,7 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
       publicRegister: 'Public Register Info'
+      otherAuthorities: 'Some authorities'
     }
 
     const result = createTaskList(marineLicence)
@@ -57,6 +63,7 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       publicRegister: COMPLETED
+      otherAuthorities: COMPLETED
     })
   })
 })

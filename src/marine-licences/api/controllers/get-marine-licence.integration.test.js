@@ -49,6 +49,7 @@ describe('Get marine licence - integration tests', async () => {
       taskList: {
         projectName: 'COMPLETED',
         publicRegister: 'COMPLETED'
+        otherAuthorities: 'INCOMPLETE'
       }
     })
 
@@ -86,6 +87,7 @@ describe('Get marine licence - integration tests', async () => {
       taskList: {
         projectName: 'COMPLETED',
         publicRegister: 'COMPLETED'
+        otherAuthorities: 'INCOMPLETE'
       }
     })
   })
