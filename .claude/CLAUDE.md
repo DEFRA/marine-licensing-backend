@@ -238,6 +238,7 @@ fields not in the allowed schema. This means custom keys passed in pino's mergin
 For the full CDP ECS schema, see: @../../cdp/cdp-documentation/how-to/logging.md
 
 **Allowed fields that code can set (subset):**
+
 - `message` — the log message string (always visible)
 - `error/*` — error message, stack_trace, type, code (use `structureErrorForECS()` helper)
 - `event/action` — specific action (e.g., "delete", "authorization_check")
@@ -252,6 +253,7 @@ For the full CDP ECS schema, see: @../../cdp/cdp-documentation/how-to/logging.md
 `{ migrated: [...] }` will NOT appear in CDP OpenSearch.
 
 **Correct patterns:**
+
 ```js
 // Data in message string — always visible
 logger.info(`Exemption deleted: ${id}`)
@@ -267,6 +269,7 @@ logger.error(structureErrorForECS(error), 'Operation failed')
 ```
 
 **Incorrect patterns (data silently lost in production):**
+
 ```js
 // BAD: custom keys stripped by CDP
 logger.info({ exemptionId: id, userId }, 'Deleted')
@@ -279,6 +282,7 @@ logger.warn({ tempDir, error }, 'Cleanup failed')
 ```
 
 **Review checklist for logging:**
+
 - [ ] No custom keys in pino's mergingObject — use `message` string or ECS `event/*` fields
 - [ ] Arrays never passed as first argument to logger
 - [ ] Errors use `structureErrorForECS()` (from `logger.js`)
