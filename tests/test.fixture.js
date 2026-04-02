@@ -67,6 +67,10 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       agree: 'yes',
       details: 'Test special legal powers details'
     },
+    publicRegister: {
+      consent: 'yes',
+      details: 'Test public register details'
+    },
     status: MARINE_LICENCE_STATUS.DRAFT,
     createdAt: new Date('2026-12-01'),
     updatedAt: new Date('2026-12-01'),
