@@ -185,6 +185,11 @@ describe('#mongoDb', () => {
   // Dynamic import needed due to config being updated by vitest-mongodb
   // Extended timeout: server startup now includes migration status checks and lock acquisition
   beforeAll(async () => {
+    // Ensure migrate-mongo mocks are in a known state before the server starts,
+    // as server startup now runs migrations via the mocked up() and status().
+    mockUp.mockResolvedValue([])
+    mockStatus.mockResolvedValue([])
+
     const { createServer } = await import('../../../server.js')
     server = await createServer()
     await server.initialize()
