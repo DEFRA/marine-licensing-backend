@@ -34,7 +34,18 @@ jobs:
           npm test
       - name: Security audit
         run: npm audit --audit-level=high || (echo 'Vulnerabilities found!' && exit 1)
-          
+
+      # Reuses node_modules from npm ci above (same job). Scans package-lock.json; .snyk is picked up automatically.
+      # --remote-repo-url links this run to the GitHub repo so Snyk can treat public repos as OSS (not “private tests” only).
+      # https://docs.snyk.io/developer-tools/snyk-cli/commands/test
+      - name: Run Snyk test
+        if: github.actor != 'dependabot[bot]'
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --remote-repo-url=${{ github.server_url }}/${{ github.repository }}
+
       - name: Test Docker Image Build
         run: |
           set +e
@@ -47,7 +58,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  
   test-journey:
     name: Run Journey Tests
     runs-on: ubuntu-latest
