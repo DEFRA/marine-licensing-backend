@@ -51,8 +51,7 @@ describe('#mongoDb migrations', () => {
 
       expect(mockStatus).toHaveBeenCalledWith(mockDb)
       expect(mockLogger.info).toHaveBeenCalledWith(
-        statusResult,
-        'Migration status'
+        'Migration status: 20260326-create-indexes.js - PENDING'
       )
     })
 
@@ -80,11 +79,10 @@ describe('#mongoDb migrations', () => {
 
       expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.objectContaining({
-          migrated,
-          durationSeconds: expect.any(Number)
-        }),
-        'Migrations applied successfully'
+        'Migration applied: 20260326-create-indexes.js'
+      )
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('All 1 migrations applied in')
       )
     })
 

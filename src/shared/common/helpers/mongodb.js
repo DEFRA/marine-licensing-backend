@@ -75,7 +75,11 @@ export const mongoDb = {
 export async function logMigrationStatus(logger, db) {
   try {
     const migrationStatus = await status(db)
-    logger.info(migrationStatus, 'Migration status')
+    for (const migration of migrationStatus) {
+      logger.info(
+        `Migration status: ${migration.fileName} - ${migration.appliedAt}`
+      )
+    }
   } catch (error) {
     logger.error(error, 'Failed to get migration status')
     throw error
@@ -118,9 +122,11 @@ export async function runMigrations(logger, db, client) {
     const durationSeconds = Number.parseFloat((durationMs / 1000).toFixed(2))
 
     if (migrated.length) {
+      for (const migration of migrated) {
+        logger.info(`Migration applied: ${migration}`)
+      }
       logger.info(
-        { migrated, durationSeconds },
-        'Migrations applied successfully'
+        `All ${migrated.length} migrations applied in ${durationSeconds}s`
       )
     } else {
       logger.info('No pending migrations')
