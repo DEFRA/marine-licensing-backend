@@ -64,7 +64,9 @@ describe('#mongoDb migrations', () => {
       )
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        error,
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'status failed' })
+        }),
         'Failed to get migration status'
       )
     })
@@ -103,7 +105,12 @@ describe('#mongoDb migrations', () => {
         runMigrations(mockLogger, mockDb, mockClient)
       ).rejects.toThrow('migration failed')
 
-      expect(mockLogger.error).toHaveBeenCalledWith(error, 'Migration failed')
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'migration failed' })
+        }),
+        'Migration failed'
+      )
     })
   })
 

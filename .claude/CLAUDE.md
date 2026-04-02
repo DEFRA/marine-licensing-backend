@@ -229,6 +229,62 @@ DYNAMICS_CLIENT_SECRET=***
 - **Request tracing:** Header `x-cdp-request-id` auto-propagated
 - **Metrics:** CloudWatch via `aws-embedded-metrics` (production only)
 
+### CDP ECS Logging Rules (CRITICAL)
+
+CDP enforces a streamlined ECS schema. The log ingestion pipeline **silently drops** any
+fields not in the allowed schema. This means custom keys passed in pino's mergingObject
+(the first argument) will be invisible in OpenSearch.
+
+For the full CDP ECS schema, see: @../../cdp/cdp-documentation/how-to/logging.md
+
+**Allowed fields that code can set (subset):**
+- `message` — the log message string (always visible)
+- `error/*` — error message, stack_trace, type, code (use `structureErrorForECS()` helper)
+- `event/action` — specific action (e.g., "delete", "authorization_check")
+- `event/category`, `event/kind`, `event/type` — event classification
+- `event/outcome` — "success" or "failure"
+- `event/reason` — explanation for the outcome
+- `event/reference` — a reference ID tied to the event
+- `event/duration` — duration in nanoseconds
+- `http/*` — request/response fields (auto-populated from `req`/`res`)
+
+**Everything else is dropped.** Custom keys like `{ userId: '...' }`, `{ tempDir: '...' }`,
+`{ migrated: [...] }` will NOT appear in CDP OpenSearch.
+
+**Correct patterns:**
+```js
+// Data in message string — always visible
+logger.info(`Exemption deleted: ${id}`)
+
+// ECS event fields — indexed and searchable
+logger.info(
+  { event: { action: 'delete', outcome: 'success' } },
+  `Exemption deleted: ${id}`
+)
+
+// Errors — use structureErrorForECS() to map to error/* fields
+logger.error(structureErrorForECS(error), 'Operation failed')
+```
+
+**Incorrect patterns (data silently lost in production):**
+```js
+// BAD: custom keys stripped by CDP
+logger.info({ exemptionId: id, userId }, 'Deleted')
+
+// BAD: array as first arg — indices spread as nonsensical top-level keys
+logger.info(migrationStatus, 'Migration status')
+
+// BAD: raw error object without ECS structure
+logger.warn({ tempDir, error }, 'Cleanup failed')
+```
+
+**Review checklist for logging:**
+- [ ] No custom keys in pino's mergingObject — use `message` string or ECS `event/*` fields
+- [ ] Arrays never passed as first argument to logger
+- [ ] Errors use `structureErrorForECS()` (from `logger.js`)
+- [ ] No sensitive data (tokens, passwords, PII) in log messages
+- [ ] Meaningful context is in the `message` string, not lost in custom keys
+
 ### Email Notifications
 
 - **Service:** GOV.UK Notify API

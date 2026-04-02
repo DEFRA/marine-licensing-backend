@@ -3,6 +3,7 @@ import { LockManager } from 'mongo-locks'
 import { up, status } from 'migrate-mongo'
 
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
+import { structureErrorForECS } from './logging/logger.js'
 
 export const addAuditFields = (request, h) => {
   const requestMethod = request.method.toUpperCase()
@@ -81,7 +82,7 @@ export async function logMigrationStatus(logger, db) {
       )
     }
   } catch (error) {
-    logger.error(error, 'Failed to get migration status')
+    logger.error(structureErrorForECS(error), 'Failed to get migration status')
     throw error
   }
 }
@@ -108,7 +109,10 @@ export async function runMigrationsWithLock(logger, db, client, locker) {
     try {
       await lock.free()
     } catch (error) {
-      logger.error(error, 'Failed to release migration lock')
+      logger.error(
+        structureErrorForECS(error),
+        'Failed to release migration lock'
+      )
     }
   }
 }
@@ -132,7 +136,7 @@ export async function runMigrations(logger, db, client) {
       logger.info('No pending migrations')
     }
   } catch (error) {
-    logger.error(error, 'Migration failed')
+    logger.error(structureErrorForECS(error), 'Migration failed')
     throw error // prevents server start
   }
 }
