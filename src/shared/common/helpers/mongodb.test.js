@@ -196,19 +196,22 @@ describe('#mongoDb', () => {
   // migrate-mongo is mocked at file level so the server startup doesn't
   // try to read migration files or run real migrations during this test.
   beforeAll(async () => {
-    console.log('[mongodb.test] beforeAll: importing server.js...')
+    // eslint-disable-next-line no-console -- temporary CI diagnostics, remove after fixing timeout
+    const log = (msg) => console.log(`[mongodb.test] ${msg}`)
+
+    log('beforeAll: importing server.js...')
     const { createServer } = await import('../../../server.js')
-    console.log('[mongodb.test] beforeAll: creating server...')
+    log('beforeAll: creating server...')
     server = await createServer()
-    console.log('[mongodb.test] beforeAll: initializing server...')
+    log('beforeAll: initializing server...')
     await server.initialize()
-    console.log('[mongodb.test] beforeAll: creating mongo-locks index...')
+    log('beforeAll: creating mongo-locks index...')
     // LockManager fires a createIndex during construction that isn't awaited.
     // Wait for it to settle so it doesn't reject during vitest-mongodb teardown.
     await server.db
       .collection('mongo-locks')
       .createIndex({ action: 1 }, { unique: true })
-    console.log('[mongodb.test] beforeAll: complete')
+    log('beforeAll: complete')
   }, 60_000)
 
   describe('Set up', () => {
