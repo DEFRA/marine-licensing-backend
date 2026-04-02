@@ -7,7 +7,8 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
     ...(!isCitizen && {
       specialLegalPowers: (value) => (value ? COMPLETED : INCOMPLETE)
-    })
+    }),
+    otherAuthorities: (value) => (value ? COMPLETED : INCOMPLETE)
   }
 
   const taskList = {}
