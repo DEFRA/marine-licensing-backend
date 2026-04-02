@@ -1,13 +1,7 @@
 import { vi } from 'vitest'
 import { Db, MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
-import { up, status } from 'migrate-mongo'
-import {
-  addAuditFields,
-  logMigrationStatus,
-  runMigrations,
-  runMigrationsWithLock
-} from './mongodb.js'
+import { addAuditFields } from './mongodb.js'
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 
 vi.mock('./mongo-audit.js')
@@ -15,9 +9,6 @@ vi.mock('migrate-mongo', () => ({
   up: vi.fn().mockResolvedValue([]),
   status: vi.fn().mockResolvedValue([])
 }))
-
-const mockUp = vi.mocked(up)
-const mockStatus = vi.mocked(status)
 
 describe('#mongoDb migrations', () => {
   const mockDb = {}
@@ -29,15 +20,34 @@ describe('#mongoDb migrations', () => {
     error: vi.fn()
   }
 
+  let mockUp
+  let mockStatus
+  let logMigrationStatus
+  let runMigrations
+  let runMigrationsWithLock
+
+  beforeAll(async () => {
+    const migrateMongo = await import('migrate-mongo')
+    mockUp = vi.mocked(migrateMongo.up)
+    mockStatus = vi.mocked(migrateMongo.status)
+
+    const mongodb = await import('./mongodb.js')
+    logMigrationStatus = mongodb.logMigrationStatus
+    runMigrations = mongodb.runMigrations
+    runMigrationsWithLock = mongodb.runMigrationsWithLock
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockUp.mockResolvedValue([])
     mockStatus.mockResolvedValue([])
   })
 
+  // Reset mocks to a safe state so the integration block's server startup
+  // (which uses the same file-level vi.mock) doesn't see leftover rejections.
   afterAll(() => {
-    mockUp.mockReset().mockResolvedValue([])
-    mockStatus.mockReset().mockResolvedValue([])
+    mockUp.mockResolvedValue([])
+    mockStatus.mockResolvedValue([])
   })
 
   describe('logMigrationStatus', () => {
@@ -182,14 +192,10 @@ describe('#mongoDb migrations', () => {
 describe('#mongoDb', () => {
   let server
 
-  // Dynamic import needed due to config being updated by vitest-mongodb
-  // Extended timeout: server startup now includes migration status checks and lock acquisition
+  // Dynamic import needed due to config being updated by vitest-mongodb.
+  // migrate-mongo is mocked at file level so the server startup doesn't
+  // try to read migration files or run real migrations during this test.
   beforeAll(async () => {
-    // Ensure migrate-mongo mocks are in a known state before the server starts,
-    // as server startup now runs migrations via the mocked up() and status().
-    mockUp.mockResolvedValue([])
-    mockStatus.mockResolvedValue([])
-
     const { createServer } = await import('../../../server.js')
     server = await createServer()
     await server.initialize()
