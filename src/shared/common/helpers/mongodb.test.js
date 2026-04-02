@@ -1,7 +1,8 @@
 import { vi } from 'vitest'
 import { Db, MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
-import { addAuditFields } from './mongodb.js'
+// mongodb.js must NOT be statically imported — it pulls in logger.js → config.js,
+// which reads MONGO_URI at import time, before vitest-mongodb's beforeAll has set it.
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 
 vi.mock('./mongo-audit.js')
@@ -191,28 +192,24 @@ describe('#mongoDb migrations', () => {
 
 describe('#mongoDb', () => {
   let server
+  let addAuditFields
 
-  // Dynamic import needed due to config being updated by vitest-mongodb.
-  // migrate-mongo is mocked at file level so the server startup doesn't
-  // try to read migration files or run real migrations during this test.
+  // Dynamic import needed — mongodb.js pulls in logger.js → config.js, which
+  // reads MONGO_URI at import time. vitest-mongodb's beforeAll sets MONGO_URI,
+  // but that runs after static imports, so we must import dynamically.
   beforeAll(async () => {
-    // eslint-disable-next-line no-console -- temporary CI diagnostics, remove after fixing timeout
-    const log = (msg) => console.log(`[mongodb.test] ${msg}`)
+    const mongodb = await import('./mongodb.js')
+    addAuditFields = mongodb.addAuditFields
 
-    log('beforeAll: importing server.js...')
     const { createServer } = await import('../../../server.js')
-    log('beforeAll: creating server...')
     server = await createServer()
-    log('beforeAll: initializing server...')
     await server.initialize()
-    log('beforeAll: creating mongo-locks index...')
     // LockManager fires a createIndex during construction that isn't awaited.
     // Wait for it to settle so it doesn't reject during vitest-mongodb teardown.
     await server.db
       .collection('mongo-locks')
       .createIndex({ action: 1 }, { unique: true })
-    log('beforeAll: complete')
-  }, 60_000)
+  })
 
   describe('Set up', () => {
     test('Server should have expected MongoDb decorators', () => {
