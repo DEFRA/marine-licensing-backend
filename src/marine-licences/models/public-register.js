@@ -14,6 +14,7 @@ export const publicRegister = joi
       is: 'yes',
       then: joi
         .string()
+        .trim()
         .required()
         .min(1)
         .max(PUBLIC_REGISTER_DETAILS_MAX_TEXT_LENGTH)
