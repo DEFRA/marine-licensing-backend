@@ -183,6 +183,7 @@ describe('#mongoDb', () => {
   let server
 
   // Dynamic import needed due to config being updated by vitest-mongodb
+  // Extended timeout: server startup now includes migration status checks and lock acquisition
   beforeAll(async () => {
     const { createServer } = await import('../../../server.js')
     server = await createServer()
@@ -192,7 +193,7 @@ describe('#mongoDb', () => {
     await server.db
       .collection('mongo-locks')
       .createIndex({ action: 1 }, { unique: true })
-  })
+  }, 30_000)
 
   describe('Set up', () => {
     test('Server should have expected MongoDb decorators', () => {
