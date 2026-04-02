@@ -1,22 +1,217 @@
 import { vi } from 'vitest'
 import { Db, MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
-import { addAuditFields } from './mongodb.js'
+// mongodb.js must NOT be statically imported — it pulls in logger.js → config.js,
+// which reads MONGO_URI at import time, before vitest-mongodb's beforeAll has set it.
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 
 vi.mock('./mongo-audit.js')
+vi.mock('migrate-mongo', () => ({
+  up: vi.fn().mockResolvedValue([]),
+  status: vi.fn().mockResolvedValue([])
+}))
+
+describe('#mongoDb migrations', () => {
+  const mockDb = {}
+  const mockClient = {}
+  const mockLogger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    fatal: vi.fn(),
+    error: vi.fn()
+  }
+
+  let mockUp
+  let mockStatus
+  let logMigrationStatus
+  let runMigrations
+  let runMigrationsWithLock
+
+  beforeAll(async () => {
+    const migrateMongo = await import('migrate-mongo')
+    mockUp = vi.mocked(migrateMongo.up)
+    mockStatus = vi.mocked(migrateMongo.status)
+
+    const mongodb = await import('./mongodb.js')
+    logMigrationStatus = mongodb.logMigrationStatus
+    runMigrations = mongodb.runMigrations
+    runMigrationsWithLock = mongodb.runMigrationsWithLock
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUp.mockResolvedValue([])
+    mockStatus.mockResolvedValue([])
+  })
+
+  // Reset mocks to a safe state so the integration block's server startup
+  // (which uses the same file-level vi.mock) doesn't see leftover rejections.
+  afterAll(() => {
+    mockUp.mockResolvedValue([])
+    mockStatus.mockResolvedValue([])
+  })
+
+  describe('logMigrationStatus', () => {
+    test('should call status with the database', async () => {
+      const statusResult = [
+        { fileName: '20260326-create-indexes.js', appliedAt: 'PENDING' }
+      ]
+      mockStatus.mockResolvedValue(statusResult)
+
+      await logMigrationStatus(mockLogger, mockDb)
+
+      expect(mockStatus).toHaveBeenCalledWith(mockDb)
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Migration status: 20260326-create-indexes.js - PENDING'
+      )
+    })
+
+    test('should propagate error when status fails', async () => {
+      const error = new Error('status failed')
+      mockStatus.mockRejectedValue(error)
+
+      await expect(logMigrationStatus(mockLogger, mockDb)).rejects.toThrow(
+        'status failed'
+      )
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'status failed' })
+        }),
+        'Failed to get migration status'
+      )
+    })
+  })
+
+  describe('runMigrations', () => {
+    test('should call up with the database and client', async () => {
+      const migrated = ['20260326-create-indexes.js']
+      mockUp.mockResolvedValue(migrated)
+
+      await runMigrations(mockLogger, mockDb, mockClient)
+
+      expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Migration applied: 20260326-create-indexes.js'
+      )
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('All 1 migrations applied in')
+      )
+    })
+
+    test('should log no pending migrations when none applied', async () => {
+      mockUp.mockResolvedValue([])
+
+      await runMigrations(mockLogger, mockDb, mockClient)
+
+      expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
+      expect(mockLogger.info).toHaveBeenCalledWith('No pending migrations')
+    })
+
+    test('should propagate error when up fails', async () => {
+      const error = new Error('migration failed')
+      mockUp.mockRejectedValue(error)
+
+      await expect(
+        runMigrations(mockLogger, mockDb, mockClient)
+      ).rejects.toThrow('migration failed')
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'migration failed' })
+        }),
+        'Migration failed'
+      )
+    })
+  })
+
+  describe('runMigrationsWithLock', () => {
+    const createMockLocker = (lockOnAttempt = 1) => {
+      let attempt = 0
+      const mockLock = { free: vi.fn().mockResolvedValue(true) }
+      return {
+        locker: {
+          lock: vi.fn().mockImplementation(() => {
+            attempt++
+            return Promise.resolve(attempt >= lockOnAttempt ? mockLock : null)
+          })
+        },
+        mockLock
+      }
+    }
+
+    test('should acquire lock, run migrations, then release lock', async () => {
+      const { locker, mockLock } = createMockLocker()
+      mockUp.mockResolvedValue(['migration.js'])
+
+      await runMigrationsWithLock(mockLogger, mockDb, mockClient, locker)
+
+      expect(locker.lock).toHaveBeenCalledWith('migration-lock')
+      expect(mockUp).toHaveBeenCalledWith(mockDb, mockClient)
+      expect(mockLock.free).toHaveBeenCalled()
+    })
+
+    test('should retry when lock is not available', async () => {
+      vi.useFakeTimers()
+
+      const { locker, mockLock } = createMockLocker(3)
+      mockUp.mockResolvedValue([])
+
+      const promise = runMigrationsWithLock(
+        mockLogger,
+        mockDb,
+        mockClient,
+        locker
+      )
+
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.advanceTimersByTimeAsync(5_000)
+      await promise
+
+      expect(locker.lock).toHaveBeenCalledTimes(3)
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Another instance is running migrations, waiting for lock...'
+      )
+      expect(mockLock.free).toHaveBeenCalled()
+
+      vi.useRealTimers()
+    })
+
+    test('should release lock even when migration fails', async () => {
+      const { locker, mockLock } = createMockLocker()
+      mockUp.mockRejectedValue(new Error('migration failed'))
+
+      await expect(
+        runMigrationsWithLock(mockLogger, mockDb, mockClient, locker)
+      ).rejects.toThrow('migration failed')
+
+      expect(mockLock.free).toHaveBeenCalled()
+    })
+  })
+})
 
 describe('#mongoDb', () => {
   let server
+  let addAuditFields
+
+  // Dynamic import needed — mongodb.js pulls in logger.js → config.js, which
+  // reads MONGO_URI at import time. vitest-mongodb's beforeAll sets MONGO_URI,
+  // but that runs after static imports, so we must import dynamically.
+  beforeAll(async () => {
+    const mongodb = await import('./mongodb.js')
+    addAuditFields = mongodb.addAuditFields
+
+    const { createServer } = await import('../../../server.js')
+    server = await createServer()
+    await server.initialize()
+    // LockManager fires a createIndex during construction that isn't awaited.
+    // Wait for it to settle so it doesn't reject during vitest-mongodb teardown.
+    await server.db
+      .collection('mongo-locks')
+      .createIndex({ action: 1 }, { unique: true })
+  })
 
   describe('Set up', () => {
-    beforeAll(async () => {
-      // Dynamic import needed due to config being updated by vitest-mongodb
-      const { createServer } = await import('../../../server.js')
-      server = await createServer()
-      await server.initialize()
-    })
-
     test('Server should have expected MongoDb decorators', () => {
       expect(server.db).toBeInstanceOf(Db)
       expect(server.mongoClient).toBeInstanceOf(MongoClient)
@@ -152,18 +347,11 @@ describe('#mongoDb', () => {
   })
 
   describe('Shut down', () => {
-    beforeAll(async () => {
-      // Dynamic import needed due to config being updated by vitest-mongodb
-      const { createServer } = await import('../../../server.js')
-      server = await createServer()
-      await server.initialize()
-    })
-
     test('Should close Mongo client on server stop', async () => {
-      const closeSpy = vi.spyOn(server.mongoClient, 'close')
-      await server?.stop({ timeout: 1000 })
+      server.mongoClient.close = vi.fn()
+      await server.stop({ timeout: 1000 })
 
-      expect(closeSpy).toHaveBeenCalledWith(true)
+      expect(server.mongoClient.close).toHaveBeenCalledWith(true)
     })
   })
 })

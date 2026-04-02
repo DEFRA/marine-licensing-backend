@@ -24,7 +24,11 @@
     "server:watch": "nodemon --ext js,json --legacy-watch ./src",
     "server:debug": "nodemon --inspect-brk=0.0.0.0 --ext js,json --legacy-watch ./src",
     "start": "NODE_ENV=production node --use-strict .",
-    "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module"
+    "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
+    "migrate:create": "migrate-mongo create",
+    "migrate:up": "migrate-mongo up",
+    "migrate:down": "migrate-mongo down",
+    "migrate:status": "migrate-mongo status"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
@@ -58,6 +62,7 @@
     "https-proxy-agent": "7.0.6",
     "joi": "18.0.2",
     "jsdom": "^29.0.0",
+    "migrate-mongo": "14.0.7",
     "mongo-locks": "3.0.2",
     "mongodb": "7.1.0",
     "node-fetch": "3.3.2",
