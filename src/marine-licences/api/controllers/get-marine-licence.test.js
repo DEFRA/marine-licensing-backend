@@ -116,7 +116,8 @@ describe('GET /marine-licence', () => {
             taskList: {
               projectName: 'COMPLETED',
               otherAuthorities: 'COMPLETED',
-              publicRegister: 'COMPLETED'
+              publicRegister: 'COMPLETED',
+              siteDetails: 'INCOMPLETE'
             }
           }
         })
