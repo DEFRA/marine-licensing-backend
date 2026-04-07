@@ -86,6 +86,7 @@ describe('GET /marine-licence', () => {
         _id: mockId,
         projectName: 'Test project',
         otherAuthorities: 'Test authority',
+        projectBackground: 'Test project background',
         contactId: userContactId
       })
 
@@ -105,9 +106,11 @@ describe('GET /marine-licence', () => {
             contactId: userContactId,
             projectName: 'Test project',
             otherAuthorities: 'Test authority',
+            projectBackground: 'Test project background',
             taskList: {
               projectName: 'COMPLETED',
-              otherAuthorities: 'COMPLETED'
+              otherAuthorities: 'COMPLETED',
+              projectBackground: 'COMPLETED'
             }
           }
         })

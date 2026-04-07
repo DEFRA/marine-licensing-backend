@@ -5,7 +5,8 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      otherAuthorities: 'Some authorities'
+      otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background'
     }
 
     const result = createTaskList(marineLicence)
@@ -13,7 +14,8 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
-      otherAuthorities: COMPLETED
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED
     })
   })
 
@@ -21,14 +23,16 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      otherAuthorities: 'Some authorities'
+      otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background'
     }
 
     const result = createTaskList(marineLicence, true)
 
     expect(result).toEqual({
       projectName: COMPLETED,
-      otherAuthorities: COMPLETED
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED
     })
   })
 
@@ -40,7 +44,8 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: 'INCOMPLETE',
       specialLegalPowers: 'INCOMPLETE',
-      otherAuthorities: 'INCOMPLETE'
+      otherAuthorities: 'INCOMPLETE',
+      projectBackground: 'INCOMPLETE'
     })
   })
 
@@ -48,7 +53,8 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
-      otherAuthorities: 'Some authorities'
+      otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background'
     }
 
     const result = createTaskList(marineLicence)
@@ -56,7 +62,8 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
-      otherAuthorities: COMPLETED
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED
     })
   })
 })
