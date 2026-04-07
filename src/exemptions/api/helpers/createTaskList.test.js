@@ -1,10 +1,10 @@
-import {
-  createTaskList,
-  COMPLETED,
-  IN_PROGRESS,
-  INCOMPLETE
-} from './createTaskList'
+import { createTaskList } from './createTaskList'
 import { COORDINATE_SYSTEMS } from '../../../shared/common/constants/coordinates.js'
+import {
+  INCOMPLETE,
+  IN_PROGRESS,
+  COMPLETED
+} from '../../../shared/helpers/task-list-utils.js'
 
 describe('createTaskList', () => {
   it('should mark tasks as COMPLETED when corresponding exemption properties exist for all properties in the single coordinate journey', () => {
