@@ -6,6 +6,7 @@ import { submitMarineLicenceController } from './controllers/submit-marine-licen
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updateOtherAuthoritiesController } from './controllers/update-other-authorities.js'
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
+import { addActivityDetailsController } from './controllers/add-activity-details.js'
 
 export const marineLicences = [
   {
@@ -52,5 +53,10 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/other-authorities',
     ...updateOtherAuthoritiesController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/add-activity-details',
+    ...addActivityDetailsController
   }
 ]
