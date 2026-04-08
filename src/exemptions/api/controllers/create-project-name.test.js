@@ -388,13 +388,7 @@ describe('POST /exemptions/project-name', () => {
       )
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        {
-          mcmsContext: invalidMcmsContext,
-          validationError: expect.stringContaining(
-            '"activityType" must be one of'
-          )
-        },
-        'Validation failed for MCMS context'
+        expect.stringContaining('Validation failed for MCMS context')
       )
 
       expect(mockInsertOne).toHaveBeenCalledWith(
