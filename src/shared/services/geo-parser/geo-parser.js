@@ -17,8 +17,7 @@ export class GeoParser {
 
   async extract(s3Bucket, s3Key, fileType) {
     logger.info(
-      { s3Bucket, s3Key, fileType },
-      `${this.logSystem}: Starting geo-parser extraction`
+      `${this.logSystem}: Starting geo-parser extraction for ${fileType} from ${s3Bucket}/${s3Key}`
     )
 
     let tempDir = null
@@ -35,13 +34,7 @@ export class GeoParser {
       this.validateGeoJSON(geoJSON)
 
       logger.info(
-        {
-          s3Bucket,
-          s3Key,
-          fileType,
-          featureCount: geoJSON.features?.length || 0
-        },
-        `${this.logSystem}: Successfully extracted GeoJSON`
+        `${this.logSystem}: Successfully extracted GeoJSON for ${fileType} from ${s3Bucket}/${s3Key}, ${geoJSON.features?.length || 0} features`
       )
 
       return geoJSON
@@ -70,7 +63,7 @@ export class GeoParser {
   }
 
   async parseFile(filePath, fileType) {
-    logger.info({ fileType }, `${this.logSystem}: Parsing file`)
+    logger.info(`${this.logSystem}: Parsing file of type ${fileType}`)
 
     // Use worker threads for CPU-intensive parsing to prevent blocking
     return new Promise((resolve, reject) => {
@@ -103,8 +96,7 @@ export class GeoParser {
           reject(parseError)
         } else {
           logger.info(
-            { fileType },
-            `${this.logSystem}: File parsed successfully`
+            `${this.logSystem}: File parsed successfully (${fileType})`
           )
           resolve(result.geoJSON)
         }
@@ -158,12 +150,7 @@ export class GeoParser {
     }
 
     logger.debug(
-      {
-        type: geoJSON.type,
-        featureCount: geoJSON.features?.length || 0,
-        memoryUsage
-      },
-      `${this.logSystem}: validation passed`
+      `${this.logSystem}: validation passed - type ${geoJSON.type}, ${geoJSON.features?.length || 0} features, ${memoryUsage} bytes`
     )
 
     return true

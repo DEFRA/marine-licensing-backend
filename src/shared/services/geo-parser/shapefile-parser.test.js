@@ -786,7 +786,6 @@ describe('ShapefileParser class', () => {
       expect(result.features).toHaveLength(1)
       expect(result.features[0]).toEqual(validFeature)
       expect(logger.warn).toHaveBeenCalledWith(
-        { feature: invalidFeature },
         expect.stringContaining('Ignoring feature without geometry.coordinates')
       )
     })
@@ -1018,11 +1017,14 @@ describe('ShapefileParser class', () => {
       ).resolves.toBeUndefined()
       expect(logger.warn).toHaveBeenCalledTimes(1)
       expect(logger.warn).toHaveBeenCalledWith(
-        {
-          tempDir: invalidPath,
-          error: new Error('Failed to cleanup')
-        },
-        'FileUpload:ShapefileParser: ERROR: Failed to clean up temporary directory'
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: 'Failed to cleanup'
+          })
+        }),
+        expect.stringContaining(
+          'FileUpload:ShapefileParser: ERROR: Failed to clean up temporary directory'
+        )
       )
     })
   })

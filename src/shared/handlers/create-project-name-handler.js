@@ -19,11 +19,7 @@ export const createProjectNameHandler = ({
       })
       if (error) {
         request.logger.info(
-          {
-            mcmsContext: payload.mcmsContext,
-            validationError: error.message
-          },
-          'Validation failed for MCMS context'
+          `Validation failed for MCMS context: ${error.message} | context: ${JSON.stringify(payload.mcmsContext)}`
         )
         mcmsContext = {
           iatQueryString: payload.mcmsContext.iatQueryString

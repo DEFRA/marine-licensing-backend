@@ -38,7 +38,10 @@ export const deleteExemptionController = {
         .collection(collectionExemptions)
         .deleteOne({ _id: ObjectId.createFromHexString(params.id) })
 
-      logger.info({ exemptionId: params.id }, 'Exemption deleted successfully')
+      logger.info(
+        { event: { action: 'delete', outcome: 'success' } },
+        `Exemption deleted successfully: ${params.id}`
+      )
 
       return h
         .response({ message: 'Exemption deleted successfully' })
