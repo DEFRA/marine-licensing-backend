@@ -64,7 +64,8 @@ describe('createTaskList', () => {
       otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
-      specialLegalPowers: COMPLETED
+      specialLegalPowers: COMPLETED,
+      publicRegister: INCOMPLETE
     })
   })
 
