@@ -1,7 +1,7 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 
-const PUBLIC_REGISTER_DETAILS_MAX_TEXT_LENGTH = 1000
+const PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH = 1000
 
 export const publicRegister = joi
   .object({
@@ -10,18 +10,18 @@ export const publicRegister = joi
       'any.only': 'PUBLIC_REGISTER_CONSENT_REQUIRED',
       'any.required': 'PUBLIC_REGISTER_CONSENT_REQUIRED'
     }),
-    details: joi.when('consent', {
+    reason: joi.when('consent', {
       is: 'no',
       then: joi
         .string()
         .trim()
         .required()
         .min(1)
-        .max(PUBLIC_REGISTER_DETAILS_MAX_TEXT_LENGTH)
+        .max(PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH)
         .messages({
-          'string.empty': 'PUBLIC_REGISTER_DETAILS_REQUIRED',
-          'string.max': 'PUBLIC_REGISTER_DETAILS_MAX_LENGTH',
-          'any.required': 'PUBLIC_REGISTER_DETAILS_REQUIRED'
+          'string.empty': 'PUBLIC_REGISTER_REASON_REQUIRED',
+          'string.max': 'PUBLIC_REGISTER_REASON_MAX_LENGTH',
+          'any.required': 'PUBLIC_REGISTER_REASON_REQUIRED'
         }),
       otherwise: joi.forbidden()
     })
