@@ -34,8 +34,8 @@ export const deleteMarineLicenceController = {
         .deleteOne({ _id: ObjectId.createFromHexString(params.id) })
 
       logger.info(
-        { marineLicenceId: params.id },
-        'Marine licence deleted successfully'
+        { event: { action: 'delete', outcome: 'success' } },
+        `Marine licence deleted successfully: ${params.id}`
       )
 
       return h
