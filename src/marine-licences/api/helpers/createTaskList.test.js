@@ -74,11 +74,11 @@ describe('createTaskList', () => {
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      projectName: 'INCOMPLETE',
-      specialLegalPowers: 'INCOMPLETE',
-      publicRegister: 'INCOMPLETE',
-      otherAuthorities: 'INCOMPLETE',
-      siteDetails: 'INCOMPLETE'
+      projectName: INCOMPLETE,
+      specialLegalPowers: INCOMPLETE,
+      publicRegister: INCOMPLETE,
+      otherAuthorities: INCOMPLETE,
+      siteDetails: INCOMPLETE
     })
   })
 
@@ -98,7 +98,6 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       publicRegister: COMPLETED,
-      otherAuthorities: COMPLETED,
       siteDetails: COMPLETED
     })
   })
