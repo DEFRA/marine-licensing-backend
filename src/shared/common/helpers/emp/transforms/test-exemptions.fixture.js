@@ -1,4 +1,4 @@
-export const testExemptions = [
+const _testExemptions = [
   {
     dbRecord: {
       _id: '69020200af9bd9354c7d3575',
@@ -793,3 +793,28 @@ export const testExemptions = [
     }
   }
 ]
+
+// ML-1222: `transformExemptionToEmpRequest` now returns Feature[]. Derive
+// `expectedFeatures` from the legacy single-feature `expected` shape, splitting
+// manual circle sites into one feature per site (so each gets its own ArcGIS
+// centroid). egThe lacy `expected` field is retained so the flat-rings tests
+// in `manual-coordinates.test.js` continue to work unchanged.
+export const testExemptions = _testExemptions.map((entry) => {
+  const { attributes, geometry } = entry.expected
+  const isManualCircles =
+    entry.dbRecord.siteDetails?.length > 0 &&
+    entry.dbRecord.siteDetails.every(
+      (site) =>
+        site.coordinatesType !== 'file' && site.coordinatesEntry === 'single'
+    )
+  const expectedFeatures = isManualCircles
+    ? geometry.rings.map((ring) => ({
+        attributes,
+        geometry: {
+          rings: [ring],
+          spatialReference: geometry.spatialReference
+        }
+      }))
+    : [entry.expected]
+  return { ...entry, expectedFeatures }
+})

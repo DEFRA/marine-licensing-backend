@@ -93,7 +93,7 @@ describe('Emp Client', () => {
 
       const result = await sendExemptionToEmp(mockServer, mockQueueItem)
 
-      expect(result.objectId).toEqual('emp-record-id')
+      expect(result.objectIds).toEqual(['emp-record-id'])
       expect(mockServer.db.collection).toHaveBeenCalledWith('exemptions')
       expect(mockServer.db.collection().findOne).toHaveBeenCalledWith({
         applicationReference: 'TEST-REF-001'
@@ -104,10 +104,69 @@ describe('Emp Client', () => {
       expect(calls.some((call) => call[0] === 'exemption-emp-queue')).toBe(true)
 
       expect(addFeatures).toHaveBeenCalledWith({
-        features: expect.any(Object),
+        features: expect.any(Array),
         url: 'https://localhost/api/addFeatures',
-        params: { token: 'test-api-key' }
+        params: { token: 'test-api-key', rollbackOnFailure: true }
       })
+    })
+
+    it('should send one feature per manual circle site and return all objectIds', async () => {
+      const circleExemption = {
+        ...mockExemption,
+        siteDetails: [
+          {
+            coordinatesType: 'coordinates',
+            activityDates: { start: '2024-01-01', end: '2024-12-31' },
+            coordinatesEntry: 'single',
+            coordinateSystem: 'wgs84',
+            coordinates: { latitude: '55.019889', longitude: '-1.399500' },
+            circleWidth: '1'
+          },
+          {
+            coordinatesType: 'coordinates',
+            activityDates: { start: '2024-01-01', end: '2024-12-31' },
+            coordinatesEntry: 'single',
+            coordinateSystem: 'wgs84',
+            coordinates: { latitude: '55.020000', longitude: '-1.400000' },
+            circleWidth: '1'
+          }
+        ]
+      }
+      vi.mocked(addFeatures).mockResolvedValue({
+        addResults: [
+          { success: true, objectId: 'emp-1' },
+          { success: true, objectId: 'emp-2' }
+        ]
+      })
+      mockServer.db.collection().findOne.mockResolvedValue(circleExemption)
+
+      const result = await sendExemptionToEmp(mockServer, mockQueueItem)
+
+      expect(result.objectIds).toEqual(['emp-1', 'emp-2'])
+      const [call] = vi.mocked(addFeatures).mock.calls
+      expect(Array.isArray(call[0].features)).toBe(true)
+      expect(call[0].features).toHaveLength(2)
+      expect(call[0].params).toEqual({
+        token: 'test-api-key',
+        rollbackOnFailure: true
+      })
+    })
+
+    it('should throw if any feature in the batch fails', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+      vi.mocked(addFeatures).mockResolvedValue({
+        addResults: [
+          { success: true, objectId: 'emp-1' },
+          {
+            success: false,
+            error: { code: 400, description: 'Second feature failed' }
+          }
+        ]
+      })
+
+      await expect(
+        sendExemptionToEmp(mockServer, mockQueueItem)
+      ).rejects.toThrow('EMP addFeatures failed: Second feature failed')
     })
 
     it('should throw error if EMP request fails', async () => {
@@ -175,7 +234,7 @@ describe('Emp Client', () => {
 
     it('should update exemption status in EMP successfully', async () => {
       mockServer.db.collection().findOne.mockResolvedValue({
-        empFeatureId: 'emp-object-id'
+        empFeatureIds: ['emp-object-id']
       })
       vi.mocked(updateFeatures).mockResolvedValue({
         updateResults: [{ success: true, objectId: 'emp-object-id' }]
@@ -186,7 +245,7 @@ describe('Emp Client', () => {
         mockWithdrawQueueItem
       )
 
-      expect(result.success).toBe(true)
+      expect(result.objectIds).toEqual(['emp-object-id'])
       expect(mockServer.db.collection).toHaveBeenCalledWith(
         'exemption-emp-queue'
       )
@@ -200,8 +259,54 @@ describe('Emp Client', () => {
             }
           }
         ],
-        params: { token: 'test-api-key' }
+        params: { token: 'test-api-key', rollbackOnFailure: true }
       })
+    })
+
+    it('should withdraw all features when multiple ids were stored', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        empFeatureIds: ['emp-1', 'emp-2', 'emp-3']
+      })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [
+          { success: true, objectId: 'emp-1' },
+          { success: true, objectId: 'emp-2' },
+          { success: true, objectId: 'emp-3' }
+        ]
+      })
+
+      const result = await withdrawExemptionFromEmp(
+        mockServer,
+        mockWithdrawQueueItem
+      )
+
+      expect(result.objectIds).toEqual(['emp-1', 'emp-2', 'emp-3'])
+      const [call] = vi.mocked(updateFeatures).mock.calls
+      expect(call[0].features).toHaveLength(3)
+      expect(call[0].features[2].attributes).toEqual({
+        OBJECTID: 'emp-3',
+        Status: 'Withdrawn'
+      })
+    })
+
+    it('should fall back to legacy empFeatureId on the queue item', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        empFeatureId: 'legacy-id'
+      })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [{ success: true, objectId: 'legacy-id' }]
+      })
+
+      const result = await withdrawExemptionFromEmp(
+        mockServer,
+        mockWithdrawQueueItem
+      )
+
+      expect(result.objectIds).toEqual(['legacy-id'])
+      const [call] = vi.mocked(updateFeatures).mock.calls
+      expect(call[0].features).toEqual([
+        { attributes: { OBJECTID: 'legacy-id', Status: 'Withdrawn' } }
+      ])
     })
 
     it('should throw error if no objectId found in queue', async () => {
@@ -218,7 +323,7 @@ describe('Emp Client', () => {
 
     it('should throw error if updateFeatures returns failure', async () => {
       mockServer.db.collection().findOne.mockResolvedValue({
-        empFeatureId: 'emp-object-id'
+        empFeatureIds: ['emp-object-id']
       })
       vi.mocked(updateFeatures).mockResolvedValue({
         updateResults: [
@@ -236,7 +341,7 @@ describe('Emp Client', () => {
 
     it('should throw error if updateFeatures throws an exception', async () => {
       mockServer.db.collection().findOne.mockResolvedValue({
-        empFeatureId: 'emp-object-id'
+        empFeatureIds: ['emp-object-id']
       })
       vi.mocked(updateFeatures).mockRejectedValue(new Error('Network timeout'))
 
