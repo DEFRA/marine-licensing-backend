@@ -166,6 +166,18 @@ Run:
 docker run -e PORT=3001 -p 3001:3001 marine-licensing-backend
 ```
 
+### Migrations
+
+Database migrations are automatically applied to `mongo` on application start.
+
+```shell
+npm run migrate:status
+npm run migrate:up
+npm run migrate:down
+```
+
+See [migrations/README.md](migrations/README.md) for full details
+
 ### Docker Compose
 
 A local environment with:
