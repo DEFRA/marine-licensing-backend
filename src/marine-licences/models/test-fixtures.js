@@ -7,7 +7,7 @@ export const mockMarineLicence = {
   projectName: 'Test Marine Licence Project',
   publicRegister: {
     consent: 'yes',
-    details: 'Test public register details'
+    reason: 'Test public register reason'
   },
   status: MARINE_LICENCE_STATUS.DRAFT,
   createdAt: new Date('2026-12-01'),

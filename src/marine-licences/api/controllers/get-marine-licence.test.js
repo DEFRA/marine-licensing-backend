@@ -87,7 +87,7 @@ describe('GET /marine-licence', () => {
         projectName: 'Test project',
         publicRegister: {
           consent: 'yes',
-          details: 'Test public register details'
+          reason: 'Test public register reason'
         },
         otherAuthorities: 'Test authority',
         contactId: userContactId
@@ -110,7 +110,7 @@ describe('GET /marine-licence', () => {
             projectName: 'Test project',
             publicRegister: {
               consent: 'yes',
-              details: 'Test public register details'
+              reason: 'Test public register reason'
             },
             otherAuthorities: 'Test authority',
             taskList: {
