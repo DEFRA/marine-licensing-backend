@@ -42,7 +42,13 @@ const claimOneQueueItem = async (server, collectionName, filter) => {
           updatedAt: new Date()
         }
       },
-      { sort: { _id: 1 }, returnDocument: 'after' }
+      {
+        sort: { _id: 1 },
+        returnDocument: 'after',
+        // Default driver behaviour returns the document directly; we need `.value`
+        // for a consistent shape (tests and real DB).
+        includeResultMetadata: true
+      }
     )
     const doc = result?.value ?? null
     if (!doc) {
