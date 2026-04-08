@@ -205,7 +205,7 @@ export const sendExemptionToDynamics = async (
 }
 
 export const sendWithdrawToDynamics = async (
-  server,
+  _server,
   accessToken,
   queueItem
 ) => {
