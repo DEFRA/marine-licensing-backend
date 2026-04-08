@@ -55,15 +55,8 @@ export class ExemptionService {
 
       if (!isOwner && !(isSameOrganisation && isSubmitted)) {
         this.logger.info(
-          {
-            exemptionId: id,
-            currentUserId,
-            currentOrganisationId,
-            exemptionContactId: exemption.contactId,
-            exemptionOrganisationId: exemption.organisation?.id,
-            exemptionStatus: exemption.status
-          },
-          'Authorization error in getExemptionById'
+          { event: { action: 'authorization_check', outcome: 'failure' } },
+          `Authorization error in getExemptionById: exemption ${id} status ${exemption.status}, user ${currentUserId} org ${currentOrganisationId}, owner ${exemption.contactId} org ${exemption.organisation?.id}`
         )
         throw Boom.forbidden('Not authorised to request this resource')
       }
@@ -83,8 +76,8 @@ export class ExemptionService {
 
     if (!isViewableStatus || exemption.publicRegister?.consent !== 'yes') {
       this.logger.info(
-        { exemptionId: id },
-        'Authorization error in getPublicExemptionById'
+        { event: { action: 'authorization_check', outcome: 'failure' } },
+        `Authorization error in getPublicExemptionById: exemption ${id}`
       )
       throw Boom.forbidden(notAuthorisedMessage)
     }
@@ -100,12 +93,8 @@ export class ExemptionService {
       await this.#findExemptionByApplicationReference(applicationReference)
     if (currentUserId && currentUserId !== exemption.contactId) {
       this.logger.info(
-        {
-          applicationReference,
-          currentUserId,
-          exemptionContactId: exemption.contactId
-        },
-        'Authorization error in getExemptionByApplicationReference'
+        { event: { action: 'authorization_check', outcome: 'failure' } },
+        `Authorization error in getExemptionByApplicationReference: ref ${applicationReference}, user ${currentUserId}, owner ${exemption.contactId}`
       )
       throw Boom.forbidden(notAuthorisedMessage)
     }

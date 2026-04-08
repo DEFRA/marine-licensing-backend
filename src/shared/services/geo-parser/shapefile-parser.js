@@ -139,8 +139,7 @@ export class ShapefileParser {
       }
     }
     logger.debug(
-      { allFiles },
-      `${this.logSystem}: all files found in zip ${this.zipFile}`
+      `${this.logSystem}: ${allFiles.length} files found in zip ${this.zipFile}`
     )
     return allFiles
   }
@@ -153,7 +152,9 @@ export class ShapefileParser {
    * @throws {Error} with error code from GEO_PARSER_ERROR_CODES
    */
   async validateShapefileContents(tempDir) {
-    logger.info({ tempDir }, `${this.logSystem}: Validating shapefile contents`)
+    logger.info(
+      `${this.logSystem}: Validating shapefile contents in ${tempDir}`
+    )
 
     const files = await fs.readdir(tempDir, {
       recursive: true,
@@ -174,8 +175,7 @@ export class ShapefileParser {
 
     if (!hasShp || !hasShx || !hasDbf) {
       logger.warn(
-        { hasShp, hasShx, hasDbf, tempDir },
-        `${this.logSystem}: Validation failed - missing core shapefile files`
+        `${this.logSystem}: Validation failed - missing core shapefile files in ${tempDir} (shp: ${hasShp}, shx: ${hasShx}, dbf: ${hasDbf})`
       )
       throw new Error(GEO_PARSER_ERROR_CODES.SHAPEFILE_MISSING_CORE_FILES)
     }
@@ -186,8 +186,7 @@ export class ShapefileParser {
 
     if (!hasPrj) {
       logger.warn(
-        { tempDir },
-        `${this.logSystem}: Validation failed - missing .prj file`
+        `${this.logSystem}: Validation failed - missing .prj file in ${tempDir}`
       )
       throw new Error(GEO_PARSER_ERROR_CODES.SHAPEFILE_MISSING_PRJ_FILE)
     }
@@ -203,21 +202,14 @@ export class ShapefileParser {
 
       if (stats.size > MAX_PROJECTION_FILE_SIZE_BYTES) {
         logger.warn(
-          {
-            file: prjFile.relativePath,
-            size: stats.size,
-            maxSize: MAX_PROJECTION_FILE_SIZE_BYTES,
-            tempDir
-          },
-          `${this.logSystem}: Validation failed - .prj file exceeds size limit`
+          `${this.logSystem}: Validation failed - .prj file ${prjFile.relativePath} exceeds size limit (${stats.size} bytes, max ${MAX_PROJECTION_FILE_SIZE_BYTES} bytes)`
         )
         throw new Error(GEO_PARSER_ERROR_CODES.SHAPEFILE_PRJ_FILE_TOO_LARGE)
       }
     }
 
     logger.info(
-      { tempDir, fileCount: files.length },
-      `${this.logSystem}: Shapefile validation passed`
+      `${this.logSystem}: Shapefile validation passed in ${tempDir}, ${files.length} files`
     )
   }
 
@@ -225,10 +217,7 @@ export class ShapefileParser {
    * Find all .shp files in a directory
    */
   async findShapefiles(directory) {
-    logger.info(
-      { directory },
-      `${this.logSystem}: Searching for shapefiles in directory`
-    )
+    logger.info(`${this.logSystem}: Searching for shapefiles in ${directory}`)
 
     try {
       const files = await Array.fromAsync(
@@ -238,8 +227,7 @@ export class ShapefileParser {
       )
       const found = files.map((file) => path.join(directory, file))
       logger.info(
-        { found, directory },
-        `${this.logSystem}: Found shapefiles in directory`
+        `${this.logSystem}: Found ${found.length} shapefiles in ${directory}`
       )
       return found
     } catch (error) {
@@ -286,8 +274,7 @@ export class ShapefileParser {
     if (typeof coords[0] === 'number') {
       if (coords.length < 2) {
         logger.warn(
-          { coords },
-          `${this.logSystem}: Invalid coordinate pair: insufficient elements`
+          `${this.logSystem}: Invalid coordinate pair: insufficient elements (length: ${coords.length})`
         )
         return
       }
@@ -342,8 +329,7 @@ export class ShapefileParser {
         features.push(feature)
       } else {
         logger.warn(
-          { feature },
-          `${this.logSystem}: ${shpPath} Ignoring feature without geometry.coordinates`
+          `${this.logSystem}: ${shpPath} Ignoring feature without geometry.coordinates (type: ${feature.geometry?.type ?? 'no geometry'})`
         )
       }
     }
@@ -367,8 +353,7 @@ export class ShapefileParser {
    */
   async findProjectionFile(directory, basename) {
     logger.info(
-      { directory, basename },
-      `${this.logSystem}: Searching for projection file in directory with basename ${basename}`
+      `${this.logSystem}: Searching for projection file in ${directory} with basename ${basename}`
     )
     if (!basename) {
       logger.error(
@@ -384,10 +369,7 @@ export class ShapefileParser {
       )
       const paths = files.map((file) => path.join(directory, file))
       if (paths[0]) {
-        logger.info(
-          { paths },
-          `${this.logSystem}: Found projection file: ${paths[0]}`
-        )
+        logger.info(`${this.logSystem}: Found projection file: ${paths[0]}`)
         return paths[0]
       } else {
         logger.error(
@@ -451,15 +433,12 @@ export class ShapefileParser {
   async parseFile(filename) {
     try {
       const extractDir = await this.extractZip(filename)
-      logger.debug({ extractDir }, `${this.logSystem}: Extracting zip`)
+      logger.debug(`${this.logSystem}: Extracting zip to ${extractDir}`)
       try {
         const shapefiles = await this.findShapefiles(extractDir)
 
         logger.debug(
-          {
-            shapefiles
-          },
-          `${this.logSystem}: Shapefiles found before iteration`
+          `${this.logSystem}: ${shapefiles.length} shapefiles found before iteration`
         )
 
         if (shapefiles.length === 0) {
@@ -495,14 +474,11 @@ export class ShapefileParser {
   async cleanupTempDirectory(tempDir) {
     try {
       await fs.rm(tempDir, { recursive: true, force: true })
-      logger.debug({ tempDir }, `${this.logSystem}: Cleaned up temp directory`)
+      logger.debug(`${this.logSystem}: Cleaned up temp directory ${tempDir}`)
     } catch (error) {
       logger.warn(
-        {
-          tempDir,
-          error
-        },
-        `${this.logSystem}: ERROR: Failed to clean up temporary directory`
+        structureErrorForECS(error),
+        `${this.logSystem}: ERROR: Failed to clean up temporary directory ${tempDir}`
       )
     }
   }
