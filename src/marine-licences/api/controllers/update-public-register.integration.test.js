@@ -10,11 +10,11 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
   const differentContactId = '987e6543-e21b-12d3-a456-426614174000'
   const marineLicenceId = new ObjectId()
 
-  test('successfully updates public register when user consents with details', async () => {
+  test('successfully updates public register when user consents', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'no' }
+      publicRegister: { consent: 'no', details: 'Previous details' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -22,8 +22,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'yes',
-      details: 'Details about why this should be published'
+      consent: 'yes'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -42,15 +41,15 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     expect(updatedLicence.publicRegister).toEqual({
       consent: 'yes',
-      details: 'Details about why this should be published'
+      details: null
     })
   })
 
-  test('successfully updates public register when user declines consent', async () => {
+  test('successfully updates public register when user declines consent with details', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'yes', details: 'Previous details' }
+      publicRegister: { consent: 'yes' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -58,7 +57,8 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'no'
+      consent: 'no',
+      details: 'Details about why this should not be published'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -77,7 +77,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     expect(updatedLicence.publicRegister).toEqual({
       consent: 'no',
-      details: null
+      details: 'Details about why this should not be published'
     })
   })
 
@@ -86,7 +86,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: nonExistentId.toString(),
-      consent: 'yes',
+      consent: 'no',
       details: 'Some details'
     }
 
@@ -105,7 +105,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'yes', details: 'Original details' }
+      publicRegister: { consent: 'yes' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -113,7 +113,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'no'
+      consent: 'yes'
     }
 
     const { statusCode, body } = await makePatchRequest({

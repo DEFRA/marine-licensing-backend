@@ -29,19 +29,18 @@ describe('PATCH /marine-licence/public-register', () => {
     expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
   })
 
-  it('should fail if consent is yes but details are missing', () => {
+  it('should fail if consent is no but details are missing', () => {
     const result = payloadValidator.validate({
-      consent: 'yes'
+      consent: 'no'
     })
     expect(result.error.message).toContain('PUBLIC_REGISTER_DETAILS_REQUIRED')
   })
 
-  it('should update marine licence with public register consent yes and details', async () => {
+  it('should update marine licence with public register consent yes', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
       consent: 'yes',
-      details: 'Details about public register consent',
       ...mockAuditPayload
     }
 
@@ -71,7 +70,7 @@ describe('PATCH /marine-licence/public-register', () => {
         $set: {
           publicRegister: {
             consent: mockPayload.consent,
-            details: mockPayload.details
+            details: undefined
           },
           ...mockAuditPayload
         }
@@ -79,11 +78,12 @@ describe('PATCH /marine-licence/public-register', () => {
     )
   })
 
-  it('should update marine licence with public register consent no', async () => {
+  it('should update marine licence with public register consent no and details', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
       consent: 'no',
+      details: 'Details about declining public register consent',
       ...mockAuditPayload
     }
 
@@ -112,7 +112,7 @@ describe('PATCH /marine-licence/public-register', () => {
         $set: {
           publicRegister: {
             consent: 'no',
-            details: undefined
+            details: mockPayload.details
           },
           ...mockAuditPayload
         }
@@ -124,8 +124,8 @@ describe('PATCH /marine-licence/public-register', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'yes',
-      details: 'Details about public register consent',
+      consent: 'no',
+      details: 'Details about declining public register consent',
       ...mockAuditPayload
     }
 
@@ -152,8 +152,8 @@ describe('PATCH /marine-licence/public-register', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'yes',
-      details: 'Details about public register consent',
+      consent: 'no',
+      details: 'Details about declining public register consent',
       ...mockAuditPayload
     }
 

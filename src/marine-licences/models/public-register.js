@@ -11,7 +11,7 @@ export const publicRegister = joi
       'any.required': 'PUBLIC_REGISTER_CONSENT_REQUIRED'
     }),
     details: joi.when('consent', {
-      is: 'yes',
+      is: 'no',
       then: joi
         .string()
         .trim()
