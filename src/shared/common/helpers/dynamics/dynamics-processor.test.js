@@ -20,6 +20,7 @@ const ML_QUEUE_FAILED = 'marine-licence-dynamics-queue-failed'
 
 const makeCollectionMock = () => ({
   find: vi.fn().mockReturnValue({ toArray: vi.fn().mockResolvedValue([]) }),
+  findOneAndUpdate: vi.fn().mockResolvedValue({ value: null }),
   updateOne: vi.fn().mockResolvedValue({}),
   insertOne: vi.fn().mockResolvedValue({}),
   deleteOne: vi.fn().mockResolvedValue({})
@@ -68,7 +69,8 @@ describe('Dynamics Processor', () => {
         clientSecret: 'test-client-secret',
         scope: 'test-scope',
         maxRetries: 3,
-        retryDelayMs: 60000
+        retryDelayMs: 60000,
+        claimStaleMs: 1_800_000
       },
       exemptions: {},
       tokenUrl: 'https://placeholder.dynamics.com/oauth2/token'
@@ -242,24 +244,24 @@ describe('Dynamics Processor', () => {
   })
 
   describe('processDynamicsQueue', () => {
-    it('should query both collections and process combined results', async () => {
+    it('should claim from both collections and process combined results', async () => {
       const exemptionItem = {
         _id: '1',
-        status: REQUEST_QUEUE_STATUS.PENDING,
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
         retries: 0
       }
       const mlItem = {
         _id: '2',
-        status: REQUEST_QUEUE_STATUS.PENDING,
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
         retries: 0
       }
 
-      collections[EXEMPTION_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockResolvedValue([exemptionItem])
-      })
-      collections[ML_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockResolvedValue([mlItem])
-      })
+      collections[EXEMPTION_QUEUE].findOneAndUpdate
+        .mockResolvedValueOnce({ value: exemptionItem })
+        .mockResolvedValue({ value: null })
+      collections[ML_QUEUE].findOneAndUpdate
+        .mockResolvedValueOnce({ value: mlItem })
+        .mockResolvedValue({ value: null })
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
@@ -286,13 +288,14 @@ describe('Dynamics Processor', () => {
     it('should tag items with _sourceCollection when processing', async () => {
       const exemptionItem = {
         _id: '1',
-        status: REQUEST_QUEUE_STATUS.PENDING,
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
         retries: 0
       }
 
-      collections[EXEMPTION_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockResolvedValue([exemptionItem])
-      })
+      collections[EXEMPTION_QUEUE].findOneAndUpdate
+        .mockResolvedValueOnce({ value: exemptionItem })
+        .mockResolvedValue({ value: null })
+      collections[ML_QUEUE].findOneAndUpdate.mockResolvedValue({ value: null })
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
@@ -303,13 +306,14 @@ describe('Dynamics Processor', () => {
     it('should call handleQueueItemFailure when sendToDynamics fails', async () => {
       const item = {
         _id: '1',
-        status: REQUEST_QUEUE_STATUS.PENDING,
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
         retries: 1
       }
 
-      collections[EXEMPTION_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockResolvedValue([item])
-      })
+      collections[EXEMPTION_QUEUE].findOneAndUpdate
+        .mockResolvedValueOnce({ value: item })
+        .mockResolvedValue({ value: null })
+      collections[ML_QUEUE].findOneAndUpdate.mockResolvedValue({ value: null })
 
       vi.mocked(sendToDynamics).mockRejectedValueOnce(
         new Error('Processing failed')
@@ -332,13 +336,14 @@ describe('Dynamics Processor', () => {
     it('should get access token when there are items to process', async () => {
       const item = {
         _id: '1',
-        status: REQUEST_QUEUE_STATUS.PENDING,
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
         retries: 0
       }
 
-      collections[EXEMPTION_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockResolvedValue([item])
-      })
+      collections[EXEMPTION_QUEUE].findOneAndUpdate
+        .mockResolvedValueOnce({ value: item })
+        .mockResolvedValue({ value: null })
+      collections[ML_QUEUE].findOneAndUpdate.mockResolvedValue({ value: null })
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
@@ -351,35 +356,44 @@ describe('Dynamics Processor', () => {
       expect(mockGetDynamicsAccessToken).not.toHaveBeenCalled()
     })
 
-    it('should only retry FAILED items older than retryDelayMs', async () => {
+    it('should only retry FAILED items older than retryDelayMs (claim filter)', async () => {
       vi.useFakeTimers()
       const now = new Date('2025-01-01T12:00:00.000Z')
       vi.setSystemTime(now)
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
-      const expectedCutoff = new Date(now.getTime() - 60000)
-      expect(collections[EXEMPTION_QUEUE].find).toHaveBeenCalledWith(
+      const expectedRetryCutoff = new Date(now.getTime() - 60000)
+      const expectedStaleCutoff = new Date(now.getTime() - 1_800_000)
+      expect(
+        collections[EXEMPTION_QUEUE].findOneAndUpdate
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           $or: expect.arrayContaining([
             {
               status: REQUEST_QUEUE_STATUS.FAILED,
-              updatedAt: { $lte: expectedCutoff }
+              updatedAt: { $lte: expectedRetryCutoff }
+            },
+            {
+              status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+              updatedAt: { $lte: expectedStaleCutoff }
             }
           ])
-        })
+        }),
+        expect.any(Object),
+        expect.any(Object)
       )
 
       vi.useRealTimers()
     })
 
-    it('should log errors and process empty queue if all collection fetches fail', async () => {
-      collections[EXEMPTION_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockRejectedValue(new Error('Database error'))
-      })
-      collections[ML_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockRejectedValue(new Error('Database error'))
-      })
+    it('should log errors and skip processing if claim fails on both collections', async () => {
+      collections[EXEMPTION_QUEUE].findOneAndUpdate.mockRejectedValue(
+        new Error('Database error')
+      )
+      collections[ML_QUEUE].findOneAndUpdate.mockRejectedValue(
+        new Error('Database error')
+      )
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
@@ -387,27 +401,25 @@ describe('Dynamics Processor', () => {
       expect(vi.mocked(sendToDynamics)).not.toHaveBeenCalled()
     })
 
-    it('should still process the successful collection if one query fails', async () => {
+    it('should still process the successful collection if one claim fails', async () => {
       const exemptionItem = {
         _id: '1',
-        status: REQUEST_QUEUE_STATUS.PENDING,
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
         retries: 0
       }
 
-      collections[EXEMPTION_QUEUE].find.mockReturnValue({
-        toArray: vi.fn().mockResolvedValue([exemptionItem])
-      })
-      collections[ML_QUEUE].find.mockReturnValue({
-        toArray: vi
-          .fn()
-          .mockRejectedValue(new Error('ML collection unavailable'))
-      })
+      collections[EXEMPTION_QUEUE].findOneAndUpdate
+        .mockResolvedValueOnce({ value: exemptionItem })
+        .mockResolvedValue({ value: null })
+      collections[ML_QUEUE].findOneAndUpdate.mockRejectedValue(
+        new Error('ML collection unavailable')
+      )
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
       expect(mockServer.logger.error).toHaveBeenCalledWith(
         expect.anything(),
-        `Failed to fetch dynamics queue items from ${ML_QUEUE}`
+        `Failed to claim dynamics queue item from ${ML_QUEUE}`
       )
       expect(collections[EXEMPTION_QUEUE].updateOne).toHaveBeenCalledWith(
         { _id: '1' },

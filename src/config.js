@@ -269,6 +269,12 @@ const config = convict({
         format: Number,
         default: oneMinuteInMS,
         env: 'DYNAMICS_RETRY_DELAY_MS'
+      },
+      claimStaleMs: {
+        doc: 'After this many milliseconds in in_progress (without success/failure), a queue item may be claimed by another worker. Set higher than the longest expected Dynamics call to avoid duplicate sends.',
+        format: Number,
+        default: 30 * oneMinuteInMS,
+        env: 'DYNAMICS_CLAIM_STALE_MS'
       }
     },
     exemptions: {
