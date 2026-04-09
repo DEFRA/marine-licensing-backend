@@ -2,10 +2,15 @@ import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
 import { coordinatesTypeFieldSchema } from '../../../exemptions/models/site-details/coordinates-type.js'
 import { fileUploadConditionalSiteItemFields } from '../../../shared/models/site-details/file-upload.js'
+import { siteNameFieldSchema } from '../../../shared/models/site-details/site-name.js'
 
 export const siteItemSchema = joi.object({
   coordinatesType: coordinatesTypeFieldSchema,
-  siteName: joi.string().optional(),
+  siteName: joi.when('coordinatesType', {
+    is: 'file',
+    then: siteNameFieldSchema.optional(),
+    otherwise: joi.forbidden()
+  }),
   activityDetails: joi.array().optional(),
   ...fileUploadConditionalSiteItemFields
 })
