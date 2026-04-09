@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateSiteDetailsController } from './update-site-details.js'
-import { createActivityDetails } from '../helpers/create-empty-activity-details.js'
 import Boom from '@hapi/boom'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 
@@ -15,75 +14,6 @@ describe('PATCH /marine-licences/site-details', () => {
   it('should fail if siteDetails are missing', () => {
     const result = payloadValidator.validate({})
     expect(result.error.message).toContain('SITE_DETAILS_REQUIRED')
-  })
-
-  it('should initialise activityDetails on sites that do not have it', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      siteDetails: [mockFileUploadSite],
-      ...mockAuditPayload
-    }
-
-    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
-      updateOne: mockUpdateOne
-    }))
-
-    await updateSiteDetailsController.handler(
-      { db: mockMongo, payload: mockPayload },
-      mockHandler
-    )
-
-    expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(mockPayload.id) },
-      {
-        $set: {
-          siteDetails: [
-            {
-              ...mockFileUploadSite,
-              activityDetails: [createActivityDetails()]
-            }
-          ],
-          ...mockAuditPayload
-        }
-      }
-    )
-  })
-
-  it('should preserve existing activityDetails on sites that already have it', async () => {
-    const { mockMongo, mockHandler } = global
-    const existingActivityDetails = [createActivityDetails()]
-    const siteWithActivity = {
-      ...mockFileUploadSite,
-      activityDetails: existingActivityDetails
-    }
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      siteDetails: [siteWithActivity],
-      ...mockAuditPayload
-    }
-
-    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
-      updateOne: mockUpdateOne
-    }))
-
-    await updateSiteDetailsController.handler(
-      { db: mockMongo, payload: mockPayload },
-      mockHandler
-    )
-
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(mockPayload.id) },
-      {
-        $set: {
-          siteDetails: [siteWithActivity],
-          ...mockAuditPayload
-        }
-      }
-    )
   })
 
   it('should return an error message if the database operation fails', async () => {

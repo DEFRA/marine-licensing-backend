@@ -8,10 +8,10 @@ import { createActivityDetails } from '../../api/helpers/create-empty-activity-d
 describe('PATCH /marine-licence/site - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
+  const existingActivityDetails = [createActivityDetails()]
 
   test('successfully updates site', async () => {
     const marineLicenceId = new ObjectId()
-    const existingActivityDetails = [createActivityDetails()]
     const marineLicence = {
       ...mockMarineLicence,
       _id: marineLicenceId,
