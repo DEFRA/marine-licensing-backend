@@ -31,12 +31,8 @@ export class MarineLicenceService {
     const marineLicence = await this.#findMarineLicenceById(id)
     if (currentUserId && currentUserId !== marineLicence.contactId) {
       this.logger.info(
-        {
-          marineLicenceId: id,
-          currentUserId,
-          marineLicenceContactId: marineLicence.contactId
-        },
-        'Authorization error in getMarineLicenceById'
+        { event: { action: 'authorization_check', outcome: 'failure' } },
+        `Authorization error in getMarineLicenceById: licence ${id}, user ${currentUserId}, owner ${marineLicence.contactId}`
       )
       throw Boom.forbidden(notAuthorisedMessage)
     }
@@ -52,8 +48,8 @@ export class MarineLicenceService {
 
     if (marineLicence.status !== MARINE_LICENCE_STATUS.SUBMITTED) {
       this.logger.info(
-        { marineLicenceId: id },
-        'Authorization error in getPublicMarineLicenceById'
+        { event: { action: 'authorization_check', outcome: 'failure' } },
+        `Authorization error in getPublicMarineLicenceById: licence ${id}`
       )
       throw Boom.forbidden(notAuthorisedMessage)
     }

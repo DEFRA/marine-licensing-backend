@@ -30,8 +30,7 @@ class BlobService {
 
   async getMetadata(s3Bucket, s3Key) {
     logger.info(
-      { s3Bucket, s3Key },
-      `${this.logSystem}: Retrieving S3 object metadata`
+      `${this.logSystem}: Retrieving S3 object metadata for ${s3Bucket}/${s3Key}`
     )
 
     try {
@@ -42,13 +41,7 @@ class BlobService {
       const response = await this.client.send(command)
 
       logger.info(
-        {
-          s3Bucket,
-          s3Key,
-          contentLength: response.ContentLength,
-          lastModified: response.LastModified
-        },
-        `${this.logSystem}: Successfully retrieved S3 object metadata`
+        `${this.logSystem}: Successfully retrieved S3 object metadata for ${s3Bucket}/${s3Key}, size ${response.ContentLength} bytes`
       )
       return {
         size: response.ContentLength,
@@ -126,7 +119,7 @@ class BlobService {
     const tempDir = join(tmpdir(), 'geo-parser', randomUUID())
     await mkdir(tempDir, { recursive: true })
 
-    logger.debug({ tempDir }, `${this.logSystem}: Created temporary directory`)
+    logger.debug(`${this.logSystem}: Created temporary directory ${tempDir}`)
     return tempDir
   }
 
@@ -134,16 +127,12 @@ class BlobService {
     try {
       await rm(tempDir, { recursive: true, force: true })
       logger.debug(
-        { tempDir },
-        `${this.logSystem}: Cleaned up temporary directory`
+        `${this.logSystem}: Cleaned up temporary directory ${tempDir}`
       )
     } catch (error) {
       logger.warn(
-        {
-          tempDir,
-          error
-        },
-        `${this.logSystem}: Failed to clean up temporary directory`
+        structureErrorForECS(error),
+        `${this.logSystem}: Failed to clean up temporary directory ${tempDir}`
       )
     }
   }
