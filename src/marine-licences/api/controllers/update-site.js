@@ -1,12 +1,11 @@
 import Boom from '@hapi/boom'
-import { activityDetailsSchema } from '../../models/activity-details.js'
-import { createActivityDetails } from '../helpers/create-empty-activity-details.js'
+import { updateSiteSchema } from '../../models/site-details/update-site.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 
-export const addActivityDetailsController = {
+export const updateSiteController = {
   options: {
     payload: {
       parse: true,
@@ -15,16 +14,13 @@ export const addActivityDetailsController = {
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
-      payload: activityDetailsSchema
+      payload: updateSiteSchema
     }
   },
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const { id, siteIndex, updatedAt, updatedBy } = payload
-
-      const activityDetails = createActivityDetails()
-
+      const { id, siteIndex, siteDetails, updatedAt, updatedBy } = payload
       const sitePath = `siteDetails.${siteIndex}`
 
       const result = await db.collection(collectionMarineLicences).updateOne(
@@ -33,8 +29,7 @@ export const addActivityDetailsController = {
           [sitePath]: { $exists: true }
         },
         {
-          $push: { [`${sitePath}.activityDetails`]: activityDetails },
-          $set: { updatedAt, updatedBy }
+          $set: { [sitePath]: siteDetails, updatedAt, updatedBy }
         }
       )
 
@@ -50,7 +45,7 @@ export const addActivityDetailsController = {
         throw error
       }
 
-      throw Boom.internal(`Error adding activity details: ${error.message}`)
+      throw Boom.internal(`Error updating site: ${error.message}`)
     }
   }
 }

@@ -1,26 +1,25 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { addActivityDetailsController } from './add-activity-details.js'
-import { createActivityDetails } from '../helpers/create-empty-activity-details.js'
+import { updateSiteController } from './update-site.js'
+import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 import Boom from '@hapi/boom'
 
-describe('PATCH /marine-licence/add-activity-details', () => {
+describe('PATCH /marine-licence/site', () => {
   const mockAuditPayload = {
     updatedAt: new Date('2025-01-01T12:00:00Z'),
     updatedBy: 'user123'
   }
 
-  const emptyActivityDetails = createActivityDetails()
-
   const buildPayload = (overrides = {}) => ({
     id: new ObjectId().toHexString(),
     siteIndex: 0,
+    siteDetails: mockFileUploadSite,
     ...mockAuditPayload,
     ...overrides
   })
 
   describe('handler', () => {
-    it('should add activity details to the correct site', async () => {
+    it('should update the site at the given index', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = buildPayload()
 
@@ -29,7 +28,7 @@ describe('PATCH /marine-licence/add-activity-details', () => {
         updateOne: mockUpdateOne
       }))
 
-      await addActivityDetailsController.handler(
+      await updateSiteController.handler(
         { db: mockMongo, payload: mockPayload },
         mockHandler
       )
@@ -42,15 +41,13 @@ describe('PATCH /marine-licence/add-activity-details', () => {
           'siteDetails.0': { $exists: true }
         },
         {
-          $push: { 'siteDetails.0.activityDetails': emptyActivityDetails },
-          $set: mockAuditPayload
+          $set: { 'siteDetails.0': mockFileUploadSite, ...mockAuditPayload }
         }
       )
     })
 
     it('should throw 404 when marine licence not found or site index is invalid', async () => {
       const { mockMongo, mockHandler } = global
-      const mockPayload = buildPayload({ siteIndex: 99 })
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
         updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
@@ -59,16 +56,15 @@ describe('PATCH /marine-licence/add-activity-details', () => {
       vi.spyOn(Boom, 'notFound')
 
       await expect(() =>
-        addActivityDetailsController.handler(
-          { db: mockMongo, payload: mockPayload },
+        updateSiteController.handler(
+          { db: mockMongo, payload: buildPayload({ siteIndex: 99 }) },
           mockHandler
         )
       ).rejects.toThrow('Marine licence not found or invalid site index')
     })
 
-    it('should throw a 500 when the database operation fails', async () => {
+    it('should throw 500 when the database operation fails', async () => {
       const { mockMongo, mockHandler } = global
-      const mockPayload = buildPayload()
       const mockError = 'Database exploded'
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
@@ -76,11 +72,11 @@ describe('PATCH /marine-licence/add-activity-details', () => {
       }))
 
       await expect(() =>
-        addActivityDetailsController.handler(
-          { db: mockMongo, payload: mockPayload },
+        updateSiteController.handler(
+          { db: mockMongo, payload: buildPayload() },
           mockHandler
         )
-      ).rejects.toThrow(`Error adding activity details: ${mockError}`)
+      ).rejects.toThrow(`Error updating site: ${mockError}`)
     })
   })
 })

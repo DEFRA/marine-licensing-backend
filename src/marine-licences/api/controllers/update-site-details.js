@@ -1,5 +1,6 @@
 import Boom from '@hapi/boom'
 import { siteDetailsSchema } from '../../models/site-details/site-details.js'
+import { createActivityDetails } from '../helpers/create-empty-activity-details.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
@@ -23,15 +24,19 @@ export const updateSiteDetailsController = {
     try {
       const { payload, db } = request
 
-      const { multipleSiteDetails, siteDetails, id, updatedAt, updatedBy } =
-        payload
+      const { siteDetails, id, updatedAt, updatedBy } = payload
+
+      const siteDetailsWithActivity = siteDetails.map((site) =>
+        site.activityDetails
+          ? site
+          : { ...site, activityDetails: [createActivityDetails()] }
+      )
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            multipleSiteDetails,
-            siteDetails,
+            siteDetails: siteDetailsWithActivity,
             updatedAt,
             updatedBy
           }

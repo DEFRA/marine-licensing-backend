@@ -2,6 +2,7 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
+import { createActivityDetails } from '../../api/helpers/create-empty-activity-details.js'
 
 describe('PATCH /marine-licence/add-activity-details - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -12,14 +13,7 @@ describe('PATCH /marine-licence/add-activity-details - integration tests', async
     coordinatesType: 'manual'
   }
 
-  const emptyActivityDetails = {
-    activityType: '',
-    activityDescription: '',
-    activityDuration: '',
-    completionDate: '',
-    activityMonths: '',
-    workingHours: ''
-  }
+  const emptyActivityDetails = createActivityDetails()
 
   const buildPayload = (overrides = {}) => ({
     id: marineLicenceId.toString(),
