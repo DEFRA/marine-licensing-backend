@@ -16,7 +16,7 @@ import {
 } from './osgb36.js'
 import { fileUploadConditionalSiteItemFields } from '../../../shared/models/site-details/file-upload.js'
 import { multipleSiteDetailsSchema } from './multiple-site-details.js'
-import { siteNameFieldSchema } from './site-name.js'
+import { siteNameFieldSchema } from '../../../shared/models/site-details/site-name.js'
 import { activityDatesSchema } from '../activity-dates.js'
 
 export const siteDetailsSchema = joi
