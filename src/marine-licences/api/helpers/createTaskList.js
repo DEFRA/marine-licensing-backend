@@ -6,6 +6,27 @@ import {
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
 
+const ACTIVITY_DETAIL_FIELDS = [
+  'activityType',
+  'activityDescription',
+  'activityDuration',
+  'completionDate',
+  'activityMonths',
+  'workingHours'
+]
+
+const checkActivityDetails = (activityDetails) => {
+  if (!activityDetails?.length) return INCOMPLETE
+
+  const filledCount = ACTIVITY_DETAIL_FIELDS.filter(
+    (key) => activityDetails[0][key]
+  ).length
+
+  if (filledCount === 0) return INCOMPLETE
+  if (filledCount === ACTIVITY_DETAIL_FIELDS.length) return COMPLETED
+  return IN_PROGRESS
+}
+
 const checkSiteDetailsFileUpload = (siteDetails) => {
   const requiredValues = [
     'fileUploadType',
@@ -15,7 +36,12 @@ const checkSiteDetailsFileUpload = (siteDetails) => {
     'siteName'
   ]
 
-  return getStatusFromRequiredFields(siteDetails, requiredValues)
+  const siteStatus = getStatusFromRequiredFields(siteDetails, requiredValues)
+  const activityStatus = checkActivityDetails(siteDetails.activityDetails)
+
+  if ([siteStatus, activityStatus].includes(INCOMPLETE)) return INCOMPLETE
+  if ([siteStatus, activityStatus].includes(IN_PROGRESS)) return IN_PROGRESS
+  return COMPLETED
 }
 
 const validateSite = (site) => {
