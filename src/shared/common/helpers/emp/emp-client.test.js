@@ -321,6 +321,21 @@ describe('Emp Client', () => {
       expect(updateFeatures).not.toHaveBeenCalled()
     })
 
+    it('should throw error if prior queue item has empty empFeatureIds and no legacy empFeatureId', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        empFeatureIds: [],
+        empFeatureId: null
+      })
+
+      await expect(
+        withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
+      ).rejects.toThrow(
+        'EMP withdraw failed: no objectId found for TEST-REF-001'
+      )
+
+      expect(updateFeatures).not.toHaveBeenCalled()
+    })
+
     it('should throw error if updateFeatures returns failure', async () => {
       mockServer.db.collection().findOne.mockResolvedValue({
         empFeatureIds: ['emp-object-id']
