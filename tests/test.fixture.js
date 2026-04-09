@@ -50,6 +50,37 @@ export const createCompleteExemption = (overrides = {}) => {
   }
 }
 
+const testLatitude = 51.474968
+const testLongitude = 1.076016
+
+export const mockFileUploadSite = {
+  coordinatesType: 'file',
+  fileUploadType: 'kml',
+  siteName: 'site 1',
+  geoJSON: {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [testLongitude, testLatitude]
+        },
+        properties: {}
+      }
+    ]
+  },
+  featureCount: 1,
+  uploadedFile: {
+    filename: 'test-site.kml'
+  },
+  s3Location: {
+    s3Bucket: 'mmo-uploads',
+    s3Key: 'test-file-key',
+    checksumSha256: 'test-checksum'
+  }
+}
+
 export const createCompleteMarineLicence = (overrides = {}) => {
   const marineLicenceId = overrides._id || new ObjectId()
   const contactId =
@@ -71,6 +102,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     status: MARINE_LICENCE_STATUS.DRAFT,
     createdAt: new Date('2026-12-01'),
     updatedAt: new Date('2026-12-01'),
+    siteDetails: [mockFileUploadSite],
     ...overrides
   }
 }

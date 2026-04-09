@@ -1,8 +1,11 @@
 import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../../shared/common/constants/coordinates.js'
-
-export const COMPLETED = 'COMPLETED'
-export const IN_PROGRESS = 'IN_PROGRESS'
-export const INCOMPLETE = 'INCOMPLETE'
+import {
+  COMPLETED,
+  IN_PROGRESS,
+  INCOMPLETE,
+  buildTaskList,
+  getStatusFromRequiredFields
+} from '../../../shared/helpers/task-list-utils.js'
 
 const addConditionalRequiredFields = (
   baseRequiredValues,
@@ -25,17 +28,7 @@ const checkSiteDetailsCircle = (siteDetails, multipleSitesEnabled) => {
     multipleSitesEnabled
   )
 
-  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
-
-  if (missingKeys.length === 0) {
-    return COMPLETED
-  }
-
-  if (missingKeys.length === requiredValues.length) {
-    return INCOMPLETE
-  }
-
-  return IN_PROGRESS
+  return getStatusFromRequiredFields(siteDetails, requiredValues)
 }
 
 const checkSiteDetailsFileUpload = (siteDetails, multipleSitesEnabled) => {
@@ -44,17 +37,7 @@ const checkSiteDetailsFileUpload = (siteDetails, multipleSitesEnabled) => {
     multipleSitesEnabled
   )
 
-  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
-
-  if (missingKeys.length === 0) {
-    return COMPLETED
-  }
-
-  if (missingKeys.length === requiredValues.length) {
-    return INCOMPLETE
-  }
-
-  return IN_PROGRESS
+  return getStatusFromRequiredFields(siteDetails, requiredValues)
 }
 
 const checkSiteDetailsMultiple = (siteDetails, multipleSitesEnabled) => {
@@ -112,7 +95,7 @@ const validateSite = (site, multipleSitesEnabled) => {
   return validationStrategy(site, multipleSitesEnabled)
 }
 
-const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
+const getSiteDetailsStatus = (siteDetails, multipleSitesEnabled) => {
   if (!siteDetails || siteDetails.length === 0) {
     return INCOMPLETE
   }
@@ -120,13 +103,11 @@ const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
   let hasInProgress = false
 
   for (const site of siteDetails) {
-    const validationResult = validateSite(site, multipleSitesEnabled)
-
-    if (validationResult === INCOMPLETE) {
+    const result = validateSite(site, multipleSitesEnabled)
+    if (result === INCOMPLETE) {
       return INCOMPLETE
     }
-
-    if (validationResult === IN_PROGRESS) {
+    if (result === IN_PROGRESS) {
       hasInProgress = true
     }
   }
@@ -135,24 +116,14 @@ const checkSiteDetails = (siteDetails, multipleSitesEnabled) => {
 }
 
 export const createTaskList = (exemption) => {
+  const multipleSitesEnabled =
+    exemption.multipleSiteDetails?.multipleSitesEnabled
+
   const tasks = {
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
-    siteDetails: (value) =>
-      checkSiteDetails(
-        value,
-        exemption.multipleSiteDetails?.multipleSitesEnabled
-      )
+    siteDetails: (value) => getSiteDetailsStatus(value, multipleSitesEnabled)
   }
 
-  const taskList = {}
-
-  for (const [taskName, decideStatus] of Object.entries(tasks)) {
-    const status = decideStatus(exemption[taskName])
-    if (status) {
-      taskList[taskName] = status
-    }
-  }
-
-  return taskList
+  return buildTaskList(exemption, tasks)
 }
