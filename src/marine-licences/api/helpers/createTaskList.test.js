@@ -74,7 +74,7 @@ describe('createTaskList', () => {
     })
   })
 
-  it('should return siteDetails as INCOMPLETE when activityDetails are empty', () => {
+  it('should return siteDetails as IN_PROGRESS when activityDetails fields are empty', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
@@ -84,7 +84,7 @@ describe('createTaskList', () => {
       ]
     }
 
-    expect(createTaskList(marineLicence).siteDetails).toBe(INCOMPLETE)
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
   })
 
   it('should return siteDetails as IN_PROGRESS when activityDetails are partially filled', () => {

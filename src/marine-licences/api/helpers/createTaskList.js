@@ -16,14 +16,17 @@ const ACTIVITY_DETAIL_FIELDS = [
 ]
 
 const checkActivityDetails = (activityDetails) => {
-  if (!activityDetails?.length) return INCOMPLETE
+  if (!activityDetails?.length) {
+    return IN_PROGRESS
+  }
 
   const filledCount = ACTIVITY_DETAIL_FIELDS.filter(
     (key) => activityDetails[0][key]
   ).length
 
-  if (filledCount === 0) return INCOMPLETE
-  if (filledCount === ACTIVITY_DETAIL_FIELDS.length) return COMPLETED
+  if (filledCount === ACTIVITY_DETAIL_FIELDS.length) {
+    return COMPLETED
+  }
   return IN_PROGRESS
 }
 
@@ -39,16 +42,17 @@ const checkSiteDetailsFileUpload = (siteDetails) => {
   const siteStatus = getStatusFromRequiredFields(siteDetails, requiredValues)
   const activityStatus = checkActivityDetails(siteDetails.activityDetails)
 
-  if ([siteStatus, activityStatus].includes(INCOMPLETE)) return INCOMPLETE
-  if ([siteStatus, activityStatus].includes(IN_PROGRESS)) return IN_PROGRESS
-  return COMPLETED
+  if ([siteStatus, activityStatus].every((s) => s === COMPLETED)) {
+    return COMPLETED
+  }
+  return IN_PROGRESS
 }
 
 const validateSite = (site) => {
   const { coordinatesType } = site
 
   if (coordinatesType !== 'file') {
-    return INCOMPLETE
+    return IN_PROGRESS
   }
 
   return checkSiteDetailsFileUpload(site)
