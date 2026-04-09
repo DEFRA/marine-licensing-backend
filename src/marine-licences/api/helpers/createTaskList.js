@@ -16,6 +16,10 @@ const ACTIVITY_DETAILS_FIELDS = [
 ]
 
 const checkActivityDetails = (activityDetails) => {
+  if (!activityDetails?.length) {
+    return IN_PROGRESS
+  }
+
   const filledCount = ACTIVITY_DETAILS_FIELDS.filter(
     (key) => activityDetails[0][key]
   ).length

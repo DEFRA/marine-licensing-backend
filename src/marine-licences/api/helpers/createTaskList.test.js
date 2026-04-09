@@ -105,6 +105,22 @@ describe('createTaskList', () => {
     expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
   })
 
+  it('should handle missing activityDetails', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: null
+        }
+      ]
+    }
+
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
   it('should return all tasks as INCOMPLETE when marineLicence has no properties', () => {
     expect(createTaskList({})).toEqual({
       otherAuthorities: INCOMPLETE,
