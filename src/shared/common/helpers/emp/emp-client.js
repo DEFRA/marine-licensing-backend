@@ -161,7 +161,10 @@ const getEmpFeatureIdsFromQueue = async (db, applicationReferenceNumber) => {
   }
 
   // Backwards compatibility for queue items persisted before ML-1222.
-  return priorItem.empFeatureId != null ? [priorItem.empFeatureId] : []
+  if (priorItem.empFeatureId == null) {
+    return []
+  }
+  return [priorItem.empFeatureId]
 }
 
 const logEmpUpdateSuccess = (applicationReference) => {
