@@ -1,7 +1,7 @@
 import { format } from 'date-fns'
 import { getProjectStartEndDates } from './get-project-start-end-dates.js'
 import { shortIsoDate } from './short-iso-date.js'
-import { transformSiteDetails } from './site-details.js'
+import { buildEmpGeometries } from './site-details.js'
 import { config } from '../../../../../config.js'
 
 function getFormattedDates(startDate, endDate, exemption) {
@@ -35,33 +35,38 @@ export const transformExemptionToEmpRequest = ({ exemption }) => {
   const { projStartDateFormatted, projEndDateFormatted, subDateFormatted } =
     getFormattedDates(startDate, endDate, exemption)
 
-  return {
-    attributes: {
-      CaseReference: exemption.applicationReference,
-      Status: 'Active',
-      ApplicationTy: 'Exempt activity notification',
-      ApplicantName: exemption.whoExemptionIsFor || '',
-      Project: exemption.projectName,
-      ActivityTy: mcmsContext?.activity?.label,
-      SubActTy: mcmsContext?.activity?.purpose || '',
-      ArticleNo: mcmsContext?.articleCode
-        ? `Article ${mcmsContext?.articleCode}`
-        : '',
-      IAT_URL: mcmsContext?.pdfDownloadUrl,
-      ProjStartDate: projStartDate,
-      ProjStartDateFormatted: projStartDateFormatted,
-      ProjEndDate: projEndDate,
-      ProjEndDateFormatted: projEndDateFormatted,
-      SubDate: subDate,
-      SubDateFormatted: subDateFormatted,
-      PubConsent: publicConsent,
-      Exemptions_URL: new URL(
-        `/exemption/view-public-details/${exemption._id}`,
-        frontEndBaseUrl
-      ).toString(),
-      CoastalOperationsArea: exemption.coastalOperationsAreas?.join(', ') || '',
-      MarinePlanArea: exemption.marinePlanAreas?.join(', ') || ''
-    },
-    geometry: transformSiteDetails(siteDetails)
+  const attributes = {
+    CaseReference: exemption.applicationReference,
+    Status: 'Active',
+    ApplicationTy: 'Exempt activity notification',
+    ApplicantName: exemption.whoExemptionIsFor || '',
+    Project: exemption.projectName,
+    ActivityTy: mcmsContext?.activity?.label,
+    SubActTy: mcmsContext?.activity?.purpose || '',
+    ArticleNo: mcmsContext?.articleCode
+      ? `Article ${mcmsContext?.articleCode}`
+      : '',
+    IAT_URL: mcmsContext?.pdfDownloadUrl,
+    ProjStartDate: projStartDate,
+    ProjStartDateFormatted: projStartDateFormatted,
+    ProjEndDate: projEndDate,
+    ProjEndDateFormatted: projEndDateFormatted,
+    SubDate: subDate,
+    SubDateFormatted: subDateFormatted,
+    PubConsent: publicConsent,
+    Exemptions_URL: new URL(
+      `/exemption/view-public-details/${exemption._id}`,
+      frontEndBaseUrl
+    ).toString(),
+    CoastalOperationsArea: exemption.coastalOperationsAreas?.join(', ') || '',
+    MarinePlanArea: exemption.marinePlanAreas?.join(', ') || ''
   }
+
+  // Each manual circle site is uploaded as its own feature so that ArcGIS
+  // renders an individual centroid per circle (ML-1222). All features share
+  // the same exemption-level attributes.
+  return buildEmpGeometries(siteDetails).map((geometry) => ({
+    attributes,
+    geometry
+  }))
 }

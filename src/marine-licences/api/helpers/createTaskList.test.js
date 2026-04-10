@@ -14,6 +14,7 @@ describe('createTaskList', () => {
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background'
+      publicRegister: 'Public Register Info'
     }
 
     const result = createTaskList(marineLicence)
@@ -24,6 +25,7 @@ describe('createTaskList', () => {
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED
+      publicRegister: COMPLETED
     })
   })
 
@@ -33,7 +35,8 @@ describe('createTaskList', () => {
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
-      siteDetails: [mockFileUploadSite]
+      siteDetails: [mockFileUploadSite],
+      publicRegister: 'Public Register Info'
     }
 
     const result = createTaskList(marineLicence, true)
@@ -42,7 +45,8 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
-      siteDetails: COMPLETED
+      siteDetails: COMPLETED,
+      publicRegister: COMPLETED
     })
   })
 
@@ -66,7 +70,8 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED,
-      projectBackground: COMPLETED
+      projectBackground: COMPLETED,
+      publicRegister: INCOMPLETE
     })
   })
 
@@ -76,10 +81,11 @@ describe('createTaskList', () => {
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      projectName: 'INCOMPLETE',
-      specialLegalPowers: 'INCOMPLETE',
-      otherAuthorities: 'INCOMPLETE',
-      projectBackground: 'INCOMPLETE',
+      projectName: INCOMPLETE,
+      specialLegalPowers: INCOMPLETE,
+      otherAuthorities: INCOMPLETE,
+      projectBackground: INCOMPLETE,
+      publicRegister: INCOMPLETE,
       siteDetails: INCOMPLETE
     })
   })
@@ -88,6 +94,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
+      publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite]
@@ -100,6 +107,7 @@ describe('createTaskList', () => {
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
+      publicRegister: COMPLETED,
       siteDetails: COMPLETED
     })
   })

@@ -57,6 +57,7 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     otherAuthorities: (value) => (value ? COMPLETED : INCOMPLETE),
     projectBackground: (value) => (value ? COMPLETED : INCOMPLETE),
     siteDetails: (value) => getSiteDetailsStatus(value)
+    publicRegister: (value) => (value ? COMPLETED : INCOMPLETE)
   }
 
   return buildTaskList(marineLicence, tasks)
