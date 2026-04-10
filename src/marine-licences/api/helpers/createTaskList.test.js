@@ -12,6 +12,7 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [mockFileUploadSite],
       specialLegalPowers: 'Some powers',
+      publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities'
     }
 
@@ -21,6 +22,7 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
+      publicRegister: COMPLETED,
       otherAuthorities: COMPLETED
     })
   })
@@ -29,6 +31,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
+      publicRegister: 'Public Register Info',
       siteDetails: [mockFileUploadSite],
       otherAuthorities: 'Some authorities'
     }
@@ -37,6 +40,7 @@ describe('createTaskList', () => {
 
     expect(result).toEqual({
       projectName: COMPLETED,
+      publicRegister: COMPLETED,
       siteDetails: COMPLETED,
       otherAuthorities: COMPLETED
     })
@@ -60,7 +64,8 @@ describe('createTaskList', () => {
       otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
-      specialLegalPowers: COMPLETED
+      specialLegalPowers: COMPLETED,
+      publicRegister: INCOMPLETE
     })
   })
 
@@ -70,10 +75,11 @@ describe('createTaskList', () => {
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      otherAuthorities: INCOMPLETE,
       projectName: INCOMPLETE,
-      siteDetails: INCOMPLETE,
-      specialLegalPowers: INCOMPLETE
+      specialLegalPowers: INCOMPLETE,
+      publicRegister: INCOMPLETE,
+      otherAuthorities: INCOMPLETE,
+      siteDetails: INCOMPLETE
     })
   })
 
@@ -81,6 +87,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
+      publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
       siteDetails: [mockFileUploadSite]
     }
@@ -90,8 +97,9 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       otherAuthorities: COMPLETED,
       projectName: COMPLETED,
-      siteDetails: COMPLETED,
-      specialLegalPowers: COMPLETED
+      specialLegalPowers: COMPLETED,
+      publicRegister: COMPLETED,
+      siteDetails: COMPLETED
     })
   })
 })
