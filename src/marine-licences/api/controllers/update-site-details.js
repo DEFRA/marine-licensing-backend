@@ -23,14 +23,12 @@ export const updateSiteDetailsController = {
     try {
       const { payload, db } = request
 
-      const { multipleSiteDetails, siteDetails, id, updatedAt, updatedBy } =
-        payload
+      const { siteDetails, id, updatedAt, updatedBy } = payload
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            multipleSiteDetails,
             siteDetails,
             updatedAt,
             updatedBy
