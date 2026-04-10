@@ -13,7 +13,7 @@ describe('createTaskList', () => {
       siteDetails: [mockFileUploadSite],
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
-      projectBackground: 'Some background'
+      projectBackground: 'Some background',
       publicRegister: 'Public Register Info'
     }
 
@@ -24,7 +24,7 @@ describe('createTaskList', () => {
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
-      projectBackground: COMPLETED
+      projectBackground: COMPLETED,
       publicRegister: COMPLETED
     })
   })
