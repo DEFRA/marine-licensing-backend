@@ -94,7 +94,6 @@ describe('createTaskList', () => {
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,

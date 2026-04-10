@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom'
-import { projectBackground } from '../../models/project-background.js'
+import { projectBackgroundSchema } from '../../models/project-background.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
@@ -14,7 +14,7 @@ export const updateProjectBackgroundController = {
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
-      payload: projectBackground
+      payload: projectBackgroundSchema
     }
   },
   handler: async (request, h) => {
