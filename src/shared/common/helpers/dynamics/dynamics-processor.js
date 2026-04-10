@@ -14,20 +14,70 @@ import {
 } from '../../constants/db-collections.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
 
-const fetchQueueItems = async (server, collectionName, query) => {
+/** Bounds work per `processDynamicsQueue` run when the queue is large (avoids overlap with the polling interval). */
+export const DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN = 50
+
+const buildClaimFilter = (now, retryDelayMs, claimStaleMs) => {
+  const retryThreshold = new Date(now.getTime() - retryDelayMs)
+  const staleClaimThreshold = new Date(now.getTime() - claimStaleMs)
+  return {
+    $or: [
+      { status: REQUEST_QUEUE_STATUS.PENDING },
+      {
+        status: REQUEST_QUEUE_STATUS.FAILED,
+        updatedAt: { $lte: retryThreshold }
+      },
+      {
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+        updatedAt: { $lte: staleClaimThreshold }
+      }
+    ]
+  }
+}
+
+const claimOneQueueItem = async (server, collectionName, filter) => {
   try {
-    const items = await server.db
-      .collection(collectionName)
-      .find(query)
-      .toArray()
-    return items.map((i) => ({ ...i, _sourceCollection: collectionName }))
+    const result = await server.db.collection(collectionName).findOneAndUpdate(
+      filter,
+      {
+        $set: {
+          status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+          updatedAt: new Date()
+        }
+      },
+      {
+        sort: { _id: 1 },
+        returnDocument: 'after',
+        // Default driver behaviour returns the document directly; we need `.value`
+        // for a consistent shape (tests and real DB).
+        includeResultMetadata: true
+      }
+    )
+    const doc = result?.value ?? null
+    if (!doc) {
+      return null
+    }
+    return { ...doc, _sourceCollection: collectionName }
   } catch (err) {
     server.logger.error(
       structureErrorForECS(err),
-      `Failed to fetch dynamics queue items from ${collectionName}`
+      `Failed to claim dynamics queue item from ${collectionName}`
     )
-    return []
+    return null
   }
+}
+
+const claimNextQueueItemFair = async (server, filter, preferExemptionFirst) => {
+  const order = preferExemptionFirst
+    ? [collectionDynamicsQueue, collectionMarineLicenceDynamicsQueue]
+    : [collectionMarineLicenceDynamicsQueue, collectionDynamicsQueue]
+  for (const collectionName of order) {
+    const item = await claimOneQueueItem(server, collectionName, filter)
+    if (item) {
+      return item
+    }
+  }
+  return null
 }
 
 export const startDynamicsQueuePolling = (server, intervalMs) => {
@@ -102,37 +152,26 @@ export const processDynamicsQueue = async (server) => {
   try {
     const now = new Date()
     const {
-      projects: { retryDelayMs }
+      projects: { retryDelayMs, claimStaleMs }
     } = config.get('dynamics')
 
-    const query = {
-      $or: [
-        { status: REQUEST_QUEUE_STATUS.PENDING },
-        {
-          status: REQUEST_QUEUE_STATUS.FAILED,
-          updatedAt: { $lte: new Date(now.getTime() - retryDelayMs) }
-        }
-      ]
-    }
+    const filter = buildClaimFilter(now, retryDelayMs, claimStaleMs)
 
-    const [exemptionItems, marineLicenceItems] = await Promise.all([
-      fetchQueueItems(server, collectionDynamicsQueue, query),
-      fetchQueueItems(server, collectionMarineLicenceDynamicsQueue, query)
-    ])
+    let preferExemptionFirst = true
+    let item = await claimNextQueueItemFair(
+      server,
+      filter,
+      preferExemptionFirst
+    )
 
-    const queueItems = [...exemptionItems, ...marineLicenceItems]
-
-    if (queueItems.length === 0) {
+    if (!item) {
       return
     }
 
-    server.logger.info(
-      `Found ${queueItems.length} items to process in dynamics queue`
-    )
-
     const accessToken = await getDynamicsAccessToken()
 
-    for (const item of queueItems) {
+    let processedCount = 0
+    while (item) {
       try {
         await sendToDynamics(server, accessToken, item)
         await handleDynamicsQueueItemSuccess(server, item)
@@ -143,6 +182,18 @@ export const processDynamicsQueue = async (server) => {
         )
         await handleDynamicsQueueItemFailure(server, item)
       }
+      processedCount++
+      if (processedCount >= DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN) {
+        break
+      }
+      preferExemptionFirst = !preferExemptionFirst
+      item = await claimNextQueueItemFair(server, filter, preferExemptionFirst)
+    }
+
+    if (processedCount > 0) {
+      server.logger.info(
+        `Processed ${processedCount} item(s) from dynamics queue`
+      )
     }
   } catch (error) {
     server.logger.error(

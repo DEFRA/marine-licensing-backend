@@ -8,13 +8,10 @@ import {
 import { StatusCodes } from 'http-status-codes'
 import {
   DYNAMICS_REQUEST_ACTIONS,
-  DYNAMICS_QUEUE_TYPES,
-  REQUEST_QUEUE_STATUS
+  DYNAMICS_QUEUE_TYPES
 } from '../../constants/request-queue.js'
 import {
   collectionExemptions,
-  collectionDynamicsQueue,
-  collectionMarineLicenceDynamicsQueue,
   collectionMarineLicences
 } from '../../constants/db-collections.js'
 import { createLogger } from '../../helpers/logging/logger.js'
@@ -60,31 +57,6 @@ const fetchMarineLicence = async (db, applicationReferenceNumber) => {
   }
 
   return marineLicence
-}
-
-/**
- * Updates the queue status to IN_PROGRESS
- * @param {Object} db - Database connection
- * @param {Object} queueItemId - Queue id
- * @param {string} collectionName - The queue collection to update
- */
-const updateQueueStatus = async (db, queueItemId, collectionName) => {
-  const result = await db.collection(collectionName).updateOne(
-    { _id: queueItemId },
-    {
-      $set: {
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-        updatedAt: new Date()
-      }
-    }
-  )
-
-  if (result.matchedCount === 0) {
-    logger.error(
-      { queueItemId, collection: collectionName },
-      'Queue item not found when updating status to IN_PROGRESS'
-    )
-  }
 }
 
 /**
@@ -198,8 +170,6 @@ export const sendExemptionToDynamics = async (
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
   const { applicationReferenceNumber } = queueItem
 
-  // Fetch exemption and update queue status
-  await updateQueueStatus(server.db, queueItem._id, collectionDynamicsQueue)
   const exemption = await fetchExemption(server.db, applicationReferenceNumber)
 
   // Build payload and send to Dynamics
@@ -235,7 +205,7 @@ export const sendExemptionToDynamics = async (
 }
 
 export const sendWithdrawToDynamics = async (
-  server,
+  _server,
   accessToken,
   queueItem
 ) => {
@@ -243,8 +213,6 @@ export const sendWithdrawToDynamics = async (
     exemptions: { withdrawUrl }
   } = config.get('dynamics')
   const { applicationReferenceNumber } = queueItem
-
-  await updateQueueStatus(server.db, queueItem._id, collectionDynamicsQueue)
 
   const payload = {
     status: EXEMPTION_STATUS.WITHDRAWN,
@@ -285,7 +253,6 @@ export const sendUpdateExemptionToDynamics = async (
   } = config.get('dynamics')
   const { applicationReferenceNumber } = queueItem
 
-  await updateQueueStatus(server.db, queueItem._id, collectionDynamicsQueue)
   const exemption = await fetchExemption(server.db, applicationReferenceNumber)
 
   const payload = buildUpdateDynamicsPayload(
@@ -329,12 +296,6 @@ export const sendMarineLicenceToDynamics = async (
   const { applicationReferenceNumber } = queueItem
 
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
-
-  await updateQueueStatus(
-    server.db,
-    queueItem._id,
-    collectionMarineLicenceDynamicsQueue
-  )
 
   const marineLicence = await fetchMarineLicence(
     server.db,
