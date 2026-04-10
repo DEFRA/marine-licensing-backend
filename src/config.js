@@ -18,6 +18,9 @@ if (isDevelopment) {
 
 const oneMinuteInMS = 60 * 1000
 
+/** Default minutes before a stuck `in_progress` Dynamics queue item may be reclaimed. */
+const dynamicsQueueClaimStaleDefaultMinutes = 30
+
 // Custom convict format that requires an env var override for vars that have non-prod default values set.
 // Applied to sensitive configs like API URLs, credentials, and service endpoints.
 const requiredFromEnvInCdp = 'required-from-env-in-cdp'
@@ -269,6 +272,12 @@ const config = convict({
         format: Number,
         default: oneMinuteInMS,
         env: 'DYNAMICS_RETRY_DELAY_MS'
+      },
+      claimStaleMs: {
+        doc: 'After this many milliseconds in in_progress (without success/failure), a queue item may be claimed by another worker. Set higher than the longest expected Dynamics call to avoid duplicate sends.',
+        format: Number,
+        default: dynamicsQueueClaimStaleDefaultMinutes * oneMinuteInMS,
+        env: 'DYNAMICS_CLAIM_STALE_MS'
       }
     },
     exemptions: {
