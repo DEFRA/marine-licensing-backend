@@ -6,25 +6,27 @@ import { singleOSGB36toWGS84 } from '../../geo/geo-utils.js'
 
 const { OSGB36, WGS84 } = COORDINATE_SYSTEMS
 
-export const manualCoordsToEmpGeometry = (siteDetails) => {
-  return siteDetails.map((site) => {
-    let coords
-    if (site.coordinatesEntry === 'single') {
-      coords = circleToEmp(site)
-    }
-    if (site.coordinatesEntry === 'multiple') {
-      coords = polygonToEmp(site)
-    }
-    if (coords) {
-      // For a polygon, the last point should be a copy of the first point
-      // https://developers.arcgis.com/rest/services-reference/enterprise/geometry-objects/#polygon
-      if (!areCoordsTheSame(coords[0], coords.at(-1))) {
-        coords.push(coords[0])
-      }
-      return coords
-    }
+export const manualSiteToEmpRing = (site) => {
+  let coords
+  if (site.coordinatesEntry === 'single') {
+    coords = circleToEmp(site)
+  }
+  if (site.coordinatesEntry === 'multiple') {
+    coords = polygonToEmp(site)
+  }
+  if (!coords) {
     throw new Error(`Invalid coordinatesEntry: ${site.coordinatesEntry}`)
-  })
+  }
+  // For a polygon, the last point should be a copy of the first point
+  // https://developers.arcgis.com/rest/services-reference/enterprise/geometry-objects/#polygon
+  if (!areCoordsTheSame(coords[0], coords.at(-1))) {
+    coords.push(coords[0])
+  }
+  return coords
+}
+
+export const manualCoordsToEmpGeometry = (siteDetails) => {
+  return siteDetails.map(manualSiteToEmpRing)
 }
 
 export const circleToEmp = (site) => {
