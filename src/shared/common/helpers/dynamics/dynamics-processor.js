@@ -14,6 +14,9 @@ import {
 } from '../../constants/db-collections.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
 
+/** Bounds work per `processDynamicsQueue` run when the queue is large (avoids overlap with the polling interval). */
+export const DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN = 50
+
 const buildClaimFilter = (now, retryDelayMs, claimStaleMs) => {
   const retryThreshold = new Date(now.getTime() - retryDelayMs)
   const staleClaimThreshold = new Date(now.getTime() - claimStaleMs)
@@ -180,6 +183,9 @@ export const processDynamicsQueue = async (server) => {
         await handleDynamicsQueueItemFailure(server, item)
       }
       processedCount++
+      if (processedCount >= DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN) {
+        break
+      }
       preferExemptionFirst = !preferExemptionFirst
       item = await claimNextQueueItemFair(server, filter, preferExemptionFirst)
     }

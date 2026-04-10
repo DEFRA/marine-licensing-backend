@@ -1,6 +1,7 @@
 import { expect, vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import * as dynamicsModule from './dynamics-processor.js'
+import { DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN } from './dynamics-processor.js'
 
 import { config } from '../../../../config.js'
 import {
@@ -478,6 +479,33 @@ describe('Dynamics Processor integration', () => {
         applicationReferenceNumber: 'EXE/2025/00999'
       })
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
+    })
+
+    it('should process at most DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN items per run', async () => {
+      const db = globalThis.mockMongo
+      const extra = 3
+      const total = DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN + extra
+      const docs = Array.from({ length: total }, (_, i) => ({
+        ...queueDocBase,
+        type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+        applicationReferenceNumber: `EXE/CAP/${String(i).padStart(5, '0')}`,
+        status: REQUEST_QUEUE_STATUS.PENDING
+      }))
+      await db.collection(EXEMPTION_QUEUE).insertMany(docs)
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      expect(vi.mocked(sendToDynamics)).toHaveBeenCalledTimes(
+        DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN
+      )
+      const pending = await db
+        .collection(EXEMPTION_QUEUE)
+        .countDocuments({ status: REQUEST_QUEUE_STATUS.PENDING })
+      expect(pending).toBe(extra)
+      const success = await db
+        .collection(EXEMPTION_QUEUE)
+        .countDocuments({ status: REQUEST_QUEUE_STATUS.SUCCESS })
+      expect(success).toBe(DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN)
     })
   })
 
