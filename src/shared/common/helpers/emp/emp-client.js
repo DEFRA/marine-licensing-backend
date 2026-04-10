@@ -86,6 +86,9 @@ const handleEmpApiError = (result, applicationReference) => {
   throw Boom.badImplementation(errorMessage)
 }
 
+const findFailedAddResult = (addResults) =>
+  addResults?.find((r) => !r?.success || !r.objectId)
+
 export const sendExemptionToEmp = async (server, queueItem) => {
   const { apiUrl, apiKey } = config.get('exploreMarinePlanning')
   const { applicationReferenceNumber } = queueItem
@@ -110,35 +113,58 @@ export const sendExemptionToEmp = async (server, queueItem) => {
       exemption
     })
     // https://developers.arcgis.com/rest/services-reference/enterprise/add-features/
+    // rollbackOnFailure: true (the default) ensures that if any feature in the
+    // batch fails, ArcGIS rolls back the successful ones — this keeps queue
+    // retries safe since addFeatures is not otherwise idempotent.
     const { addResults } = await addFeatures({
       url: `${apiUrl}/addFeatures`,
       features,
       params: {
-        token: apiKey
+        token: apiKey,
+        rollbackOnFailure: true
       }
     })
-    const result = addResults?.[0]
-    if (!result?.success || !result.objectId) {
-      handleEmpApiError(result, applicationReferenceNumber)
+
+    const failed = findFailedAddResult(addResults)
+    if (failed || !addResults?.length) {
+      handleEmpApiError(failed, applicationReferenceNumber)
     }
 
     logEmpSuccess(applicationReferenceNumber)
 
-    return result
+    return { objectIds: addResults.map((r) => r.objectId) }
   } catch (error) {
     logEmpExceptionError(error, applicationReferenceNumber)
     throw Boom.badImplementation(`EMP addFeatures failed: ${error.message}`)
   }
 }
 
-const getEmpFeatureIdFromQueue = async (db, applicationReferenceNumber) => {
+const getEmpFeatureIdsFromQueue = async (db, applicationReferenceNumber) => {
   const priorItem = await db.collection(collectionEmpQueue).findOne({
     applicationReferenceNumber,
     action: { $ne: EMP_REQUEST_ACTIONS.WITHDRAW },
-    empFeatureId: { $exists: true, $ne: null }
+    $or: [
+      { empFeatureIds: { $exists: true, $ne: null } },
+      { empFeatureId: { $exists: true, $ne: null } }
+    ]
   })
 
-  return priorItem?.empFeatureId ?? null
+  if (!priorItem) {
+    return []
+  }
+
+  if (
+    Array.isArray(priorItem.empFeatureIds) &&
+    priorItem.empFeatureIds.length > 0
+  ) {
+    return priorItem.empFeatureIds
+  }
+
+  // Backwards compatibility for queue items persisted before ML-1222.
+  if (priorItem.empFeatureId == null) {
+    return []
+  }
+  return [priorItem.empFeatureId]
 }
 
 const logEmpUpdateSuccess = (applicationReference) => {
@@ -200,12 +226,12 @@ export const withdrawExemptionFromEmp = async (server, queueItem) => {
   const { apiUrl, apiKey } = config.get('exploreMarinePlanning')
   const { applicationReferenceNumber } = queueItem
 
-  const empFeatureId = await getEmpFeatureIdFromQueue(
+  const empFeatureIds = await getEmpFeatureIdsFromQueue(
     server.db,
     applicationReferenceNumber
   )
 
-  if (!empFeatureId) {
+  if (empFeatureIds.length === 0) {
     throw Boom.badImplementation(
       `EMP withdraw failed: no objectId found for ${applicationReferenceNumber}`
     )
@@ -223,32 +249,33 @@ export const withdrawExemptionFromEmp = async (server, queueItem) => {
 
   try {
     // https://developers.arcgis.com/rest/services-reference/enterprise/update-features/
+    // rollbackOnFailure: true (the default) ensures partial failures are
+    // rolled back, so a queue retry is safe.
     const { updateResults } = await updateFeatures({
       url: `${apiUrl}/updateFeatures`,
-      features: [
-        {
-          attributes: {
-            OBJECTID: empFeatureId,
-            Status: 'Withdrawn'
-          }
+      features: empFeatureIds.map((objectId) => ({
+        attributes: {
+          OBJECTID: objectId,
+          Status: 'Withdrawn'
         }
-      ],
+      })),
       params: {
-        token: apiKey
+        token: apiKey,
+        rollbackOnFailure: true
       }
     })
 
-    const result = updateResults?.[0]
-    if (!result?.success) {
-      const errorMessage = `EMP updateFeatures failed: ${result?.error?.description || 'Unknown error'}`
-      const statusCode = result?.error?.code || null
+    const failed = updateResults?.find((r) => !r?.success)
+    if (failed || !updateResults?.length) {
+      const errorMessage = `EMP updateFeatures failed: ${failed?.error?.description || 'Unknown error'}`
+      const statusCode = failed?.error?.code || null
       logEmpUpdateApiError(errorMessage, statusCode, applicationReferenceNumber)
       throw Boom.badImplementation(errorMessage)
     }
 
     logEmpUpdateSuccess(applicationReferenceNumber)
 
-    return result
+    return { objectIds: updateResults.map((r) => r.objectId) }
   } catch (error) {
     if (error.isBoom) {
       throw error
