@@ -55,6 +55,7 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'INCOMPLETE',
+      projectBackground: 'Test project background',
       siteDetails: [incompleteMockFileUploadSite]
     }
 
@@ -64,7 +65,8 @@ describe('createTaskList', () => {
       otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
-      specialLegalPowers: COMPLETED
+      specialLegalPowers: COMPLETED,
+      projectBackground: COMPLETED
     })
   })
 
