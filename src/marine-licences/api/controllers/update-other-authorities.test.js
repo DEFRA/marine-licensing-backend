@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateOtherAuthoritiesController } from './update-other-authorities.js'
-import Boom from '@hapi/boom'
 
 describe('PATCH /marine-licence/other-authorities', () => {
   const payloadValidator =
@@ -122,7 +121,6 @@ describe('PATCH /marine-licence/other-authorities', () => {
         updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }
     })
-    vi.spyOn(Boom, 'notFound')
 
     await expect(() =>
       updateOtherAuthoritiesController.handler(

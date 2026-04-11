@@ -1,7 +1,6 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateProjectBackgroundController } from './update-project-background.js'
-import Boom from '@hapi/boom'
 
 describe('PATCH /marine-licence/project-background', () => {
   const payloadValidator =
@@ -116,7 +115,6 @@ describe('PATCH /marine-licence/project-background', () => {
         updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }
     })
-    vi.spyOn(Boom, 'notFound')
 
     await expect(() =>
       updateProjectBackgroundController.handler(

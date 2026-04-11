@@ -95,30 +95,4 @@ describe('PATCH /marine-licence/project-background - integration tests', async (
 
     expect(unchangedMarineLicence.projectBackground).toBe('Original background')
   })
-
-  test('returns 400 when projectBackground is missing', async () => {
-    const marineLicence = {
-      ...mockMarineLicence,
-      _id: marineLicenceId,
-      contactId
-    }
-
-    await globalThis.mockMongo
-      .collection('marine-licences')
-      .insertOne(marineLicence)
-
-    const payload = {
-      id: marineLicenceId.toString()
-    }
-
-    const { statusCode, body } = await makePatchRequest({
-      server: getServer(),
-      url: '/marine-licence/project-background',
-      contactId,
-      payload
-    })
-
-    expect(statusCode).toBe(400)
-    expect(body.message).toContain('PROJECT_BACKGROUND_REQUIRED')
-  })
 })
