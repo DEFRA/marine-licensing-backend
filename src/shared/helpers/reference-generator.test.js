@@ -1,5 +1,9 @@
 import { vi } from 'vitest'
-import { generateApplicationReference } from './reference-generator.js'
+import {
+  generateApplicationReference,
+  REFERENCE_LOCK_RETRY_DEFAULTS,
+  totalReferenceLockRetryWaitMs
+} from './reference-generator.js'
 import Boom from '@hapi/boom'
 
 describe('generateApplicationReference', () => {
@@ -234,16 +238,116 @@ describe('generateApplicationReference', () => {
       expect(mockLock.free).toHaveBeenCalled()
     })
 
-    it('should throw error if unable to acquire lock', async () => {
-      mockLocker.lock.mockResolvedValue(null)
+    it('should return 503 with Retry-After after exhausting lock retries', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      const fastRetry = {
+        maxAttempts: 5,
+        initialBackoffMs: 10,
+        maxBackoffMs: 40
+      }
+      try {
+        mockLocker.lock.mockResolvedValue(null)
 
-      await expect(
-        generateApplicationReference(mockDb, mockLocker, 'EXEMPTION')
-      ).rejects.toThrow(
-        Boom.internal('Unable to acquire lock for reference generation')
+        const promise = expect(
+          generateApplicationReference(
+            mockDb,
+            mockLocker,
+            'EXEMPTION',
+            fastRetry
+          )
+        ).rejects.toMatchObject({
+          message: 'Unable to acquire lock for reference generation',
+          output: {
+            statusCode: 503,
+            headers: { 'Retry-After': expect.any(Number) }
+          }
+        })
+
+        await vi.advanceTimersByTimeAsync(
+          totalReferenceLockRetryWaitMs(fastRetry) + 50
+        )
+        await promise
+
+        expect(mockDb.collection().findOneAndUpdate).not.toHaveBeenCalled()
+        expect(mockLocker.lock).toHaveBeenCalledTimes(fastRetry.maxAttempts)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('should succeed on the second lock attempt after one contention', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        const mockSequenceDoc = { currentSequence: 10001 }
+        mockDb.collection().findOneAndUpdate.mockResolvedValue(mockSequenceDoc)
+        mockDb.collection().updateOne.mockResolvedValue({ acknowledged: true })
+
+        mockLocker.lock.mockResolvedValueOnce(null).mockResolvedValue(mockLock)
+
+        const retryOpts = {
+          maxAttempts: 8,
+          initialBackoffMs: 10,
+          maxBackoffMs: 10
+        }
+        const resultPromise = generateApplicationReference(
+          mockDb,
+          mockLocker,
+          'EXEMPTION',
+          retryOpts
+        )
+        await vi.advanceTimersByTimeAsync(retryOpts.initialBackoffMs + 5)
+        const result = await resultPromise
+
+        expect(result).toBe('EXE/2025/10001')
+        expect(mockLocker.lock).toHaveBeenCalledTimes(2)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('should succeed after many null lock responses then an acquired lock', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      try {
+        const mockSequenceDoc = { currentSequence: 10001 }
+        mockDb.collection().findOneAndUpdate.mockResolvedValue(mockSequenceDoc)
+        mockDb.collection().updateOne.mockResolvedValue({ acknowledged: true })
+
+        const retryOpts = {
+          maxAttempts: 12,
+          initialBackoffMs: 5,
+          maxBackoffMs: 5
+        }
+        let call = 0
+        mockLocker.lock.mockImplementation(async () => {
+          call++
+          return call < 8 ? null : mockLock
+        })
+
+        const resultPromise = generateApplicationReference(
+          mockDb,
+          mockLocker,
+          'EXEMPTION',
+          retryOpts
+        )
+        await vi.advanceTimersByTimeAsync(
+          totalReferenceLockRetryWaitMs(retryOpts) + 20
+        )
+        const result = await resultPromise
+
+        expect(result).toBe('EXE/2025/10001')
+        expect(mockLocker.lock).toHaveBeenCalledTimes(8)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('should use default retry budget within roughly 1-2s', () => {
+      const totalMs = totalReferenceLockRetryWaitMs()
+      expect(totalMs).toBeGreaterThan(900)
+      expect(totalMs).toBeLessThanOrEqual(2100)
+      expect(REFERENCE_LOCK_RETRY_DEFAULTS.maxAttempts).toBeGreaterThanOrEqual(
+        8
       )
-
-      expect(mockDb.collection().findOneAndUpdate).not.toHaveBeenCalled()
     })
   })
 
