@@ -54,7 +54,7 @@ describe('createTaskList', () => {
     expect(createTaskList(marineLicence, true)).toEqual({
       projectName: COMPLETED,
       publicRegister: COMPLETED,
-      siteDetails: COMPLETED,
+      siteDetails: IN_PROGRESS,
       otherAuthorities: COMPLETED
     })
   })
@@ -152,7 +152,7 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       publicRegister: COMPLETED,
-      siteDetails: COMPLETED
+      siteDetails: IN_PROGRESS
     })
   })
 })
