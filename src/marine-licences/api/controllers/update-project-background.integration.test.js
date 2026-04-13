@@ -31,7 +31,7 @@ describe('PATCH /marine-licence/project-background - integration tests', async (
       payload
     })
 
-    expect(statusCode).toBe(201)
+    expect(statusCode).toBe(200)
     expect(body).toEqual({ message: 'success' })
 
     const updatedMarineLicence = await globalThis.mockMongo
