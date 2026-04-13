@@ -44,7 +44,7 @@ updates:
     # Schedule: weekly on Monday (Europe/London)
     schedule:
       interval: weekly
-      day: monday
+      day: tuesday
       time: '10:30'
       timezone: 'Europe/London'
 
@@ -61,6 +61,6 @@ updates:
     # Schedule: weekly on Monday (Europe/London)
     schedule:
       interval: weekly
-      day: monday
+      day: tuesday
       time: '10:30'
       timezone: 'Europe/London'
