@@ -1,5 +1,20 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import * as TerraformerArcgis from '@terraformer/arcgis'
 import { fileUploadToEmpGeometry } from './file-upload.js'
+
+const dummySiteDetails = [
+  {
+    geoJSON: {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [0, 0] }
+        }
+      ]
+    }
+  }
+]
 
 describe('fileUploadToEmpGeometry', () => {
   it('transforms single site with geoJSON features to EMP geometry format', () => {
@@ -357,5 +372,54 @@ describe('fileUploadToEmpGeometry', () => {
       [3, 3]
     ])
     expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+})
+
+describe('fileUploadToEmpGeometry when ArcGIS conversion returns edge cases', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('omits rings when geojsonToArcGIS yields null geometry', () => {
+    vi.spyOn(TerraformerArcgis, 'geojsonToArcGIS').mockReturnValue([
+      { geometry: null }
+    ])
+
+    const result = fileUploadToEmpGeometry(dummySiteDetails)
+
+    expect(result.rings).toEqual([])
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+
+  it('omits rings when geometry has empty rings and paths only', () => {
+    vi.spyOn(TerraformerArcgis, 'geojsonToArcGIS').mockReturnValue([
+      {
+        geometry: {
+          rings: [],
+          paths: [],
+          spatialReference: { wkid: 4326 }
+        }
+      }
+    ])
+
+    const result = fileUploadToEmpGeometry(dummySiteDetails)
+
+    expect(result.rings).toEqual([])
+  })
+
+  it('omits rings when point has non-finite coordinates', () => {
+    vi.spyOn(TerraformerArcgis, 'geojsonToArcGIS').mockReturnValue([
+      {
+        geometry: {
+          x: Number.NaN,
+          y: 50,
+          spatialReference: { wkid: 4326 }
+        }
+      }
+    ])
+
+    const result = fileUploadToEmpGeometry(dummySiteDetails)
+
+    expect(result.rings).toEqual([])
   })
 })
