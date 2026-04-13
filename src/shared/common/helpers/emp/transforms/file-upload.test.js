@@ -132,7 +132,7 @@ describe('fileUploadToEmpGeometry', () => {
     expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 
-  it('handles Point geometry (e.g. KML Placemark with Point)', () => {
+  it('handles Point geometry (e.g. KML Placemark with Point) as a geodesic circle', () => {
     const siteDetails = [
       {
         geoJSON: {
@@ -152,19 +152,21 @@ describe('fileUploadToEmpGeometry', () => {
 
     const result = fileUploadToEmpGeometry(siteDetails)
 
-    const d = 0.00005
     expect(result.rings).toHaveLength(1)
-    expect(result.rings[0]).toEqual([
-      [-4.1525 - d, 50.3475 - d],
-      [-4.1525 + d, 50.3475 - d],
-      [-4.1525 + d, 50.3475 + d],
-      [-4.1525 - d, 50.3475 + d],
-      [-4.1525 - d, 50.3475 - d]
-    ])
+    const ring = result.rings[0]
+    expect(ring.length).toBeGreaterThan(8)
+    expect(ring[0][0]).toBeCloseTo(ring.at(-1)[0], 5)
+    expect(ring[0][1]).toBeCloseTo(ring.at(-1)[1], 5)
+
+    const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length
+    const cy = ring.reduce((s, p) => s + p[1], 0) / ring.length
+    expect(cx).toBeCloseTo(-4.1525, 2)
+    expect(cy).toBeCloseTo(50.3475, 2)
+
     expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 
-  it('handles MultiPoint as separate small rings', () => {
+  it('handles MultiPoint as separate geodesic circle rings', () => {
     const siteDetails = [
       {
         geoJSON: {
@@ -186,11 +188,28 @@ describe('fileUploadToEmpGeometry', () => {
     ]
 
     const result = fileUploadToEmpGeometry(siteDetails)
-    const d = 0.00005
 
     expect(result.rings).toHaveLength(2)
-    expect(result.rings[0][0]).toEqual([-4.0 - d, 50.0 - d])
-    expect(result.rings[1][0]).toEqual([-5.0 - d, 51.0 - d])
+    for (const ring of result.rings) {
+      expect(ring.length).toBeGreaterThan(8)
+      expect(ring[0][0]).toBeCloseTo(ring.at(-1)[0], 5)
+      expect(ring[0][1]).toBeCloseTo(ring.at(-1)[1], 5)
+    }
+
+    const c0x =
+      result.rings[0].reduce((s, p) => s + p[0], 0) / result.rings[0].length
+    const c0y =
+      result.rings[0].reduce((s, p) => s + p[1], 0) / result.rings[0].length
+    expect(c0x).toBeCloseTo(-4.0, 2)
+    expect(c0y).toBeCloseTo(50.0, 2)
+
+    const c1x =
+      result.rings[1].reduce((s, p) => s + p[0], 0) / result.rings[1].length
+    const c1y =
+      result.rings[1].reduce((s, p) => s + p[1], 0) / result.rings[1].length
+    expect(c1x).toBeCloseTo(-5.0, 2)
+    expect(c1y).toBeCloseTo(51.0, 2)
+
     expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 

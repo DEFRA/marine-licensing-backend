@@ -1,22 +1,20 @@
 import { geojsonToArcGIS } from '@terraformer/arcgis'
 import { SPATIAL_REFERENCES } from '../../../constants/coordinates.js'
+import { generateCirclePolygon } from './circle-to-polygon.js'
 
 /**
- * Tiny square (in degrees) around a lon/lat so polygon-based EMP layers accept
- * GeoJSON Point / KML Point placemarks (ArcGIS REST uses x/y, not rings/paths).
- * ~5 m at the equator.
+ * GeoJSON Point / KML placemarks become ArcGIS `{ x, y }` (no rings/paths).
+ * EMP expects polygon rings; approximate the point as a small geodesic circle
+ * so the map matches a point marker (not a square) and stays valid for polygon layers.
  */
-const POINT_RING_OFFSET_DEG = 0.00005
+const POINT_CIRCLE_RADIUS_METRES = 5
 
-function arcgisPointToRing(x, y) {
-  const d = POINT_RING_OFFSET_DEG
-  return [
-    [x - d, y - d],
-    [x + d, y - d],
-    [x + d, y + d],
-    [x - d, y + d],
-    [x - d, y - d]
-  ]
+function arcgisPointToPolygonRing(longitude, latitude) {
+  return generateCirclePolygon({
+    longitude,
+    latitude,
+    radiusMetres: POINT_CIRCLE_RADIUS_METRES
+  })
 }
 
 /**
@@ -37,10 +35,10 @@ function coordSetsFromArcgisGeometry(geometry) {
     return paths
   }
   if (Number.isFinite(x) && Number.isFinite(y)) {
-    return [arcgisPointToRing(x, y)]
+    return [arcgisPointToPolygonRing(x, y)]
   }
   if (Array.isArray(points) && points.length > 0) {
-    return points.map(([px, py]) => arcgisPointToRing(px, py))
+    return points.map(([px, py]) => arcgisPointToPolygonRing(px, py))
   }
 
   return []
