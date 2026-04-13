@@ -1,0 +1,25 @@
+# Catches new vulnerable dependencies introduced in PRs (GitHub Advisory Database).
+# See: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-dependency-review
+name: Dependency Review
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          # Fail the job if the PR adds or updates to a vulnerable version (high or critical).
+          # Adjust to moderate or critical if needed: https://github.com/actions/dependency-review-action#configuration-options
+          fail-on-severity: high
