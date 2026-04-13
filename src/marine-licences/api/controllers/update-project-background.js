@@ -38,7 +38,7 @@ export const updateProjectBackgroundController = {
         .response({
           message: 'success'
         })
-        .code(StatusCodes.CREATED)
+        .code(StatusCodes.OK)
     } catch (error) {
       if (error.isBoom) {
         throw error
