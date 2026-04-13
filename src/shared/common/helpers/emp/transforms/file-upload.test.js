@@ -132,6 +132,68 @@ describe('fileUploadToEmpGeometry', () => {
     expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 
+  it('handles Point geometry (e.g. KML Placemark with Point)', () => {
+    const siteDetails = [
+      {
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [-4.1525, 50.3475]
+              }
+            }
+          ]
+        }
+      }
+    ]
+
+    const result = fileUploadToEmpGeometry(siteDetails)
+
+    const d = 0.00005
+    expect(result.rings).toHaveLength(1)
+    expect(result.rings[0]).toEqual([
+      [-4.1525 - d, 50.3475 - d],
+      [-4.1525 + d, 50.3475 - d],
+      [-4.1525 + d, 50.3475 + d],
+      [-4.1525 - d, 50.3475 + d],
+      [-4.1525 - d, 50.3475 - d]
+    ])
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+
+  it('handles MultiPoint as separate small rings', () => {
+    const siteDetails = [
+      {
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'MultiPoint',
+                coordinates: [
+                  [-4.0, 50.0],
+                  [-5.0, 51.0]
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+
+    const result = fileUploadToEmpGeometry(siteDetails)
+    const d = 0.00005
+
+    expect(result.rings).toHaveLength(2)
+    expect(result.rings[0][0]).toEqual([-4.0 - d, 50.0 - d])
+    expect(result.rings[1][0]).toEqual([-5.0 - d, 51.0 - d])
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+
   it('handles features with paths instead of rings (LineString geometries)', () => {
     const siteDetails = [
       {
