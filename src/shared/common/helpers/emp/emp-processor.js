@@ -29,14 +29,18 @@ export const stopEmpQueuePolling = (server) => {
   }
 }
 
-export const handleEmpQueueItemSuccess = async (server, item, empFeatureId) => {
+export const handleEmpQueueItemSuccess = async (
+  server,
+  item,
+  empFeatureIds
+) => {
   await server.db.collection(collectionEmpQueue).updateOne(
     { _id: item._id },
     {
       $set: {
         status: REQUEST_QUEUE_STATUS.SUCCESS,
         updatedAt: new Date(),
-        empFeatureId
+        empFeatureIds
       }
     }
   )
@@ -90,7 +94,7 @@ const processEmpQueueItem = async (server, item) => {
       item.action === EMP_REQUEST_ACTIONS.WITHDRAW
         ? await withdrawExemptionFromEmp(server, item)
         : await sendExemptionToEmp(server, item)
-    await handleEmpQueueItemSuccess(server, item, result.objectId)
+    await handleEmpQueueItemSuccess(server, item, result.objectIds)
   } catch (err) {
     server.logger.error(
       structureErrorForECS(err),

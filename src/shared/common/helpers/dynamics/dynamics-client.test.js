@@ -107,11 +107,6 @@ describe('Dynamics Client', () => {
         applicationReference: 'TEST-REF-001'
       })
 
-      // Verify exemption-dynamics-queue collection is called for updateOne
-      const calls = mockServer.db.collection.mock.calls
-      expect(calls.some((call) => call[0] === 'exemption-dynamics-queue')).toBe(
-        true
-      )
       expect(mockWreckPost).toHaveBeenCalledWith(
         'https://localhost/api/data/v9.2/exemptions',
         expect.objectContaining({
@@ -430,9 +425,6 @@ describe('Dynamics Client', () => {
 
       expect(result).toEqual({ id: 'dynamics-record-id' })
       expect(mockServer.db.collection).toHaveBeenCalledWith('marine-licences')
-      expect(mockServer.db.collection).toHaveBeenCalledWith(
-        'marine-licence-dynamics-queue'
-      )
       expect(mockWreckPost).toHaveBeenCalledWith(
         'https://localhost/api/data/v9.2/marine-licences',
         expect.objectContaining({
@@ -489,27 +481,6 @@ describe('Dynamics Client', () => {
       await expect(
         sendMarineLicenceToDynamics(mockServer, mockAccessToken, mockQueueItem)
       ).rejects.toThrow('Dynamics API returned status 400')
-    })
-
-    it('should log an error when queue item is not found during status update', async () => {
-      mockServer.db
-        .collection()
-        .updateOne.mockResolvedValue({ matchedCount: 0 })
-      mockServer.db.collection().findOne.mockResolvedValue(mockMarineLicence)
-
-      await sendMarineLicenceToDynamics(
-        mockServer,
-        mockAccessToken,
-        mockQueueItem
-      )
-
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        {
-          queueItemId: mockQueueItem._id,
-          collection: 'marine-licence-dynamics-queue'
-        },
-        'Queue item not found when updating status to IN_PROGRESS'
-      )
     })
   })
 

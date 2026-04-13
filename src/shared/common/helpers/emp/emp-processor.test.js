@@ -89,12 +89,12 @@ describe('EMP Processor', () => {
   describe('handleQueueItemSuccess', () => {
     it('should update the item status to SUCCESS and log info', async () => {
       mockServer.db.collection().updateOne.mockReturnValue({})
-      const empFeatureId = '1'
+      const empFeatureIds = ['1', '2']
 
       await empModule.handleEmpQueueItemSuccess(
         mockServer,
         mockItem,
-        empFeatureId
+        empFeatureIds
       )
 
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
@@ -103,7 +103,7 @@ describe('EMP Processor', () => {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
             updatedAt: expect.any(Date),
-            empFeatureId
+            empFeatureIds
           }
         }
       )
@@ -189,7 +189,7 @@ describe('EMP Processor', () => {
       ]
 
       vi.spyOn(empClient, 'sendExemptionToEmp').mockResolvedValue({
-        objectId: 'test-feature-id'
+        objectIds: ['test-feature-id']
       })
 
       mockServer.db.collection().find.mockReturnValueOnce({
@@ -207,7 +207,7 @@ describe('EMP Processor', () => {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
             updatedAt: expect.any(Date),
-            empFeatureId: 'test-feature-id'
+            empFeatureIds: ['test-feature-id']
           }
         }
       )
@@ -217,7 +217,7 @@ describe('EMP Processor', () => {
           $set: {
             status: REQUEST_QUEUE_STATUS.SUCCESS,
             updatedAt: expect.any(Date),
-            empFeatureId: 'test-feature-id'
+            empFeatureIds: ['test-feature-id']
           }
         }
       )
@@ -249,7 +249,7 @@ describe('EMP Processor', () => {
       ]
 
       vi.spyOn(empClient, 'withdrawExemptionFromEmp').mockResolvedValue({
-        objectId: 'test-feature-id'
+        objectIds: ['test-feature-id']
       })
 
       mockServer.db.collection().find.mockReturnValueOnce({
