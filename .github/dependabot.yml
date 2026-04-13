@@ -41,7 +41,7 @@ updates:
       - dependency-name: 'eslint-*'
       - dependency-name: 'eslint'
 
-    # Schedule: weekly on Monday (Europe/London)
+    # Schedule: weekly on Tuesday (Europe/London)
     schedule:
       interval: weekly
       day: tuesday
@@ -58,7 +58,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
 
-    # Schedule: weekly on Monday (Europe/London)
+    # Schedule: weekly on Tuesday (Europe/London)
     schedule:
       interval: weekly
       day: tuesday
