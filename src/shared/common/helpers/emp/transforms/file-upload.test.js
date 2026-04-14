@@ -1,5 +1,38 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import * as TerraformerArcgis from '@terraformer/arcgis'
 import { fileUploadToEmpGeometry } from './file-upload.js'
+
+/** Arithmetic mean of ring vertices (rough centroid for symmetric rings). */
+function meanVertexCoords(ring) {
+  let sumX = 0
+  let sumY = 0
+  for (const p of ring) {
+    sumX += p[0]
+    sumY += p[1]
+  }
+  const n = ring.length
+  return [sumX / n, sumY / n]
+}
+
+function expectRingMeanCloseTo(ring, expectedX, expectedY, numDigits = 2) {
+  const [mx, my] = meanVertexCoords(ring)
+  expect(mx).toBeCloseTo(expectedX, numDigits)
+  expect(my).toBeCloseTo(expectedY, numDigits)
+}
+
+const dummySiteDetails = [
+  {
+    geoJSON: {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [0, 0] }
+        }
+      ]
+    }
+  }
+]
 
 describe('fileUploadToEmpGeometry', () => {
   it('transforms single site with geoJSON features to EMP geometry format', () => {
@@ -129,6 +162,73 @@ describe('fileUploadToEmpGeometry', () => {
       [-3.0, 52.1],
       [-3.0, 52.0]
     ])
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+
+  it('handles Point geometry (e.g. KML Placemark with Point) as a geodesic circle', () => {
+    const siteDetails = [
+      {
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [-4.1525, 50.3475]
+              }
+            }
+          ]
+        }
+      }
+    ]
+
+    const result = fileUploadToEmpGeometry(siteDetails)
+
+    expect(result.rings).toHaveLength(1)
+    const ring = result.rings[0]
+    expect(ring.length).toBeGreaterThan(8)
+    expect(ring[0][0]).toBeCloseTo(ring.at(-1)[0], 5)
+    expect(ring[0][1]).toBeCloseTo(ring.at(-1)[1], 5)
+
+    expectRingMeanCloseTo(ring, -4.1525, 50.3475)
+
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+
+  it('handles MultiPoint as separate geodesic circle rings', () => {
+    const siteDetails = [
+      {
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'MultiPoint',
+                coordinates: [
+                  [-4.0, 50.0],
+                  [-5.0, 51.0]
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+
+    const result = fileUploadToEmpGeometry(siteDetails)
+
+    expect(result.rings).toHaveLength(2)
+    for (const ring of result.rings) {
+      expect(ring.length).toBeGreaterThan(8)
+      expect(ring[0][0]).toBeCloseTo(ring.at(-1)[0], 5)
+      expect(ring[0][1]).toBeCloseTo(ring.at(-1)[1], 5)
+    }
+
+    expectRingMeanCloseTo(result.rings[0], -4.0, 50.0)
+    expectRingMeanCloseTo(result.rings[1], -5.0, 51.0)
+
     expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
 
@@ -276,5 +376,54 @@ describe('fileUploadToEmpGeometry', () => {
       [3, 3]
     ])
     expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+})
+
+describe('fileUploadToEmpGeometry when ArcGIS conversion returns edge cases', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('omits rings when geojsonToArcGIS yields null geometry', () => {
+    vi.spyOn(TerraformerArcgis, 'geojsonToArcGIS').mockReturnValue([
+      { geometry: null }
+    ])
+
+    const result = fileUploadToEmpGeometry(dummySiteDetails)
+
+    expect(result.rings).toEqual([])
+    expect(result.spatialReference).toEqual({ wkid: 4326 })
+  })
+
+  it('omits rings when geometry has empty rings and paths only', () => {
+    vi.spyOn(TerraformerArcgis, 'geojsonToArcGIS').mockReturnValue([
+      {
+        geometry: {
+          rings: [],
+          paths: [],
+          spatialReference: { wkid: 4326 }
+        }
+      }
+    ])
+
+    const result = fileUploadToEmpGeometry(dummySiteDetails)
+
+    expect(result.rings).toEqual([])
+  })
+
+  it('omits rings when point has non-finite coordinates', () => {
+    vi.spyOn(TerraformerArcgis, 'geojsonToArcGIS').mockReturnValue([
+      {
+        geometry: {
+          x: Number.NaN,
+          y: 50,
+          spatialReference: { wkid: 4326 }
+        }
+      }
+    ])
+
+    const result = fileUploadToEmpGeometry(dummySiteDetails)
+
+    expect(result.rings).toEqual([])
   })
 })
