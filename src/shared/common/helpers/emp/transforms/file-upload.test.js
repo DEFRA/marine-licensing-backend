@@ -2,6 +2,24 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import * as TerraformerArcgis from '@terraformer/arcgis'
 import { fileUploadToEmpGeometry } from './file-upload.js'
 
+/** Arithmetic mean of ring vertices (rough centroid for symmetric rings). */
+function meanVertexCoords(ring) {
+  let sumX = 0
+  let sumY = 0
+  for (const p of ring) {
+    sumX += p[0]
+    sumY += p[1]
+  }
+  const n = ring.length
+  return [sumX / n, sumY / n]
+}
+
+function expectRingMeanCloseTo(ring, expectedX, expectedY, numDigits = 2) {
+  const [mx, my] = meanVertexCoords(ring)
+  expect(mx).toBeCloseTo(expectedX, numDigits)
+  expect(my).toBeCloseTo(expectedY, numDigits)
+}
+
 const dummySiteDetails = [
   {
     geoJSON: {
@@ -173,10 +191,7 @@ describe('fileUploadToEmpGeometry', () => {
     expect(ring[0][0]).toBeCloseTo(ring.at(-1)[0], 5)
     expect(ring[0][1]).toBeCloseTo(ring.at(-1)[1], 5)
 
-    const cx = ring.reduce((s, p) => s + p[0], 0) / ring.length
-    const cy = ring.reduce((s, p) => s + p[1], 0) / ring.length
-    expect(cx).toBeCloseTo(-4.1525, 2)
-    expect(cy).toBeCloseTo(50.3475, 2)
+    expectRingMeanCloseTo(ring, -4.1525, 50.3475)
 
     expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
@@ -211,19 +226,8 @@ describe('fileUploadToEmpGeometry', () => {
       expect(ring[0][1]).toBeCloseTo(ring.at(-1)[1], 5)
     }
 
-    const c0x =
-      result.rings[0].reduce((s, p) => s + p[0], 0) / result.rings[0].length
-    const c0y =
-      result.rings[0].reduce((s, p) => s + p[1], 0) / result.rings[0].length
-    expect(c0x).toBeCloseTo(-4.0, 2)
-    expect(c0y).toBeCloseTo(50.0, 2)
-
-    const c1x =
-      result.rings[1].reduce((s, p) => s + p[0], 0) / result.rings[1].length
-    const c1y =
-      result.rings[1].reduce((s, p) => s + p[1], 0) / result.rings[1].length
-    expect(c1x).toBeCloseTo(-5.0, 2)
-    expect(c1y).toBeCloseTo(51.0, 2)
+    expectRingMeanCloseTo(result.rings[0], -4.0, 50.0)
+    expectRingMeanCloseTo(result.rings[1], -5.0, 51.0)
 
     expect(result.spatialReference).toEqual({ wkid: 4326 })
   })
