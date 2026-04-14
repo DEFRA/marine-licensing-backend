@@ -1,10 +1,10 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { updateOtherAuthoritiesController } from './update-other-authorities.js'
+import { updateProjectBackgroundController } from './update-project-background.js'
 
-describe('PATCH /marine-licence/other-authorities', () => {
+describe('PATCH /marine-licence/project-background', () => {
   const payloadValidator =
-    updateOtherAuthoritiesController.options.validate.payload
+    updateProjectBackgroundController.options.validate.payload
   const mockAuditPayload = {
     updatedAt: new Date('2025-01-01T12:00:00Z'),
     updatedBy: 'user123'
@@ -12,36 +12,35 @@ describe('PATCH /marine-licence/other-authorities', () => {
 
   it('should fail if fields are missing', () => {
     const result = payloadValidator.validate({})
-    expect(result.error.message).toContain('OTHER_AUTHORITIES_AGREE_REQUIRED')
+    expect(result.error.message).toContain('PROJECT_BACKGROUND_REQUIRED')
   })
 
-  it('should fail if agree is not a valid value', () => {
+  it('should fail if background is empty string', () => {
     const result = payloadValidator.validate({
-      agree: 'maybe'
+      projectBackground: ''
     })
-    expect(result.error.message).toContain('OTHER_AUTHORITIES_AGREE_REQUIRED')
+    expect(result.error.message).toContain('PROJECT_BACKGROUND_REQUIRED')
   })
 
-  it('should fail if agree is empty string', () => {
+  it('should fail if background is whitespace only', () => {
     const result = payloadValidator.validate({
-      agree: ''
+      projectBackground: '   '
     })
-    expect(result.error.message).toContain('OTHER_AUTHORITIES_AGREE_REQUIRED')
+    expect(result.error.message).toContain('PROJECT_BACKGROUND_REQUIRED')
   })
 
-  it('should fail if agree is yes but details are missing', () => {
+  it('should fail if background exceeds 1000 characters', () => {
     const result = payloadValidator.validate({
-      agree: 'yes'
+      projectBackground: 'x'.repeat(1001)
     })
-    expect(result.error.message).toContain('OTHER_AUTHORITIES_DETAILS_REQUIRED')
+    expect(result.error.message).toContain('PROJECT_BACKGROUND_MAX_LENGTH')
   })
 
-  it('should update marine licence with other authorities', async () => {
+  it('should update marine licence with project background', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      agree: 'yes',
-      details: 'Applied to harbour authority',
+      projectBackground: 'Some background information about the project',
       ...mockAuditPayload
     }
 
@@ -52,7 +51,7 @@ describe('PATCH /marine-licence/other-authorities', () => {
       }
     })
 
-    await updateOtherAuthoritiesController.handler(
+    await updateProjectBackgroundController.handler(
       {
         db: mockMongo,
         payload: mockPayload
@@ -69,10 +68,7 @@ describe('PATCH /marine-licence/other-authorities', () => {
       { _id: ObjectId.createFromHexString(mockPayload.id) },
       {
         $set: {
-          otherAuthorities: {
-            agree: mockPayload.agree,
-            details: mockPayload.details
-          },
+          projectBackground: mockPayload.projectBackground,
           ...mockAuditPayload
         }
       }
@@ -83,8 +79,7 @@ describe('PATCH /marine-licence/other-authorities', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      agree: 'yes',
-      details: 'Applied to harbour authority',
+      projectBackground: 'Some background information about the project',
       ...mockAuditPayload
     }
 
@@ -97,22 +92,21 @@ describe('PATCH /marine-licence/other-authorities', () => {
     })
 
     await expect(() =>
-      updateOtherAuthoritiesController.handler(
+      updateProjectBackgroundController.handler(
         {
           db: mockMongo,
           payload: mockPayload
         },
         mockHandler
       )
-    ).rejects.toThrow(`Error updating other authorities: ${mockError}`)
+    ).rejects.toThrow(`Error updating project background: ${mockError}`)
   })
 
   it('should return a 404 if id is not correct', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      agree: 'yes',
-      details: 'Applied to harbour authority',
+      projectBackground: 'Some background information about the project',
       ...mockAuditPayload
     }
 
@@ -123,7 +117,7 @@ describe('PATCH /marine-licence/other-authorities', () => {
     })
 
     await expect(() =>
-      updateOtherAuthoritiesController.handler(
+      updateProjectBackgroundController.handler(
         {
           db: mockMongo,
           payload: mockPayload

@@ -12,8 +12,9 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       siteDetails: [mockFileUploadSite],
       specialLegalPowers: 'Some powers',
-      publicRegister: 'Public Register Info',
-      otherAuthorities: 'Some authorities'
+      otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background',
+      publicRegister: 'Public Register Info'
     }
 
     const result = createTaskList(marineLicence)
@@ -22,8 +23,9 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
-      publicRegister: COMPLETED,
-      otherAuthorities: COMPLETED
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED,
+      publicRegister: COMPLETED
     })
   })
 
@@ -31,18 +33,20 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      publicRegister: 'Public Register Info',
+      otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
-      otherAuthorities: 'Some authorities'
+      publicRegister: 'Public Register Info'
     }
 
     const result = createTaskList(marineLicence, true)
 
     expect(result).toEqual({
       projectName: COMPLETED,
-      publicRegister: COMPLETED,
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED,
       siteDetails: COMPLETED,
-      otherAuthorities: COMPLETED
+      publicRegister: COMPLETED
     })
   })
 
@@ -55,6 +59,7 @@ describe('createTaskList', () => {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'INCOMPLETE',
+      projectBackground: 'Test project background',
       siteDetails: [incompleteMockFileUploadSite]
     }
 
@@ -65,6 +70,7 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED,
+      projectBackground: COMPLETED,
       publicRegister: INCOMPLETE
     })
   })
@@ -77,8 +83,9 @@ describe('createTaskList', () => {
     expect(result).toEqual({
       projectName: INCOMPLETE,
       specialLegalPowers: INCOMPLETE,
-      publicRegister: INCOMPLETE,
       otherAuthorities: INCOMPLETE,
+      projectBackground: INCOMPLETE,
+      publicRegister: INCOMPLETE,
       siteDetails: INCOMPLETE
     })
   })
@@ -89,15 +96,17 @@ describe('createTaskList', () => {
       specialLegalPowers: 'some powers',
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite]
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED,
       publicRegister: COMPLETED,
       siteDetails: COMPLETED
     })

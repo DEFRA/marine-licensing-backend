@@ -90,6 +90,7 @@ describe('GET /marine-licence', () => {
           reason: 'Test public register reason'
         },
         otherAuthorities: 'Test authority',
+        projectBackground: 'Test project background',
         contactId: userContactId
       })
 
@@ -113,9 +114,11 @@ describe('GET /marine-licence', () => {
               reason: 'Test public register reason'
             },
             otherAuthorities: 'Test authority',
+            projectBackground: 'Test project background',
             taskList: {
               projectName: 'COMPLETED',
               otherAuthorities: 'COMPLETED',
+              projectBackground: 'COMPLETED',
               publicRegister: 'COMPLETED',
               siteDetails: 'INCOMPLETE'
             }
