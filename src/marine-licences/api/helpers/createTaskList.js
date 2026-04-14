@@ -20,15 +20,17 @@ const checkActivityDetails = (activityDetails) => {
     return IN_PROGRESS
   }
 
-  const filledCount = ACTIVITY_DETAILS_FIELDS.filter(
-    (key) => activityDetails[0][key]
-  ).length
+  for (const activity of activityDetails) {
+    const filledCount = ACTIVITY_DETAILS_FIELDS.filter(
+      (key) => activity[key]
+    ).length
 
-  if (filledCount === ACTIVITY_DETAILS_FIELDS.length) {
-    return COMPLETED
+    if (filledCount < ACTIVITY_DETAILS_FIELDS.length) {
+      return IN_PROGRESS
+    }
   }
 
-  return IN_PROGRESS
+  return COMPLETED
 }
 
 const checkSiteDetailsFileUpload = (siteDetails) => {
