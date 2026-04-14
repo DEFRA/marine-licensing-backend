@@ -1,52 +1,39 @@
 import Boom from '@hapi/boom'
-import { siteDetailsSchema } from '../../models/site-details/site-details.js'
-import { createActivityDetails } from '../helpers/create-empty-activity-details.js'
+import { projectBackgroundSchema } from '../../models/project-background.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { tenMegaBytes } from '../../../shared/constants/site-details.js'
 
-export const updateSiteDetailsController = {
+export const updateProjectBackgroundController = {
   options: {
     payload: {
       parse: true,
-      output: 'data',
-      maxBytes: tenMegaBytes
+      output: 'data'
     },
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
-      payload: siteDetailsSchema
+      payload: projectBackgroundSchema
     }
   },
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-
-      const { siteDetails, id, updatedAt, updatedBy } = payload
-
-      const siteDetailsWithActivity = siteDetails.map((site) =>
-        site.activityDetails
-          ? site
-          : { ...site, activityDetails: [createActivityDetails()] }
-      )
-
+      const { projectBackground, id, updatedAt, updatedBy } = payload
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            siteDetails: siteDetailsWithActivity,
+            projectBackground,
             updatedAt,
             updatedBy
           }
         }
       )
-
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
       }
-
       return h
         .response({
           message: 'success'
@@ -56,8 +43,7 @@ export const updateSiteDetailsController = {
       if (error.isBoom) {
         throw error
       }
-
-      throw Boom.internal(`Error updating site details: ${error.message}`)
+      throw Boom.internal(`Error updating project background: ${error.message}`)
     }
   }
 }

@@ -5,80 +5,159 @@ import {
   COMPLETED
 } from '../../../shared/helpers/task-list-utils.js'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
+import { createActivityDetails } from './create-empty-activity-details.js'
+
+const completedActivityDetails = [
+  {
+    activityType: 'Construction',
+    activityDescription: 'Building a pier',
+    activityDuration: '6 months',
+    completionDate: '2025-06-01',
+    activityMonths: 'Jan, Feb',
+    workingHours: '08:00-17:00'
+  }
+]
+
+const mockCompleteSite = {
+  ...mockFileUploadSite,
+  activityDetails: completedActivityDetails
+}
 
 describe('createTaskList', () => {
-  it('should mark tasks as COMPLETED when corresponding marineLicence properties exist', () => {
+  it('should mark siteDetails as COMPLETED when all site and activity fields are present', () => {
     const marineLicence = {
       projectName: 'Test Project',
-      siteDetails: [mockFileUploadSite],
+      siteDetails: [mockCompleteSite],
       specialLegalPowers: 'Some powers',
-      publicRegister: 'Public Register Info',
-      otherAuthorities: 'Some authorities'
+      otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background',
+      publicRegister: 'Public Register Info'
     }
 
-    const result = createTaskList(marineLicence)
-
-    expect(result).toEqual({
+    expect(createTaskList(marineLicence)).toEqual({
       projectName: COMPLETED,
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
-      publicRegister: COMPLETED,
-      otherAuthorities: COMPLETED
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED,
+      publicRegister: COMPLETED
     })
   })
 
-  it('should not include specialLegalPowers task for citizens but should include otherAuthorities', () => {
+  it('should not include specialLegalPowers for citizens', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      publicRegister: 'Public Register Info',
+      otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
-      otherAuthorities: 'Some authorities'
+      publicRegister: 'Public Register Info'
     }
 
-    const result = createTaskList(marineLicence, true)
-
-    expect(result).toEqual({
+    expect(createTaskList(marineLicence, true)).toEqual({
       projectName: COMPLETED,
       publicRegister: COMPLETED,
-      siteDetails: COMPLETED,
-      otherAuthorities: COMPLETED
+      siteDetails: IN_PROGRESS,
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED
     })
   })
 
-  it('should return tasks as INCOMPLETE when corresponding marineLicence properties are missing', () => {
-    const incompleteMockFileUploadSite = { ...mockFileUploadSite }
-
-    delete incompleteMockFileUploadSite.siteName
+  it('should return siteDetails as IN_PROGRESS when a site field is missing', () => {
+    const siteWithoutSiteName = { ...mockCompleteSite }
+    delete siteWithoutSiteName.siteName
 
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
-      otherAuthorities: 'INCOMPLETE',
-      siteDetails: [incompleteMockFileUploadSite]
+      otherAuthorities: 'Some authorities',
+      siteDetails: [siteWithoutSiteName],
+      projectBackground: 'Test project background'
     }
 
-    const result = createTaskList(marineLicence)
-
-    expect(result).toEqual({
-      otherAuthorities: COMPLETED,
+    expect(createTaskList(marineLicence)).toEqual({
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED,
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED,
       publicRegister: INCOMPLETE
     })
   })
 
-  it('should return site details as IN_PROGRESS when fields are all missing', () => {
-    const marineLicence = {}
+  it('should return siteDetails as IN_PROGRESS when activityDetails fields are empty', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        { ...mockFileUploadSite, activityDetails: [createActivityDetails()] }
+      ]
+    }
 
-    const result = createTaskList(marineLicence)
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
 
-    expect(result).toEqual({
+  it('should return siteDetails as IN_PROGRESS when activityDetails are partially filled', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: [
+            { ...createActivityDetails(), activityType: 'Construction' }
+          ]
+        }
+      ]
+    }
+
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
+  it('should return siteDetails as IN_PROGRESS when a later activity detail entry is incomplete', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: [
+            completedActivityDetails[0],
+            { ...completedActivityDetails[0], workingHours: '' }
+          ]
+        }
+      ]
+    }
+
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
+  it('should handle missing activityDetails', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: null
+        }
+      ]
+    }
+
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
+  it('should return all tasks as INCOMPLETE when marineLicence has no properties', () => {
+    expect(createTaskList({})).toEqual({
       projectName: INCOMPLETE,
       specialLegalPowers: INCOMPLETE,
-      publicRegister: INCOMPLETE,
       otherAuthorities: INCOMPLETE,
+      projectBackground: INCOMPLETE,
+      publicRegister: INCOMPLETE,
       siteDetails: INCOMPLETE
     })
   })
@@ -89,17 +168,19 @@ describe('createTaskList', () => {
       specialLegalPowers: 'some powers',
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
+      projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite]
     }
 
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
-      otherAuthorities: COMPLETED,
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
+      otherAuthorities: COMPLETED,
+      projectBackground: COMPLETED,
       publicRegister: COMPLETED,
-      siteDetails: COMPLETED
+      siteDetails: IN_PROGRESS
     })
   })
 })

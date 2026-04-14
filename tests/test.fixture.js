@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../src/exemptions/constants/exemption.js'
 import { MARINE_LICENCE_STATUS } from '../src/marine-licences/constants/marine-licence.js'
 import { COORDINATE_SYSTEMS } from '../src/shared/common/constants/coordinates.js'
+import { createActivityDetails } from '../src/marine-licences/api/helpers/create-empty-activity-details.js'
 
 export const mockCredentials = {
   contactId: '123e4567-e89b-12d3-a456-426614174000'
@@ -78,7 +79,8 @@ export const mockFileUploadSite = {
     s3Bucket: 'mmo-uploads',
     s3Key: 'test-file-key',
     checksumSha256: 'test-checksum'
-  }
+  },
+  activityDetails: [createActivityDetails()]
 }
 
 export const createCompleteMarineLicence = (overrides = {}) => {
@@ -90,6 +92,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     _id: marineLicenceId,
     contactId,
     projectName: 'Test Marine Licence Project',
+    projectBackground: 'Test project background',
     otherAuthorities: {
       agree: 'yes',
       details: 'Test other authorities details'
