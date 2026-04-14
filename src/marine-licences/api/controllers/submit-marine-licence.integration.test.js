@@ -126,4 +126,61 @@ describe('POST /marine-licence/submit', async () => {
 
     expect(response.statusCode).toBe(409)
   })
+
+  it('assigns unique references when many marine licences submit in parallel (reference lock contention)', async () => {
+    const parallelCount = 8
+    const year = mockDate.getFullYear()
+    const sequenceKey = `MARINE_LICENCE_${year}`
+
+    await db.collection(collectionMarineLicences).deleteMany({
+      contactId: mockCredentials.contactId
+    })
+    await db.collection('reference-sequences').deleteMany({ key: sequenceKey })
+
+    const ids = []
+    for (let i = 0; i < parallelCount; i++) {
+      const id = new ObjectId()
+      ids.push(id)
+      await db.collection(collectionMarineLicences).insertOne(
+        createCompleteMarineLicence({
+          _id: id,
+          contactId: mockCredentials.contactId
+        })
+      )
+    }
+
+    const server = getServer()
+    const responses = await Promise.all(
+      ids.map((id) =>
+        server.inject({
+          method: 'POST',
+          url: '/marine-licence/submit',
+          payload: {
+            id: id.toHexString(),
+            userEmail: 'parallel@example.com',
+            userName: 'Parallel User'
+          },
+          auth: {
+            strategy: 'jwt',
+            credentials: mockCredentials
+          }
+        })
+      )
+    )
+
+    for (const res of responses) {
+      expect(res.statusCode).toBe(200)
+    }
+
+    const refs = responses.map(
+      (r) => JSON.parse(r.payload).value.applicationReference
+    )
+    expect(new Set(refs).size).toBe(parallelCount)
+
+    const nums = refs.map((ref) => Number.parseInt(ref.split('/')[2], 10))
+    nums.sort((a, b) => a - b)
+    for (let i = 0; i < parallelCount; i++) {
+      expect(nums[i]).toBe(10001 + i)
+    }
+  }, 30_000)
 })

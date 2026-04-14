@@ -170,4 +170,61 @@ describe('POST /exemption/submit', async () => {
       'South East offshore'
     ])
   })
+
+  it('assigns unique references when many exemptions submit in parallel (reference lock contention)', async () => {
+    const parallelCount = 8
+    const year = mockDate.getFullYear()
+    const sequenceKey = `EXEMPTION_${year}`
+
+    await db.collection(collectionExemptions).deleteMany({
+      contactId: mockCredentials.contactId
+    })
+    await db.collection('reference-sequences').deleteMany({ key: sequenceKey })
+
+    const ids = []
+    for (let i = 0; i < parallelCount; i++) {
+      const id = new ObjectId()
+      ids.push(id)
+      await db.collection(collectionExemptions).insertOne(
+        createCompleteExemption({
+          _id: id,
+          contactId: mockCredentials.contactId
+        })
+      )
+    }
+
+    const server = getServer()
+    const responses = await Promise.all(
+      ids.map((id) =>
+        server.inject({
+          method: 'POST',
+          url: '/exemption/submit',
+          payload: {
+            id: id.toHexString(),
+            userEmail: 'parallel@example.com',
+            userName: 'Parallel User'
+          },
+          auth: {
+            strategy: 'jwt',
+            credentials: mockCredentials
+          }
+        })
+      )
+    )
+
+    for (const res of responses) {
+      expect(res.statusCode).toBe(200)
+    }
+
+    const refs = responses.map(
+      (r) => JSON.parse(r.payload).value.applicationReference
+    )
+    expect(new Set(refs).size).toBe(parallelCount)
+
+    const nums = refs.map((ref) => Number.parseInt(ref.split('/')[2], 10))
+    nums.sort((a, b) => a - b)
+    for (let i = 0; i < parallelCount; i++) {
+      expect(nums[i]).toBe(10001 + i)
+    }
+  }, 30_000)
 })
