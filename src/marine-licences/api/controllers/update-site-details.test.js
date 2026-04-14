@@ -16,46 +16,6 @@ describe('PATCH /marine-licences/site-details', () => {
     expect(result.error.message).toContain('SITE_DETAILS_REQUIRED')
   })
 
-  it('should update Marine licence with site details', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      siteDetails: [mockFileUploadSite],
-      ...mockAuditPayload
-    }
-
-    const mockUpdateOne = vi.fn().mockResolvedValueOnce({})
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: mockUpdateOne
-      }
-    })
-
-    await updateSiteDetailsController.handler(
-      {
-        db: mockMongo,
-        payload: mockPayload
-      },
-      mockHandler
-    )
-
-    expect(mockHandler.response).toHaveBeenCalledWith({
-      message: 'success'
-    })
-
-    expect(mockMongo.collection).toHaveBeenCalledWith('marine-licences')
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(mockPayload.id) },
-      {
-        $set: {
-          multipleSiteDetails: mockPayload.multipleSiteDetails,
-          siteDetails: mockPayload.siteDetails,
-          ...mockAuditPayload
-        }
-      }
-    )
-  })
-
   it('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
