@@ -34,7 +34,7 @@
   "license": "OGL-UK-3.0",
   "dependencies": {
     "@arcgis/core": "5.0.15",
-    "@aws-sdk/client-s3": "^3.1029.0",
+    "@aws-sdk/client-s3": "^3.1030.0",
     "@aws-sdk/credential-providers": "3.1030.0",
     "@defra/cdp-auditing": "0.6.0",
     "@defra/hapi-secure-context": "0.4.0",
@@ -83,7 +83,7 @@
     "neostandard": "0.13.0",
     "nodemon": "3.1.14",
     "npm-run-all": "4.1.5",
-    "prettier": "3.8.1",
+    "prettier": "3.8.2",
     "vitest": "4.1.2",
     "vitest-fetch-mock": "0.4.5",
     "vitest-mongodb": "1.0.3"
