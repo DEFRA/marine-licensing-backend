@@ -1,4 +1,96 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
+import { ObjectId } from 'mongodb'
+
+const mockCredentials = {
+  contactId: '123e4567-e89b-12d3-a456-426614174000'
+}
+
+describe('PATCH /marine-licence/site-details - coordinatesEntry validation', async () => {
+  const getServer = await setupTestServer()
+  const mockId = new ObjectId().toHexString()
+
+  it('should accept coordinatesEntry single when coordinatesType is coordinates', async () => {
+    const response = await getServer().inject({
+      method: 'PATCH',
+      url: '/marine-licence/site-details',
+      payload: {
+        id: mockId,
+        siteDetails: [
+          { coordinatesType: 'coordinates', coordinatesEntry: 'single' }
+        ]
+      },
+      auth: {
+        strategy: 'jwt',
+        credentials: mockCredentials
+      }
+    })
+
+    expect(response.statusCode).not.toBe(400)
+  })
+
+  it('should accept coordinatesEntry multiple when coordinatesType is coordinates', async () => {
+    const response = await getServer().inject({
+      method: 'PATCH',
+      url: '/marine-licence/site-details',
+      payload: {
+        id: mockId,
+        siteDetails: [
+          { coordinatesType: 'coordinates', coordinatesEntry: 'multiple' }
+        ]
+      },
+      auth: {
+        strategy: 'jwt',
+        credentials: mockCredentials
+      }
+    })
+
+    expect(response.statusCode).not.toBe(400)
+  })
+
+  it('should return 400 when coordinatesEntry is an invalid value', async () => {
+    const response = await getServer().inject({
+      method: 'PATCH',
+      url: '/marine-licence/site-details',
+      payload: {
+        id: mockId,
+        siteDetails: [
+          { coordinatesType: 'coordinates', coordinatesEntry: 'invalid' }
+        ]
+      },
+      auth: {
+        strategy: 'jwt',
+        credentials: mockCredentials
+      }
+    })
+
+    expect(response.statusCode).toBe(400)
+    const payload = JSON.parse(response.payload)
+    expect(payload.message).toContain('COORDINATES_ENTRY_REQUIRED')
+  })
+
+  it('should return 400 when coordinatesEntry is present but coordinatesType is file', async () => {
+    const response = await getServer().inject({
+      method: 'PATCH',
+      url: '/marine-licence/site-details',
+      payload: {
+        id: mockId,
+        siteDetails: [
+          {
+            coordinatesType: 'file',
+            fileUploadType: 'kml',
+            coordinatesEntry: 'single'
+          }
+        ]
+      },
+      auth: {
+        strategy: 'jwt',
+        credentials: mockCredentials
+      }
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
+})
 
 describe('PATCH /marine-licence/site-details - payload size limits', async () => {
   const getServer = await setupTestServer()

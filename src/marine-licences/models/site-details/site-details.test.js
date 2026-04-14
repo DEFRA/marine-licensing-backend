@@ -119,4 +119,55 @@ describe('#siteDetails schema (marine licences)', () => {
       })
     })
   })
+
+  describe('#coordinatesEntry', () => {
+    test('Should correctly validate on valid single entry', () => {
+      const result = siteDetailsSchema.validate({
+        id: mockId,
+        siteDetails: [
+          { coordinatesType: 'coordinates', coordinatesEntry: 'single' }
+        ]
+      })
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should correctly validate on valid multiple entry', () => {
+      const result = siteDetailsSchema.validate({
+        id: mockId,
+        siteDetails: [
+          { coordinatesType: 'coordinates', coordinatesEntry: 'multiple' }
+        ]
+      })
+      expect(result.error).toBeUndefined()
+    })
+
+    test('Should fail when coordinatesEntry is missing and coordinatesType is coordinates', () => {
+      const result = siteDetailsSchema.validate({
+        id: mockId,
+        siteDetails: [{ coordinatesType: 'coordinates' }]
+      })
+      expect(result.error.message).toBe('COORDINATES_ENTRY_REQUIRED')
+    })
+
+    test('Should fail when coordinatesEntry is an invalid value', () => {
+      const result = siteDetailsSchema.validate({
+        id: mockId,
+        siteDetails: [
+          { coordinatesType: 'coordinates', coordinatesEntry: 'invalid' }
+        ]
+      })
+      expect(result.error.message).toBe('COORDINATES_ENTRY_REQUIRED')
+    })
+
+    test('Should not allow coordinatesEntry when coordinatesType is file', () => {
+      const result = siteDetailsSchema.validate({
+        ...mockValidRequest,
+        siteDetails: [{ ...mockFileUploadSiteItem, coordinatesEntry: 'single' }]
+      })
+      expect(result.error.message).toContain(
+        '"siteDetails[0].coordinatesEntry"'
+      )
+      expect(result.error.message).toContain('not allowed')
+    })
+  })
 })
