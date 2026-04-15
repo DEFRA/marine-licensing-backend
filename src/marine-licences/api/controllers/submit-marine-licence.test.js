@@ -483,9 +483,11 @@ describe('POST /marine-licence/submit', () => {
       }
 
       mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
-      generateApplicationReference.mockRejectedValue(
-        Boom.internal('Unable to acquire lock for reference generation')
+      const lockError = Boom.serverUnavailable(
+        'Unable to acquire lock for reference generation'
       )
+      lockError.output.headers['Retry-After'] = 2
+      generateApplicationReference.mockRejectedValue(lockError)
 
       await expect(
         submitMarineLicenceController.handler(
