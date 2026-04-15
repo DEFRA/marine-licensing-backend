@@ -8,6 +8,8 @@ import { updatePublicRegisterController } from './controllers/update-public-regi
 import { updateOtherAuthoritiesController } from './controllers/update-other-authorities.js'
 import { updateProjectBackgroundController } from './controllers/update-project-background.js'
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
+import { addActivityDetailsController } from './controllers/add-activity-details.js'
+import { updateSiteController } from './controllers/update-site.js'
 
 export const marineLicences = [
   {
@@ -47,6 +49,11 @@ export const marineLicences = [
   },
   {
     method: 'PATCH',
+    path: '/marine-licence/site',
+    ...updateSiteController
+  },
+  {
+    method: 'PATCH',
     path: '/marine-licence/special-legal-powers',
     ...updateSpecialLegalPowersController
   },
@@ -54,6 +61,11 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/other-authorities',
     ...updateOtherAuthoritiesController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/add-activity-details',
+    ...addActivityDetailsController
   },
   {
     method: 'PATCH',
