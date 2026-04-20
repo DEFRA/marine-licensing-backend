@@ -1,5 +1,8 @@
 import { ObjectId } from 'mongodb'
-import { activityDetailsSchema } from './activity-details.js'
+import {
+  activityDetailsSchema,
+  activityItemSchema
+} from './activity-details.js'
 
 describe('activityDetailsSchema', () => {
   it.each([
@@ -30,5 +33,92 @@ describe('activityDetailsSchema', () => {
       siteIndex: 0
     })
     expect(error).toBeUndefined()
+  })
+})
+
+describe('activityItemSchema', () => {
+  describe('valid outcomes', () => {
+    test('should pass with a blank object', () => {
+      const { error } = activityItemSchema.validate({})
+      expect(error).toBeUndefined()
+    })
+
+    test.each(['construction', 'deposit', 'removal'])(
+      'should pass with activityType "%s" and a valid activitySubType string',
+      (activityType) => {
+        const { error } = activityItemSchema.validate({
+          activityType,
+          activitySubType: 'some-sub-type'
+        })
+        expect(error).toBeUndefined()
+      }
+    )
+  })
+
+  describe('valid activityType but missing activitySubType', () => {
+    test('should fail when activitySubType is absent', () => {
+      const { error } = activityItemSchema.validate({
+        activityType: 'construction'
+      })
+      expect(error.message).toContain('ACTIVITY_SUBTYPE_REQUIRED')
+    })
+
+    test('should fail when activitySubType is empty string', () => {
+      const { error } = activityItemSchema.validate({
+        activityType: 'construction',
+        activitySubType: ''
+      })
+      expect(error.message).toContain('ACTIVITY_SUBTYPE_REQUIRED')
+    })
+
+    test('should pass with any non-empty activitySubType string', () => {
+      const { error } = activityItemSchema.validate({
+        activityType: 'construction',
+        activitySubType: 'some-sub-type'
+      })
+      expect(error).toBeUndefined()
+    })
+  })
+
+  describe('invalid activityType but valid activitySubType', () => {
+    test('should fail when activityType is not a recognised value', () => {
+      const { error } = activityItemSchema.validate({
+        activityType: 'invalid-type',
+        activitySubType: 'some-sub-type'
+      })
+      expect(error.message).toContain('ACTIVITY_TYPE_REQUIRED')
+    })
+
+    test('should fail when activitySubType is set but activityType is absent', () => {
+      const { error } = activityItemSchema.validate({
+        activitySubType: 'some-sub-type'
+      })
+      expect(error.message).toContain('ACTIVITY_TYPE_REQUIRED')
+    })
+
+    test('should fail when activitySubType is set but activityType is empty', () => {
+      const { error } = activityItemSchema.validate({
+        activityType: '',
+        activitySubType: 'some-sub-type'
+      })
+      expect(error.message).toContain('ACTIVITY_TYPE_REQUIRED')
+    })
+  })
+
+  describe('nulls and empties', () => {
+    test('should pass when activityType is empty string', () => {
+      const { error } = activityItemSchema.validate({ activityType: '' })
+      expect(error).toBeUndefined()
+    })
+
+    test('should pass when activityType is absent', () => {
+      const { error } = activityItemSchema.validate({})
+      expect(error).toBeUndefined()
+    })
+
+    test('should pass when activitySubType is absent and activityType is empty', () => {
+      const { error } = activityItemSchema.validate({ activityType: '' })
+      expect(error).toBeUndefined()
+    })
   })
 })

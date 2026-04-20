@@ -77,7 +77,8 @@ describe('PATCH /marine-licence/site-details - payload size limits', async () =>
       ...mockFileUploadSite,
       activityDetails: [
         {
-          activityType: 'Test type',
+          activityType: 'construction',
+          activitySubType: 'some-sub-type',
           activityDescription: 'Test description',
           activityDuration: '',
           completionDate: '',
@@ -118,7 +119,7 @@ describe('PATCH /marine-licence/site-details - payload size limits', async () =>
 
     expect(updated.siteDetails[0].activityDetails.length).toEqual(1)
     expect(updated.siteDetails[0].activityDetails[0].activityType).toEqual(
-      'Test type'
+      'construction'
     )
   })
 
