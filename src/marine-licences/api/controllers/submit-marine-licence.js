@@ -53,22 +53,25 @@ const updateMarineLicenceRecord = async ({
   request,
   payload,
   applicationReference,
-  submittedAt
+  submittedAt,
+  session
 }) => {
   const { db } = request
   const { id, updatedAt, updatedBy } = payload
-  const updateResult = await db.collection(collectionMarineLicences).updateOne(
-    { _id: ObjectId.createFromHexString(id) },
-    {
-      $set: {
-        applicationReference,
-        submittedAt,
-        status: MARINE_LICENCE_STATUS.SUBMITTED,
-        updatedAt,
-        updatedBy
-      }
-    }
-  )
+  const $set = {
+    applicationReference,
+    submittedAt,
+    status: MARINE_LICENCE_STATUS.SUBMITTED
+  }
+  if (updatedAt !== undefined) {
+    $set.updatedAt = updatedAt
+  }
+  if (updatedBy !== undefined) {
+    $set.updatedBy = updatedBy
+  }
+  const updateResult = await db
+    .collection(collectionMarineLicences)
+    .updateOne({ _id: ObjectId.createFromHexString(id) }, { $set }, { session })
 
   if (updateResult.matchedCount === 0) {
     throw Boom.notFound('Marine licence not found during update')
@@ -88,7 +91,7 @@ export const submitMarineLicenceController = {
   },
   handler: async (request, h) => {
     try {
-      const { payload, db, locker, auth } = request
+      const { payload, db, mongoClient, auth } = request
       const { id, userName, userEmail } = payload
 
       const { userRelationshipType } = getOrganisationDetailsFromAuthToken(auth)
@@ -102,20 +105,28 @@ export const submitMarineLicenceController = {
 
       checkForIncompleteTasks(marineLicence, isCitizen)
 
-      const applicationReference = await generateApplicationReference(
-        db,
-        locker,
-        'MARINE_LICENCE'
-      )
-
-      const submittedAt = new Date()
-
-      await updateMarineLicenceRecord({
-        request,
-        payload,
-        applicationReference,
-        submittedAt
-      })
+      const session = mongoClient.startSession()
+      let applicationReference
+      let submittedAt
+      try {
+        await session.withTransaction(async () => {
+          applicationReference = await generateApplicationReference(
+            db,
+            'MARINE_LICENCE',
+            { session }
+          )
+          submittedAt = new Date()
+          await updateMarineLicenceRecord({
+            request,
+            payload,
+            applicationReference,
+            submittedAt,
+            session
+          })
+        })
+      } finally {
+        await session.endSession()
+      }
 
       if (isDynamicsEnabled) {
         await addToDynamicsQueue({

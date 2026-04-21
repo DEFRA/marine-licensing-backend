@@ -61,6 +61,7 @@ export const mongoDb = {
       server.decorate('server', 'db', db)
       server.decorate('server', 'locker', locker)
       server.decorate('request', 'db', () => db, { apply: true })
+      server.decorate('request', 'mongoClient', () => client, { apply: true })
       server.decorate('request', 'locker', () => locker, { apply: true })
 
       server.ext('onPreHandler', addAuditFields)

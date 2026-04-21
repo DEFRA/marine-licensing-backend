@@ -21,6 +21,7 @@ vi.mock('../../../shared/helpers/send-email-confirmation.js')
 
 describe('POST /marine-licence/submit', () => {
   let mockDb
+  let mockMongoClient
   let mockLocker
   let mockHandler
   let mockMarineLicenceId
@@ -86,6 +87,13 @@ describe('POST /marine-licence/submit', () => {
 
     mockLocker = {
       lock: vi.fn()
+    }
+
+    mockMongoClient = {
+      startSession: vi.fn(() => ({
+        endSession: vi.fn().mockResolvedValue(undefined),
+        withTransaction: vi.fn(async (fn) => fn())
+      }))
     }
 
     generateApplicationReference.mockResolvedValue('MLA/2025/10001')
@@ -154,6 +162,7 @@ describe('POST /marine-licence/submit', () => {
         {
           payload: { id: mockMarineLicenceId, ...mockAuditPayload },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           auth: mockAuth,
           logger: mockLogger
@@ -163,8 +172,8 @@ describe('POST /marine-licence/submit', () => {
 
       expect(generateApplicationReference).toHaveBeenCalledWith(
         mockDb,
-        mockLocker,
-        'MARINE_LICENCE'
+        'MARINE_LICENCE',
+        expect.objectContaining({ session: expect.any(Object) })
       )
 
       expect(mockMarineLicencesCollection.updateOne).toHaveBeenCalledWith(
@@ -177,7 +186,8 @@ describe('POST /marine-licence/submit', () => {
             updatedAt: mockAuditPayload.updatedAt,
             updatedBy: mockAuditPayload.updatedBy
           }
-        }
+        },
+        expect.objectContaining({ session: expect.any(Object) })
       )
     })
 
@@ -197,6 +207,7 @@ describe('POST /marine-licence/submit', () => {
         {
           payload: { id: mockMarineLicenceId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           auth: mockAuth,
           logger: mockLogger
@@ -231,6 +242,7 @@ describe('POST /marine-licence/submit', () => {
             ...mockAuditPayload
           },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           auth: mockAuth,
           logger: mockLogger
@@ -267,6 +279,7 @@ describe('POST /marine-licence/submit', () => {
         {
           payload: { id: mockMarineLicenceId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           auth: mockAuth,
           logger: mockLogger
@@ -308,6 +321,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -342,6 +356,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -377,6 +392,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -411,6 +427,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -436,6 +453,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -464,6 +482,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -494,6 +513,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -522,6 +542,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -560,6 +581,7 @@ describe('POST /marine-licence/submit', () => {
       const mockRequest = {
         payload: { id: mockMarineLicenceId, ...mockAuditPayload },
         db: mockDb,
+        mongoClient: mockMongoClient,
         locker: mockLocker,
         auth: mockAuth,
         logger: mockLogger
@@ -593,6 +615,7 @@ describe('POST /marine-licence/submit', () => {
         {
           payload: { id: mockMarineLicenceId, ...mockAuditPayload },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           auth: mockAuth,
           logger: mockLogger
@@ -615,6 +638,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger
@@ -645,6 +669,7 @@ describe('POST /marine-licence/submit', () => {
           {
             payload: { id: mockMarineLicenceId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             auth: mockAuth,
             logger: mockLogger

@@ -64,24 +64,27 @@ const updateExemptionRecord = async ({
   applicationReference,
   exemption,
   submittedAt,
-  declarationAcceptedByContactId
+  declarationAcceptedByContactId,
+  session
 }) => {
   const { db } = request
   const { id, updatedAt, updatedBy } = payload
-  const updateResult = await db.collection(collectionExemptions).updateOne(
-    { _id: ObjectId.createFromHexString(id) },
-    {
-      $set: {
-        applicationReference,
-        multipleSiteDetails: updateMultiSiteEnabled(exemption),
-        submittedAt,
-        status: EXEMPTION_STATUS.ACTIVE,
-        updatedAt,
-        updatedBy,
-        declarationAcceptedByContactId
-      }
-    }
-  )
+  const $set = {
+    applicationReference,
+    multipleSiteDetails: updateMultiSiteEnabled(exemption),
+    submittedAt,
+    status: EXEMPTION_STATUS.ACTIVE,
+    declarationAcceptedByContactId
+  }
+  if (updatedAt !== undefined) {
+    $set.updatedAt = updatedAt
+  }
+  if (updatedBy !== undefined) {
+    $set.updatedBy = updatedBy
+  }
+  const updateResult = await db
+    .collection(collectionExemptions)
+    .updateOne({ _id: ObjectId.createFromHexString(id) }, { $set }, { session })
   if (updateResult.matchedCount === 0) {
     throw Boom.notFound('Exemption not found during update')
   }
@@ -100,7 +103,7 @@ export const submitExemptionController = {
   },
   handler: async (request, h) => {
     try {
-      const { payload, db, locker } = request
+      const { payload, db, mongoClient } = request
       const { id, updatedAt, updatedBy, userEmail, userName } = payload
       const { isDynamicsEnabled } = config.get('dynamics')
       const { isEmpEnabled } = config.get('exploreMarinePlanning')
@@ -108,20 +111,33 @@ export const submitExemptionController = {
       const declarationAcceptedByContactId = getContactId(request.auth)
       const exemption = await getExemptionFromDb(request, id)
       checkForIncompleteTasks(exemption)
-      const applicationReference = await generateApplicationReference(
-        db,
-        locker,
-        'EXEMPTION'
-      )
-      const submittedAt = new Date()
-      await updateExemptionRecord({
-        request,
-        payload,
-        applicationReference,
-        exemption,
-        submittedAt,
-        declarationAcceptedByContactId
-      })
+
+      const session = mongoClient.startSession()
+      let applicationReference
+      let submittedAt
+      try {
+        await session.withTransaction(async () => {
+          applicationReference = await generateApplicationReference(
+            db,
+            'EXEMPTION',
+            {
+              session
+            }
+          )
+          submittedAt = new Date()
+          await updateExemptionRecord({
+            request,
+            payload,
+            applicationReference,
+            exemption,
+            submittedAt,
+            declarationAcceptedByContactId,
+            session
+          })
+        })
+      } finally {
+        await session.endSession()
+      }
       await updateCoastalOperationsAreas(exemption, db, {
         updatedAt,
         updatedBy
@@ -167,6 +183,7 @@ export const submitExemptionController = {
       if (error.isBoom) {
         throw error
       }
+      request.logger?.error?.(error, 'submit-exemption failed')
       throw Boom.internal(`Error submitting exemption: ${error.message}`)
     }
   }

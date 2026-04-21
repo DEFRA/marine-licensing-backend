@@ -8,82 +8,24 @@ const APPLICATION_TYPES = {
 const SEQUENCE_SEED = 10001
 const SEQUENCE_DIGITS = 5
 
-const LOCK_EXHAUSTED_MESSAGE = 'Unable to acquire lock for reference generation'
-
 /**
- * mongo-locks uses insert + unique index: concurrent callers get lock === null
- * immediately (no queue). Multiple backend replicas and parallel submits for the
- * same year contend on one key (reference-generation-{sequenceKey}); bounded retry
- * absorbs short-lived contention without manual resubmit.
- */
-export const REFERENCE_LOCK_RETRY_DEFAULTS = Object.freeze({
-  /** Upper bound on lock acquisition attempts */
-  maxAttempts: 12,
-  /** First backoff delay (ms); doubles each retry until maxBackoffMs */
-  initialBackoffMs: 35,
-  /** Ceiling for a single wait between retries (ms) */
-  maxBackoffMs: 200
-})
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function delayMsForAttempt(attemptIndex, { initialBackoffMs, maxBackoffMs }) {
-  return Math.min(initialBackoffMs * 2 ** attemptIndex, maxBackoffMs)
-}
-
-function mergeLockRetryOptions(lockRetryOptions) {
-  return { ...REFERENCE_LOCK_RETRY_DEFAULTS, ...lockRetryOptions }
-}
-
-/** Total time spent sleeping between attempts (for Retry-After hint). */
-export function totalReferenceLockRetryWaitMs(
-  lockRetryOptions = REFERENCE_LOCK_RETRY_DEFAULTS
-) {
-  const merged = mergeLockRetryOptions(lockRetryOptions)
-  const delayCount = Math.max(0, merged.maxAttempts - 1)
-  return Array.from({ length: delayCount }, (_, attempt) =>
-    delayMsForAttempt(attempt, merged)
-  ).reduce((sum, ms) => sum + ms, 0)
-}
-
-async function acquireReferenceGenerationLock(
-  locker,
-  resource,
-  lockRetryOptions
-) {
-  const opts = mergeLockRetryOptions(lockRetryOptions)
-
-  const walk = async (attempt) => {
-    const lock = await locker.lock(resource)
-    if (lock) {
-      return lock
-    }
-    if (attempt >= opts.maxAttempts - 1) {
-      return null
-    }
-    await sleep(delayMsForAttempt(attempt, opts))
-    return walk(attempt + 1)
-  }
-
-  return walk(0)
-}
-
-/**
- * Generates a unique application reference in the format: PREFIX/YYYY/NNNNN
+ * Allocates the next application reference using a single atomic
+ * `findOneAndUpdate` (aggregation pipeline). Documents keep `currentSequence` as
+ * the **next** value to hand out (same as the legacy lock-based implementation):
+ * after each call the stored counter is `issued + 1`, and `issued` is
+ * `currentSequence - 1` on the returned document.
  *
  * @param {import('mongodb').Db} db
- * @param {{ lock: (key: string) => Promise<unknown> }} locker
  * @param {'EXEMPTION'|'MARINE_LICENCE'} [applicationType]
- * @param {Partial<typeof REFERENCE_LOCK_RETRY_DEFAULTS>} [lockRetryOptions] — override for tests or tuning
+ * @param {{ session?: import('mongodb').ClientSession }} [options]
+ * @returns {Promise<string>} Reference formatted PREFIX/YYYY/NNNNN
  */
 export async function generateApplicationReference(
   db,
-  locker,
   applicationType = 'EXEMPTION',
-  lockRetryOptions = undefined
+  options = {}
 ) {
+  const { session } = options
   const prefix = APPLICATION_TYPES[applicationType]
   if (!prefix) {
     throw Boom.badImplementation(`Unknown application type: ${applicationType}`)
@@ -93,60 +35,49 @@ export async function generateApplicationReference(
   const currentYear = now.getFullYear()
   const sequenceKey = `${applicationType}_${currentYear}`
 
-  const lock = await acquireReferenceGenerationLock(
-    locker,
-    `reference-generation-${sequenceKey}`,
-    lockRetryOptions
+  const findOptions = {
+    upsert: true,
+    returnDocument: 'after'
+  }
+  if (session) {
+    findOptions.session = session
+  }
+
+  // Pipeline avoids MongoDB forbidding $inc and $setOnInsert on the same path.
+  const coll = db.collection('reference-sequences')
+  const result = await coll.findOneAndUpdate(
+    { key: sequenceKey },
+    [
+      {
+        $set: {
+          currentSequence: {
+            $add: [{ $ifNull: ['$currentSequence', SEQUENCE_SEED] }, 1]
+          },
+          lastUpdated: now,
+          year: { $ifNull: ['$year', currentYear] },
+          applicationType: { $ifNull: ['$applicationType', applicationType] },
+          key: { $ifNull: ['$key', sequenceKey] },
+          createdAt: { $ifNull: ['$createdAt', now] }
+        }
+      }
+    ],
+    findOptions
   )
 
-  if (!lock) {
-    const budgetMs = totalReferenceLockRetryWaitMs(lockRetryOptions)
-    const err = Boom.serverUnavailable(LOCK_EXHAUSTED_MESSAGE)
-    err.output.headers['Retry-After'] = Math.max(1, Math.ceil(budgetMs / 1000))
-    throw err
+  // Pipeline upserts may not populate `value` in all server/driver combinations; read within the same session.
+  let doc = result.value
+  if (!doc) {
+    doc = await coll.findOne({ key: sequenceKey }, { session })
   }
-
-  try {
-    // Shared sequence counter document - one per year/application type combination
-    // Upsert creates new document for first application of the year (e.g., EXEMPTION_2025)
-    // or finds existing document for subsequent application in the same year
-    const sequenceDoc = await db
-      .collection('reference-sequences')
-      .findOneAndUpdate(
-        { key: sequenceKey },
-        {
-          $setOnInsert: {
-            key: sequenceKey,
-            currentSequence: SEQUENCE_SEED,
-            year: currentYear,
-            applicationType,
-            createdAt: now
-          }
-        },
-        {
-          upsert: true,
-          returnDocument: 'after'
-        }
-      )
-
-    const currentSequence = sequenceDoc.currentSequence
-
-    await db.collection('reference-sequences').updateOne(
-      { key: sequenceKey },
-      {
-        $inc: { currentSequence: 1 },
-        $set: { lastUpdated: now }
-      }
+  const nextPointer = doc?.currentSequence
+  if (nextPointer === undefined || nextPointer === null) {
+    throw Boom.badImplementation(
+      'Reference sequence update returned no document'
     )
-
-    const formattedSequence = currentSequence
-      .toString()
-      .padStart(SEQUENCE_DIGITS, '0')
-
-    const reference = `${prefix}/${currentYear}/${formattedSequence}`
-
-    return reference
-  } finally {
-    await lock.free()
   }
+
+  const issued = nextPointer - 1
+  const formattedSequence = issued.toString().padStart(SEQUENCE_DIGITS, '0')
+
+  return `${prefix}/${currentYear}/${formattedSequence}`
 }

@@ -26,6 +26,7 @@ vi.mock('../../../shared/common/helpers/geo/update-marine-planning-areas.js')
 
 describe('POST /exemption/submit', () => {
   let mockDb
+  let mockMongoClient
   let mockLocker
   let mockHandler
   let mockExemptionId
@@ -133,6 +134,13 @@ describe('POST /exemption/submit', () => {
       lock: vi.fn()
     }
 
+    mockMongoClient = {
+      startSession: vi.fn(() => ({
+        endSession: vi.fn().mockResolvedValue(undefined),
+        withTransaction: vi.fn(async (fn) => fn())
+      }))
+    }
+
     mockServer = {
       logger: mockLogger,
       methods: {
@@ -207,6 +215,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -281,6 +290,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -330,6 +340,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -373,6 +384,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId, ...mockAuditPayload },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -419,6 +431,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -440,6 +453,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -473,6 +487,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -502,6 +517,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -542,6 +558,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -581,6 +598,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -619,6 +637,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -661,6 +680,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -702,6 +722,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -735,6 +756,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -759,6 +781,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -792,6 +815,7 @@ describe('POST /exemption/submit', () => {
           {
             payload: { id: mockExemptionId },
             db: mockDb,
+            mongoClient: mockMongoClient,
             locker: mockLocker,
             server: mockServer,
             auth: mockAuth,
@@ -824,6 +848,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -834,8 +859,8 @@ describe('POST /exemption/submit', () => {
 
       expect(generateApplicationReference).toHaveBeenCalledWith(
         mockDb,
-        mockLocker,
-        'EXEMPTION'
+        'EXEMPTION',
+        expect.objectContaining({ session: expect.any(Object) })
       )
     })
 
@@ -860,6 +885,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -880,7 +906,8 @@ describe('POST /exemption/submit', () => {
             status: EXEMPTION_STATUS.ACTIVE,
             declarationAcceptedByContactId: 'test-contact-id'
           }
-        }
+        },
+        expect.objectContaining({ session: expect.any(Object) })
       )
     })
   })
@@ -904,6 +931,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -946,6 +974,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -967,7 +996,8 @@ describe('POST /exemption/submit', () => {
             status: EXEMPTION_STATUS.ACTIVE,
             declarationAcceptedByContactId: 'test-contact-id'
           }
-        }
+        },
+        expect.objectContaining({ session: expect.any(Object) })
       )
     })
   })
@@ -992,6 +1022,7 @@ describe('POST /exemption/submit', () => {
         {
           payload: { id: mockExemptionId },
           db: mockDb,
+          mongoClient: mockMongoClient,
           locker: mockLocker,
           server: mockServer,
           auth: mockAuth,
@@ -1013,7 +1044,8 @@ describe('POST /exemption/submit', () => {
             status: EXEMPTION_STATUS.ACTIVE,
             declarationAcceptedByContactId: 'test-contact-id'
           }
-        }
+        },
+        expect.objectContaining({ session: expect.any(Object) })
       )
     })
   })

@@ -7,7 +7,9 @@ beforeAll(async () => {
       version: 'latest'
     },
     serverOptions: {},
-    autoStart: false
+    autoStart: false,
+    // Multi-document transactions require a replica set (e.g. submit + sequence).
+    type: 'replSet'
   })
   process.env.MONGO_URI = globalThis.__MONGO_URI__
 })
