@@ -27,6 +27,36 @@ export const activityItemSchema = joi.object({
       'string.max': 'ACTIVITY_TYPE_REQUIRED'
     })
   }),
+  activities: joi.when('activitySubType', {
+    is: joi.string().min(1).required(),
+    then: joi
+      .object({
+        selections: joi
+          .array()
+          .items(joi.string())
+          .single()
+          .min(1)
+          .required()
+          .messages({
+            'array.min': 'ACTIVITIES_REQUIRED',
+            'any.required': 'ACTIVITIES_REQUIRED'
+          }),
+        otherActivity: joi.when('selections', {
+          is: joi.array().has(joi.string().valid('other')),
+          then: joi.string().max(1000).required().messages({
+            'string.empty': 'ACTIVITIES_OTHER_REASON_REQUIRED',
+            'any.required': 'ACTIVITIES_OTHER_REASON_REQUIRED',
+            'string.max': 'ACTIVITIES_OTHER_REASON_MAX_LENGTH'
+          }),
+          otherwise: joi.optional()
+        })
+      })
+      .required()
+      .messages({
+        'any.required': 'ACTIVITIES_REQUIRED'
+      }),
+    otherwise: joi.optional()
+  }),
   activityDescription: joi.string().optional().allow(''),
   activityDuration: joi.string().optional().allow(''),
   completionDate: joi.string().optional().allow(''),
