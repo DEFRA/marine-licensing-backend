@@ -5,11 +5,11 @@ const logger = createLogger()
 const logSystem = 'Migration:20260421120000-clear-exemption-emp-queue-refs'
 
 const applicationReferenceNumbers = [
-  'EXE/2026/10034',
-  'EXE/2026/10014',
-  'EXE/2026/10010',
-  'EXE/2026/10029',
-  'EXE/2025/10014'
+  'EXE/2026/11225',
+  'EXE/2026/11226',
+  'EXE/2026/11230',
+  'EXE/2026/11231',
+  'EXE/2026/11232'
 ]
 
 /**
