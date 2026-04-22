@@ -384,6 +384,19 @@ const config = convict({
       format: Number,
       default: oneMinuteInMS,
       env: 'EMP_RETRY_DELAY_MS'
+    },
+    /**
+     * Comma-separated exemption application reference numbers for migrate-mongo migration
+     * `20260421120000-clear-exemption-emp-queue-refs` (e.g. EXE/2026/10034,EXE/2026/10035).
+     * Env `EMP_QUEUE_CLEAR_APPLICATION_REFERENCES` sets this. To point the migration at a different
+     * String convict key, set env `MIGRATION_EMP_QUEUE_REFS_CONFIG_PATH` to that path (e.g. another
+     * field you add for one-off use).
+     */
+    clearExemptionEmpQueueRefsForMigration: {
+      doc: 'Comma-separated application references for the exemption-emp-queue clear migration',
+      format: String,
+      default: '',
+      env: 'EMP_QUEUE_CLEAR_APPLICATION_REFERENCES'
     }
   },
   externalGeoAreas: {
