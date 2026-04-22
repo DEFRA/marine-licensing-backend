@@ -1,18 +1,37 @@
-import { config } from '../src/config.js'
-import { upClearExemptionEmpQueue } from './helpers/exemption-emp-queue-refs-migration.js'
+import { collectionEmpQueue } from '../src/shared/common/constants/db-collections.js'
+
+const logPrefix = '[20260421120000-clear-exemption-emp-queue-refs]'
+
+const applicationReferenceNumbers = [
+  'EXE/2026/10034',
+  'EXE/2026/10014',
+  'EXE/2026/10010',
+  'EXE/2026/10029',
+  'EXE/2025/10014'
+]
 
 /**
  * When this migration is applied (see `changelog`), removes rows from
- * `exemption-emp-queue` whose `applicationReferenceNumber` is in the list resolved
- * from `exploreMarinePlanning.clearExemptionEmpQueueRefsForMigration` (or another
- * path if env `MIGRATION_EMP_QUEUE_REFS_CONFIG_PATH` is set). See
- * `migrations/helpers/exemption-emp-queue-refs-migration.js` and `src/config.js`.
- *
- * If the resolved list is empty, the migration is a no-op. For another batch later,
- * add a new migration (or a manual MongoDB delete); migrate-mongo does not re-run
- * an already-applied `up` function.
+ * `exemption-emp-queue` for the `applicationReferenceNumbers` above. For a
+ * different set later, add a new migration; migrate-mongo does not re-run an
+ * already-applied `up` function.
  */
-export const up = (db) =>
-  upClearExemptionEmpQueue(db, { configGet: (p) => config.get(p) })
+export const up = async (db) => {
+  const result = await db.collection(collectionEmpQueue).deleteMany({
+    applicationReferenceNumber: { $in: applicationReferenceNumbers }
+  })
+
+  if (result.deletedCount > 0) {
+    // eslint-disable-next-line no-console
+    console.info(
+      `${logPrefix} exemption-emp-queue: removed ${result.deletedCount} document(s) for applicationReferenceNumber in [${applicationReferenceNumbers.join(', ')}]`
+    )
+  } else {
+    // eslint-disable-next-line no-console
+    console.info(
+      `${logPrefix} exemption-emp-queue: no documents removed for applicationReferenceNumber in [${applicationReferenceNumbers.join(', ')}]`
+    )
+  }
+}
 
 export const down = async () => {}
