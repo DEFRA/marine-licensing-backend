@@ -1,6 +1,8 @@
+import { createLogger } from '../src/shared/common/helpers/logging/logger.js'
 import { collectionEmpQueue } from '../src/shared/common/constants/db-collections.js'
 
-const logPrefix = '[20260421120000-clear-exemption-emp-queue-refs]'
+const logger = createLogger()
+const logSystem = 'Migration:20260421120000-clear-exemption-emp-queue-refs'
 
 const applicationReferenceNumbers = [
   'EXE/2026/10034',
@@ -22,14 +24,18 @@ export const up = async (db) => {
   })
 
   if (result.deletedCount > 0) {
-    // eslint-disable-next-line no-console
-    console.info(
-      `${logPrefix} exemption-emp-queue: removed ${result.deletedCount} document(s) for applicationReferenceNumber in [${applicationReferenceNumbers.join(', ')}]`
+    logger.info(
+      {
+        deletedCount: result.deletedCount,
+        applicationReferenceNumbers,
+        logSystem
+      },
+      `${logSystem} exemption-emp-queue: removed ${result.deletedCount} document(s)`
     )
   } else {
-    // eslint-disable-next-line no-console
-    console.info(
-      `${logPrefix} exemption-emp-queue: no documents removed for applicationReferenceNumber in [${applicationReferenceNumbers.join(', ')}]`
+    logger.info(
+      { deletedCount: 0, applicationReferenceNumbers, logSystem },
+      `${logSystem} exemption-emp-queue: no documents removed for listed applicationReferenceNumbers`
     )
   }
 }
