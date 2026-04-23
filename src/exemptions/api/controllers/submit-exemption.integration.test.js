@@ -170,4 +170,73 @@ describe('POST /exemption/submit', async () => {
       'South East offshore'
     ])
   })
+
+  it('assigns unique references when many exemptions submit in parallel (reference lock contention)', async () => {
+    const parallelCount = 8
+    const year = mockDate.getFullYear()
+    const sequenceKey = `EXEMPTION_${year}`
+
+    await db.collection(collectionExemptions).deleteMany({
+      contactId: mockCredentials.contactId
+    })
+    await db.collection('reference-sequences').deleteMany({ key: sequenceKey })
+
+    const draftExemptionIds = []
+    for (let i = 0; i < parallelCount; i++) {
+      const draftExemptionId = new ObjectId()
+      draftExemptionIds.push(draftExemptionId)
+      await db.collection(collectionExemptions).insertOne(
+        createCompleteExemption({
+          _id: draftExemptionId,
+          contactId: mockCredentials.contactId
+        })
+      )
+    }
+
+    const server = getServer()
+    const submitResponses = await Promise.all(
+      draftExemptionIds.map((draftExemptionId) =>
+        server.inject({
+          method: 'POST',
+          url: '/exemption/submit',
+          payload: {
+            id: draftExemptionId.toHexString(),
+            userEmail: 'parallel@example.com',
+            userName: 'Parallel User'
+          },
+          auth: {
+            strategy: 'jwt',
+            credentials: mockCredentials
+          }
+        })
+      )
+    )
+
+    for (const response of submitResponses) {
+      expect(response.statusCode).toBe(200)
+    }
+
+    const applicationReferences = submitResponses.map((response) => {
+      const body = JSON.parse(response.payload)
+      return body.value.applicationReference
+    })
+    // Parallel submits must not reuse the same reference. A Set drops duplicates, so its size stays parallelCount only when every reference is distinct.
+    expect(new Set(applicationReferences).size).toBe(parallelCount)
+
+    // Distinct references alone do not prove the DB sequence advanced correctly (e.g. gaps or wrong start).
+    // References look like EXE/{year}/{sequence}. Parse the numeric segment, sort, then each expect() checks
+    // we received the next contiguous values starting at expectedFirstSequenceNumber (through 10001 + parallelCount - 1).
+    const sequenceSegmentIndex = 2
+    const expectedFirstSequenceNumber = 10001
+    const sequenceNumbersAscending = applicationReferences
+      .map((reference) => {
+        const segments = reference.split('/')
+        const sequenceSegment = segments[sequenceSegmentIndex]
+        return Number.parseInt(sequenceSegment, 10)
+      })
+      .sort((a, b) => a - b)
+    for (let i = 0; i < parallelCount; i++) {
+      expect(sequenceNumbersAscending[i]).toBe(expectedFirstSequenceNumber + i)
+    }
+  }, 30_000)
 })
