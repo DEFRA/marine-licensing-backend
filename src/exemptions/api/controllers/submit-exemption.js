@@ -122,11 +122,10 @@ export const submitExemptionController = {
         submittedAt,
         declarationAcceptedByContactId
       })
-      await updateCoastalOperationsAreas(exemption, db, {
-        updatedAt,
-        updatedBy
-      })
-      await updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
+      await Promise.all([
+        updateCoastalOperationsAreas(exemption, db, { updatedAt, updatedBy }),
+        updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
+      ])
       if (isDynamicsEnabled) {
         await addToDynamicsQueue({
           request,
