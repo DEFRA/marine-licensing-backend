@@ -122,27 +122,38 @@ export const submitExemptionController = {
         submittedAt,
         declarationAcceptedByContactId
       })
-      await Promise.all([
+      const { organisation } = exemption
+
+      // Run geo lookups, queue inserts and email in the background so the
+      // user receives applicationReference and submittedAt immediately.
+      // Geo writes must finish before the queue inserts because Dynamics/EMP
+      // read marinePlanAreas and coastalOperationsAreas off the exemption doc.
+      Promise.all([
         updateCoastalOperationsAreas(exemption, db, { updatedAt, updatedBy }),
         updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
       ])
-      if (isDynamicsEnabled) {
-        await addToDynamicsQueue({
-          request,
-          applicationReference,
-          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT
+        .then(async () => {
+          if (isDynamicsEnabled) {
+            await addToDynamicsQueue({
+              request,
+              applicationReference,
+              action: DYNAMICS_REQUEST_ACTIONS.SUBMIT
+            })
+          }
+          if (isEmpEnabled) {
+            await addToEmpQueue({
+              request,
+              applicationReference,
+              action: EMP_REQUEST_ACTIONS.ADD
+            })
+          }
         })
-      }
-      if (isEmpEnabled) {
-        await addToEmpQueue({
-          request,
-          applicationReference,
-          action: EMP_REQUEST_ACTIONS.ADD
+        .catch((err) => {
+          request.logger.error(
+            `Background post-submit processing failed for ${applicationReference}: ${err.message}`
+          )
         })
-      }
 
-      const { organisation } = exemption
-      // async; don't wait for this to complete
       sendEmailConfirmation({
         db,
         userName,

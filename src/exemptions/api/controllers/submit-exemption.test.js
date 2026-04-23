@@ -1,4 +1,8 @@
-import { vi } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
+
+// Flush all pending microtasks and macrotasks so fire-and-forget background
+// promise chains (geo writes → queue inserts) complete before asserting.
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 import { submitExemptionController } from './submit-exemption.js'
 import { generateApplicationReference } from '../../../shared/helpers/reference-generator.js'
 import { createTaskList } from '../helpers/createTaskList.js'
@@ -214,6 +218,7 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+      await flushPromises()
 
       expect(updateCoastalOperationsAreas).toHaveBeenCalledWith(
         mockExemption,
@@ -288,6 +293,7 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+      await flushPromises()
 
       expect(mockServer.methods.processDynamicsQueue).toHaveBeenCalled()
       expect(mockServer.methods.processEmpQueue).toHaveBeenCalled()
@@ -380,6 +386,7 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+      await flushPromises()
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
