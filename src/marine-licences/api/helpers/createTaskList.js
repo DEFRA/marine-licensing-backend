@@ -7,7 +7,9 @@ import {
 } from '../../../shared/helpers/task-list-utils.js'
 
 const ACTIVITY_DETAILS_FIELDS = [
+  'activities',
   'activityType',
+  'activitySubType',
   'activityDescription',
   'activityDuration',
   'completionDate',
