@@ -1,8 +1,4 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-
-// Flush all pending microtasks and macrotasks so fire-and-forget background
-// promise chains (geo writes → queue inserts) complete before asserting.
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 import { submitExemptionController } from './submit-exemption.js'
 import { generateApplicationReference } from '../../../shared/helpers/reference-generator.js'
 import { createTaskList } from '../helpers/createTaskList.js'
@@ -13,6 +9,10 @@ import { REQUEST_QUEUE_STATUS } from '../../../shared/common/constants/request-q
 import { config } from '../../../config.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
+
+// Flush all pending microtasks and macrotasks so fire-and-forget background
+// promise chains (geo writes → queue inserts) complete before asserting.
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn().mockImplementation(function () {
@@ -146,6 +146,8 @@ describe('POST /exemption/submit', () => {
     }
 
     generateApplicationReference.mockResolvedValue('EXE/2025/10001')
+    updateCoastalOperationsAreas.mockResolvedValue(undefined)
+    updateMarinePlanningAreas.mockResolvedValue(undefined)
     createTaskList.mockReturnValue({
       projectName: 'COMPLETED',
       publicRegister: 'COMPLETED',

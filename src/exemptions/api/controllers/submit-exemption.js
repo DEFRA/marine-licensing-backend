@@ -15,6 +15,7 @@ import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/inde
 import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
+import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import {
   DYNAMICS_REQUEST_ACTIONS,
   EMP_REQUEST_ACTIONS
@@ -126,11 +127,28 @@ export const submitExemptionController = {
 
       // Run geo lookups, queue inserts and email in the background so the
       // user receives applicationReference and submittedAt immediately.
-      // Geo writes must finish before the queue inserts because Dynamics/EMP
-      // read marinePlanAreas and coastalOperationsAreas off the exemption doc.
+      // Each geo operation catches its own errors so a failure in one does
+      // not block the other or the Dynamics/EMP queue inserts — geo areas
+      // can be backfilled independently via the backfill-areas endpoint.
       Promise.all([
-        updateCoastalOperationsAreas(exemption, db, { updatedAt, updatedBy }),
-        updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
+        updateCoastalOperationsAreas(exemption, db, {
+          updatedAt,
+          updatedBy
+        }).catch((err) => {
+          request.logger.error(
+            structureErrorForECS(err),
+            `Failed to update coastal operations areas for ${applicationReference}`
+          )
+        }),
+        updateMarinePlanningAreas(exemption, db, {
+          updatedAt,
+          updatedBy
+        }).catch((err) => {
+          request.logger.error(
+            structureErrorForECS(err),
+            `Failed to update marine plan areas for ${applicationReference}`
+          )
+        })
       ])
         .then(async () => {
           if (isDynamicsEnabled) {
@@ -150,7 +168,8 @@ export const submitExemptionController = {
         })
         .catch((err) => {
           request.logger.error(
-            `Background post-submit processing failed for ${applicationReference}: ${err.message}`
+            structureErrorForECS(err),
+            `Failed to insert queue entries for ${applicationReference}`
           )
         })
 
