@@ -24,6 +24,10 @@ The Marine Licensing Backend is part of a GDS-compliant replacement of the Marin
 
 ## Releases
 
+### [6.0.0](https://eaflood.atlassian.net/projects/ML/versions/33941/tab/release-report-all-issues)
+
+Details available on the release version ticket
+
 ### [5.0.0](https://eaflood.atlassian.net/projects/ML/versions/32612/tab/release-report-all-issues)
 
 Details available on the release version ticket
