@@ -46,7 +46,7 @@ export const activityItemSchema = joi.object({
           }),
         otherActivity: joi.when('selections', {
           is: joi.array().has(joi.string().valid('other')),
-          then: joi.string().max(1000).required().messages({
+          then: joi.string().trim().max(1000).required().messages({
             'string.empty': 'ACTIVITIES_OTHER_REASON_REQUIRED',
             'any.required': 'ACTIVITIES_OTHER_REASON_REQUIRED',
             'string.max': 'ACTIVITIES_OTHER_REASON_MAX_LENGTH'
@@ -64,6 +64,7 @@ export const activityItemSchema = joi.object({
     .string()
     .optional()
     .allow('')
+    .trim()
     .min(ACTIVITY_MIN_LENGTH)
     .max(ACTIVITY_DESCRIPTION_MAX_LENGTH)
     .messages({
