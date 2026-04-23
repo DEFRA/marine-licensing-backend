@@ -10,6 +10,8 @@ import { createActivityDetails } from './create-empty-activity-details.js'
 const completedActivityDetails = [
   {
     activityType: 'Construction',
+    activitySubType: 'construction-type-1',
+    activities: { selections: ['CON1'] },
     activityDescription: 'Building a pier',
     activityDuration: '6 months',
     completionDate: '2025-06-01',
