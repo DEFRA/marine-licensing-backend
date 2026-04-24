@@ -71,7 +71,14 @@ describe('POST /exemption/submit', async () => {
       mockApplicationReference
     )
     expect(updatedExemption.submittedAt).toEqual(mockDate)
-    expect(updatedExemption.marinePlanAreas).toEqual([])
+
+    // marinePlanAreas is written in the background after the response
+    await vi.waitFor(async () => {
+      const ex = await db
+        .collection(collectionExemptions)
+        .findOne({ _id: exemptionId })
+      expect(ex.marinePlanAreas).toEqual([])
+    })
   })
 
   it('should return 404 if not found in database', async () => {
@@ -165,10 +172,17 @@ describe('POST /exemption/submit', async () => {
       mockApplicationReference
     )
     expect(updatedExemption.submittedAt).toEqual(mockDate)
-    expect(updatedExemption.marinePlanAreas).toEqual([
-      'South East Inshore',
-      'South East offshore'
-    ])
+
+    // marinePlanAreas is written in the background after the response
+    await vi.waitFor(async () => {
+      const ex = await db
+        .collection(collectionExemptions)
+        .findOne({ _id: exemptionId })
+      expect(ex.marinePlanAreas).toEqual([
+        'South East Inshore',
+        'South East offshore'
+      ])
+    })
   })
 
   it('assigns unique references when many exemptions submit in parallel (reference lock contention)', async () => {
