@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { submitExemptionController } from './submit-exemption.js'
 import { generateApplicationReference } from '../../../shared/helpers/reference-generator.js'
 import { createTaskList } from '../helpers/createTaskList.js'
@@ -9,6 +9,10 @@ import { REQUEST_QUEUE_STATUS } from '../../../shared/common/constants/request-q
 import { config } from '../../../config.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
+
+// Flush all pending microtasks and macrotasks so fire-and-forget background
+// promise chains (geo writes → queue inserts) complete before asserting.
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn().mockImplementation(function () {
@@ -142,6 +146,8 @@ describe('POST /exemption/submit', () => {
     }
 
     generateApplicationReference.mockResolvedValue('EXE/2025/10001')
+    updateCoastalOperationsAreas.mockResolvedValue(undefined)
+    updateMarinePlanningAreas.mockResolvedValue(undefined)
     createTaskList.mockReturnValue({
       projectName: 'COMPLETED',
       publicRegister: 'COMPLETED',
@@ -214,6 +220,7 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+      await flushPromises()
 
       expect(updateCoastalOperationsAreas).toHaveBeenCalledWith(
         mockExemption,
@@ -288,6 +295,7 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+      await flushPromises()
 
       expect(mockServer.methods.processDynamicsQueue).toHaveBeenCalled()
       expect(mockServer.methods.processEmpQueue).toHaveBeenCalled()
@@ -299,6 +307,144 @@ describe('POST /exemption/submit', () => {
         'Failed to process EMP queue, but exemption submission succeeded'
       )
 
+      expect(mockHandler.code).toHaveBeenCalledWith(200)
+    })
+
+    it('should log ECS-formatted error and still add to queues if coastal operations areas update fails', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+      updateCoastalOperationsAreas.mockRejectedValueOnce(
+        new Error('Geo DB error')
+      )
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'Geo DB error' })
+        }),
+        'Failed to update coastal operations areas for EXE/2025/10001'
+      )
+      // Queue inserts should still happen despite geo failure
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
+      expect(mockHandler.code).toHaveBeenCalledWith(200)
+    })
+
+    it('should log ECS-formatted error and still add to queues if marine plan areas update fails', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+      updateMarinePlanningAreas.mockRejectedValueOnce(
+        new Error('Marine plan geo error')
+      )
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'Marine plan geo error' })
+        }),
+        'Failed to update marine plan areas for EXE/2025/10001'
+      )
+      // Queue inserts should still happen despite geo failure
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
+      expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')
+      expect(mockHandler.code).toHaveBeenCalledWith(200)
+    })
+
+    it('should log ECS-formatted error if queue inserts fail after geo operations succeed', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+      mockDynamicsQueueCollection.insertOne.mockRejectedValueOnce(
+        new Error('Queue insert failed')
+      )
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'Queue insert failed' })
+        }),
+        'Failed to insert queue entries for EXE/2025/10001'
+      )
       expect(mockHandler.code).toHaveBeenCalledWith(200)
     })
 
@@ -380,6 +526,7 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+      await flushPromises()
 
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-dynamics-queue')
       expect(mockDb.collection).toHaveBeenCalledWith('exemption-emp-queue')

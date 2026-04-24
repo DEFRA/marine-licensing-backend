@@ -15,6 +15,7 @@ import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/inde
 import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
+import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import {
   DYNAMICS_REQUEST_ACTIONS,
   EMP_REQUEST_ACTIONS
@@ -87,6 +88,61 @@ const updateExemptionRecord = async ({
   }
 }
 
+const runPostSubmitBackgroundWork = ({
+  exemption,
+  db,
+  updatedAt,
+  updatedBy,
+  applicationReference,
+  request,
+  isDynamicsEnabled,
+  isEmpEnabled
+}) => {
+  // Each geo operation catches its own errors so a failure in one does
+  // not block the other or the Dynamics/EMP queue inserts — geo areas
+  // can be backfilled independently via the backfill-areas endpoint.
+  Promise.all([
+    updateCoastalOperationsAreas(exemption, db, { updatedAt, updatedBy }).catch(
+      (err) => {
+        request.logger.error(
+          structureErrorForECS(err),
+          `Failed to update coastal operations areas for ${applicationReference}`
+        )
+      }
+    ),
+    updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy }).catch(
+      (err) => {
+        request.logger.error(
+          structureErrorForECS(err),
+          `Failed to update marine plan areas for ${applicationReference}`
+        )
+      }
+    )
+  ])
+    .then(async () => {
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT
+        })
+      }
+      if (isEmpEnabled) {
+        await addToEmpQueue({
+          request,
+          applicationReference,
+          action: EMP_REQUEST_ACTIONS.ADD
+        })
+      }
+    })
+    .catch((err) => {
+      request.logger.error(
+        structureErrorForECS(err),
+        `Failed to insert queue entries for ${applicationReference}`
+      )
+    })
+}
+
 export const submitExemptionController = {
   options: {
     payload: {
@@ -122,28 +178,21 @@ export const submitExemptionController = {
         submittedAt,
         declarationAcceptedByContactId
       })
-      await updateCoastalOperationsAreas(exemption, db, {
-        updatedAt,
-        updatedBy
-      })
-      await updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy })
-      if (isDynamicsEnabled) {
-        await addToDynamicsQueue({
-          request,
-          applicationReference,
-          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT
-        })
-      }
-      if (isEmpEnabled) {
-        await addToEmpQueue({
-          request,
-          applicationReference,
-          action: EMP_REQUEST_ACTIONS.ADD
-        })
-      }
-
       const { organisation } = exemption
-      // async; don't wait for this to complete
+
+      // Run geo lookups, queue inserts and email in the background so the
+      // user receives applicationReference and submittedAt immediately.
+      runPostSubmitBackgroundWork({
+        exemption,
+        db,
+        updatedAt,
+        updatedBy,
+        applicationReference,
+        request,
+        isDynamicsEnabled,
+        isEmpEnabled
+      })
+
       sendEmailConfirmation({
         db,
         userName,
