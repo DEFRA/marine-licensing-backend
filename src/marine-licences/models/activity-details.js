@@ -3,6 +3,9 @@ import { marineLicenceId } from './shared-models.js'
 
 const activityTypeValues = ['construction', 'deposit', 'removal']
 
+export const ACTIVITY_MIN_LENGTH = 1
+export const ACTIVITY_DESCRIPTION_MAX_LENGTH = 1000
+
 export const activityItemSchema = joi.object({
   activityType: joi
     .string()
@@ -43,7 +46,7 @@ export const activityItemSchema = joi.object({
           }),
         otherActivity: joi.when('selections', {
           is: joi.array().has(joi.string().valid('other')),
-          then: joi.string().max(1000).required().messages({
+          then: joi.string().trim().max(1000).required().messages({
             'string.empty': 'ACTIVITIES_OTHER_REASON_REQUIRED',
             'any.required': 'ACTIVITIES_OTHER_REASON_REQUIRED',
             'string.max': 'ACTIVITIES_OTHER_REASON_MAX_LENGTH'
@@ -57,7 +60,19 @@ export const activityItemSchema = joi.object({
       }),
     otherwise: joi.optional()
   }),
-  activityDescription: joi.string().optional().allow(''),
+  activityDescription: joi
+    .string()
+    .optional()
+    .allow('')
+    .trim()
+    .min(ACTIVITY_MIN_LENGTH)
+    .max(ACTIVITY_DESCRIPTION_MAX_LENGTH)
+    .messages({
+      'string.empty': 'ACTIVITY_DESCRIPTION_REQUIRED',
+      'string.base': 'ACTIVITY_DESCRIPTION_REQUIRED',
+      'any.required': 'ACTIVITY_DESCRIPTION_REQUIRED',
+      'string.max': 'ACTIVITY_DESCRIPTION_MAX_LENGTH'
+    }),
   activityDuration: joi.string().optional().allow(''),
   completionDate: joi.string().optional().allow(''),
   activityMonths: joi.string().optional().allow(''),
