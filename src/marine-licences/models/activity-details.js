@@ -6,6 +6,8 @@ const activityTypeValues = ['construction', 'deposit', 'removal']
 export const ACTIVITY_MIN_LENGTH = 1
 export const ACTIVITY_DESCRIPTION_MAX_LENGTH = 1000
 
+const MAX_MONTHS = 11
+
 export const activityItemSchema = joi.object({
   activityType: joi
     .string()
@@ -85,7 +87,7 @@ export const activityItemSchema = joi.object({
         .number()
         .integer()
         .min(0)
-        .max(11)
+        .max(MAX_MONTHS)
         .messages({
           'any.required': 'MONTHS_REQUIRED',
           'number.base': 'MONTHS_NOT_VALID',
