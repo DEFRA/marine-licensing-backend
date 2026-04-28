@@ -1,5 +1,8 @@
 import { ObjectId } from 'mongodb'
-import { activityDetailsSchema, activityItemSchema } from './index.js'
+import {
+  activityDetailsSchema,
+  activityItemSchema
+} from './activity-details.js'
 
 describe('activityDetailsSchema', () => {
   it.each([
