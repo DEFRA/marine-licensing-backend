@@ -2,13 +2,7 @@ import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
 import { activityTypeFields } from './activity-type.js'
 import { activityDurationSchema } from './activity-duration.js'
-import {
-  activityDescriptionSchema,
-  ACTIVITY_MIN_LENGTH,
-  ACTIVITY_DESCRIPTION_MAX_LENGTH
-} from './activity-description.js'
-
-export { ACTIVITY_MIN_LENGTH, ACTIVITY_DESCRIPTION_MAX_LENGTH }
+import { activityDescriptionSchema } from './activity-description.js'
 
 export const activityItemSchema = joi.object({
   ...activityTypeFields,
