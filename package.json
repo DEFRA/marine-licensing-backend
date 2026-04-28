@@ -35,7 +35,7 @@
   "dependencies": {
     "@arcgis/core": "5.0.18",
     "@aws-sdk/client-s3": "^3.1038.0",
-    "@aws-sdk/credential-providers": "3.1035.0",
+    "@aws-sdk/credential-providers": "3.1038.0",
     "@defra/cdp-auditing": "0.6.0",
     "@defra/hapi-secure-context": "0.4.0",
     "@defra/hapi-tracing": "1.30.0",
@@ -61,7 +61,7 @@
     "http-status-codes": "2.3.0",
     "https-proxy-agent": "7.0.6",
     "joi": "18.1.2",
-    "jsdom": "^29.0.2",
+    "jsdom": "^29.1.0",
     "migrate-mongo": "14.0.7",
     "mongo-locks": "3.0.2",
     "mongodb": "7.2.0",
