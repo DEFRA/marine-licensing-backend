@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom'
-import { activityDetailsSchema } from '../../models/activity-details.js'
+import { activityDetailsSchema } from '../../models/activity-details/activity-details.js'
 import { createActivityDetails } from '../helpers/create-empty-activity-details.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'

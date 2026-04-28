@@ -1,12 +1,8 @@
 import joi from 'joi'
-import { marineLicenceId } from './shared-models.js'
 
 const activityTypeValues = ['construction', 'deposit', 'removal']
 
-export const ACTIVITY_MIN_LENGTH = 1
-export const ACTIVITY_DESCRIPTION_MAX_LENGTH = 1000
-
-export const activityItemSchema = joi.object({
+export const activityTypeFields = {
   activityType: joi
     .string()
     .valid(...activityTypeValues)
@@ -59,33 +55,5 @@ export const activityItemSchema = joi.object({
         'any.required': 'ACTIVITIES_REQUIRED'
       }),
     otherwise: joi.optional()
-  }),
-  activityDescription: joi
-    .string()
-    .optional()
-    .allow('')
-    .trim()
-    .min(ACTIVITY_MIN_LENGTH)
-    .max(ACTIVITY_DESCRIPTION_MAX_LENGTH)
-    .messages({
-      'string.empty': 'ACTIVITY_DESCRIPTION_REQUIRED',
-      'string.base': 'ACTIVITY_DESCRIPTION_REQUIRED',
-      'any.required': 'ACTIVITY_DESCRIPTION_REQUIRED',
-      'string.max': 'ACTIVITY_DESCRIPTION_MAX_LENGTH'
-    }),
-  activityDuration: joi.string().optional().allow(''),
-  completionDate: joi.string().optional().allow(''),
-  activityMonths: joi.string().optional().allow(''),
-  workingHours: joi.string().optional().allow('')
-})
-
-export const activityDetailsSchema = joi
-  .object({
-    siteIndex: joi.number().integer().min(0).required().messages({
-      'number.base': 'SITE_INDEX_REQUIRED',
-      'number.integer': 'SITE_INDEX_INVALID',
-      'number.min': 'SITE_INDEX_INVALID',
-      'any.required': 'SITE_INDEX_REQUIRED'
-    })
   })
-  .append(marineLicenceId)
+}
