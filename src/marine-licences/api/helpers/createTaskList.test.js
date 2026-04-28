@@ -137,6 +137,24 @@ describe('createTaskList', () => {
     expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
   })
 
+  it('should return siteDetails as IN_PROGRESS when completionDate has no date', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: [
+            { ...completedActivityDetails[0], completionDate: {} }
+          ]
+        }
+      ]
+    }
+
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
   it('should handle missing activityDetails', () => {
     const marineLicence = {
       projectName: 'Test Project',

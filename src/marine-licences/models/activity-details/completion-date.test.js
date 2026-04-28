@@ -24,7 +24,7 @@ describe('completionDate', () => {
   })
 
   test('should fail when reason length exceeds limit value', () => {
-    const longString = 'test'.repeat(10000 + 1)
+    const longString = 't'.repeat(10000 + 1)
     const { error } = schema.validate({
       completionDate: { date: 'yes', reason: longString }
     })
