@@ -14,7 +14,7 @@ const completedActivityDetails = [
     activities: { selections: ['CON1'] },
     activityDescription: 'Building a pier',
     activityDuration: '6 months',
-    completionDate: '2025-06-01',
+    completionDate: { date: 'yes', reason: 'test' },
     activityMonths: 'Jan, Feb',
     workingHours: '08:00-17:00'
   }

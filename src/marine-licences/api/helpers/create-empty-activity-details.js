@@ -2,7 +2,7 @@ export const createActivityDetails = () => ({
   activityType: '',
   activityDescription: '',
   activityDuration: {},
-  completionDate: '',
+  completionDate: {},
   activityMonths: '',
   workingHours: ''
 })
