@@ -15,7 +15,7 @@ const completedActivityDetails = [
     activityDescription: 'Building a pier',
     activityDuration: '6 months',
     completionDate: '2025-06-01',
-    activityMonths: 'Jan, Feb',
+    activityMonths: { months: 'yes', details: 'Jan, Feb' },
     workingHours: '08:00-17:00'
   }
 ]
@@ -129,6 +129,24 @@ describe('createTaskList', () => {
           activityDetails: [
             completedActivityDetails[0],
             { ...completedActivityDetails[0], workingHours: '' }
+          ]
+        }
+      ]
+    }
+
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
+  it('should return siteDetails as IN_PROGRESS when activityMonths has no date', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: [
+            { ...completedActivityDetails[0], activityMonths: {} }
           ]
         }
       ]

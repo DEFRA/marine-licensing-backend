@@ -17,14 +17,22 @@ const ACTIVITY_DETAILS_FIELDS = [
   'workingHours'
 ]
 
+const isActivityFieldFilled = (activity, key) => {
+  if (key === 'activityMonths') {
+    return Boolean(activity.activityMonths?.months)
+  }
+
+  return Boolean(activity[key])
+}
+
 const checkActivityDetails = (activityDetails) => {
   if (!activityDetails?.length) {
     return IN_PROGRESS
   }
 
   for (const activity of activityDetails) {
-    const filledCount = ACTIVITY_DETAILS_FIELDS.filter(
-      (key) => activity[key]
+    const filledCount = ACTIVITY_DETAILS_FIELDS.filter((key) =>
+      isActivityFieldFilled(activity, key)
     ).length
 
     if (filledCount < ACTIVITY_DETAILS_FIELDS.length) {
