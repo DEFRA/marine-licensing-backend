@@ -83,7 +83,7 @@ describe('PATCH /marine-licence/site-details - payload size limits', async () =>
           activityDescription: 'Test description',
           activityDuration: {},
           completionDate: '',
-          activityMonths: '',
+          activityMonths: {},
           workingHours: ''
         }
       ]
