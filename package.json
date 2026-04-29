@@ -99,6 +99,7 @@
     "flatted": "^3.4.2",
     "yauzl": "^3.2.1",
     "tinyexec": "1.0.2",
+    "postcss": "^8.5.12",
     "fast-xml-parser": "^5.5.7",
     "picomatch": "^2.3.2 || ^4.0.4"
   }
