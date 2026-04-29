@@ -26,7 +26,7 @@ describe('activityMonths', () => {
   })
 
   test('should fail when reason length exceeds limit value', () => {
-    const longString = 't'.repeat(10000 + 1)
+    const longString = 't'.repeat(1_000 + 1)
     const { error } = schema.validate({
       activityMonths: { months: 'yes', details: longString }
     })
