@@ -5,6 +5,7 @@ import { activityDurationSchema } from './activity-duration.js'
 import { activityDescriptionSchema } from './activity-description.js'
 import { activityMonthsSchema } from './activity-months.js'
 import { completionDateSchema } from './completion-date.js'
+import { workingHoursSchema } from './working-hours.js'
 
 export const activityItemSchema = joi.object({
   ...activityTypeFields,
@@ -12,7 +13,7 @@ export const activityItemSchema = joi.object({
   activityDuration: activityDurationSchema,
   activityMonths: activityMonthsSchema,
   completionDate: completionDateSchema,
-  workingHours: joi.string().optional().allow('')
+  workingHours: workingHoursSchema
 })
 
 export const activityDetailsSchema = joi
