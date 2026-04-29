@@ -22,6 +22,10 @@ const isActivityFieldFilled = (activity, key) => {
     return Boolean(activity.activityMonths?.months)
   }
 
+  if (key === 'completionDate') {
+    return Boolean(activity.completionDate?.date)
+  }
+
   return Boolean(activity[key])
 }
 
