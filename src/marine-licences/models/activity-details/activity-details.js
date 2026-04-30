@@ -3,14 +3,15 @@ import { marineLicenceId } from '../shared-models.js'
 import { activityTypeFields } from './activity-type.js'
 import { activityDurationSchema } from './activity-duration.js'
 import { activityDescriptionSchema } from './activity-description.js'
+import { activityMonthsSchema } from './activity-months.js'
 import { completionDateSchema } from './completion-date.js'
 
 export const activityItemSchema = joi.object({
   ...activityTypeFields,
   activityDescription: activityDescriptionSchema,
   activityDuration: activityDurationSchema,
+  activityMonths: activityMonthsSchema,
   completionDate: completionDateSchema,
-  activityMonths: joi.string().optional().allow(''),
   workingHours: joi.string().optional().allow('')
 })
 
