@@ -11,7 +11,7 @@ describe('workingHours', () => {
     expect(error.message).toContain('WORKING_HOURS_MAX_LENGTH')
   })
 
-  test('should fail when activityDescription is null', () => {
+  test('should fail when workingHours is null', () => {
     const { error } = schema.validate({ workingHours: null })
     expect(error.message).toContain('WORKING_HOURS_REQUIRED')
   })
