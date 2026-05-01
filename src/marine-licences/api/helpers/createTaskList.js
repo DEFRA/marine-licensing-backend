@@ -83,7 +83,9 @@ const checkSiteDetailsCircle = (siteDetails) => {
 }
 
 const getValidationStrategy = (coordinatesType, coordinatesEntry) => {
-  if (coordinatesType === 'file') return checkSiteDetailsFileUpload
+  if (coordinatesType === 'file') {
+    return checkSiteDetailsFileUpload
+  }
   if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
     return checkSiteDetailsCircle
   }
