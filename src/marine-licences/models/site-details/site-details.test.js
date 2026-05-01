@@ -3,6 +3,7 @@ import { siteDetailsSchema } from './site-details.js'
 const mockId = 'a'.repeat(24)
 
 const mockWgs84SingleSiteItem = {
+  siteName: 'site 1',
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
   coordinateSystem: 'wgs84',
@@ -11,6 +12,7 @@ const mockWgs84SingleSiteItem = {
 }
 
 const mockWgs84MultipleSiteItem = {
+  siteName: 'site 1',
   coordinatesType: 'coordinates',
   coordinatesEntry: 'multiple',
   coordinateSystem: 'wgs84',
@@ -22,6 +24,7 @@ const mockWgs84MultipleSiteItem = {
 }
 
 const mockOsgb36SingleSiteItem = {
+  siteName: 'site 1',
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
   coordinateSystem: 'osgb36',
@@ -30,6 +33,7 @@ const mockOsgb36SingleSiteItem = {
 }
 
 const mockOsgb36MultipleSiteItem = {
+  siteName: 'site 1',
   coordinatesType: 'coordinates',
   coordinatesEntry: 'multiple',
   coordinateSystem: 'osgb36',
@@ -142,18 +146,16 @@ describe('#siteDetails schema (marine licences)', () => {
     })
 
     describe('when coordinatesType is "coordinates"', () => {
-      test('Should not allow siteName field to be present', () => {
+      test('Should not allow siteName field to be absent', () => {
         const result = siteDetailsSchema.validate({
           id: mockId,
           siteDetails: [
             {
-              coordinatesType: 'coordinates',
-              siteName: 'Test Site Name'
+              coordinatesType: 'coordinates'
             }
           ]
         })
-        expect(result.error.message).toContain('"siteDetails[0].siteName"')
-        expect(result.error.message).toContain('not allowed')
+        expect(result.error.message).toContain('SITE_NAME_REQUIRED')
       })
     })
   })
@@ -173,6 +175,7 @@ describe('#siteDetails schema (marine licences)', () => {
           id: mockId,
           siteDetails: [
             {
+              siteName: 'site 1',
               coordinatesType: 'coordinates',
               coordinateSystem: 'wgs84',
               coordinates: mockWgs84SingleSiteItem.coordinates,
@@ -188,6 +191,7 @@ describe('#siteDetails schema (marine licences)', () => {
           id: mockId,
           siteDetails: [
             {
+              siteName: 'site 1',
               coordinatesType: 'coordinates',
               coordinatesEntry: 'single',
               coordinates: mockWgs84SingleSiteItem.coordinates,
