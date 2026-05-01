@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { mockSiteDetails } from './test-fixtures.js'
+import { mockSiteDetails } from '../../../exemptions/models/site-details/test-fixtures.js'
 import { wgs84ValidationSchema } from './wgs84.js'
 
 describe('#centreCoordinate models', () => {

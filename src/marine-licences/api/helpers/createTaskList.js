@@ -65,14 +65,42 @@ const checkSiteDetailsFileUpload = (siteDetails) => {
   return IN_PROGRESS
 }
 
-const validateSite = (site) => {
-  const { coordinatesType } = site
+const checkSiteDetailsCircle = (siteDetails) => {
+  const requiredValues = [
+    'coordinateSystem',
+    'coordinates',
+    'circleWidth',
+    'siteName'
+  ]
 
-  if (coordinatesType !== 'file') {
+  const siteStatus = getStatusFromRequiredFields(siteDetails, requiredValues)
+  const activityStatus = checkActivityDetails(siteDetails.activityDetails)
+
+  if ([siteStatus, activityStatus].every((s) => s === COMPLETED)) {
+    return COMPLETED
+  }
+  return IN_PROGRESS
+}
+
+const getValidationStrategy = (coordinatesType, coordinatesEntry) => {
+  if (coordinatesType === 'file') {
+    return checkSiteDetailsFileUpload
+  }
+  if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
+    return checkSiteDetailsCircle
+  }
+  return null
+}
+
+const validateSite = (site) => {
+  const { coordinatesType, coordinatesEntry } = site
+  const strategy = getValidationStrategy(coordinatesType, coordinatesEntry)
+
+  if (!strategy) {
     return INCOMPLETE
   }
 
-  return checkSiteDetailsFileUpload(site)
+  return strategy(site)
 }
 
 const getSiteDetailsStatus = (siteDetails) => {
