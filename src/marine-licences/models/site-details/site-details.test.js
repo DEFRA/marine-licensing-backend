@@ -228,7 +228,7 @@ describe('#siteDetails schema (marine licences)', () => {
         expect(result.error.message).toBe('COORDINATES_MINIMUM_REQUIRED')
       })
 
-      test('Should fail when circleWidth is provided for multiple entry', () => {
+      test('Should fail when circleWidth is provided for multiple entries', () => {
         const result = siteDetailsSchema.validate({
           id: mockId,
           siteDetails: [{ ...mockWgs84MultipleSiteItem, circleWidth: '50' }]
