@@ -9,6 +9,7 @@ import { updateOtherAuthoritiesController } from './controllers/update-other-aut
 import { updateProjectBackgroundController } from './controllers/update-project-background.js'
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
 import { addActivityDetailsController } from './controllers/add-activity-details.js'
+import { deleteActivityDetailsController } from './controllers/delete-activity-details.js'
 import { updateSiteController } from './controllers/update-site.js'
 
 export const marineLicences = [
@@ -66,6 +67,11 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/add-activity-details',
     ...addActivityDetailsController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-activity-details',
+    ...deleteActivityDetailsController
   },
   {
     method: 'PATCH',
