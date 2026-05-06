@@ -1,4 +1,5 @@
 import { vi, expect } from 'vitest'
+import Boom from '@hapi/boom'
 import { getExemptionSummaryController } from './get-exemption-summary.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 
@@ -122,5 +123,27 @@ describe('GET /exemptions/summary', () => {
       }),
       'Failed to retrieve exemption summary'
     )
+  })
+
+  it('rethrows boom errors without additional logging', async () => {
+    const boomError = Boom.badRequest('invalid aggregation')
+    mockDb = {
+      collection: vi.fn().mockReturnValue({
+        aggregate: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockRejectedValue(boomError)
+        })
+      })
+    }
+
+    const request = {
+      db: mockDb,
+      auth: { artifacts: { decoded: { tid: 'entra-tenant-id' } } },
+      logger: mockLogger
+    }
+
+    await expect(
+      getExemptionSummaryController.handler(request, mockHandler)
+    ).rejects.toBe(boomError)
+    expect(mockLogger.error).not.toHaveBeenCalled()
   })
 })
