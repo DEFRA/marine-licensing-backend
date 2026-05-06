@@ -131,4 +131,18 @@ describe('#osgb36ValidationSchema model', () => {
     expect(result.error.message).toContain('EASTINGS_NON_NUMERIC')
     expect(result.error.message).toContain('NORTHINGS_NON_NUMERIC')
   })
+
+  test('Should correctly validate when eastings passes the pattern but is not a valid number', () => {
+    const request = {
+      eastings: '-0.0.0',
+      northings: '564180'
+    }
+
+    const result = osgb36ValidationSchema.validate(request, {
+      abortEarly: false
+    })
+
+    expect(result.error.message).toContain('EASTINGS_NON_NUMERIC')
+    expect(result.error.message).not.toContain('NORTHINGS_NON_NUMERIC')
+  })
 })
