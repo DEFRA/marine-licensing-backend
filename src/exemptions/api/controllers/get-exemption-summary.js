@@ -14,7 +14,21 @@ export const getExemptionSummaryController = {
       const { db } = request
       const groupedStatusCounts = await db
         .collection(collectionExemptions)
-        .aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+        .aggregate([
+          {
+            $match: {
+              status: {
+                $in: [
+                  EXEMPTION_STATUS.ACTIVE,
+                  EXEMPTION_STATUS.SUBMITTED,
+                  EXEMPTION_STATUS.DRAFT,
+                  EXEMPTION_STATUS.WITHDRAWN
+                ]
+              }
+            }
+          },
+          { $group: { _id: '$status', count: { $sum: 1 } } }
+        ])
         .toArray()
 
       const countsByStatus = groupedStatusCounts.reduce((acc, item) => {

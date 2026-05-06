@@ -1,12 +1,21 @@
-import { setupTestServer } from '../../../../tests/test-server.js'
 import { makeGetRequest } from '../../../../tests/server-requests.js'
 import { createCompleteExemption } from '../../../../tests/test.fixture.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import { ObjectId } from 'mongodb'
 
-describe('Get exemption summary - integration tests', async () => {
-  const getServer = await setupTestServer()
+describe('Get exemption summary - integration tests', () => {
+  let server
+
+  beforeAll(async () => {
+    const { createServer } = await import('../../../server.js')
+    server = await createServer()
+    await server.initialize()
+  })
+
+  afterAll(async () => {
+    await server?.stop()
+  })
 
   beforeEach(async () => {
     await globalThis.mockMongo.collection(collectionExemptions).deleteMany({})
@@ -41,7 +50,7 @@ describe('Get exemption summary - integration tests', async () => {
       .insertMany(exemptions)
 
     const { statusCode, body } = await makeGetRequest({
-      server: getServer(),
+      server,
       url: '/exemptions/summary',
       isInternalUser: true
     })
@@ -55,7 +64,7 @@ describe('Get exemption summary - integration tests', async () => {
   })
 
   test('returns 403 for applicant users', async () => {
-    const response = await getServer().inject({
+    const response = await server.inject({
       auth: {
         strategy: 'jwt',
         credentials: { contactId: 'applicant-user' },
