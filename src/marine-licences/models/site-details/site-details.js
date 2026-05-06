@@ -10,8 +10,10 @@ import {
   wgs84ValidationSchema,
   wgs84MultipleValidationSchema
 } from '../../../shared/models/site-details/wgs84.js'
-import { osgb36ValidationSchema } from '../../../shared/models/site-details/osgb36.js'
-import { osgb36MultipleCoordinatesSchema } from './osgb36.js'
+import {
+  osgb36ValidationSchema,
+  osgb36MultipleCoordinatesSchema
+} from '../../../shared/models/site-details/osgb36.js'
 
 export const siteItemSchema = joi.object({
   coordinatesType: coordinatesTypeFieldSchema,

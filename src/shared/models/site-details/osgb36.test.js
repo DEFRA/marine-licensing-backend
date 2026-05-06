@@ -3,7 +3,7 @@ import { COORDINATE_SYSTEMS } from '../../../shared/common/constants/coordinates
 import { osgb36ValidationSchema } from './osgb36.js'
 
 const mockCoordinates = {
-  [COORDINATE_SYSTEMS.OSGB36]: { eastings: '425053', northings: '564180' }
+  [COORDINATE_SYSTEMS.OSGB36]: { easting: '425053', northing: '564180' }
 }
 
 describe('#osgb36ValidationSchema model', () => {
@@ -21,8 +21,8 @@ describe('#osgb36ValidationSchema model', () => {
 
   test('Should pass validation on minimum values', () => {
     const result = osgb36ValidationSchema.validate({
-      eastings: '0',
-      northings: '0'
+      easting: '0',
+      northing: '0'
     })
 
     expect(result.error).toBeUndefined()
@@ -30,8 +30,8 @@ describe('#osgb36ValidationSchema model', () => {
 
   test('Should pass validation on maximum values', () => {
     const result = osgb36ValidationSchema.validate({
-      eastings: '999999',
-      northings: '9999999'
+      easting: '999999',
+      northing: '9999999'
     })
 
     expect(result.error).toBeUndefined()
@@ -44,91 +44,91 @@ describe('#osgb36ValidationSchema model', () => {
       abortEarly: false
     })
 
-    expect(result.error.message).toContain('EASTINGS_REQUIRED')
-    expect(result.error.message).toContain('NORTHINGS_REQUIRED')
+    expect(result.error.message).toContain('EASTING_REQUIRED')
+    expect(result.error.message).toContain('NORTHING_REQUIRED')
   })
 
-  test('Should correctly validate when eastings is an empty string', () => {
+  test('Should correctly validate when easting is an empty string', () => {
     const request = {
-      eastings: '',
-      northings: '564180'
+      easting: '',
+      northing: '564180'
     }
 
     const result = osgb36ValidationSchema.validate(request, {
       abortEarly: false
     })
 
-    expect(result.error.message).toContain('EASTINGS_REQUIRED')
-    expect(result.error.message).not.toContain('NORTHINGS_REQUIRED')
+    expect(result.error.message).toContain('EASTING_REQUIRED')
+    expect(result.error.message).not.toContain('NORTHING_REQUIRED')
   })
 
-  test('Should correctly validate when northings is an empty string', () => {
+  test('Should correctly validate when northing is an empty string', () => {
     const request = {
-      eastings: '425053',
-      northings: ''
+      easting: '425053',
+      northing: ''
     }
 
     const result = osgb36ValidationSchema.validate(request, {
       abortEarly: false
     })
 
-    expect(result.error.message).not.toContain('EASTINGS_REQUIRED')
-    expect(result.error.message).toContain('NORTHINGS_REQUIRED')
+    expect(result.error.message).not.toContain('EASTING_REQUIRED')
+    expect(result.error.message).toContain('NORTHING_REQUIRED')
   })
 
-  test('Should correctly validate when northings and eastings is above maximum allowed value', () => {
+  test('Should correctly validate when northing and easting is above maximum allowed value', () => {
     const request = {
-      eastings: '1000000',
-      northings: '10000000'
+      easting: '1000000',
+      northing: '10000000'
     }
 
     const result = osgb36ValidationSchema.validate(request, {
       abortEarly: false
     })
 
-    expect(result.error.message).toContain('EASTINGS_LENGTH')
-    expect(result.error.message).toContain('NORTHINGS_LENGTH')
+    expect(result.error.message).toContain('EASTING_LENGTH')
+    expect(result.error.message).toContain('NORTHING_LENGTH')
   })
 
-  test('Should correctly validate when eastings and northings are negative numbers', () => {
+  test('Should correctly validate when easting and northing are negative numbers', () => {
     const request = {
-      eastings: '-425053',
-      northings: '-564180'
+      easting: '-425053',
+      northing: '-564180'
     }
 
     const result = osgb36ValidationSchema.validate(request, {
       abortEarly: false
     })
 
-    expect(result.error.message).toContain('EASTINGS_POSITIVE_NUMBER')
-    expect(result.error.message).toContain('NORTHINGS_POSITIVE_NUMBER')
+    expect(result.error.message).toContain('EASTING_POSITIVE_NUMBER')
+    expect(result.error.message).toContain('NORTHING_POSITIVE_NUMBER')
   })
 
-  test('Should correctly validate when eastings and northings contain incorrect characters', () => {
+  test('Should correctly validate when easting and northing contain incorrect characters', () => {
     const request = {
-      eastings: '42505/',
-      northings: '56410/'
+      easting: '42505/',
+      northing: '56410/'
     }
 
     const result = osgb36ValidationSchema.validate(request, {
       abortEarly: false
     })
 
-    expect(result.error.message).toContain('EASTINGS_NON_NUMERIC')
-    expect(result.error.message).toContain('NORTHINGS_NON_NUMERIC')
+    expect(result.error.message).toContain('EASTING_NON_NUMERIC')
+    expect(result.error.message).toContain('NORTHING_NON_NUMERIC')
   })
 
-  test('Should correctly validate when eastings and northings contain - inside the value', () => {
+  test('Should correctly validate when easting and northing contain - inside the value', () => {
     const request = {
-      eastings: '425-057',
-      northings: '564-109'
+      easting: '425-057',
+      northing: '564-109'
     }
 
     const result = osgb36ValidationSchema.validate(request, {
       abortEarly: false
     })
 
-    expect(result.error.message).toContain('EASTINGS_NON_NUMERIC')
-    expect(result.error.message).toContain('NORTHINGS_NON_NUMERIC')
+    expect(result.error.message).toContain('EASTING_NON_NUMERIC')
+    expect(result.error.message).toContain('NORTHING_NON_NUMERIC')
   })
 })

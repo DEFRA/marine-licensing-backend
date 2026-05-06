@@ -3,10 +3,10 @@ import { buffer } from '@turf/turf'
 import Boom from '@hapi/boom'
 import { equal } from '../utils.js'
 
-export const singleOSGB36toWGS84 = ({ eastings, northings }) =>
+export const singleOSGB36toWGS84 = ({ easting, northing }) =>
   proj4('OSGB36', 'WGS84', [
-    Number.parseFloat(eastings),
-    Number.parseFloat(northings)
+    Number.parseFloat(easting),
+    Number.parseFloat(northing)
   ])
 
 export const addBufferToShape = (geometry, amount = 50) => {

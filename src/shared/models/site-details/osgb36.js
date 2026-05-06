@@ -1,13 +1,14 @@
 import joi from 'joi'
 import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../../shared/common/constants/coordinates.js'
 
-const MIN_EASTINGS_LENGTH = 0
-const MAX_EASTINGS_LENGTH = 999999
-const MIN_NORTHINGS_LENGTH = 0
-const MAX_NORTHINGS_LENGTH = 9999999
+const MIN_EASTING = 0
+const MAX_EASTING = 999999
+const MIN_NORTHING = 0
+const MAX_NORTHING = 9999999
 
-const validateCoordinates = (value, helpers, type) => {
+const validateCoordinate = (value, helpers, type) => {
   const coordinate = Number(value)
+
   if (Number.isNaN(coordinate)) {
     return helpers.error('number.base')
   }
@@ -17,15 +18,15 @@ const validateCoordinates = (value, helpers, type) => {
   }
 
   if (
-    type === 'eastings' &&
-    (coordinate < MIN_EASTINGS_LENGTH || coordinate > MAX_EASTINGS_LENGTH)
+    type === 'easting' &&
+    (coordinate < MIN_EASTING || coordinate > MAX_EASTING)
   ) {
     return helpers.error('number.range')
   }
 
   if (
-    type === 'northings' &&
-    (coordinate < MIN_NORTHINGS_LENGTH || coordinate > MAX_NORTHINGS_LENGTH)
+    type === 'northing' &&
+    (coordinate < MIN_NORTHING || coordinate > MAX_NORTHING)
   ) {
     return helpers.error('number.range')
   }
@@ -33,42 +34,38 @@ const validateCoordinates = (value, helpers, type) => {
   return value
 }
 
-// Single coordinate validation schema
-export const osgb36ValidationSchema = joi.object({
-  eastings: joi
+export const osgb36MultipleItemSchema = joi.object({
+  easting: joi
     .string()
     .required()
     .pattern(/^-?[0-9.]+$/)
-    .custom((value, helpers) => validateCoordinates(value, helpers, 'eastings'))
+    .custom((value, helpers) => validateCoordinate(value, helpers, 'easting'))
     .messages({
-      'string.empty': 'EASTINGS_REQUIRED',
-      'string.pattern.base': 'EASTINGS_NON_NUMERIC',
-      'number.base': 'EASTINGS_NON_NUMERIC',
-      'number.positive': 'EASTINGS_POSITIVE_NUMBER',
-      'number.range': 'EASTINGS_LENGTH',
-      'any.required': 'EASTINGS_REQUIRED'
+      'string.empty': 'EASTING_REQUIRED',
+      'any.required': 'EASTING_REQUIRED',
+      'string.pattern.base': 'EASTING_NON_NUMERIC',
+      'number.base': 'EASTING_NON_NUMERIC',
+      'number.positive': 'EASTING_POSITIVE_NUMBER',
+      'number.range': 'EASTING_LENGTH'
     }),
-  northings: joi
+  northing: joi
     .string()
     .required()
     .pattern(/^-?[0-9.]+$/)
-    .custom((value, helpers) =>
-      validateCoordinates(value, helpers, 'northings')
-    )
+    .custom((value, helpers) => validateCoordinate(value, helpers, 'northing'))
     .messages({
-      'string.empty': 'NORTHINGS_REQUIRED',
-      'string.pattern.base': 'NORTHINGS_NON_NUMERIC',
-      'number.base': 'NORTHINGS_NON_NUMERIC',
-      'number.positive': 'NORTHINGS_POSITIVE_NUMBER',
-      'number.range': 'NORTHINGS_LENGTH',
-      'any.required': 'NORTHINGS_REQUIRED'
+      'string.empty': 'NORTHING_REQUIRED',
+      'any.required': 'NORTHING_REQUIRED',
+      'string.pattern.base': 'NORTHING_NON_NUMERIC',
+      'number.base': 'NORTHING_NON_NUMERIC',
+      'number.positive': 'NORTHING_POSITIVE_NUMBER',
+      'number.range': 'NORTHING_LENGTH'
     })
 })
 
-// Multiple coordinates validation schema (array of coordinate objects)
-export const osgb36MultipleValidationSchema = joi
+export const osgb36MultipleCoordinatesSchema = joi
   .array()
-  .items(osgb36ValidationSchema)
+  .items(osgb36MultipleItemSchema)
   .min(MIN_POINTS_MULTIPLE_COORDINATES)
   .max(1000)
   .required()
@@ -78,3 +75,7 @@ export const osgb36MultipleValidationSchema = joi
     'array.base': 'COORDINATES_ARRAY_REQUIRED',
     'any.required': 'COORDINATES_REQUIRED'
   })
+
+// Aliases for consumers that use the original export names
+export const osgb36ValidationSchema = osgb36MultipleItemSchema
+export const osgb36MultipleValidationSchema = osgb36MultipleCoordinatesSchema
