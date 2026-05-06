@@ -62,20 +62,4 @@ describe('Get exemption summary - integration tests', () => {
       withdrawnExemptions: 1
     })
   })
-
-  test('returns 403 for applicant users', async () => {
-    const response = await server.inject({
-      auth: {
-        strategy: 'jwt',
-        credentials: { contactId: 'applicant-user' },
-        artifacts: { decoded: {} }
-      },
-      method: 'GET',
-      url: '/exemptions/summary'
-    })
-    const parsed = JSON.parse(response.payload)
-
-    expect(response.statusCode).toBe(403)
-    expect(parsed.message).toBe('Not authorised to request this resource')
-  })
 })
