@@ -1,12 +1,12 @@
 import joi from 'joi'
 import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../../shared/common/constants/coordinates.js'
 
-const MIN_EASTING = 0
-const MAX_EASTING = 999999
-const MIN_NORTHING = 0
-const MAX_NORTHING = 9999999
+const MIN_EASTINGS_LENGTH = 0
+const MAX_EASTINGS_LENGTH = 999999
+const MIN_NORTHINGS_LENGTH = 0
+const MAX_NORTHINGS_LENGTH = 9999999
 
-const validateCoordinate = (value, helpers, type) => {
+const validateCoordinates = (value, helpers, type) => {
   const coordinate = Number(value)
 
   if (Number.isNaN(coordinate)) {
@@ -19,14 +19,14 @@ const validateCoordinate = (value, helpers, type) => {
 
   if (
     type === 'easting' &&
-    (coordinate < MIN_EASTING || coordinate > MAX_EASTING)
+    (coordinate < MIN_EASTINGS_LENGTH || coordinate > MAX_EASTINGS_LENGTH)
   ) {
     return helpers.error('number.range')
   }
 
   if (
     type === 'northing' &&
-    (coordinate < MIN_NORTHING || coordinate > MAX_NORTHING)
+    (coordinate < MIN_NORTHINGS_LENGTH || coordinate > MAX_NORTHINGS_LENGTH)
   ) {
     return helpers.error('number.range')
   }
@@ -34,12 +34,12 @@ const validateCoordinate = (value, helpers, type) => {
   return value
 }
 
-export const osgb36MultipleItemSchema = joi.object({
+export const osgb36ValidationSchema = joi.object({
   easting: joi
     .string()
     .required()
     .pattern(/^-?[0-9.]+$/)
-    .custom((value, helpers) => validateCoordinate(value, helpers, 'easting'))
+    .custom((value, helpers) => validateCoordinates(value, helpers, 'easting'))
     .messages({
       'string.empty': 'EASTING_REQUIRED',
       'any.required': 'EASTING_REQUIRED',
@@ -52,7 +52,7 @@ export const osgb36MultipleItemSchema = joi.object({
     .string()
     .required()
     .pattern(/^-?[0-9.]+$/)
-    .custom((value, helpers) => validateCoordinate(value, helpers, 'northing'))
+    .custom((value, helpers) => validateCoordinates(value, helpers, 'northing'))
     .messages({
       'string.empty': 'NORTHING_REQUIRED',
       'any.required': 'NORTHING_REQUIRED',
@@ -63,9 +63,9 @@ export const osgb36MultipleItemSchema = joi.object({
     })
 })
 
-export const osgb36MultipleCoordinatesSchema = joi
+export const osgb36MultipleValidationSchema = joi
   .array()
-  .items(osgb36MultipleItemSchema)
+  .items(osgb36ValidationSchema)
   .min(MIN_POINTS_MULTIPLE_COORDINATES)
   .max(1000)
   .required()
@@ -75,7 +75,3 @@ export const osgb36MultipleCoordinatesSchema = joi
     'array.base': 'COORDINATES_ARRAY_REQUIRED',
     'any.required': 'COORDINATES_REQUIRED'
   })
-
-// Aliases for consumers that use the original export names
-export const osgb36ValidationSchema = osgb36MultipleItemSchema
-export const osgb36MultipleValidationSchema = osgb36MultipleCoordinatesSchema

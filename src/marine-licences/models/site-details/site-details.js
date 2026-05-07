@@ -12,7 +12,7 @@ import {
 } from '../../../shared/models/site-details/wgs84.js'
 import {
   osgb36ValidationSchema,
-  osgb36MultipleCoordinatesSchema
+  osgb36MultipleValidationSchema
 } from '../../../shared/models/site-details/osgb36.js'
 
 export const siteItemSchema = joi.object({
@@ -37,7 +37,7 @@ export const siteItemSchema = joi.object({
       otherwise: joi.alternatives().conditional('coordinateSystem', {
         is: COORDINATE_SYSTEMS.WGS84,
         then: wgs84MultipleValidationSchema,
-        otherwise: osgb36MultipleCoordinatesSchema
+        otherwise: osgb36MultipleValidationSchema
       })
     }),
     otherwise: joi.forbidden()
