@@ -1,20 +1,18 @@
 import joi from 'joi'
 import { exemptionId } from '../shared-models.js'
 import { activityDescriptionSchema } from '../activity-description.js'
-import { coordinatesEntryFieldSchema } from './coordinates-entry.js'
-import { coordinatesTypeFieldSchema } from './coordinates-type.js'
-import { coordinateSystemFieldSchema } from './coordinate-system.js'
-import { circleWidthValidationSchema } from './circle-width.js'
+import { coordinatesTypeFieldSchema } from '../../../shared/models/site-details/coordinates-type.js'
 import { COORDINATE_SYSTEMS } from '../../../shared/common/constants/coordinates.js'
 import {
   wgs84ValidationSchema,
   wgs84MultipleValidationSchema
-} from './wgs84.js'
+} from '../../../shared/models/site-details/wgs84.js'
 import {
   osgb36ValidationSchema,
   osgb36MultipleValidationSchema
-} from './osgb36.js'
+} from '../../../shared/models/site-details/osgb36.js'
 import { fileUploadConditionalSiteItemFields } from '../../../shared/models/site-details/file-upload.js'
+import { manualCoordinatesConditionalSiteItemFields } from '../../../shared/models/site-details/manual-coordinates.js'
 import { multipleSiteDetailsSchema } from './multiple-site-details.js'
 import { siteNameFieldSchema } from '../../../shared/models/site-details/site-name.js'
 import { activityDatesSchema } from '../activity-dates.js'
@@ -48,26 +46,7 @@ export const siteDetailsSchema = joi
           otherwise: joi.forbidden()
         }),
         ...fileUploadConditionalSiteItemFields,
-        // Manual coordinate fields (conditional)
-        coordinatesEntry: joi.when('coordinatesType', {
-          is: 'coordinates',
-          then: coordinatesEntryFieldSchema,
-          otherwise: joi.forbidden()
-        }),
-        coordinateSystem: joi.when('coordinatesType', {
-          is: 'coordinates',
-          then: coordinateSystemFieldSchema,
-          otherwise: joi.forbidden()
-        }),
-        circleWidth: joi.when('coordinatesType', {
-          is: 'coordinates',
-          then: joi.alternatives().conditional('coordinatesEntry', {
-            is: 'single',
-            then: circleWidthValidationSchema,
-            otherwise: joi.forbidden()
-          }),
-          otherwise: joi.forbidden()
-        }),
+        ...manualCoordinatesConditionalSiteItemFields,
         coordinates: joi.when('coordinatesType', {
           is: 'coordinates',
           then: joi.alternatives().conditional('coordinatesEntry', {
