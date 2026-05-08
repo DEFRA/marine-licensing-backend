@@ -4,7 +4,10 @@ import {
   IN_PROGRESS,
   COMPLETED
 } from '../../../shared/helpers/task-list-utils.js'
-import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
+import {
+  mockFileUploadSite,
+  mockCircleSite
+} from '../../../../tests/test.fixture.js'
 import { createActivityDetails } from './create-empty-activity-details.js'
 
 const completedActivityDetails = [
@@ -187,6 +190,61 @@ describe('createTaskList', () => {
     }
 
     expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
+  describe('circle site (coordinatesType=coordinates, coordinatesEntry=single)', () => {
+    it('should return siteDetails as COMPLETED when all circle fields and activity details are present', () => {
+      const marineLicence = {
+        projectName: 'Test Project',
+        specialLegalPowers: 'Some powers',
+        otherAuthorities: 'Some authorities',
+        projectBackground: 'Some background',
+        publicRegister: 'Public Register Info',
+        siteDetails: [
+          { ...mockCircleSite, activityDetails: completedActivityDetails }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(COMPLETED)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when circle fields are present but activity details are missing', () => {
+      const marineLicence = {
+        siteDetails: [{ ...mockCircleSite, activityDetails: null }]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when circleWidth is missing', () => {
+      const siteWithoutCircleWidth = { ...mockCircleSite }
+      delete siteWithoutCircleWidth.circleWidth
+
+      const marineLicence = {
+        siteDetails: [
+          {
+            ...siteWithoutCircleWidth,
+            activityDetails: completedActivityDetails
+          }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+
+    it('should return siteDetails as INCOMPLETE when coordinatesEntry is unknown', () => {
+      const marineLicence = {
+        siteDetails: [
+          {
+            ...mockCircleSite,
+            coordinatesEntry: 'unknown',
+            activityDetails: completedActivityDetails
+          }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(INCOMPLETE)
+    })
   })
 
   it('should return all tasks as INCOMPLETE when marineLicence has no properties', () => {

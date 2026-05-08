@@ -83,6 +83,15 @@ export const mockFileUploadSite = {
   activityDetails: [createActivityDetails()]
 }
 
+export const mockCircleSite = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'single',
+  coordinateSystem: 'wgs84',
+  siteName: 'circle site 1',
+  coordinates: { latitude: '51.500000', longitude: '-0.100000' },
+  circleWidth: 100
+}
+
 export const createCompleteMarineLicence = (overrides = {}) => {
   const marineLicenceId = overrides._id || new ObjectId()
   const contactId =
