@@ -86,9 +86,9 @@ export const mockFileUploadSite = {
 export const mockCircleSite = {
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
-  coordinateSystem: 'WGS84',
+  coordinateSystem: 'wgs84',
   siteName: 'circle site 1',
-  coordinates: { latitude: 51.5, longitude: -0.1 },
+  coordinates: { latitude: '51.5', longitude: '-0.1' },
   circleWidth: 100
 }
 
