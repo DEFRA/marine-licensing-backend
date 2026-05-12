@@ -634,6 +634,51 @@ describe('GeoParser', () => {
       properties: {}
     }
 
+    const geometryCollectionWithPointFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'GeometryCollection',
+        geometries: [
+          {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-0.1, 51.5],
+                [-0.2, 51.5],
+                [-0.2, 51.6],
+                [-0.1, 51.6],
+                [-0.1, 51.5]
+              ]
+            ]
+          },
+          { type: 'Point', coordinates: [-0.3, 51.7] }
+        ]
+      },
+      properties: {}
+    }
+
+    const nestedGeometryCollectionWithLineFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'GeometryCollection',
+        geometries: [
+          {
+            type: 'GeometryCollection',
+            geometries: [
+              {
+                type: 'LineString',
+                coordinates: [
+                  [-0.1, 51.5],
+                  [-0.2, 51.6]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      properties: {}
+    }
+
     it('should pass when FeatureCollection contains only polygon features', () => {
       const geoJSON = {
         type: 'FeatureCollection',
@@ -693,6 +738,28 @@ describe('GeoParser', () => {
       const geoJSON = {
         type: 'FeatureCollection',
         features: [polygonFeature, multiLineStringFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should throw when GeometryCollection contains a Point', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, geometryCollectionWithPointFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should throw when nested GeometryCollection contains a LineString', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, nestedGeometryCollectionWithLineFeature]
       }
 
       expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(

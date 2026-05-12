@@ -17,6 +17,30 @@ const INVALID_FEATURE_GEOMETRY_TYPES = new Set([
   'MultiLineString'
 ])
 
+function findInvalidGeometryType(geometry) {
+  if (!geometry || typeof geometry !== 'object') {
+    return null
+  }
+
+  if (INVALID_FEATURE_GEOMETRY_TYPES.has(geometry.type)) {
+    return geometry.type
+  }
+
+  if (
+    geometry.type === 'GeometryCollection' &&
+    Array.isArray(geometry.geometries)
+  ) {
+    for (const childGeometry of geometry.geometries) {
+      const invalidType = findInvalidGeometryType(childGeometry)
+      if (invalidType) {
+        return invalidType
+      }
+    }
+  }
+
+  return null
+}
+
 export class GeoParser {
   processingTimeout = 30_000 // 30 seconds
   memoryLimit = 524_288_000 // 500MB in bytes
@@ -184,10 +208,10 @@ export class GeoParser {
     }
 
     for (const feature of features) {
-      const geometryType = feature?.geometry?.type
-      if (INVALID_FEATURE_GEOMETRY_TYPES.has(geometryType)) {
+      const invalidGeometryType = findInvalidGeometryType(feature?.geometry)
+      if (invalidGeometryType) {
         logger.warn(
-          `${this.logSystem}: Validation failed - feature contains invalid geometry type '${geometryType}'; only polygon sites are permitted`
+          `${this.logSystem}: Validation failed - feature contains invalid geometry type '${invalidGeometryType}'; only polygon sites are permitted`
         )
         throw new Error(GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE)
       }
