@@ -35,6 +35,13 @@ describe('iatAnswersIdParams', () => {
     })
     expect(error?.details[0].message).toBe('IAT_ANSWERS_ID_REQUIRED')
   })
+
+  it('rejects 24-char non-hex id with IAT_ANSWERS_ID_INVALID', () => {
+    const { error } = iatAnswersIdParams.validate({
+      id: 'zzzzzzzzzzzzzzzzzzzzzzzz'
+    })
+    expect(error?.details[0].message).toBe('IAT_ANSWERS_ID_INVALID')
+  })
 })
 
 describe('iatAnswersBody', () => {
