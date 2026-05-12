@@ -38,6 +38,8 @@ describe('getIatAnswersController', () => {
         })
       })
     )
+    const responseValue = global.mockHandler.response.mock.calls[0][0].value
+    expect(responseValue).not.toHaveProperty('_id')
     expect(global.mockHandler.code).toHaveBeenCalledWith(200)
   })
 
