@@ -8,6 +8,7 @@ const MAX_NORTHINGS_LENGTH = 9999999
 
 const validateCoordinates = (value, helpers, type) => {
   const coordinate = Number(value)
+
   if (Number.isNaN(coordinate)) {
     return helpers.error('number.base')
   }
@@ -17,14 +18,14 @@ const validateCoordinates = (value, helpers, type) => {
   }
 
   if (
-    type === 'eastings' &&
+    type === 'easting' &&
     (coordinate < MIN_EASTINGS_LENGTH || coordinate > MAX_EASTINGS_LENGTH)
   ) {
     return helpers.error('number.range')
   }
 
   if (
-    type === 'northings' &&
+    type === 'northing' &&
     (coordinate < MIN_NORTHINGS_LENGTH || coordinate > MAX_NORTHINGS_LENGTH)
   ) {
     return helpers.error('number.range')
@@ -33,39 +34,35 @@ const validateCoordinates = (value, helpers, type) => {
   return value
 }
 
-// Single coordinate validation schema
 export const osgb36ValidationSchema = joi.object({
-  eastings: joi
+  easting: joi
     .string()
     .required()
     .pattern(/^-?[0-9.]+$/)
-    .custom((value, helpers) => validateCoordinates(value, helpers, 'eastings'))
+    .custom((value, helpers) => validateCoordinates(value, helpers, 'easting'))
     .messages({
-      'string.empty': 'EASTINGS_REQUIRED',
-      'string.pattern.base': 'EASTINGS_NON_NUMERIC',
-      'number.base': 'EASTINGS_NON_NUMERIC',
-      'number.positive': 'EASTINGS_POSITIVE_NUMBER',
-      'number.range': 'EASTINGS_LENGTH',
-      'any.required': 'EASTINGS_REQUIRED'
+      'string.empty': 'EASTING_REQUIRED',
+      'any.required': 'EASTING_REQUIRED',
+      'string.pattern.base': 'EASTING_NON_NUMERIC',
+      'number.base': 'EASTING_NON_NUMERIC',
+      'number.positive': 'EASTING_POSITIVE_NUMBER',
+      'number.range': 'EASTING_LENGTH'
     }),
-  northings: joi
+  northing: joi
     .string()
     .required()
     .pattern(/^-?[0-9.]+$/)
-    .custom((value, helpers) =>
-      validateCoordinates(value, helpers, 'northings')
-    )
+    .custom((value, helpers) => validateCoordinates(value, helpers, 'northing'))
     .messages({
-      'string.empty': 'NORTHINGS_REQUIRED',
-      'string.pattern.base': 'NORTHINGS_NON_NUMERIC',
-      'number.base': 'NORTHINGS_NON_NUMERIC',
-      'number.positive': 'NORTHINGS_POSITIVE_NUMBER',
-      'number.range': 'NORTHINGS_LENGTH',
-      'any.required': 'NORTHINGS_REQUIRED'
+      'string.empty': 'NORTHING_REQUIRED',
+      'any.required': 'NORTHING_REQUIRED',
+      'string.pattern.base': 'NORTHING_NON_NUMERIC',
+      'number.base': 'NORTHING_NON_NUMERIC',
+      'number.positive': 'NORTHING_POSITIVE_NUMBER',
+      'number.range': 'NORTHING_LENGTH'
     })
 })
 
-// Multiple coordinates validation schema (array of coordinate objects)
 export const osgb36MultipleValidationSchema = joi
   .array()
   .items(osgb36ValidationSchema)

@@ -240,16 +240,16 @@ const _testExemptions = [
           coordinateSystem: 'osgb36',
           coordinates: [
             {
-              eastings: '402265',
-              northings: '187084'
+              easting: '402265',
+              northing: '187084'
             },
             {
-              eastings: '402260',
-              northings: '186891'
+              easting: '402260',
+              northing: '186891'
             },
             {
-              eastings: '402255',
-              northings: '186878'
+              easting: '402255',
+              northing: '186878'
             }
           ]
         }
@@ -546,8 +546,8 @@ const _testExemptions = [
           coordinatesEntry: 'single',
           coordinateSystem: 'osgb36',
           coordinates: {
-            eastings: '438356',
-            northings: '569035'
+            easting: '438356',
+            northing: '569035'
           },
           circleWidth: '150'
         }

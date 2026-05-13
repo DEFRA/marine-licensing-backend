@@ -6,7 +6,8 @@ import {
 } from '../../../shared/helpers/task-list-utils.js'
 import {
   mockFileUploadSite,
-  mockCircleSite
+  mockCircleSite,
+  mockMultipleSite
 } from '../../../../tests/test.fixture.js'
 import { createActivityDetails } from './create-empty-activity-details.js'
 
@@ -244,6 +245,84 @@ describe('createTaskList', () => {
       }
 
       expect(createTaskList(marineLicence).siteDetails).toBe(INCOMPLETE)
+    })
+  })
+
+  describe('multiple coordinate site (coordinatesType=coordinates, coordinatesEntry=multiple)', () => {
+    it('should return siteDetails as COMPLETED when all fields, valid coordinates, and activity details are present', () => {
+      const marineLicence = {
+        siteDetails: [
+          { ...mockMultipleSite, activityDetails: completedActivityDetails }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(COMPLETED)
+    })
+
+    it('should return siteDetails as INCOMPLETE when no fields are present', () => {
+      const marineLicence = {
+        siteDetails: [
+          {
+            coordinatesType: 'coordinates',
+            coordinatesEntry: 'multiple'
+          }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(INCOMPLETE)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when some required fields are missing', () => {
+      const siteWithoutSiteName = { ...mockMultipleSite }
+      delete siteWithoutSiteName.siteName
+
+      const marineLicence = {
+        siteDetails: [
+          { ...siteWithoutSiteName, activityDetails: completedActivityDetails }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when coordinates array has fewer than 3 points', () => {
+      const marineLicence = {
+        siteDetails: [
+          {
+            ...mockMultipleSite,
+            coordinates: [
+              { latitude: '51.5', longitude: '-0.1' },
+              { latitude: '51.6', longitude: '-0.2' }
+            ],
+            activityDetails: completedActivityDetails
+          }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when activity details are missing', () => {
+      const marineLicence = {
+        siteDetails: [{ ...mockMultipleSite, activityDetails: null }]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when activity details are incomplete', () => {
+      const marineLicence = {
+        siteDetails: [
+          {
+            ...mockMultipleSite,
+            activityDetails: [
+              { ...completedActivityDetails[0], workingHours: '' }
+            ]
+          }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
     })
   })
 

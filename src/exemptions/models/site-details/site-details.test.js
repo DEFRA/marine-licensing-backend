@@ -386,7 +386,7 @@ describe('#siteDetails schema', () => {
           }
         ]
       })
-      expect(result.error.message).toBe('EASTINGS_REQUIRED')
+      expect(result.error.message).toBe('EASTING_REQUIRED')
     })
 
     test('Should correctly errors when incorrect coordinates WGS84', () => {
@@ -395,7 +395,7 @@ describe('#siteDetails schema', () => {
         siteDetails: [
           {
             ...mockSiteDetails[0],
-            coordinates: { eastings: '123456', northings: '123456' }
+            coordinates: { easting: '123456', northing: '123456' }
           }
         ]
       })
@@ -623,15 +623,15 @@ describe('#siteDetails schema', () => {
           {
             ...mockOsgb36MultipleCoordinatesRequest.siteDetails[0],
             coordinates: [
-              { eastings: '-1', northings: '476895' }, // Below minimum
-              { eastings: '514040', northings: '476693' },
-              { eastings: '514193', northings: '476835' }
+              { easting: '-1', northing: '476895' }, // Below minimum
+              { easting: '514040', northing: '476693' },
+              { easting: '514193', northing: '476835' }
             ]
           }
         ]
       }
       const result = siteDetailsSchema.validate(invalidRequest)
-      expect(result.error.message).toBe('EASTINGS_POSITIVE_NUMBER')
+      expect(result.error.message).toBe('EASTING_POSITIVE_NUMBER')
     })
 
     test('Should reject multiple coordinates when circleWidth is provided', () => {
