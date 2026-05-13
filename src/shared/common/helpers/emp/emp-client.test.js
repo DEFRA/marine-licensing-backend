@@ -57,12 +57,12 @@ describe('Emp Client', () => {
           coordinateSystem: 'osgb36',
           coordinates: [
             {
-              eastings: '400780',
-              northings: '087555'
+              easting: '400780',
+              northing: '087555'
             },
             {
-              eastings: '400604',
-              northings: '087356'
+              easting: '400604',
+              northing: '087356'
             }
           ]
         }
