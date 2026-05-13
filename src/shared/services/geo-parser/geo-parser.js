@@ -17,7 +17,20 @@ const INVALID_FEATURE_GEOMETRY_TYPES = new Set([
   'MultiLineString'
 ])
 
-function findInvalidGeometryType(geometry) {
+/** Max recursion depth for nested GeometryCollections (RFC 7946 §3.1.8). */
+const MAX_GEOMETRY_COLLECTION_DEPTH = 20
+
+/**
+ * @param {object|null|undefined} geometry
+ * @param {number} depth
+ * @returns {string|null} invalid primitive type, or null if allowed
+ * @throws {Error} GEO_PARSER_ERROR_CODES.GEOMETRY_NESTING_TOO_DEEP if depth exceeded
+ */
+function findInvalidGeometryType(geometry, depth = 0) {
+  if (depth > MAX_GEOMETRY_COLLECTION_DEPTH) {
+    throw new Error(GEO_PARSER_ERROR_CODES.GEOMETRY_NESTING_TOO_DEEP)
+  }
+
   if (!geometry || typeof geometry !== 'object') {
     return null
   }
@@ -31,7 +44,7 @@ function findInvalidGeometryType(geometry) {
     Array.isArray(geometry.geometries)
   ) {
     for (const childGeometry of geometry.geometries) {
-      const invalidType = findInvalidGeometryType(childGeometry)
+      const invalidType = findInvalidGeometryType(childGeometry, depth + 1)
       if (invalidType) {
         return invalidType
       }
@@ -198,6 +211,8 @@ export class GeoParser {
    * @param {object} geoJSON - parsed GeoJSON FeatureCollection or Feature
    * @throws {Error} with code FEATURES_CONTAIN_POINT_OR_LINE if any feature
    *   has a point or line geometry
+   * @throws {Error} with code GEOMETRY_NESTING_TOO_DEEP if GeometryCollection
+   *   nesting exceeds the configured maximum depth
    */
   validateFeatureGeometryTypes(geoJSON) {
     const features =
@@ -208,7 +223,7 @@ export class GeoParser {
     }
 
     for (const feature of features) {
-      const invalidGeometryType = findInvalidGeometryType(feature?.geometry)
+      const invalidGeometryType = findInvalidGeometryType(feature?.geometry, 0)
       if (invalidGeometryType) {
         logger.warn(
           `${this.logSystem}: Validation failed - feature contains invalid geometry type '${invalidGeometryType}'; only polygon sites are permitted`

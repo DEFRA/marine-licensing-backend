@@ -767,6 +767,32 @@ describe('GeoParser', () => {
       )
     })
 
+    const nestGeometryCollections = (wrapperCount, innerGeometry) => {
+      let geometry = innerGeometry
+      for (let i = 0; i < wrapperCount; i++) {
+        geometry = { type: 'GeometryCollection', geometries: [geometry] }
+      }
+      return geometry
+    }
+
+    it('should pass when GeometryCollection nesting is at the depth limit', () => {
+      const geometry = nestGeometryCollections(20, polygonFeature.geometry)
+      const feature = { type: 'Feature', geometry, properties: {} }
+      const geoJSON = { type: 'FeatureCollection', features: [feature] }
+
+      expect(geoParser.validateFeatureGeometryTypes(geoJSON)).toBe(true)
+    })
+
+    it('should throw GEOMETRY_NESTING_TOO_DEEP when GeometryCollection nesting exceeds limit', () => {
+      const geometry = nestGeometryCollections(21, polygonFeature.geometry)
+      const feature = { type: 'Feature', geometry, properties: {} }
+      const geoJSON = { type: 'FeatureCollection', features: [feature] }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.GEOMETRY_NESTING_TOO_DEEP
+      )
+    })
+
     it('should throw when single Feature is a Point', () => {
       expect(() =>
         geoParser.validateFeatureGeometryTypes(pointFeature)
