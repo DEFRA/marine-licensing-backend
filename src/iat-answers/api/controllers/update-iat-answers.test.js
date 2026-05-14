@@ -65,4 +65,34 @@ describe('updateIatAnswersController', () => {
     ).rejects.toMatchObject({ output: { statusCode: 404 } })
     expect(replaceOne).not.toHaveBeenCalled()
   })
+
+  it('sanitises outcome.summaryText before replaceOne', async () => {
+    const existingCreatedAt = new Date('2026-01-01T00:00:00Z')
+    findOne.mockResolvedValue({
+      _id: '507f1f77bcf86cd799439011',
+      createdAt: existingCreatedAt,
+      createdBy: 'first-user'
+    })
+    replaceOne.mockResolvedValue({})
+
+    const dirtyPayload = {
+      ...validPayload,
+      outcome: {
+        ...validPayload.outcome,
+        summaryText:
+          '<p>updated</p><script>alert(1)</script><a href="javascript:bad">x</a>'
+      }
+    }
+
+    await updateIatAnswersController.handler(
+      buildRequest({ payload: dirtyPayload }),
+      global.mockHandler
+    )
+
+    const replacement = replaceOne.mock.calls[0][1]
+    expect(replacement.outcome.summaryText).toBe('<p>updated</p><a>x</a>')
+    // Audit invariants still hold.
+    expect(replacement.createdAt).toBe(existingCreatedAt)
+    expect(replacement.createdBy).toBe('first-user')
+  })
 })

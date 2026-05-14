@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb'
 import { iatAnswersBody, iatAnswersIdParams } from '../../models/iat-answers.js'
 import { addUpdateAuditFieldsOptional } from '../../../shared/common/helpers/mongo-audit.js'
 import { collectionIatAnswers } from '../../../shared/common/constants/db-collections.js'
+import { sanitiseSummaryText } from '../helpers/sanitise-summary-text.js'
 
 const PAYLOAD_MAX_BYTES = 32 * 1024
 
@@ -27,8 +28,16 @@ export const updateIatAnswersController = {
         throw Boom.notFound('IAT answers not found')
       }
 
+      const sanitisedPayload = {
+        ...payload,
+        outcome: {
+          ...payload.outcome,
+          summaryText: sanitiseSummaryText(payload.outcome.summaryText)
+        }
+      }
+
       const updated = {
-        ...addUpdateAuditFieldsOptional(auth, payload),
+        ...addUpdateAuditFieldsOptional(auth, sanitisedPayload),
         createdAt: existing.createdAt,
         createdBy: existing.createdBy
       }
