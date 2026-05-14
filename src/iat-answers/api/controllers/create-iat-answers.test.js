@@ -70,4 +70,29 @@ describe('createIatAnswersController', () => {
       createIatAnswersController.handler(buildRequest(), global.mockHandler)
     ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
   })
+
+  it('sanitises outcome.summaryText before insertOne', async () => {
+    insertOne.mockResolvedValue({ insertedId: { toString: () => 'sanid' } })
+
+    const dirtyPayload = {
+      ...validPayload,
+      outcome: {
+        ...validPayload.outcome,
+        summaryText:
+          '<p>ok</p><script>alert(1)</script><a href="javascript:bad">x</a>'
+      }
+    }
+
+    await createIatAnswersController.handler(
+      buildRequest({ payload: dirtyPayload }),
+      global.mockHandler
+    )
+
+    const inserted = insertOne.mock.calls[0][0]
+    expect(inserted.outcome.summaryText).toBe('<p>ok</p><a>x</a>')
+    // The rest of the payload is left alone — only summaryText is sanitised.
+    expect(inserted.outcome.route).toBe(validPayload.outcome.route)
+    expect(inserted.outcome.typeId).toBe(validPayload.outcome.typeId)
+    expect(inserted.answers).toEqual(validPayload.answers)
+  })
 })
