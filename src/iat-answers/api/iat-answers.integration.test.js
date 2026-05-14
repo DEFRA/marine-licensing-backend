@@ -170,4 +170,46 @@ describe('/iat-answers contract — integration tests', async () => {
       expect(getRes3.statusCode).toBe(404)
     })
   }
+
+  test('POST sanitises malicious HTML in outcome.summaryText; GET returns clean data', async () => {
+    const server = getServer()
+
+    const maliciousPayload = {
+      outcome: {
+        route: '/outcome/scaffolding-impede-navigation',
+        typeId: '/outcome/scaffolding-impede-navigation',
+        summaryText:
+          '<p>ok</p>' +
+          '<script>alert(1)</script>' +
+          '<a href="javascript:alert(1)">x</a>'
+      },
+      answers: [
+        {
+          questionRoute: '/q1',
+          questionText: 'Q1?',
+          answers: [{ id: 'a1', text: 'A1' }]
+        }
+      ]
+    }
+
+    // POST: create with malicious content
+    const postRes = await server.inject({
+      method: 'POST',
+      url: '/iat-answers',
+      payload: maliciousPayload
+    })
+    expect(postRes.statusCode).toBe(201)
+    const id = JSON.parse(postRes.payload).value.id
+
+    // GET: fetched doc has clean summaryText
+    const getRes = await server.inject({
+      method: 'GET',
+      url: `/iat-answers/${id}`
+    })
+    expect(getRes.statusCode).toBe(200)
+    const doc = JSON.parse(getRes.payload).value
+    expect(doc.outcome.summaryText).toBe('<p>ok</p><a>x</a>')
+    expect(doc.outcome.summaryText).not.toContain('<script>')
+    expect(doc.outcome.summaryText).not.toContain('javascript:')
+  })
 })
