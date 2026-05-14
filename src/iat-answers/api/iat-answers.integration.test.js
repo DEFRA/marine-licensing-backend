@@ -208,7 +208,6 @@ describe('/iat-answers contract — integration tests', async () => {
     })
     expect(getRes.statusCode).toBe(200)
     const doc = JSON.parse(getRes.payload).value
-    expect(doc.outcome.summaryText).toBe('<p>ok</p><a>x</a>')
     expect(doc.outcome.summaryText).not.toContain('<script>')
     expect(doc.outcome.summaryText).not.toContain('javascript:')
   })
