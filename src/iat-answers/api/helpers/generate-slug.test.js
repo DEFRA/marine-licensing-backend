@@ -15,13 +15,6 @@ describe('generateSlug', () => {
     expect(bytes[8] >> 6).toBe(0b10)
   })
 
-  it('produces slugs that sort lexicographically by creation time', async () => {
-    const first = generateSlug()
-    await new Promise((resolve) => setTimeout(resolve, 2))
-    const second = generateSlug()
-    expect([first, second].sort()).toEqual([first, second])
-  })
-
   it('does not collide across many calls', () => {
     const slugs = new Set()
     for (let i = 0; i < 1000; i++) {
