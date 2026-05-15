@@ -88,8 +88,20 @@ export const mockCircleSite = {
   coordinatesEntry: 'single',
   coordinateSystem: 'wgs84',
   siteName: 'circle site 1',
-  coordinates: { latitude: '51.500000', longitude: '-0.100000' },
+  coordinates: { latitude: '51.5', longitude: '-0.1' },
   circleWidth: 100
+}
+
+export const mockMultipleSite = {
+  coordinatesType: 'coordinates',
+  coordinatesEntry: 'multiple',
+  coordinateSystem: 'wgs84',
+  siteName: 'multiple site 1',
+  coordinates: [
+    { latitude: '51.5', longitude: '-0.1' },
+    { latitude: '51.6', longitude: '-0.2' },
+    { latitude: '51.7', longitude: '-0.3' }
+  ]
 }
 
 export const createCompleteMarineLicence = (overrides = {}) => {

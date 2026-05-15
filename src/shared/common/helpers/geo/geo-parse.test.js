@@ -83,8 +83,8 @@ describe('geo-parse', () => {
       const result = convertSingleCoordinates(mockSiteOSGB36)
 
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
-        eastings: '513967',
-        northings: '476895'
+        easting: '513967',
+        northing: '476895'
       })
       expect(generateCirclePolygon).toHaveBeenCalledWith({
         latitude: mockConvertedLatitude,
@@ -136,16 +136,16 @@ describe('geo-parse', () => {
 
       expect(singleOSGB36toWGS84).toHaveBeenCalledTimes(4)
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
-        eastings: '513967',
-        northings: '476895'
+        easting: '513967',
+        northing: '476895'
       })
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
-        eastings: '514040',
-        northings: '476693'
+        easting: '514040',
+        northing: '476693'
       })
       expect(singleOSGB36toWGS84).toHaveBeenCalledWith({
-        eastings: '514193',
-        northings: '476835'
+        easting: '514193',
+        northing: '476835'
       })
 
       expect(result).toEqual([

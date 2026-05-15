@@ -28,7 +28,7 @@ const mockOsgb36SingleSiteItem = {
   coordinatesType: 'coordinates',
   coordinatesEntry: 'single',
   coordinateSystem: 'osgb36',
-  coordinates: { eastings: '530000', northings: '181000' },
+  coordinates: { easting: '530000', northing: '181000' },
   circleWidth: '50'
 }
 

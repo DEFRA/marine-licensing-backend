@@ -184,9 +184,9 @@ describe('createTaskList', () => {
           coordinatesEntry: 'multiple',
           coordinateSystem: COORDINATE_SYSTEMS.OSGB36,
           coordinates: [
-            { eastings: '513967', northings: '476895' },
-            { eastings: '514040', northings: '476693' },
-            { eastings: '514193', northings: '476835' }
+            { easting: '513967', northing: '476895' },
+            { easting: '514040', northing: '476693' },
+            { easting: '514193', northing: '476835' }
           ],
           activityDates: { start: '2024-01-01', end: '2024-12-31' },
           activityDescription: 'Test description'
