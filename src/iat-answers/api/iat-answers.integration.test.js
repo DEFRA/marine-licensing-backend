@@ -5,25 +5,19 @@ import { collectionIatAnswers } from '../../shared/common/constants/db-collectio
  * Cross-repo contract test for the /iat-answers routes.
  *
  * The frontend payload-builder emits the `outcome` object in three distinct
- * shapes depending on the outcome classification (intermediate / terminal-
- * single / terminal-multi). All three shapes use non-empty fallbacks for
- * `typeId` and `summaryText`. This test locks in that each of those shapes
- * round-trips cleanly through the full HTTP lifecycle:
+ * shapes (intermediate / terminal-single / terminal-multi). All three shapes
+ * use non-empty fallbacks for `typeId` and `summaryText`. This test locks in
+ * that each round-trips cleanly:
  *
- *   POST   /iat-answers          -> 201 + { id }
- *   GET    /iat-answers/{id}     -> 200 + document (id is string, no _id)
- *   PUT    /iat-answers/{id}     -> 200, createdAt/createdBy preserved
- *   GET    /iat-answers/{id}     -> 200, updated outcome.summaryText
- *   DELETE /iat-answers/{id}     -> 204
- *   GET    /iat-answers/{id}     -> 404
+ *   POST   /iat-answers          -> 201 + { slug }
+ *   GET    /iat-answers/{slug}   -> 200 + document (no _id; slug present)
  *
- * It exercises the real Joi schema, real handler logic, and the in-memory
- * MongoDB instance. If Joi were tightened in a way that rejected the three
- * shapes the frontend currently emits, the POST step would return 400 and
- * this test would fail.
+ * Append-only model: there are no PUT or DELETE routes. Repeated POSTs of
+ * the same payload mint distinct slugs and leave both documents in place.
  */
 
-// Shape 1 — intermediate outcome with a session-stashed outcomeTypeId.
+const SLUG_PATTERN = /^[A-Za-z0-9_-]{22}$/
+
 const intermediatePayload = {
   outcome: {
     route: '/section-2/intermediate-question',
@@ -47,7 +41,6 @@ const intermediatePayload = {
   ]
 }
 
-// Shape 2 — terminal-single outcome (one outcomeType, frontend derives typeId from it).
 const terminalSinglePayload = {
   outcome: {
     route: '/outcome/not-licensable',
@@ -63,8 +56,6 @@ const terminalSinglePayload = {
   ]
 }
 
-// Shape 3 — terminal-multi outcome (no single outcomeType, frontend uses
-// outcomeRoute as the typeId sentinel and outcome.heading as summaryText).
 const terminalMultiPayload = {
   outcome: {
     route: '/outcome/scaffolding-impede-navigation',
@@ -90,86 +81,82 @@ describe('/iat-answers contract — integration tests', async () => {
   const getServer = await setupTestServer()
 
   beforeEach(async () => {
-    // setup-files.js only resets exemptions + marine-licences; clear our
-    // collection explicitly so each round-trip starts from an empty state.
     await globalThis.mockMongo.collection(collectionIatAnswers).deleteMany({})
   })
 
   for (const [label, payload] of cases) {
-    test(`round-trips POST -> GET -> PUT -> GET -> DELETE -> GET (404) for ${label}`, async () => {
+    test(`POST then GET round-trips for ${label}`, async () => {
       const server = getServer()
 
-      // POST: create
       const postRes = await server.inject({
         method: 'POST',
         url: '/iat-answers',
         payload
       })
       expect(postRes.statusCode).toBe(201)
-      const postBody = JSON.parse(postRes.payload)
-      const id = postBody.value.id
-      expect(id).toMatch(/^[0-9a-f]{24}$/)
+      const { slug } = JSON.parse(postRes.payload).value
+      expect(slug).toMatch(SLUG_PATTERN)
 
-      // GET: fetch the created doc
       const getRes = await server.inject({
         method: 'GET',
-        url: `/iat-answers/${id}`
+        url: `/iat-answers/${slug}`
       })
       expect(getRes.statusCode).toBe(200)
-      const getDoc = JSON.parse(getRes.payload).value
-      expect(getDoc.id).toBe(id)
-      expect(getDoc._id).toBeUndefined()
-      expect(getDoc.outcome).toEqual(payload.outcome)
-      expect(getDoc.answers).toEqual(payload.answers)
-      // Unauthenticated path -> optional contactId is null.
-      expect(getDoc.createdBy).toBeNull()
-      expect(getDoc.updatedBy).toBeNull()
-      expect(typeof getDoc.createdAt).toBe('string')
-      expect(typeof getDoc.updatedAt).toBe('string')
-      const originalCreatedAt = getDoc.createdAt
-
-      // PUT: replace, mutating summaryText so we can prove the update landed.
-      const updatedPayload = {
-        ...payload,
-        outcome: { ...payload.outcome, summaryText: 'Updated text' }
-      }
-      const putRes = await server.inject({
-        method: 'PUT',
-        url: `/iat-answers/${id}`,
-        payload: updatedPayload
-      })
-      expect(putRes.statusCode).toBe(200)
-
-      // GET: verify the PUT and that createdAt/createdBy are preserved.
-      const getRes2 = await server.inject({
-        method: 'GET',
-        url: `/iat-answers/${id}`
-      })
-      expect(getRes2.statusCode).toBe(200)
-      const getDoc2 = JSON.parse(getRes2.payload).value
-      expect(getDoc2.id).toBe(id)
-      expect(getDoc2.outcome.summaryText).toBe('Updated text')
-      expect(getDoc2.outcome.route).toBe(payload.outcome.route)
-      expect(getDoc2.outcome.typeId).toBe(payload.outcome.typeId)
-      expect(getDoc2.createdAt).toBe(originalCreatedAt)
-      expect(getDoc2.createdBy).toBeNull()
-
-      // DELETE: remove the doc.
-      const delRes = await server.inject({
-        method: 'DELETE',
-        url: `/iat-answers/${id}`
-      })
-      expect(delRes.statusCode).toBe(204)
-      expect(delRes.payload).toBe('')
-
-      // GET: now 404.
-      const getRes3 = await server.inject({
-        method: 'GET',
-        url: `/iat-answers/${id}`
-      })
-      expect(getRes3.statusCode).toBe(404)
+      const doc = JSON.parse(getRes.payload).value
+      expect(doc.slug).toBe(slug)
+      expect(doc._id).toBeUndefined()
+      expect(doc.outcome).toEqual(payload.outcome)
+      expect(doc.answers).toEqual(payload.answers)
+      expect(doc.createdBy).toBeNull()
+      expect(typeof doc.createdAt).toBe('string')
     })
   }
+
+  test('append-only: repeated POST of the same payload mints distinct slugs and both docs survive', async () => {
+    const server = getServer()
+
+    const firstRes = await server.inject({
+      method: 'POST',
+      url: '/iat-answers',
+      payload: terminalSinglePayload
+    })
+    const firstSlug = JSON.parse(firstRes.payload).value.slug
+
+    const secondRes = await server.inject({
+      method: 'POST',
+      url: '/iat-answers',
+      payload: terminalSinglePayload
+    })
+    const secondSlug = JSON.parse(secondRes.payload).value.slug
+
+    expect(secondSlug).not.toBe(firstSlug)
+
+    for (const slug of [firstSlug, secondSlug]) {
+      const getRes = await server.inject({
+        method: 'GET',
+        url: `/iat-answers/${slug}`
+      })
+      expect(getRes.statusCode).toBe(200)
+    }
+  })
+
+  test('GET with a malformed slug returns 400 (Joi)', async () => {
+    const server = getServer()
+    const res = await server.inject({
+      method: 'GET',
+      url: '/iat-answers/not-a-valid-slug'
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  test('GET with a 24-hex ObjectId-shaped string is rejected by Joi (length 24 ≠ 22)', async () => {
+    const server = getServer()
+    const res = await server.inject({
+      method: 'GET',
+      url: '/iat-answers/65a4f3c8b2d1e0a7c4b59f3e'
+    })
+    expect(res.statusCode).toBe(400)
+  })
 
   test('POST sanitises malicious HTML in outcome.summaryText; GET returns clean data', async () => {
     const server = getServer()
@@ -192,19 +179,17 @@ describe('/iat-answers contract — integration tests', async () => {
       ]
     }
 
-    // POST: create with malicious content
     const postRes = await server.inject({
       method: 'POST',
       url: '/iat-answers',
       payload: maliciousPayload
     })
     expect(postRes.statusCode).toBe(201)
-    const id = JSON.parse(postRes.payload).value.id
+    const slug = JSON.parse(postRes.payload).value.slug
 
-    // GET: fetched doc has clean summaryText
     const getRes = await server.inject({
       method: 'GET',
-      url: `/iat-answers/${id}`
+      url: `/iat-answers/${slug}`
     })
     expect(getRes.statusCode).toBe(200)
     const doc = JSON.parse(getRes.payload).value

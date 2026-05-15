@@ -1,12 +1,17 @@
 import joi from 'joi'
 
-export const iatAnswersIdParams = joi.object({
-  id: joi.string().length(24).hex().required().messages({
-    'string.empty': 'IAT_ANSWERS_ID_REQUIRED',
-    'string.length': 'IAT_ANSWERS_ID_REQUIRED',
-    'string.hex': 'IAT_ANSWERS_ID_INVALID',
-    'any.required': 'IAT_ANSWERS_ID_REQUIRED'
-  })
+export const iatAnswersSlugParams = joi.object({
+  slug: joi
+    .string()
+    .length(22)
+    .pattern(/^[A-Za-z0-9_-]{22}$/)
+    .required()
+    .messages({
+      'string.empty': 'IAT_ANSWERS_SLUG_REQUIRED',
+      'string.length': 'IAT_ANSWERS_SLUG_INVALID',
+      'string.pattern.base': 'IAT_ANSWERS_SLUG_INVALID',
+      'any.required': 'IAT_ANSWERS_SLUG_REQUIRED'
+    })
 })
 
 const answerItem = joi.object({

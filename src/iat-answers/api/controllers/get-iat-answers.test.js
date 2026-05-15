@@ -1,9 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { ObjectId } from 'mongodb'
 import { getIatAnswersController } from './get-iat-answers.js'
 
+const TEST_SLUG = 'AZ4rr6bLclCVUsE2Pl_zKw'
+
 const buildRequest = () => ({
-  params: { id: '507f1f77bcf86cd799439011' },
+  params: { slug: TEST_SLUG },
   db: global.mockMongo
 })
 
@@ -16,9 +17,9 @@ describe('getIatAnswersController', () => {
   })
 
   it('returns the document on hit', async () => {
-    const docId = new ObjectId('507f1f77bcf86cd799439011')
     findOne.mockResolvedValue({
-      _id: docId,
+      _id: 'internal-mongo-id',
+      slug: TEST_SLUG,
       outcome: { route: '/o', typeId: 't', summaryText: 's' },
       answers: [],
       createdAt: new Date(),
@@ -29,11 +30,14 @@ describe('getIatAnswersController', () => {
 
     await getIatAnswersController.handler(buildRequest(), global.mockHandler)
 
+    expect(global.mockMongo.collection).toHaveBeenCalledWith('iat-answers')
+    expect(findOne).toHaveBeenCalledWith({ slug: TEST_SLUG })
+
     expect(global.mockHandler.response).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'success',
         value: expect.objectContaining({
-          id: docId.toString(),
+          slug: TEST_SLUG,
           outcome: { route: '/o', typeId: 't', summaryText: 's' }
         })
       })
