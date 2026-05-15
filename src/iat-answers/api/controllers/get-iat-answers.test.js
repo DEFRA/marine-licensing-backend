@@ -53,4 +53,11 @@ describe('getIatAnswersController', () => {
       getIatAnswersController.handler(buildRequest(), global.mockHandler)
     ).rejects.toMatchObject({ output: { statusCode: 404 } })
   })
+
+  it('rethrows non-Boom database errors as Boom.internal', async () => {
+    findOne.mockRejectedValue(new Error('db error'))
+    await expect(
+      getIatAnswersController.handler(buildRequest(), global.mockHandler)
+    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
+  })
 })

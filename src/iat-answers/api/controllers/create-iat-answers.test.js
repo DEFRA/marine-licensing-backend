@@ -127,4 +127,15 @@ describe('createIatAnswersController', () => {
       createIatAnswersController.handler(buildRequest(), global.mockHandler)
     ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
   })
+
+  it('rethrows as Boom.internal when both insertOne calls fail with E11000', async () => {
+    const duplicateError = Object.assign(new Error('E11000 duplicate key'), {
+      code: 11000
+    })
+    insertOne.mockRejectedValue(duplicateError)
+    await expect(
+      createIatAnswersController.handler(buildRequest(), global.mockHandler)
+    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
+    expect(insertOne).toHaveBeenCalledTimes(2)
+  })
 })
