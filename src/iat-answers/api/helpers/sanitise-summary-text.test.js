@@ -36,4 +36,9 @@ describe('sanitiseSummaryText', () => {
     const twice = sanitiseSummaryText(once)
     expect(twice).toBe(once)
   })
+
+  test('strips protocol-relative href to prevent stored open-redirect', () => {
+    const input = '<a href="//attacker.com">click</a>'
+    expect(sanitiseSummaryText(input)).toBe('<a>click</a>')
+  })
 })

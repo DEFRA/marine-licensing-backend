@@ -13,7 +13,8 @@ const richTextSanitiseOptions = {
     a: ['href', 'target', 'rel'],
     ol: ['type']
   },
-  allowedSchemes: ALLOWED_SCHEMES
+  allowedSchemes: ALLOWED_SCHEMES,
+  allowProtocolRelative: false
 }
 
 export function sanitiseSummaryText(text) {
