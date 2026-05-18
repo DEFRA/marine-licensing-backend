@@ -1,9 +1,14 @@
 import joi from 'joi'
 
+const SLUG_LENGTH = 22
+const ROUTE_MAX_LENGTH = 200
+const TEXT_MAX_LENGTH = 500
+const ANSWERS_PER_QUESTION_MAX = 50
+
 export const iatAnswersSlugParams = joi.object({
   slug: joi
     .string()
-    .length(22)
+    .length(SLUG_LENGTH)
     .pattern(/^[A-Za-z0-9_-]{22}$/)
     .required()
     .messages({
@@ -16,19 +21,24 @@ export const iatAnswersSlugParams = joi.object({
 
 const answerItem = joi.object({
   id: joi.string().max(100).required(),
-  text: joi.string().max(500).required()
+  text: joi.string().max(TEXT_MAX_LENGTH).required()
 })
 
 const answerEntry = joi.object({
-  questionRoute: joi.string().max(200).required(),
-  questionText: joi.string().max(500).required(),
-  answers: joi.array().items(answerItem).min(1).max(50).required()
+  questionRoute: joi.string().max(ROUTE_MAX_LENGTH).required(),
+  questionText: joi.string().max(TEXT_MAX_LENGTH).required(),
+  answers: joi
+    .array()
+    .items(answerItem)
+    .min(1)
+    .max(ANSWERS_PER_QUESTION_MAX)
+    .required()
 })
 
 export const iatAnswersBody = joi.object({
   outcome: joi
     .object({
-      route: joi.string().max(200).required(),
+      route: joi.string().max(ROUTE_MAX_LENGTH).required(),
       typeId: joi.string().max(100).required(),
       summaryText: joi.string().max(1000).required()
     })
