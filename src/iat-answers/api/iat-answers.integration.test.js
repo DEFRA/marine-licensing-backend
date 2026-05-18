@@ -12,7 +12,7 @@ import { collectionIatAnswers } from '../../shared/common/constants/db-collectio
  *   POST   /iat-answers          -> 201 + { slug }
  *   GET    /iat-answers/{slug}   -> 200 + document (no _id; slug present)
  *
- * Append-only model: there are no PUT or DELETE routes. Repeated POSTs of
+ * Write-only model: there are no PUT or DELETE routes. Repeated POSTs of
  * the same payload mint distinct slugs and leave both documents in place.
  */
 
@@ -112,7 +112,7 @@ describe('/iat-answers contract — integration tests', async () => {
     })
   }
 
-  test('append-only: repeated POST of the same payload mints distinct slugs and both docs survive', async () => {
+  test('write-only: repeated POST of the same payload mints distinct slugs and both docs survive', async () => {
     const server = getServer()
 
     const firstRes = await server.inject({
