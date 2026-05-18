@@ -6,9 +6,53 @@ import {
   structureErrorForECS
 } from '../../common/helpers/logging/logger.js'
 import { blobService } from '../data-service/blob-service.js'
-import { isGeoParserErrorCode } from './error-codes.js'
+import { GEO_PARSER_ERROR_CODES, isGeoParserErrorCode } from './error-codes.js'
 
 const logger = createLogger()
+
+const INVALID_FEATURE_GEOMETRY_TYPES = new Set([
+  'Point',
+  'MultiPoint',
+  'LineString',
+  'MultiLineString'
+])
+
+/** Max recursion depth for nested GeometryCollections (RFC 7946 §3.1.8). */
+const MAX_GEOMETRY_COLLECTION_DEPTH = 20
+
+/**
+ * @param {object|null|undefined} geometry
+ * @param {number} depth
+ * @returns {string|null} invalid primitive type, or null if allowed
+ * @throws {Error} GEO_PARSER_ERROR_CODES.GEOMETRY_NESTING_TOO_DEEP if depth exceeded
+ */
+function findInvalidGeometryType(geometry, depth = 0) {
+  if (depth > MAX_GEOMETRY_COLLECTION_DEPTH) {
+    throw new Error(GEO_PARSER_ERROR_CODES.GEOMETRY_NESTING_TOO_DEEP)
+  }
+
+  if (!geometry || typeof geometry !== 'object') {
+    return null
+  }
+
+  if (INVALID_FEATURE_GEOMETRY_TYPES.has(geometry.type)) {
+    return geometry.type
+  }
+
+  if (
+    geometry.type === 'GeometryCollection' &&
+    Array.isArray(geometry.geometries)
+  ) {
+    for (const childGeometry of geometry.geometries) {
+      const invalidType = findInvalidGeometryType(childGeometry, depth + 1)
+      if (invalidType) {
+        return invalidType
+      }
+    }
+  }
+
+  return null
+}
 
 export class GeoParser {
   processingTimeout = 30_000 // 30 seconds
@@ -32,6 +76,8 @@ export class GeoParser {
       const geoJSON = await this.parseFile(tempFilePath, fileType)
 
       this.validateGeoJSON(geoJSON)
+
+      this.validateFeatureGeometryTypes(geoJSON)
 
       logger.info(
         `${this.logSystem}: Successfully extracted GeoJSON for ${fileType} from ${s3Bucket}/${s3Key}, ${geoJSON.features?.length || 0} features`
@@ -152,6 +198,39 @@ export class GeoParser {
     logger.debug(
       `${this.logSystem}: validation passed - type ${geoJSON.type}, ${geoJSON.features?.length || 0} features, ${memoryUsage} bytes`
     )
+
+    return true
+  }
+
+  /**
+   * Reject the entire file if any feature is a point or line site.
+   * Per acceptance criteria: only polygon-like sites are permitted; the file
+   * is rejected if any feature is a Point, MultiPoint, LineString, or
+   * MultiLineString.
+   *
+   * @param {object} geoJSON - parsed GeoJSON FeatureCollection or Feature
+   * @throws {Error} with code FEATURES_CONTAIN_POINT_OR_LINE if any feature
+   *   has a point or line geometry
+   * @throws {Error} with code GEOMETRY_NESTING_TOO_DEEP if GeometryCollection
+   *   nesting exceeds the configured maximum depth
+   */
+  validateFeatureGeometryTypes(geoJSON) {
+    const features =
+      geoJSON.type === 'FeatureCollection' ? geoJSON.features : [geoJSON]
+
+    if (!Array.isArray(features)) {
+      return true
+    }
+
+    for (const feature of features) {
+      const invalidGeometryType = findInvalidGeometryType(feature?.geometry, 0)
+      if (invalidGeometryType) {
+        logger.warn(
+          `${this.logSystem}: Validation failed - feature contains invalid geometry type '${invalidGeometryType}'; only polygon sites are permitted`
+        )
+        throw new Error(GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE)
+      }
+    }
 
     return true
   }

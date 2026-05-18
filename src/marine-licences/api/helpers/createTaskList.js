@@ -1,3 +1,4 @@
+import { MIN_POINTS_MULTIPLE_COORDINATES } from '../../../shared/common/constants/coordinates.js'
 import {
   COMPLETED,
   IN_PROGRESS,
@@ -82,12 +83,40 @@ const checkSiteDetailsCircle = (siteDetails) => {
   return IN_PROGRESS
 }
 
+const checkSiteDetailsMultiple = (siteDetails) => {
+  const requiredValues = ['coordinateSystem', 'coordinates', 'siteName']
+
+  const missingKeys = requiredValues.filter((key) => !(key in siteDetails))
+
+  if (missingKeys.length === requiredValues.length) {
+    return INCOMPLETE
+  }
+
+  if (missingKeys.length > 0) {
+    return IN_PROGRESS
+  }
+
+  const { coordinates } = siteDetails
+  if (
+    !Array.isArray(coordinates) ||
+    coordinates.length < MIN_POINTS_MULTIPLE_COORDINATES
+  ) {
+    return IN_PROGRESS
+  }
+
+  const activityStatus = checkActivityDetails(siteDetails.activityDetails)
+  return activityStatus === COMPLETED ? COMPLETED : IN_PROGRESS
+}
+
 const getValidationStrategy = (coordinatesType, coordinatesEntry) => {
   if (coordinatesType === 'file') {
     return checkSiteDetailsFileUpload
   }
   if (coordinatesType === 'coordinates' && coordinatesEntry === 'single') {
     return checkSiteDetailsCircle
+  }
+  if (coordinatesType === 'coordinates' && coordinatesEntry === 'multiple') {
+    return checkSiteDetailsMultiple
   }
   return null
 }

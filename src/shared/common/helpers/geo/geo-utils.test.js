@@ -24,8 +24,8 @@ describe('geo-utils', () => {
       vi.mocked(proj4).mockReturnValue([mockLongitude, mockLatitude])
 
       const result = singleOSGB36toWGS84({
-        eastings: '424199',
-        northings: '564345'
+        easting: '424199',
+        northing: '564345'
       })
 
       expect(proj4).toHaveBeenCalledWith('OSGB36', 'WGS84', [424199, 564345])

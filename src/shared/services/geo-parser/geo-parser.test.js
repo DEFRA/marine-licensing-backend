@@ -4,6 +4,7 @@ import { Worker } from 'node:worker_threads'
 import { blobService } from '../data-service/blob-service.js'
 import Boom from '@hapi/boom'
 import { join } from 'node:path'
+import { GEO_PARSER_ERROR_CODES } from './error-codes.js'
 
 vi.mock('node:worker_threads', () => ({
   Worker: vi.fn(function () {})
@@ -99,6 +100,7 @@ describe('GeoParser', () => {
 
       vi.spyOn(geoParser, 'parseFile').mockResolvedValue(mockGeoJSON)
       vi.spyOn(geoParser, 'validateGeoJSON').mockReturnValue(true)
+      vi.spyOn(geoParser, 'validateFeatureGeometryTypes').mockReturnValue(true)
     })
 
     it('should successfully extract GeoJSON from KML file', async () => {
@@ -214,6 +216,22 @@ describe('GeoParser', () => {
       await expect(
         geoParser.extract(s3Bucket, s3Key, fileType)
       ).rejects.toThrow(Boom.badRequest('SHAPEFILE_MISSING_CORE_FILES'))
+    })
+
+    it('should throw Boom.badRequest when geoJSON contains a point or line feature', async () => {
+      geoParser.validateFeatureGeometryTypes.mockImplementation(() => {
+        throw new Error(GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE)
+      })
+
+      await expect(
+        geoParser.extract(s3Bucket, s3Key, fileType)
+      ).rejects.toThrow(
+        Boom.badRequest(GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE)
+      )
+
+      expect(geoParser.validateFeatureGeometryTypes).toHaveBeenCalledWith(
+        mockGeoJSON
+      )
     })
   })
 
@@ -532,6 +550,282 @@ describe('GeoParser', () => {
       const parser = new GeoParser()
 
       expect(parser.processingTimeout).toBe(30_000) // 30 seconds in milliseconds
+    })
+  })
+
+  describe('validateFeatureGeometryTypes', () => {
+    const polygonFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-0.1, 51.5],
+            [-0.2, 51.5],
+            [-0.2, 51.6],
+            [-0.1, 51.6],
+            [-0.1, 51.5]
+          ]
+        ]
+      },
+      properties: {}
+    }
+
+    const multiPolygonFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [-0.1, 51.5],
+              [-0.2, 51.5],
+              [-0.2, 51.6],
+              [-0.1, 51.6],
+              [-0.1, 51.5]
+            ]
+          ]
+        ]
+      },
+      properties: {}
+    }
+
+    const pointFeature = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [-0.1, 51.5] },
+      properties: {}
+    }
+
+    const lineStringFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [-0.1, 51.5],
+          [-0.2, 51.6]
+        ]
+      },
+      properties: {}
+    }
+
+    const multiPointFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'MultiPoint',
+        coordinates: [
+          [-0.1, 51.5],
+          [-0.2, 51.6]
+        ]
+      },
+      properties: {}
+    }
+
+    const multiLineStringFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'MultiLineString',
+        coordinates: [
+          [
+            [-0.1, 51.5],
+            [-0.2, 51.6]
+          ]
+        ]
+      },
+      properties: {}
+    }
+
+    const geometryCollectionWithPointFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'GeometryCollection',
+        geometries: [
+          {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-0.1, 51.5],
+                [-0.2, 51.5],
+                [-0.2, 51.6],
+                [-0.1, 51.6],
+                [-0.1, 51.5]
+              ]
+            ]
+          },
+          { type: 'Point', coordinates: [-0.3, 51.7] }
+        ]
+      },
+      properties: {}
+    }
+
+    const nestedGeometryCollectionWithLineFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'GeometryCollection',
+        geometries: [
+          {
+            type: 'GeometryCollection',
+            geometries: [
+              {
+                type: 'LineString',
+                coordinates: [
+                  [-0.1, 51.5],
+                  [-0.2, 51.6]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      properties: {}
+    }
+
+    it('should pass when FeatureCollection contains only polygon features', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, multiPolygonFeature]
+      }
+
+      expect(geoParser.validateFeatureGeometryTypes(geoJSON)).toBe(true)
+    })
+
+    it('should pass when FeatureCollection has no features', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: []
+      }
+
+      expect(geoParser.validateFeatureGeometryTypes(geoJSON)).toBe(true)
+    })
+
+    it('should pass when single Feature is a Polygon', () => {
+      expect(geoParser.validateFeatureGeometryTypes(polygonFeature)).toBe(true)
+    })
+
+    it('should throw FEATURES_CONTAIN_POINT_OR_LINE when any feature is a Point', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, pointFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should throw FEATURES_CONTAIN_POINT_OR_LINE when any feature is a LineString', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, lineStringFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should throw FEATURES_CONTAIN_POINT_OR_LINE when any feature is a MultiPoint', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, multiPointFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should throw FEATURES_CONTAIN_POINT_OR_LINE when any feature is a MultiLineString', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, multiLineStringFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should throw when GeometryCollection contains a Point', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, geometryCollectionWithPointFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should throw when nested GeometryCollection contains a LineString', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, nestedGeometryCollectionWithLineFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    const nestGeometryCollections = (wrapperCount, innerGeometry) => {
+      let geometry = innerGeometry
+      for (let i = 0; i < wrapperCount; i++) {
+        geometry = { type: 'GeometryCollection', geometries: [geometry] }
+      }
+      return geometry
+    }
+
+    it('should pass when GeometryCollection nesting is at the depth limit', () => {
+      const geometry = nestGeometryCollections(20, polygonFeature.geometry)
+      const feature = { type: 'Feature', geometry, properties: {} }
+      const geoJSON = { type: 'FeatureCollection', features: [feature] }
+
+      expect(geoParser.validateFeatureGeometryTypes(geoJSON)).toBe(true)
+    })
+
+    it('should throw GEOMETRY_NESTING_TOO_DEEP when GeometryCollection nesting exceeds limit', () => {
+      const geometry = nestGeometryCollections(21, polygonFeature.geometry)
+      const feature = { type: 'Feature', geometry, properties: {} }
+      const geoJSON = { type: 'FeatureCollection', features: [feature] }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.GEOMETRY_NESTING_TOO_DEEP
+      )
+    })
+
+    it('should throw when single Feature is a Point', () => {
+      expect(() =>
+        geoParser.validateFeatureGeometryTypes(pointFeature)
+      ).toThrow(GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE)
+    })
+
+    it('should reject the entire file when only one of many features is invalid', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, polygonFeature, pointFeature, polygonFeature]
+      }
+
+      expect(() => geoParser.validateFeatureGeometryTypes(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE
+      )
+    })
+
+    it('should pass when FeatureCollection has features without geometry', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [{ type: 'Feature', properties: {} }]
+      }
+
+      expect(geoParser.validateFeatureGeometryTypes(geoJSON)).toBe(true)
+    })
+
+    it('should pass when features is not an array', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: null
+      }
+
+      expect(geoParser.validateFeatureGeometryTypes(geoJSON)).toBe(true)
     })
   })
 })
