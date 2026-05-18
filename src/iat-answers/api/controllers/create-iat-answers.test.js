@@ -24,6 +24,7 @@ function buildRequest(overrides = {}) {
     payload: validPayload,
     db: global.mockMongo,
     auth: {},
+    logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
     ...overrides
   }
 }

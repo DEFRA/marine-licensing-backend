@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { iatAnswersBody } from '../../models/iat-answers.js'
 import { addCreateAuditFieldsOptional } from '../../../shared/common/helpers/mongo-audit.js'
 import { collectionIatAnswers } from '../../../shared/common/constants/db-collections.js'
+import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { sanitiseSummaryText } from '../helpers/sanitise-summary-text.js'
 import { generateSlug } from '../helpers/generate-slug.js'
 
@@ -35,6 +36,11 @@ export const createIatAnswersController = {
       if (error.isBoom) {
         throw error
       }
+
+      request.logger.error(
+        structureErrorForECS(error),
+        'Error creating IAT answers'
+      )
       throw Boom.internal(`Error creating IAT answers: ${error.message}`)
     }
   }
