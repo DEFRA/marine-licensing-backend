@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import Boom from '@hapi/boom'
 import { createIatAnswersController } from './create-iat-answers.js'
 
 const SLUG_PATTERN = /^[A-Za-z0-9_-]{22}$/
@@ -73,6 +74,13 @@ describe('createIatAnswersController', () => {
     await expect(
       createIatAnswersController.handler(buildRequest(), global.mockHandler)
     ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
+  })
+
+  it('rethrows Boom errors with their original status code', async () => {
+    insertOne.mockRejectedValue(Boom.forbidden('nope'))
+    await expect(
+      createIatAnswersController.handler(buildRequest(), global.mockHandler)
+    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 403 } })
   })
 
   it('sanitises outcome.summaryText before insertOne', async () => {

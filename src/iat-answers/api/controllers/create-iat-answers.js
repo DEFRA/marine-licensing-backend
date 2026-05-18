@@ -32,6 +32,9 @@ export const createIatAnswersController = {
         .response({ message: 'success', value: { slug } })
         .code(StatusCodes.CREATED)
     } catch (error) {
+      if (error.isBoom) {
+        throw error
+      }
       throw Boom.internal(`Error creating IAT answers: ${error.message}`)
     }
   }
