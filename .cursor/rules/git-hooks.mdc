@@ -1,0 +1,28 @@
+---
+description: Run format and lint before commits (Husky pre-commit)
+alwaysApply: true
+---
+
+# Git hooks and formatting
+
+Husky runs `npm run git:pre-commit-hook` on every commit, which executes:
+
+1. `npm run format:check` (Prettier on `**/*.{cjs,js,json,md}`)
+2. `npm run lint` (ESLint)
+
+## Agent workflow
+
+After editing any `.js`, `.cjs`, `.json`, or `.md` files — and **before** telling the user to commit or opening a PR:
+
+1. Run `npm run format` (or `npx prettier --write` on the changed files).
+2. Run `npm run lint`.
+3. If either fails, fix the issues; do not leave formatting for the pre-commit hook to catch.
+
+This avoids failed commits and repeated `git commit` attempts due to Prettier warnings.
+
+## Quick fix
+
+```bash
+npm run format
+npm run lint
+```
