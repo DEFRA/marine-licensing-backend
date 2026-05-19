@@ -37,7 +37,11 @@ describe('createTaskList', () => {
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
-      publicRegister: 'Public Register Info'
+      publicRegister: 'Public Register Info',
+      publicConsultation: {
+        consultation: 'yes',
+        details: 'Public consultation details'
+      }
     }
 
     expect(createTaskList(marineLicence)).toEqual({
@@ -46,6 +50,7 @@ describe('createTaskList', () => {
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
+      publicConsultation: COMPLETED,
       publicRegister: COMPLETED
     })
   })
@@ -57,7 +62,11 @@ describe('createTaskList', () => {
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
-      publicRegister: 'Public Register Info'
+      publicRegister: 'Public Register Info',
+      publicConsultation: {
+        consultation: 'yes',
+        details: 'Public consultation details'
+      }
     }
 
     expect(createTaskList(marineLicence, true)).toEqual({
@@ -65,7 +74,8 @@ describe('createTaskList', () => {
       publicRegister: COMPLETED,
       siteDetails: IN_PROGRESS,
       otherAuthorities: COMPLETED,
-      projectBackground: COMPLETED
+      projectBackground: COMPLETED,
+      publicConsultation: COMPLETED
     })
   })
 
@@ -87,6 +97,7 @@ describe('createTaskList', () => {
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
+      publicConsultation: INCOMPLETE,
       publicRegister: INCOMPLETE
     })
   })
@@ -333,6 +344,7 @@ describe('createTaskList', () => {
       otherAuthorities: INCOMPLETE,
       projectBackground: INCOMPLETE,
       publicRegister: INCOMPLETE,
+      publicConsultation: INCOMPLETE,
       siteDetails: INCOMPLETE
     })
   })
@@ -344,6 +356,10 @@ describe('createTaskList', () => {
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
+      publicConsultation: {
+        consultation: 'yes',
+        details: 'Public consultation details'
+      },
       siteDetails: [mockFileUploadSite]
     }
 
@@ -355,6 +371,7 @@ describe('createTaskList', () => {
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: COMPLETED,
+      publicConsultation: COMPLETED,
       siteDetails: IN_PROGRESS
     })
   })

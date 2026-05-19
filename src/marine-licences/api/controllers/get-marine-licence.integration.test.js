@@ -50,6 +50,7 @@ describe('Get marine licence - integration tests', async () => {
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
         projectBackground: 'INCOMPLETE',
+        publicConsultation: 'INCOMPLETE',
         publicRegister: 'COMPLETED',
         siteDetails: 'INCOMPLETE'
       }
@@ -91,7 +92,8 @@ describe('Get marine licence - integration tests', async () => {
         otherAuthorities: 'INCOMPLETE',
         projectBackground: 'INCOMPLETE',
         siteDetails: 'INCOMPLETE',
-        publicRegister: 'COMPLETED'
+        publicRegister: 'COMPLETED',
+        publicConsultation: 'INCOMPLETE'
       }
     })
   })
