@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
         with:
           # Fail the job if the PR adds or updates to a vulnerable version (high or critical).
           # Adjust to moderate or critical if needed: https://github.com/actions/dependency-review-action#configuration-options
