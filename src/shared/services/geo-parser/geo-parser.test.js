@@ -233,6 +233,36 @@ describe('GeoParser', () => {
         mockGeoJSON
       )
     })
+
+    it('should call validateSingleSite when singleSiteOnly is true', async () => {
+      vi.spyOn(geoParser, 'validateSingleSite').mockReturnValue(true)
+
+      await geoParser.extract(s3Bucket, s3Key, fileType, {
+        singleSiteOnly: true
+      })
+
+      expect(geoParser.validateSingleSite).toHaveBeenCalledWith(mockGeoJSON)
+    })
+
+    it('should not call validateSingleSite when singleSiteOnly is not provided', async () => {
+      vi.spyOn(geoParser, 'validateSingleSite').mockReturnValue(true)
+
+      await geoParser.extract(s3Bucket, s3Key, fileType)
+
+      expect(geoParser.validateSingleSite).not.toHaveBeenCalled()
+    })
+
+    it('should throw Boom.badRequest when singleSiteOnly validation fails', async () => {
+      vi.spyOn(geoParser, 'validateSingleSite').mockImplementation(() => {
+        throw new Error(GEO_PARSER_ERROR_CODES.SINGLE_SITE_ONLY)
+      })
+
+      await expect(
+        geoParser.extract(s3Bucket, s3Key, fileType, { singleSiteOnly: true })
+      ).rejects.toThrow(
+        Boom.badRequest(GEO_PARSER_ERROR_CODES.SINGLE_SITE_ONLY)
+      )
+    })
   })
 
   describe('parseFile', () => {
@@ -826,6 +856,54 @@ describe('GeoParser', () => {
       }
 
       expect(geoParser.validateFeatureGeometryTypes(geoJSON)).toBe(true)
+    })
+  })
+
+  describe('validateSingleSite', () => {
+    const polygonFeature = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [-0.1, 51.5],
+            [-0.2, 51.5],
+            [-0.2, 51.6],
+            [-0.1, 51.6],
+            [-0.1, 51.5]
+          ]
+        ]
+      },
+      properties: {}
+    }
+
+    it('should pass when FeatureCollection has exactly one feature', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature]
+      }
+
+      expect(geoParser.validateSingleSite(geoJSON)).toBe(true)
+    })
+
+    it('should pass when FeatureCollection has no features', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: []
+      }
+
+      expect(geoParser.validateSingleSite(geoJSON)).toBe(true)
+    })
+
+    it('should throw SINGLE_SITE_ONLY when FeatureCollection has more than one feature', () => {
+      const geoJSON = {
+        type: 'FeatureCollection',
+        features: [polygonFeature, polygonFeature]
+      }
+
+      expect(() => geoParser.validateSingleSite(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.SINGLE_SITE_ONLY
+      )
     })
   })
 })
