@@ -147,6 +147,37 @@ describe('Extract Controller', () => {
       expect(result.error).toBeUndefined()
       expect(result.value.fileType).toBe('kml')
     })
+
+    it('should accept valid payload with singleSiteOnly true', () => {
+      const result = payloadValidator.validate({
+        ...validPayload,
+        singleSiteOnly: true
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.value.singleSiteOnly).toBe(true)
+    })
+
+    it('should accept valid payload with singleSiteOnly false', () => {
+      const result = payloadValidator.validate({
+        ...validPayload,
+        singleSiteOnly: false
+      })
+      expect(result.error).toBeUndefined()
+      expect(result.value.singleSiteOnly).toBe(false)
+    })
+
+    it('should accept valid payload without singleSiteOnly', () => {
+      const result = payloadValidator.validate(validPayload)
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should reject singleSiteOnly when not a boolean', () => {
+      const result = payloadValidator.validate({
+        ...validPayload,
+        singleSiteOnly: 'yes'
+      })
+      expect(result.error).toBeDefined()
+    })
   })
 
   describe('Handler - Success Cases', () => {
@@ -163,7 +194,8 @@ describe('Extract Controller', () => {
       expect(geoParser.extract).toHaveBeenCalledWith(
         'mmo-uploads',
         'valid-key.kml',
-        'kml'
+        'kml',
+        { singleSiteOnly: undefined }
       )
       expect(mockHandler.response).toHaveBeenCalledWith({
         message: 'success',
@@ -190,13 +222,32 @@ describe('Extract Controller', () => {
       expect(geoParser.extract).toHaveBeenCalledWith(
         'mmo-uploads',
         'shapefile.zip',
-        'shapefile'
+        'shapefile',
+        { singleSiteOnly: undefined }
       )
       expect(mockHandler.response).toHaveBeenCalledWith({
         message: 'success',
         value: mockGeoJSON
       })
       expect(mockHandler.code).toHaveBeenCalledWith(StatusCodes.OK)
+    })
+
+    it('should pass singleSiteOnly to geoParser.extract when provided', async () => {
+      const { mockHandler } = global
+      geoParser.extract.mockResolvedValue(mockGeoJSON)
+
+      const mockRequest = {
+        payload: { ...validPayload, singleSiteOnly: true }
+      }
+
+      await extractController.handler(mockRequest, mockHandler)
+
+      expect(geoParser.extract).toHaveBeenCalledWith(
+        'mmo-uploads',
+        'valid-key.kml',
+        'kml',
+        { singleSiteOnly: true }
+      )
     })
 
     it('should handle GeoJSON with no features', async () => {

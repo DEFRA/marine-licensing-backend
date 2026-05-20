@@ -59,7 +59,7 @@ export class GeoParser {
   memoryLimit = 524_288_000 // 500MB in bytes
   logSystem = 'FileUpload:GeoParser'
 
-  async extract(s3Bucket, s3Key, fileType) {
+  async extract(s3Bucket, s3Key, fileType, { singleSiteOnly } = {}) {
     logger.info(
       `${this.logSystem}: Starting geo-parser extraction for ${fileType} from ${s3Bucket}/${s3Key}`
     )
@@ -78,6 +78,10 @@ export class GeoParser {
       this.validateGeoJSON(geoJSON)
 
       this.validateFeatureGeometryTypes(geoJSON)
+
+      if (singleSiteOnly) {
+        this.validateSingleSite(geoJSON)
+      }
 
       logger.info(
         `${this.logSystem}: Successfully extracted GeoJSON for ${fileType} from ${s3Bucket}/${s3Key}, ${geoJSON.features?.length || 0} features`
@@ -230,6 +234,27 @@ export class GeoParser {
         )
         throw new Error(GEO_PARSER_ERROR_CODES.FEATURES_CONTAIN_POINT_OR_LINE)
       }
+    }
+
+    return true
+  }
+
+  /**
+   * Reject the file if it contains more than one feature when only a single
+   * site is permitted.
+   *
+   * @param {object} geoJSON - parsed GeoJSON FeatureCollection or Feature
+   * @throws {Error} with code SINGLE_SITE_ONLY if more than one feature is present
+   */
+  validateSingleSite(geoJSON) {
+    const features =
+      geoJSON.type === 'FeatureCollection' ? geoJSON.features : [geoJSON]
+
+    if (Array.isArray(features) && features.length > 1) {
+      logger.warn(
+        `${this.logSystem}: Validation failed - file contains ${features.length} sites but only one is permitted`
+      )
+      throw new Error(GEO_PARSER_ERROR_CODES.SINGLE_SITE_ONLY)
     }
 
     return true
