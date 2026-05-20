@@ -40,5 +40,6 @@ export const geoParserExtract = joi.object({
       'string.empty': 'FILE_TYPE_REQUIRED',
       'string.fileType': 'FILE_TYPE_INVALID',
       'any.required': 'FILE_TYPE_REQUIRED'
-    })
+    }),
+  singleSiteOnly: joi.boolean().optional()
 })

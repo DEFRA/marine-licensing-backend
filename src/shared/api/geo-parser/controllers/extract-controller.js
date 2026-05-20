@@ -22,7 +22,7 @@ export const extractController = {
     }
   },
   handler: async (request, h) => {
-    const { s3Bucket, s3Key, fileType } = request.payload
+    const { s3Bucket, s3Key, fileType, singleSiteOnly } = request.payload
 
     logger.info(
       { fileType },
@@ -38,7 +38,9 @@ export const extractController = {
         throw Boom.forbidden('Invalid S3 bucket')
       }
 
-      const geoJSON = await geoParser.extract(s3Bucket, s3Key, fileType)
+      const geoJSON = await geoParser.extract(s3Bucket, s3Key, fileType, {
+        singleSiteOnly
+      })
 
       logger.info(
         {
