@@ -1,6 +1,5 @@
 import joi from 'joi'
 
-const SLUG_LENGTH = 22
 const ROUTE_MAX_LENGTH = 200
 const TEXT_MAX_LENGTH = 500
 const ANSWERS_PER_QUESTION_MAX = 50
@@ -8,12 +7,10 @@ const ANSWERS_PER_QUESTION_MAX = 50
 export const iatAnswersSlugParams = joi.object({
   slug: joi
     .string()
-    .length(SLUG_LENGTH)
     .pattern(/^[A-Za-z0-9_-]{22}$/)
     .required()
     .messages({
       'string.empty': 'IAT_ANSWERS_SLUG_REQUIRED',
-      'string.length': 'IAT_ANSWERS_SLUG_INVALID',
       'string.pattern.base': 'IAT_ANSWERS_SLUG_INVALID',
       'any.required': 'IAT_ANSWERS_SLUG_REQUIRED'
     })
