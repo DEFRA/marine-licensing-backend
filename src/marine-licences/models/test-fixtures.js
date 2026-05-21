@@ -2,8 +2,8 @@ import { MARINE_LICENCE_STATUS } from '../constants/marine-licence.js'
 import { ObjectId } from 'mongodb'
 
 export const preferredDates = {
-  start: new Date('2027-01-01'),
-  end: new Date('2027-12-31')
+  start: { month: '01', year: '2027' },
+  end: { month: '12', year: '2027' }
 }
 
 export const mockMarineLicence = {

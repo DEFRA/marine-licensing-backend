@@ -90,10 +90,7 @@ describe('GET /marine-licence', () => {
           consent: 'yes',
           reason: 'Test public register reason'
         },
-        preferredDates: {
-          start: preferredDates.start.toISOString(),
-          end: preferredDates.end.toISOString()
-        },
+        preferredDates,
         otherAuthorities: 'Test authority',
         projectBackground: 'Test project background',
         contactId: userContactId
@@ -118,10 +115,7 @@ describe('GET /marine-licence', () => {
               consent: 'yes',
               reason: 'Test public register reason'
             },
-            preferredDates: {
-              start: preferredDates.start.toISOString(),
-              end: preferredDates.end.toISOString()
-            },
+            preferredDates,
             otherAuthorities: 'Test authority',
             projectBackground: 'Test project background',
             taskList: {

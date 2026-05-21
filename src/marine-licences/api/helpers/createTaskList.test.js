@@ -36,7 +36,10 @@ describe('createTaskList', () => {
       siteDetails: [mockCompleteSite],
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
-      preferredDates: { start: '2026-01-01', end: '2026-12-31' },
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       projectBackground: 'Some background',
       publicRegister: 'Public Register Info'
     }
@@ -59,7 +62,10 @@ describe('createTaskList', () => {
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
-      preferredDates: { start: '2026-01-01', end: '2026-12-31' },
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       publicRegister: 'Public Register Info'
     }
 
@@ -83,7 +89,10 @@ describe('createTaskList', () => {
       otherAuthorities: 'Some authorities',
       siteDetails: [siteWithoutSiteName],
       projectBackground: 'Test project background',
-      preferredDates: { start: '2026-01-01', end: '2026-12-31' }
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      }
     }
 
     expect(createTaskList(marineLicence)).toEqual({
@@ -350,7 +359,10 @@ describe('createTaskList', () => {
       specialLegalPowers: 'some powers',
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
-      preferredDates: { start: '2026-01-01', end: '2026-12-31' },
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite]
     }

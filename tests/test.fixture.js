@@ -127,8 +127,8 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       reason: 'Test public register details'
     },
     preferredDates: {
-      start: new Date('2027-01-01'),
-      end: new Date('2027-12-31')
+      start: { month: '01', year: '2027' },
+      end: { month: '12', year: '2027' }
     },
     status: MARINE_LICENCE_STATUS.DRAFT,
     createdAt: new Date('2026-12-01'),

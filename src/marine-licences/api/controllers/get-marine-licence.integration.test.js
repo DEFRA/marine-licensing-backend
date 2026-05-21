@@ -46,10 +46,7 @@ describe('Get marine licence - integration tests', async () => {
       id: _id.toString(),
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
-      preferredDates: {
-        start: preferredDates.start.toISOString(),
-        end: preferredDates.end.toISOString()
-      },
+      preferredDates,
       taskList: {
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
@@ -90,10 +87,7 @@ describe('Get marine licence - integration tests', async () => {
       id: _id.toString(),
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
-      preferredDates: {
-        start: preferredDates.start.toISOString(),
-        end: preferredDates.end.toISOString()
-      },
+      preferredDates,
       whoMarineLicenceIsFor: 'Dave Barnett',
       taskList: {
         projectName: 'COMPLETED',

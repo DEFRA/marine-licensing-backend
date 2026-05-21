@@ -5,44 +5,88 @@ const MIN_YEAR = new Date().getFullYear()
 const MAX_YEAR_OFFSET = 20
 const MAX_YEAR = MIN_YEAR + MAX_YEAR_OFFSET
 
-const MAX_DAYS_IN_MONTH = 31
-const MAX_MONTHS_IN_YEAR = 12
+const MONTH_PATTERN = /^(0?[1-9]|1[0-2])$/
+const YEAR_PATTERN = /^\d{4}$/
 
-const MAX_DATE = new Date(MAX_YEAR, MAX_MONTHS_IN_YEAR, MAX_DAYS_IN_MONTH)
+const toMonthValue = ({ month, year }) =>
+  Number(year) * 12 + (Number(month) - 1)
 
-const startOfToday = () => {
+const currentMonthValue = () => {
   const now = new Date()
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-  )
+  return now.getFullYear() * 12 + now.getMonth()
 }
 
-const isTodayOrLater = (value, helpers) => {
-  const date = new Date(
-    Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate())
-  )
+const monthSchema = (errorPrefix) =>
+  joi
+    .string()
+    .pattern(MONTH_PATTERN)
+    .required()
+    .messages({
+      'any.required': `${errorPrefix}_MONTH_REQUIRED`,
+      'string.empty': `${errorPrefix}_MONTH_REQUIRED`,
+      'string.pattern.base': `${errorPrefix}_MONTH_INVALID`
+    })
 
-  if (date < startOfToday()) {
-    return helpers.error('date.min')
-  }
+const yearSchema = (errorPrefix) =>
+  joi
+    .string()
+    .pattern(YEAR_PATTERN)
+    .required()
+    .messages({
+      'any.required': `${errorPrefix}_YEAR_REQUIRED`,
+      'string.empty': `${errorPrefix}_YEAR_REQUIRED`,
+      'string.pattern.base': `${errorPrefix}_YEAR_INVALID`
+    })
 
-  return value
-}
+const preferredDatePartSchema = (
+  errorPrefix,
+  { validateTodayOrLater = false } = {}
+) =>
+  joi
+    .object({
+      month: monthSchema(errorPrefix),
+      year: yearSchema(errorPrefix)
+    })
+    .custom((value, helpers) => {
+      const year = Number(value.year)
 
-export const preferredDatesRangeSchema = joi.object({
-  start: joi.date().required().custom(isTodayOrLater).max(MAX_DATE).messages({
-    'any.required': 'PREFERRED_START_DATE_REQUIRED',
-    'date.base': 'PREFERRED_START_DATE_INVALID',
-    'date.min': 'PREFERRED_START_DATE_TODAY_OR_FUTURE',
-    'date.max': 'PREFERRED_START_DATE_INVALID'
-  }),
-  end: joi.date().required().min(joi.ref('start')).max(MAX_DATE).messages({
-    'any.required': 'PREFERRED_END_DATE_REQUIRED',
-    'date.base': 'PREFERRED_END_DATE_INVALID',
-    'date.greater': 'PREFERRED_END_DATE_BEFORE_START_DATE',
-    'date.min': 'PREFERRED_END_DATE_BEFORE_START_DATE',
-    'date.max': 'PREFERRED_END_DATE_INVALID'
+      if (year < MIN_YEAR || year > MAX_YEAR) {
+        return helpers.error('number.range')
+      }
+
+      if (validateTodayOrLater && toMonthValue(value) < currentMonthValue()) {
+        return helpers.error('date.min')
+      }
+
+      return value
+    })
+    .messages({
+      'number.range': `${errorPrefix}_YEAR_INVALID`,
+      'date.min': `${errorPrefix}_DATE_TODAY_OR_FUTURE`
+    })
+
+export const preferredDatesRangeSchema = joi
+  .object({
+    start: preferredDatePartSchema('PREFERRED_START', {
+      validateTodayOrLater: true
+    })
+      .required()
+      .messages({
+        'any.required': 'PREFERRED_START_DATE_REQUIRED'
+      }),
+    end: preferredDatePartSchema('PREFERRED_END').required().messages({
+      'any.required': 'PREFERRED_END_DATE_REQUIRED'
+    })
   })
-})
+  .custom((value, helpers) => {
+    if (toMonthValue(value.end) < toMonthValue(value.start)) {
+      return helpers.error('date.min')
+    }
+
+    return value
+  })
+  .messages({
+    'date.min': 'PREFERRED_END_DATE_BEFORE_START_DATE'
+  })
 
 export const preferredDates = preferredDatesRangeSchema.append(marineLicenceId)

@@ -21,8 +21,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      start: '2026-06-01',
-      end: '2026-12-01'
+      start: { month: '06', year: '2026' },
+      end: { month: '12', year: '2026' }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -39,8 +39,10 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(updatedLicence.preferredDates.start).toEqual(new Date('2026-06-01'))
-    expect(updatedLicence.preferredDates.end).toEqual(new Date('2026-12-01'))
+    expect(updatedLicence.preferredDates).toEqual({
+      start: { month: '06', year: '2026' },
+      end: { month: '12', year: '2026' }
+    })
   })
 
   test('returns 404 when marine licence does not exist', async () => {
@@ -48,8 +50,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: nonExistentId.toString(),
-      start: '2026-06-01',
-      end: '2026-12-01'
+      start: { month: '06', year: '2026' },
+      end: { month: '12', year: '2026' }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -74,8 +76,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      start: '2026-06-01',
-      end: '2026-12-01'
+      start: { month: '06', year: '2026' },
+      end: { month: '12', year: '2026' }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -100,7 +102,7 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      end: '2026-12-01'
+      end: { month: '12', year: '2026' }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -125,8 +127,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      start: '2026-08-01',
-      end: '2026-07-01'
+      start: { month: '08', year: '2026' },
+      end: { month: '07', year: '2026' }
     }
 
     const { statusCode, body } = await makePatchRequest({

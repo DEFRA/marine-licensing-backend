@@ -3,8 +3,6 @@ import { ObjectId } from 'mongodb'
 import { updatePreferredDatesController } from './update-preferred-dates.js'
 
 describe('PATCH /marine-licence/preferred-dates', () => {
-  const payloadValidator =
-    updatePreferredDatesController.options.validate.payload
   const mockAuditPayload = {
     updatedAt: new Date('2026-05-21T12:00:00.000Z'),
     updatedBy: 'user123'
@@ -19,30 +17,12 @@ describe('PATCH /marine-licence/preferred-dates', () => {
     vi.useRealTimers()
   })
 
-  it('should fail if start is missing', () => {
-    const result = payloadValidator.validate({
-      end: '2026-12-01'
-    })
-    expect(result.error.message).toContain('PREFERRED_START_DATE_REQUIRED')
-  })
-
-  it('should fail if end is before start', () => {
-    const result = payloadValidator.validate({
-      id: new ObjectId().toHexString(),
-      start: '2026-08-01',
-      end: '2026-07-01'
-    })
-    expect(result.error.message).toContain(
-      'PREFERRED_END_DATE_BEFORE_START_DATE'
-    )
-  })
-
   it('should update marine licence with preferred dates', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      start: '2026-05-21',
-      end: '2026-12-01',
+      start: { month: '05', year: '2026' },
+      end: { month: '12', year: '2026' },
       ...mockAuditPayload
     }
 
@@ -78,8 +58,8 @@ describe('PATCH /marine-licence/preferred-dates', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      start: '2026-05-21',
-      end: '2026-12-01',
+      start: { month: '05', year: '2026' },
+      end: { month: '12', year: '2026' },
       ...mockAuditPayload
     }
 
@@ -102,8 +82,8 @@ describe('PATCH /marine-licence/preferred-dates', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      start: '2026-05-21',
-      end: '2026-12-01',
+      start: { month: '05', year: '2026' },
+      end: { month: '12', year: '2026' },
       ...mockAuditPayload
     }
 
