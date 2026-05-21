@@ -129,7 +129,7 @@ export class ShapefileParser {
     const allFiles = []
     for (const file of files) {
       if (file.isFile()) {
-        const fullPath = path.join(file.path, file.name)
+        const fullPath = path.join(file.parentPath ?? file.path, file.name)
         allFiles.push({
           name: file.name,
           lowerName: file.name.toLowerCase(),
