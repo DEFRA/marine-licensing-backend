@@ -7,13 +7,14 @@ const MAX_YEAR = MIN_YEAR + MAX_YEAR_OFFSET
 
 const MONTH_PATTERN = /^(0?[1-9]|1[0-2])$/
 const YEAR_PATTERN = /^\d{4}$/
+const MAX_MONTH = 12
 
 const toMonthValue = ({ month, year }) =>
-  Number(year) * 12 + (Number(month) - 1)
+  Number(year) * MAX_MONTH + (Number(month) - 1)
 
 const currentMonthValue = () => {
   const now = new Date()
-  return now.getFullYear() * 12 + now.getMonth()
+  return now.getFullYear() * MAX_MONTH + now.getMonth()
 }
 
 const monthSchema = (errorPrefix) =>
