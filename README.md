@@ -60,7 +60,7 @@ The source code under `src/` is split into domain-aligned folders:
 
 ### Node.js
 
-For latest minimum versions of Node.js and NPM, see the [package.json](./package.json) 'engines' property.
+Please install Node.js `>= v24` and npm `>= v11`. For the exact version used by this application, see [.nvmrc](./.nvmrc). Minimum engine versions are also defined in [package.json](./package.json).
 
 - [Node.js](http://nodejs.org/)
 - [npm](https://nodejs.org/)
