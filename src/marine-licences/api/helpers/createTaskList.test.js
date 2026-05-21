@@ -36,6 +36,7 @@ describe('createTaskList', () => {
       siteDetails: [mockCompleteSite],
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
+      preferredDates: { start: '2026-01-01', end: '2026-12-31' },
       projectBackground: 'Some background',
       publicRegister: 'Public Register Info'
     }
@@ -45,6 +46,7 @@ describe('createTaskList', () => {
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: COMPLETED
     })
@@ -57,6 +59,7 @@ describe('createTaskList', () => {
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
+      preferredDates: { start: '2026-01-01', end: '2026-12-31' },
       publicRegister: 'Public Register Info'
     }
 
@@ -65,6 +68,7 @@ describe('createTaskList', () => {
       publicRegister: COMPLETED,
       siteDetails: IN_PROGRESS,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED
     })
   })
@@ -78,7 +82,8 @@ describe('createTaskList', () => {
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
       siteDetails: [siteWithoutSiteName],
-      projectBackground: 'Test project background'
+      projectBackground: 'Test project background',
+      preferredDates: { start: '2026-01-01', end: '2026-12-31' }
     }
 
     expect(createTaskList(marineLicence)).toEqual({
@@ -86,6 +91,7 @@ describe('createTaskList', () => {
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: INCOMPLETE
     })
@@ -331,6 +337,7 @@ describe('createTaskList', () => {
       projectName: INCOMPLETE,
       specialLegalPowers: INCOMPLETE,
       otherAuthorities: INCOMPLETE,
+      preferredDates: INCOMPLETE,
       projectBackground: INCOMPLETE,
       publicRegister: INCOMPLETE,
       siteDetails: INCOMPLETE
@@ -343,6 +350,7 @@ describe('createTaskList', () => {
       specialLegalPowers: 'some powers',
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
+      preferredDates: { start: '2026-01-01', end: '2026-12-31' },
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite]
     }
@@ -353,6 +361,7 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: COMPLETED,
       siteDetails: IN_PROGRESS

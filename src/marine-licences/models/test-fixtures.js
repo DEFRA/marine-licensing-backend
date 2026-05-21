@@ -1,7 +1,7 @@
 import { MARINE_LICENCE_STATUS } from '../constants/marine-licence.js'
 import { ObjectId } from 'mongodb'
 
-const preferredDates = {
+export const preferredDates = {
   start: new Date('2027-01-01'),
   end: new Date('2027-12-31')
 }
