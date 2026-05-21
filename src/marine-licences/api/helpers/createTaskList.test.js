@@ -38,7 +38,7 @@ describe('createTaskList', () => {
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
       publicRegister: 'Public Register Info',
-      publicconsulted: {
+      publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
       }
@@ -50,7 +50,7 @@ describe('createTaskList', () => {
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
-      publicconsulted: COMPLETED,
+      publicConsultation: COMPLETED,
       publicRegister: COMPLETED
     })
   })
@@ -63,7 +63,7 @@ describe('createTaskList', () => {
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
       publicRegister: 'Public Register Info',
-      publicconsulted: {
+      publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
       }
@@ -75,7 +75,7 @@ describe('createTaskList', () => {
       siteDetails: IN_PROGRESS,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
-      publicconsulted: COMPLETED
+      publicConsultation: COMPLETED
     })
   })
 
@@ -97,7 +97,7 @@ describe('createTaskList', () => {
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
-      publicconsulted: INCOMPLETE,
+      publicConsultation: INCOMPLETE,
       publicRegister: INCOMPLETE
     })
   })
@@ -344,7 +344,7 @@ describe('createTaskList', () => {
       otherAuthorities: INCOMPLETE,
       projectBackground: INCOMPLETE,
       publicRegister: INCOMPLETE,
-      publicconsulted: INCOMPLETE,
+      publicConsultation: INCOMPLETE,
       siteDetails: INCOMPLETE
     })
   })
@@ -356,7 +356,7 @@ describe('createTaskList', () => {
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
-      publicconsulted: {
+      publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
       },
@@ -371,7 +371,7 @@ describe('createTaskList', () => {
       otherAuthorities: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: COMPLETED,
-      publicconsulted: COMPLETED,
+      publicConsultation: COMPLETED,
       siteDetails: IN_PROGRESS
     })
   })
