@@ -40,12 +40,16 @@ describe('Get marine licence - integration tests', async () => {
     })
     expect(statusCode).toBe(200)
 
-    const { _id, ...rest } = marineLicence
+    const { _id, preferredDates, ...rest } = marineLicence
     expect(body).toEqual({
       ...rest,
       id: _id.toString(),
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
+      preferredDates: {
+        start: preferredDates.start.toISOString(),
+        end: preferredDates.end.toISOString()
+      },
       taskList: {
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
@@ -79,12 +83,16 @@ describe('Get marine licence - integration tests', async () => {
     })
     expect(statusCode).toBe(200)
 
-    const { _id, ...rest } = marineLicence
+    const { _id, preferredDates, ...rest } = marineLicence
     expect(body).toEqual({
       ...rest,
       id: _id.toString(),
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
+      preferredDates: {
+        start: preferredDates.start.toISOString(),
+        end: preferredDates.end.toISOString()
+      },
       whoMarineLicenceIsFor: 'Dave Barnett',
       taskList: {
         projectName: 'COMPLETED',
