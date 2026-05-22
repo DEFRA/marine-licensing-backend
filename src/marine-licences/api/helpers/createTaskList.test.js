@@ -41,7 +41,11 @@ describe('createTaskList', () => {
         end: { month: '12', year: '2026' }
       },
       projectBackground: 'Some background',
-      publicRegister: 'Public Register Info'
+      publicRegister: 'Public Register Info',
+      publicConsultation: {
+        consulted: 'yes',
+        details: 'Public consultation details'
+      }
     }
 
     expect(createTaskList(marineLicence)).toEqual({
@@ -51,6 +55,7 @@ describe('createTaskList', () => {
       otherAuthorities: COMPLETED,
       preferredDates: COMPLETED,
       projectBackground: COMPLETED,
+      publicConsultation: COMPLETED,
       publicRegister: COMPLETED
     })
   })
@@ -66,7 +71,11 @@ describe('createTaskList', () => {
         start: { month: '01', year: '2026' },
         end: { month: '12', year: '2026' }
       },
-      publicRegister: 'Public Register Info'
+      publicRegister: 'Public Register Info',
+      publicConsultation: {
+        consulted: 'yes',
+        details: 'Public consultation details'
+      }
     }
 
     expect(createTaskList(marineLicence, true)).toEqual({
@@ -75,7 +84,8 @@ describe('createTaskList', () => {
       siteDetails: IN_PROGRESS,
       otherAuthorities: COMPLETED,
       preferredDates: COMPLETED,
-      projectBackground: COMPLETED
+      projectBackground: COMPLETED,
+      publicConsultation: COMPLETED
     })
   })
 
@@ -102,6 +112,7 @@ describe('createTaskList', () => {
       otherAuthorities: COMPLETED,
       preferredDates: COMPLETED,
       projectBackground: COMPLETED,
+      publicConsultation: INCOMPLETE,
       publicRegister: INCOMPLETE
     })
   })
@@ -349,6 +360,7 @@ describe('createTaskList', () => {
       preferredDates: INCOMPLETE,
       projectBackground: INCOMPLETE,
       publicRegister: INCOMPLETE,
+      publicConsultation: INCOMPLETE,
       siteDetails: INCOMPLETE
     })
   })
@@ -364,6 +376,10 @@ describe('createTaskList', () => {
         end: { month: '12', year: '2026' }
       },
       projectBackground: 'Some background',
+      publicConsultation: {
+        consulted: 'yes',
+        details: 'Public consultation details'
+      },
       siteDetails: [mockFileUploadSite]
     }
 
@@ -376,6 +392,7 @@ describe('createTaskList', () => {
       preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: COMPLETED,
+      publicConsultation: COMPLETED,
       siteDetails: IN_PROGRESS
     })
   })

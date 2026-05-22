@@ -130,6 +130,10 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       start: { month: '01', year: '2027' },
       end: { month: '12', year: '2027' }
     },
+    publicConsultation: {
+      consulted: 'yes',
+      details: 'Public consultation details'
+    },
     status: MARINE_LICENCE_STATUS.DRAFT,
     createdAt: new Date('2026-12-01'),
     updatedAt: new Date('2026-12-01'),

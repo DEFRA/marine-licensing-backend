@@ -6,3 +6,7 @@ export const getContactId = (auth) => {
   }
   return auth.credentials.contactId
 }
+
+export const getOptionalContactId = (auth) => {
+  return auth?.credentials?.contactId ?? null
+}

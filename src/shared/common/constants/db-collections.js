@@ -17,3 +17,5 @@ export const collectionCoastalOperationsAreas = 'coastal-operations-areas'
 export const collectionMarinePlanAreas = 'marine-plan-areas'
 
 export const collectionMarineLicences = 'marine-licences'
+
+export const collectionIatAnswers = 'iat-answers'

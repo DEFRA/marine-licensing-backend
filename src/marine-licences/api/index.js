@@ -6,6 +6,7 @@ import { submitMarineLicenceController } from './controllers/submit-marine-licen
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
 import { updatePreferredDatesController } from './controllers/update-preferred-dates.js'
+import { updatePublicConsultationController } from './controllers/update-public-consultation.js'
 import { updateOtherAuthoritiesController } from './controllers/update-other-authorities.js'
 import { updateProjectBackgroundController } from './controllers/update-project-background.js'
 import { updateSiteDetailsController } from './controllers/update-site-details.js'
@@ -88,5 +89,10 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/preferred-dates',
     ...updatePreferredDatesController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/public-consultation',
+    ...updatePublicConsultationController
   }
 ]
