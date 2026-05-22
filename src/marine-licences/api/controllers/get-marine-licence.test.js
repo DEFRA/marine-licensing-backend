@@ -90,7 +90,7 @@ describe('GET /marine-licence', () => {
           reason: 'Test public register reason'
         },
         publicConsultation: {
-          consultation: 'yes',
+          consulted: 'yes',
           details: 'Public consultation details'
         },
         otherAuthorities: 'Test authority',
@@ -118,7 +118,7 @@ describe('GET /marine-licence', () => {
               reason: 'Test public register reason'
             },
             publicConsultation: {
-              consultation: 'yes',
+              consulted: 'yes',
               details: 'Public consultation details'
             },
             otherAuthorities: 'Test authority',
