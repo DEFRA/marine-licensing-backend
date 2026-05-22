@@ -8,15 +8,6 @@ describe('PATCH /marine-licence/preferred-dates', () => {
     updatedBy: 'user123'
   }
 
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-05-21T12:00:00.000Z'))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   it('should update marine licence with preferred dates', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {

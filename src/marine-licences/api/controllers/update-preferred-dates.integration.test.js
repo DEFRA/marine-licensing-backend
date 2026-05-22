@@ -9,6 +9,7 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
   const differentContactId = '987e6543-e21b-12d3-a456-426614174000'
   const marineLicenceId = new ObjectId()
+  const nextYear = String(new Date().getFullYear() + 1)
 
   test('successfully updates preferred dates', async () => {
     const marineLicence = createCompleteMarineLicence({
@@ -21,8 +22,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      start: { month: '06', year: '2026' },
-      end: { month: '12', year: '2026' }
+      start: { month: '06', year: nextYear },
+      end: { month: '12', year: nextYear }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -40,8 +41,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
       .findOne({ _id: marineLicenceId })
 
     expect(updatedLicence.preferredDates).toEqual({
-      start: { month: '06', year: '2026' },
-      end: { month: '12', year: '2026' }
+      start: { month: '06', year: nextYear },
+      end: { month: '12', year: nextYear }
     })
   })
 
@@ -50,8 +51,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: nonExistentId.toString(),
-      start: { month: '06', year: '2026' },
-      end: { month: '12', year: '2026' }
+      start: { month: '06', year: nextYear },
+      end: { month: '12', year: nextYear }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -76,8 +77,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      start: { month: '06', year: '2026' },
-      end: { month: '12', year: '2026' }
+      start: { month: '06', year: nextYear },
+      end: { month: '12', year: nextYear }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -102,7 +103,7 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      end: { month: '12', year: '2026' }
+      end: { month: '12', year: nextYear }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -127,8 +128,8 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      start: { month: '08', year: '2026' },
-      end: { month: '07', year: '2026' }
+      start: { month: '08', year: nextYear },
+      end: { month: '07', year: nextYear }
     }
 
     const { statusCode, body } = await makePatchRequest({
