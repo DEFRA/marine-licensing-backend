@@ -1,11 +1,20 @@
 import { vi } from 'vitest'
-import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
-import { getContactId } from '../../helpers/get-contact-id.js'
+import {
+  addCreateAuditFields,
+  addCreateAuditFieldsOptional,
+  addUpdateAuditFields,
+  addUpdateAuditFieldsOptional
+} from './mongo-audit.js'
+import {
+  getContactId,
+  getOptionalContactId
+} from '../../helpers/get-contact-id.js'
 
 vi.mock('../../helpers/get-contact-id.js')
 
 describe('mongo-audit', () => {
   const mockedGetContactId = vi.mocked(getContactId)
+  const mockedGetOptionalContactId = vi.mocked(getOptionalContactId)
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -81,6 +90,53 @@ describe('mongo-audit', () => {
         updatedAt: expectedDate,
         updatedBy: 'user456'
       })
+    })
+  })
+
+  describe('addCreateAuditFieldsOptional', () => {
+    it('stamps createdAt/updatedAt and null createdBy/updatedBy when anonymous', () => {
+      mockedGetOptionalContactId.mockReturnValue(null)
+
+      const result = addCreateAuditFieldsOptional(undefined, { foo: 'bar' })
+
+      expect(result.foo).toBe('bar')
+      expect(result.createdAt).toBeInstanceOf(Date)
+      expect(result.updatedAt).toBeInstanceOf(Date)
+      expect(result.createdBy).toBeNull()
+      expect(result.updatedBy).toBeNull()
+    })
+
+    it('uses contactId when authenticated', () => {
+      mockedGetOptionalContactId.mockReturnValue('user-1')
+
+      const auth = { credentials: { contactId: 'user-1' } }
+      const result = addCreateAuditFieldsOptional(auth, { foo: 'bar' })
+
+      expect(result.createdBy).toBe('user-1')
+      expect(result.updatedBy).toBe('user-1')
+    })
+  })
+
+  describe('addUpdateAuditFieldsOptional', () => {
+    it('bumps updatedAt and null updatedBy when anonymous, leaves createdAt alone', () => {
+      mockedGetOptionalContactId.mockReturnValue(null)
+
+      const result = addUpdateAuditFieldsOptional(undefined, { foo: 'bar' })
+
+      expect(result.foo).toBe('bar')
+      expect(result.updatedAt).toBeInstanceOf(Date)
+      expect(result.updatedBy).toBeNull()
+      expect(result.createdAt).toBeUndefined()
+      expect(result.createdBy).toBeUndefined()
+    })
+
+    it('uses contactId when authenticated', () => {
+      mockedGetOptionalContactId.mockReturnValue('user-2')
+
+      const auth = { credentials: { contactId: 'user-2' } }
+      const result = addUpdateAuditFieldsOptional(auth, { foo: 'bar' })
+
+      expect(result.updatedBy).toBe('user-2')
     })
   })
 })
