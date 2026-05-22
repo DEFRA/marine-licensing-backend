@@ -2,8 +2,6 @@ import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 
 const MIN_YEAR = new Date().getFullYear()
-const MAX_YEAR_OFFSET = 20
-const MAX_YEAR = MIN_YEAR + MAX_YEAR_OFFSET
 
 const MONTH_PATTERN = /^(0?[1-9]|1[0-2])$/
 const YEAR_PATTERN = /^\d{4}$/
@@ -51,7 +49,7 @@ const preferredDatePartSchema = (
     .custom((value, helpers) => {
       const year = Number(value.year)
 
-      if (year < MIN_YEAR || year > MAX_YEAR) {
+      if (year < MIN_YEAR) {
         return helpers.error('number.range')
       }
 
