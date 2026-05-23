@@ -4,6 +4,7 @@ import { addCreateAuditFieldsOptional } from '../../../shared/common/helpers/mon
 import { collectionIatAnswers } from '../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { generateSlug } from '../helpers/generate-slug.js'
+import { config } from '../../../config.js'
 
 const DUPLICATE_KEY_CODE = 11000
 
@@ -14,7 +15,7 @@ export const createIatAnswersController = {
   },
   handler: async (request, h) => {
     try {
-      const ttlMs = request.server.settings.app.config.get('iat.inFlightTtlMs')
+      const ttlMs = config.get('iat.inFlightTtlMs')
       const expiresAt = new Date(Date.now() + ttlMs)
       const slug = await insertWithSlug(request.db, request.auth, expiresAt)
       return h

@@ -17,15 +17,6 @@ describe('createIatAnswersController', () => {
     request = {
       db,
       auth: { credentials: null },
-      server: {
-        settings: {
-          app: {
-            config: {
-              get: (k) => (k === 'iat.inFlightTtlMs' ? TTL_MS : undefined)
-            }
-          }
-        }
-      },
       logger: { error: vi.fn() }
     }
   })
