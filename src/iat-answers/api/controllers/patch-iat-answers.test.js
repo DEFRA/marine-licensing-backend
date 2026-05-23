@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import Boom from '@hapi/boom'
 import { patchIatAnswersController } from './patch-iat-answers.js'
 import { collectionIatAnswers } from '../../../shared/common/constants/db-collections.js'
 
@@ -43,7 +42,7 @@ describe('patchIatAnswersController', () => {
   it('throws Boom.notFound when no doc matched (published or missing)', async () => {
     updateOne.mockResolvedValueOnce({ matchedCount: 0 })
     await expect(patchIatAnswersController.handler(request, h)).rejects.toThrow(
-      Boom.notFound().message
+      'IAT answers not found or already published'
     )
   })
 
@@ -61,5 +60,25 @@ describe('patchIatAnswersController', () => {
         answers: [{ type: 'banana', questionRoute: '/x' }]
       })
     expect(error).toBeDefined()
+  })
+
+  it('writes update audit fields when caller is authenticated', async () => {
+    request.auth = {
+      credentials: { contactId: 'user-123', email: 'u@example.com' }
+    }
+    await patchIatAnswersController.handler(request, h)
+    const setPayload = updateOne.mock.calls[0][1].$set
+    // addUpdateAuditFieldsOptional sets updatedAt + updatedBy when auth has credentials
+    expect(setPayload.updatedAt).toBeDefined()
+    expect(setPayload.updatedBy).toBe('user-123')
+  })
+
+  it('sets updatedAt and sets updatedBy to null when caller is unauthenticated', async () => {
+    // request.auth.credentials is already null from beforeEach
+    await patchIatAnswersController.handler(request, h)
+    const setPayload = updateOne.mock.calls[0][1].$set
+    // addUpdateAuditFieldsOptional always sets updatedAt; updatedBy is null when no credentials
+    expect(setPayload.updatedAt).toBeDefined()
+    expect(setPayload.updatedBy).toBeNull()
   })
 })

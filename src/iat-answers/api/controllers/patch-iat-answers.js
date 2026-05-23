@@ -27,7 +27,7 @@ export const patchIatAnswersController = {
         .updateOne({ slug: params.slug, published: false }, { $set: update })
 
       if (result.matchedCount === 0) {
-        throw Boom.notFound()
+        throw Boom.notFound('IAT answers not found or already published')
       }
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
