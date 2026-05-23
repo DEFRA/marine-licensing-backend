@@ -1,34 +1,22 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
-import { iatAnswersBody } from '../../models/iat-answers.js'
 import { addCreateAuditFieldsOptional } from '../../../shared/common/helpers/mongo-audit.js'
 import { collectionIatAnswers } from '../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
-import { sanitiseSummaryText } from '../helpers/sanitise-summary-text.js'
 import { generateSlug } from '../helpers/generate-slug.js'
 
-const PAYLOAD_MAX_BYTES = 32 * 1024
 const DUPLICATE_KEY_CODE = 11000
 
 export const createIatAnswersController = {
   options: {
     auth: { mode: 'optional' },
-    payload: { maxBytes: PAYLOAD_MAX_BYTES },
-    validate: {
-      payload: iatAnswersBody
-    }
+    payload: { parse: false }
   },
   handler: async (request, h) => {
     try {
-      const { payload, db, auth } = request
-      const sanitisedPayload = {
-        ...payload,
-        outcome: {
-          ...payload.outcome,
-          summaryText: sanitiseSummaryText(payload.outcome.summaryText)
-        }
-      }
-      const slug = await insertWithSlug(db, auth, sanitisedPayload)
+      const ttlMs = request.server.settings.app.config.get('iat.inFlightTtlMs')
+      const expiresAt = new Date(Date.now() + ttlMs)
+      const slug = await insertWithSlug(request.db, request.auth, expiresAt)
       return h
         .response({ message: 'success', value: { slug } })
         .code(StatusCodes.CREATED)
@@ -36,7 +24,6 @@ export const createIatAnswersController = {
       if (error.isBoom) {
         throw error
       }
-
       request.logger.error(
         structureErrorForECS(error),
         'Error creating IAT answers'
@@ -46,24 +33,21 @@ export const createIatAnswersController = {
   }
 }
 
-async function insertWithSlug(db, auth, sanitisedPayload) {
+async function insertWithSlug(db, auth, expiresAt) {
   const collection = db.collection(collectionIatAnswers)
+  const baseDoc = { answers: [], published: false, expiresAt }
   try {
     const slug = generateSlug()
-    const doc = addCreateAuditFieldsOptional(auth, {
-      ...sanitisedPayload,
-      slug
-    })
-    await collection.insertOne(doc)
+    await collection.insertOne(
+      addCreateAuditFieldsOptional(auth, { ...baseDoc, slug })
+    )
     return slug
   } catch (error) {
     if (error.code === DUPLICATE_KEY_CODE) {
       const retrySlug = generateSlug()
-      const retryDoc = addCreateAuditFieldsOptional(auth, {
-        ...sanitisedPayload,
-        slug: retrySlug
-      })
-      await collection.insertOne(retryDoc)
+      await collection.insertOne(
+        addCreateAuditFieldsOptional(auth, { ...baseDoc, slug: retrySlug })
+      )
       return retrySlug
     }
     throw error

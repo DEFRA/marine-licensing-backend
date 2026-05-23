@@ -1,150 +1,92 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest'
-import Boom from '@hapi/boom'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createIatAnswersController } from './create-iat-answers.js'
+import { collectionIatAnswers } from '../../../shared/common/constants/db-collections.js'
 
-const SLUG_PATTERN = /^[A-Za-z0-9_-]{22}$/
-
-const validPayload = {
-  outcome: {
-    route: '/outcome/licence-not-required/article-17a',
-    typeId: 'lnr-art17a',
-    summaryText: 'You do not need a marine licence.'
-  },
-  answers: [
-    {
-      questionRoute: '/sea',
-      questionText: 'Where will the activity take place?',
-      answers: [{ id: 'inSea', text: 'In the sea' }]
-    }
-  ]
-}
-
-function buildRequest(overrides = {}) {
-  return {
-    payload: validPayload,
-    db: global.mockMongo,
-    auth: {},
-    logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() },
-    ...overrides
-  }
-}
+const FIXED_NOW = 1747920000000
+const TTL_MS = 24 * 60 * 60 * 1000
 
 describe('createIatAnswersController', () => {
-  const insertOne = vi.fn()
+  let insertOne, db, request, h
 
   beforeEach(() => {
-    insertOne.mockReset()
-    global.mockMongo.collection = vi.fn(() => ({ insertOne }))
+    vi.useFakeTimers()
+    vi.setSystemTime(FIXED_NOW)
+    insertOne = vi.fn().mockResolvedValue({ insertedId: 'x' })
+    db = { collection: vi.fn(() => ({ insertOne })) }
+    h = global.mockHandler
+    request = {
+      db,
+      auth: { credentials: null },
+      server: {
+        settings: {
+          app: {
+            config: {
+              get: (k) => (k === 'iat.inFlightTtlMs' ? TTL_MS : undefined)
+            }
+          }
+        }
+      },
+      logger: { error: vi.fn() }
+    }
   })
 
-  it('inserts the doc with slug + audit fields and returns the slug (anonymous)', async () => {
-    insertOne.mockResolvedValue({})
+  afterEach(() => vi.useRealTimers())
 
-    const h = global.mockHandler
-    await createIatAnswersController.handler(buildRequest(), h)
+  it('inserts a doc with generated slug, empty answers, published: false, computed expiresAt', async () => {
+    await createIatAnswersController.handler(request, h)
+    expect(db.collection).toHaveBeenCalledWith(collectionIatAnswers)
+    const doc = insertOne.mock.calls[0][0]
+    expect(doc.slug).toMatch(/^[A-Za-z0-9_-]{22}$/)
+    expect(doc.answers).toEqual([])
+    expect(doc.published).toBe(false)
+    expect(doc.expiresAt).toBeInstanceOf(Date)
+    expect(doc.expiresAt.getTime()).toBe(FIXED_NOW + TTL_MS)
+  })
 
-    expect(global.mockMongo.collection).toHaveBeenCalledWith('iat-answers')
-    const inserted = insertOne.mock.calls[0][0]
-    expect(inserted.createdAt).toBeInstanceOf(Date)
-    expect(inserted.updatedAt).toBeInstanceOf(Date)
-    expect(inserted.createdBy).toBeNull()
-    expect(inserted.updatedBy).toBeNull()
-    expect(inserted.slug).toMatch(SLUG_PATTERN)
-    expect(inserted.outcome).toEqual(validPayload.outcome)
-
-    const responseArg = h.response.mock.calls[0][0]
-    expect(responseArg.message).toBe('success')
-    expect(responseArg.value.slug).toMatch(SLUG_PATTERN)
-    expect(responseArg.value.slug).toBe(inserted.slug)
+  it('returns 201 with the slug in value', async () => {
+    await createIatAnswersController.handler(request, h)
+    expect(h.response).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'success',
+        value: expect.objectContaining({
+          slug: expect.stringMatching(/^[A-Za-z0-9_-]{22}$/)
+        })
+      })
+    )
     expect(h.code).toHaveBeenCalledWith(201)
   })
 
-  it('captures contactId when an auth token is present', async () => {
-    insertOne.mockResolvedValue({})
-    await createIatAnswersController.handler(
-      buildRequest({ auth: { credentials: { contactId: 'user-1' } } }),
-      global.mockHandler
-    )
-    const inserted = insertOne.mock.calls[0][0]
-    expect(inserted.createdBy).toBe('user-1')
-    expect(inserted.updatedBy).toBe('user-1')
-  })
-
-  it('wraps unknown errors as Boom.internal', async () => {
-    insertOne.mockRejectedValue(new Error('db down'))
-    await expect(
-      createIatAnswersController.handler(buildRequest(), global.mockHandler)
-    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
-  })
-
-  it('rethrows Boom errors with their original status code', async () => {
-    insertOne.mockRejectedValue(Boom.forbidden('nope'))
-    await expect(
-      createIatAnswersController.handler(buildRequest(), global.mockHandler)
-    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 403 } })
-  })
-
-  it('sanitises outcome.summaryText before insertOne', async () => {
-    insertOne.mockResolvedValue({})
-
-    const dirtyPayload = {
-      ...validPayload,
-      outcome: {
-        ...validPayload.outcome,
-        summaryText:
-          '<p>ok</p><script>alert(1)</script><a href="javascript:bad">x</a>'
-      }
-    }
-
-    await createIatAnswersController.handler(
-      buildRequest({ payload: dirtyPayload }),
-      global.mockHandler
-    )
-
-    const inserted = insertOne.mock.calls[0][0]
-    expect(inserted.outcome.summaryText).toBe('<p>ok</p><a>x</a>')
-    expect(inserted.outcome.route).toBe(validPayload.outcome.route)
-    expect(inserted.outcome.typeId).toBe(validPayload.outcome.typeId)
-    expect(inserted.answers).toEqual(validPayload.answers)
-  })
-
-  it('retries with a fresh slug when insertOne throws E11000 once then resolves', async () => {
-    const duplicateError = Object.assign(new Error('E11000 duplicate key'), {
-      code: 11000
-    })
-    insertOne.mockRejectedValueOnce(duplicateError).mockResolvedValueOnce({})
-
-    const h = global.mockHandler
-    await createIatAnswersController.handler(buildRequest(), h)
-
+  it('regenerates slug on duplicate-key collision and retries once', async () => {
+    const dupErr = Object.assign(new Error('dup'), { code: 11000 })
+    insertOne
+      .mockRejectedValueOnce(dupErr)
+      .mockResolvedValueOnce({ insertedId: 'x' })
+    await createIatAnswersController.handler(request, h)
     expect(insertOne).toHaveBeenCalledTimes(2)
     const firstSlug = insertOne.mock.calls[0][0].slug
-    const retrySlug = insertOne.mock.calls[1][0].slug
-    expect(retrySlug).toMatch(SLUG_PATTERN)
-
-    const responseArg = h.response.mock.calls[0][0]
-    expect(responseArg.value.slug).toBe(retrySlug)
-    expect(responseArg.value.slug).not.toBe(firstSlug)
+    const secondSlug = insertOne.mock.calls[1][0].slug
+    expect(secondSlug).not.toBe(firstSlug)
   })
 
-  it('rethrows non-duplicate-key errors as Boom.internal', async () => {
-    const otherError = Object.assign(new Error('connection refused'), {
-      code: 99999
-    })
-    insertOne.mockRejectedValue(otherError)
-    await expect(
-      createIatAnswersController.handler(buildRequest(), global.mockHandler)
-    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
+  it('uses server-side TTL (frontend cannot supply expiresAt)', async () => {
+    await createIatAnswersController.handler(request, h)
+    const doc = insertOne.mock.calls[0][0]
+    expect(doc.expiresAt.getTime()).toBe(FIXED_NOW + TTL_MS)
   })
 
-  it('rethrows as Boom.internal when both insertOne calls fail with E11000', async () => {
-    const duplicateError = Object.assign(new Error('E11000 duplicate key'), {
-      code: 11000
-    })
-    insertOne.mockRejectedValue(duplicateError)
-    await expect(
-      createIatAnswersController.handler(buildRequest(), global.mockHandler)
-    ).rejects.toMatchObject({ isBoom: true, output: { statusCode: 500 } })
-    expect(insertOne).toHaveBeenCalledTimes(2)
+  it('writes create audit fields when caller is authenticated', async () => {
+    request.auth = {
+      credentials: { contactId: 'user-123', email: 'u@example.com' }
+    }
+    await createIatAnswersController.handler(request, h)
+    const doc = insertOne.mock.calls[0][0]
+    expect(doc.createdAt).toBeDefined()
+    expect(doc.createdBy).toBe('user-123')
+  })
+
+  it('does not parse incoming body (payload.parse: false)', () => {
+    expect(createIatAnswersController.options.payload).toEqual(
+      expect.objectContaining({ parse: false })
+    )
   })
 })
