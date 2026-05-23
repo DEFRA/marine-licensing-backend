@@ -475,6 +475,14 @@ const config = convict({
         env: 'NOTIFY_MARINE_LICENCE_TEMPLATE_ID_AGENT'
       }
     }
+  },
+  iat: {
+    inFlightTtlMs: {
+      doc: 'TTL in milliseconds for in-flight (unpublished) iat-answers documents. Mongo TTL index purges abandoned IAT journeys after this period.',
+      format: Number,
+      default: 24 * 60 * 60 * 1000,
+      env: 'IAT_IN_FLIGHT_TTL_MS'
+    }
   }
 })
 
