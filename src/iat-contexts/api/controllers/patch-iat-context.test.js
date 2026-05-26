@@ -1,6 +1,23 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { patchIatContextController } from './patch-iat-context.js'
 
+const mkLogEntry = (route, id, text) => ({
+  questionRoute: route,
+  questionText: route.slice(1).toUpperCase(),
+  answers: [{ id, text }],
+  mcmsAppFormMapping: null,
+  answeredAt: new Date()
+})
+
+const mkPayload = (route, id, text, mapping = null) => ({
+  answer: {
+    questionRoute: route,
+    questionText: route.slice(1).toUpperCase(),
+    answers: [{ id, text }],
+    mcmsAppFormMapping: mapping
+  }
+})
+
 describe('patchIatContextController', () => {
   let findOne, updateOne, db, request
 
@@ -8,30 +25,9 @@ describe('patchIatContextController', () => {
   const ctxBase = {
     slug: validSlug,
     questionLog: [
-      {
-        questionRoute: '/q1',
-        questionText: 'Q1',
-        answerId: 'A',
-        answerText: 'A',
-        mcmsAppFormMapping: null,
-        answeredAt: new Date()
-      },
-      {
-        questionRoute: '/q2',
-        questionText: 'Q2',
-        answerId: 'B',
-        answerText: 'B',
-        mcmsAppFormMapping: null,
-        answeredAt: new Date()
-      },
-      {
-        questionRoute: '/q3',
-        questionText: 'Q3',
-        answerId: 'C',
-        answerText: 'C',
-        mcmsAppFormMapping: null,
-        answeredAt: new Date()
-      }
+      mkLogEntry('/q1', 'A', 'A'),
+      mkLogEntry('/q2', 'B', 'B'),
+      mkLogEntry('/q3', 'C', 'C')
     ]
   }
 
@@ -49,15 +45,7 @@ describe('patchIatContextController', () => {
 
   test('forward append: new route not in log appends to the end', async () => {
     findOne.mockResolvedValue({ ...ctxBase })
-    request.payload = {
-      answer: {
-        questionRoute: '/q4',
-        questionText: 'Q4',
-        answerId: 'D',
-        answerText: 'D',
-        mcmsAppFormMapping: null
-      }
-    }
+    request.payload = mkPayload('/q4', 'D', 'D')
     await patchIatContextController.handler(request, global.mockHandler)
     const update = updateOne.mock.calls[0][1].$set
     expect(update.questionLog).toHaveLength(4)
@@ -66,48 +54,45 @@ describe('patchIatContextController', () => {
 
   test('back-track truncate: existing route truncates everything from that point and re-appends', async () => {
     findOne.mockResolvedValue({ ...ctxBase })
-    request.payload = {
-      answer: {
-        questionRoute: '/q2',
-        questionText: 'Q2',
-        answerId: 'B2',
-        answerText: 'B prime',
-        mcmsAppFormMapping: null
-      }
-    }
+    request.payload = mkPayload('/q2', 'B2', 'B prime')
     await patchIatContextController.handler(request, global.mockHandler)
     const update = updateOne.mock.calls[0][1].$set
     expect(update.questionLog).toHaveLength(2)
     expect(update.questionLog[0].questionRoute).toBe('/q1')
-    expect(update.questionLog[1].answerId).toBe('B2')
+    expect(update.questionLog[1].answers[0].id).toBe('B2')
   })
 
   test('first answer to a new context: empty log becomes one-entry log', async () => {
+    findOne.mockResolvedValue({ slug: validSlug, questionLog: [] })
+    request.payload = mkPayload('/q1', 'A', 'A')
+    await patchIatContextController.handler(request, global.mockHandler)
+    expect(updateOne.mock.calls[0][1].$set.questionLog).toHaveLength(1)
+  })
+
+  test('multi-select: payload with multiple answers is stored as-is', async () => {
     findOne.mockResolvedValue({ slug: validSlug, questionLog: [] })
     request.payload = {
       answer: {
         questionRoute: '/q1',
         questionText: 'Q1',
-        answerId: 'A',
-        answerText: 'A',
-        mcmsAppFormMapping: null
+        answers: [
+          { id: 'A', text: 'Apple' },
+          { id: 'B', text: 'Banana' }
+        ],
+        mcmsAppFormMapping: 'FRUITS'
       }
     }
     await patchIatContextController.handler(request, global.mockHandler)
-    expect(updateOne.mock.calls[0][1].$set.questionLog).toHaveLength(1)
+    const stored = updateOne.mock.calls[0][1].$set.questionLog[0]
+    expect(stored.answers).toEqual([
+      { id: 'A', text: 'Apple' },
+      { id: 'B', text: 'Banana' }
+    ])
   })
 
   test('404 when slug unknown / TTL-expired', async () => {
     findOne.mockResolvedValue(null)
-    request.payload = {
-      answer: {
-        questionRoute: '/q1',
-        questionText: 'Q1',
-        answerId: 'A',
-        answerText: 'A',
-        mcmsAppFormMapping: null
-      }
-    }
+    request.payload = mkPayload('/q1', 'A', 'A')
     await expect(
       patchIatContextController.handler(request, global.mockHandler)
     ).rejects.toThrow('IAT context not found or expired')
@@ -115,15 +100,7 @@ describe('patchIatContextController', () => {
 
   test('audit fields populated (updatedAt / updatedBy)', async () => {
     findOne.mockResolvedValue({ ...ctxBase })
-    request.payload = {
-      answer: {
-        questionRoute: '/q4',
-        questionText: 'Q4',
-        answerId: 'D',
-        answerText: 'D',
-        mcmsAppFormMapping: null
-      }
-    }
+    request.payload = mkPayload('/q4', 'D', 'D')
     await patchIatContextController.handler(request, global.mockHandler)
     const update = updateOne.mock.calls[0][1].$set
     expect(update.updatedAt).toBeInstanceOf(Date)

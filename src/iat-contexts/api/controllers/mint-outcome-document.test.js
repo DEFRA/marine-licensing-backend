@@ -15,8 +15,7 @@ describe('mintOutcomeDocumentController', () => {
       {
         questionRoute: '/q1',
         questionText: 'Q1',
-        answerId: 'A',
-        answerText: 'A',
+        answers: [{ id: 'A', text: 'A' }],
         mcmsAppFormMapping: 'ACTIVITY_TYPE',
         answeredAt: new Date('2026-05-26T00:00:00Z')
       }

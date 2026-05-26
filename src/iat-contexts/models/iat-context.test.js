@@ -27,14 +27,26 @@ describe('iatContextPatchBody', () => {
   const validAnswer = {
     questionRoute: '/q1',
     questionText: 'What?',
-    answerId: 'A',
-    answerText: 'Answer',
+    answers: [{ id: 'A', text: 'Answer' }],
     mcmsAppFormMapping: null
   }
 
-  test('accepts a valid answer wrapper', () => {
+  test('accepts a valid single-select answer wrapper', () => {
     expect(
       iatContextPatchBody.validate({ answer: validAnswer }).error
+    ).toBeUndefined()
+  })
+  test('accepts a multi-select answer wrapper (multiple {id,text})', () => {
+    expect(
+      iatContextPatchBody.validate({
+        answer: {
+          ...validAnswer,
+          answers: [
+            { id: 'A', text: 'A text' },
+            { id: 'B', text: 'B text' }
+          ]
+        }
+      }).error
     ).toBeUndefined()
   })
   test('accepts mcmsAppFormMapping as a string', () => {
@@ -48,9 +60,18 @@ describe('iatContextPatchBody', () => {
     const { questionText, ...rest } = validAnswer
     expect(iatContextPatchBody.validate({ answer: rest }).error).toBeDefined()
   })
-  test('requires answerText (frozen text)', () => {
-    const { answerText, ...rest } = validAnswer
-    expect(iatContextPatchBody.validate({ answer: rest }).error).toBeDefined()
+  test('requires at least one selected answer', () => {
+    expect(
+      iatContextPatchBody.validate({ answer: { ...validAnswer, answers: [] } })
+        .error
+    ).toBeDefined()
+  })
+  test('requires each selected answer to have id and text (frozen)', () => {
+    expect(
+      iatContextPatchBody.validate({
+        answer: { ...validAnswer, answers: [{ id: 'A' }] }
+      }).error
+    ).toBeDefined()
   })
 })
 

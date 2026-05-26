@@ -14,11 +14,22 @@ export const iatContextSlugParams = joi.object({
   })
 })
 
+const ANSWERS_PER_ENTRY_MAX = 50
+
+const selectedAnswerSchema = joi.object({
+  id: joi.string().max(ANSWER_ID_MAX).required(),
+  text: joi.string().max(TEXT_MAX).required()
+})
+
 const answerSchema = joi.object({
   questionRoute: joi.string().max(ROUTE_MAX).required(),
   questionText: joi.string().max(TEXT_MAX).required(),
-  answerId: joi.string().max(ANSWER_ID_MAX).required(),
-  answerText: joi.string().max(TEXT_MAX).required(),
+  answers: joi
+    .array()
+    .items(selectedAnswerSchema)
+    .min(1)
+    .max(ANSWERS_PER_ENTRY_MAX)
+    .required(),
   mcmsAppFormMapping: joi.string().max(MAPPING_MAX).allow(null).required()
 })
 

@@ -27,8 +27,7 @@ describe('iat-contexts + iat-outcome-documents lifecycle (integration)', async (
     answer: {
       questionRoute,
       questionText: questionRoute.replace('/', ''),
-      answerId,
-      answerText,
+      answers: [{ id: answerId, text: answerText }],
       mcmsAppFormMapping
     }
   })
@@ -71,7 +70,7 @@ describe('iat-contexts + iat-outcome-documents lifecycle (integration)', async (
     expect(snap1Read.statusCode).toBe(200)
     const snap1FirstRead = JSON.parse(snap1Read.payload).value
     expect(snap1FirstRead.questionLog).toHaveLength(3)
-    expect(snap1FirstRead.questionLog[1].answerId).toBe('B')
+    expect(snap1FirstRead.questionLog[1].answers[0].id).toBe('B')
 
     // 7-8: back-track to Q2 with new answer, then Q3 again
     await patch(`/iat-contexts/${ctxSlug}`, answer('/q2', 'B2', 'B prime'))
@@ -89,16 +88,16 @@ describe('iat-contexts + iat-outcome-documents lifecycle (integration)', async (
     const snap1ReadAgain = await get(`/outcome-documents/${snap1}`)
     const snap1Doc = JSON.parse(snap1ReadAgain.payload).value
     expect(snap1Doc.questionLog).toHaveLength(3)
-    expect(snap1Doc.questionLog[1].answerId).toBe('B') // not B2
-    expect(snap1Doc.questionLog[2].answerId).toBe('C') // not C2
+    expect(snap1Doc.questionLog[1].answers[0].id).toBe('B') // not B2
+    expect(snap1Doc.questionLog[2].answers[0].id).toBe('C') // not C2
     expect(snap1Doc.focusedOption.id).toBe('WO_FOO')
 
     // 11: snap2 returns the back-tracked path
     const snap2Read = await get(`/outcome-documents/${snap2}`)
     const snap2Doc = JSON.parse(snap2Read.payload).value
     expect(snap2Doc.questionLog).toHaveLength(3)
-    expect(snap2Doc.questionLog[1].answerId).toBe('B2')
-    expect(snap2Doc.questionLog[2].answerId).toBe('C2')
+    expect(snap2Doc.questionLog[1].answers[0].id).toBe('B2')
+    expect(snap2Doc.questionLog[2].answers[0].id).toBe('C2')
     expect(snap2Doc.focusedOption.id).toBe('WO_BAR')
 
     // 12: two distinct snapshot docs exist for the same context
