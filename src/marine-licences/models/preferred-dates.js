@@ -5,14 +5,21 @@ const getMinYear = () => new Date().getFullYear()
 
 const MONTH_PATTERN = /^(0?[1-9]|1[0-2])$/
 const YEAR_PATTERN = /^\d{4}$/
-const MAX_MONTH = 12
 
-const toMonthValue = ({ month, year }) =>
-  Number(year) * MAX_MONTH + (Number(month) - 1)
+const isSameYearAndEndMonthBefore = (start, end) =>
+  Number(end.year) === Number(start.year) &&
+  Number(end.month) < Number(start.month)
 
-const currentMonthValue = () => {
+const isEndBeforeStart = (start, end) =>
+  Number(end.year) < Number(start.year) ||
+  isSameYearAndEndMonthBefore(start, end)
+
+const isBeforeCurrentMonth = ({ month, year }) => {
   const now = new Date()
-  return now.getFullYear() * MAX_MONTH + now.getMonth()
+  return (
+    Number(year) < now.getFullYear() ||
+    (Number(year) === now.getFullYear() && Number(month) - 1 < now.getMonth())
+  )
 }
 
 const monthSchema = (errorPrefix) =>
@@ -53,7 +60,7 @@ const preferredDatePartSchema = (
         return helpers.error('number.range')
       }
 
-      if (validateTodayOrLater && toMonthValue(value) < currentMonthValue()) {
+      if (validateTodayOrLater && isBeforeCurrentMonth(value)) {
         return helpers.error('date.min')
       }
 
@@ -78,7 +85,7 @@ export const preferredDatesRangeSchema = joi
     })
   })
   .custom((value, helpers) => {
-    if (toMonthValue(value.end) < toMonthValue(value.start)) {
+    if (isEndBeforeStart(value.start, value.end)) {
       return helpers.error('date.min')
     }
 

@@ -3,6 +3,7 @@ import { makePatchRequest } from '../../../../tests/server-requests.js'
 import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { vi } from 'vitest'
 
 describe('PATCH /marine-licence/preferred-dates - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -115,6 +116,43 @@ describe('PATCH /marine-licence/preferred-dates - integration tests', async () =
 
     expect(statusCode).toBe(400)
     expect(body.message).toContain('PREFERRED_START_DATE_REQUIRED')
+  })
+
+  describe('when start date is in the past', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-15T12:00:00.000Z'))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    test('returns 400', async () => {
+      const marineLicence = createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId
+      })
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .insertOne(marineLicence)
+
+      const payload = {
+        id: marineLicenceId.toString(),
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2027' }
+      }
+
+      const { statusCode, body } = await makePatchRequest({
+        server: getServer(),
+        url: '/marine-licence/preferred-dates',
+        contactId,
+        payload
+      })
+
+      expect(statusCode).toBe(400)
+      expect(body.message).toContain('PREFERRED_START_DATE_TODAY_OR_FUTURE')
+    })
   })
 
   test('returns 400 when end date is before start date', async () => {
