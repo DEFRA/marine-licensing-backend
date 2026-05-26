@@ -1,6 +1,7 @@
 import { vi, expect } from 'vitest'
 import Boom from '@hapi/boom'
 import { getExemptionSummaryController } from './get-exemption-summary.js'
+import { buildExemptionSummaryPipeline } from '../helpers/exemption-summary.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 
 describe('GET /exemptions/summary', () => {
@@ -20,15 +21,29 @@ describe('GET /exemptions/summary', () => {
     }
   })
 
-  it('returns status counts for internal users', async () => {
+  it('returns status counts and report metrics for internal users', async () => {
     mockDb = {
       collection: vi.fn().mockReturnValue({
         aggregate: mockAggregate.mockReturnValue({
           toArray: vi.fn().mockResolvedValue([
-            { _id: EXEMPTION_STATUS.ACTIVE, count: 4 },
-            { _id: EXEMPTION_STATUS.SUBMITTED, count: 2 },
-            { _id: EXEMPTION_STATUS.DRAFT, count: 3 },
-            { _id: EXEMPTION_STATUS.WITHDRAWN, count: 1 }
+            {
+              statusCounts: [
+                { _id: EXEMPTION_STATUS.ACTIVE, count: 4 },
+                { _id: EXEMPTION_STATUS.SUBMITTED, count: 2 },
+                { _id: EXEMPTION_STATUS.DRAFT, count: 3 },
+                { _id: EXEMPTION_STATUS.WITHDRAWN, count: 1 }
+              ],
+              shapefileExemptions: [{ count: 1 }],
+              kmlExemptions: [{ count: 2 }],
+              manualCoordinatesExemptions: [{ count: 3 }],
+              coordinateSystemVolume: [
+                { _id: 'wgs84', count: 4 },
+                { _id: 'osgb36', count: 1 }
+              ],
+              byArticle: [{ _id: '25', count: 2 }],
+              byMarinePlanArea: [{ _id: 'East inshore', count: 1 }],
+              byCoastalOperationsArea: [{ _id: 'South', count: 1 }]
+            }
           ])
         })
       })
@@ -47,32 +62,48 @@ describe('GET /exemptions/summary', () => {
       value: {
         submittedExemptions: 6,
         unsubmittedExemptions: 3,
-        withdrawnExemptions: 1
+        withdrawnExemptions: 1,
+        coordinatesInputMethod: {
+          shapefile: 1,
+          kml: 2,
+          manualCoordinates: 3
+        },
+        coordinateSystemVolume: {
+          wgs84: { count: 4, percentage: 80 },
+          bng: { count: 1, percentage: 20 },
+          total: 5
+        },
+        byArticle: {
+          25: 2
+        },
+        byMarinePlanArea: {
+          'East inshore': 1
+        },
+        byCoastalOperationsArea: {
+          South: 1
+        }
       }
     })
     expect(mockHandler.code).toHaveBeenCalledWith(200)
-    expect(mockAggregate).toHaveBeenCalledWith([
-      {
-        $match: {
-          status: {
-            $in: [
-              EXEMPTION_STATUS.ACTIVE,
-              EXEMPTION_STATUS.SUBMITTED,
-              EXEMPTION_STATUS.DRAFT,
-              EXEMPTION_STATUS.WITHDRAWN
-            ]
-          }
-        }
-      },
-      { $group: { _id: '$status', count: { $sum: 1 } } }
-    ])
+    expect(mockAggregate).toHaveBeenCalledWith(buildExemptionSummaryPipeline())
   })
 
   it('returns zero counts when statuses are missing', async () => {
     mockDb = {
       collection: vi.fn().mockReturnValue({
         aggregate: vi.fn().mockReturnValue({
-          toArray: vi.fn().mockResolvedValue([])
+          toArray: vi.fn().mockResolvedValue([
+            {
+              statusCounts: [],
+              shapefileExemptions: [],
+              kmlExemptions: [],
+              manualCoordinatesExemptions: [],
+              coordinateSystemVolume: [],
+              byArticle: [],
+              byMarinePlanArea: [],
+              byCoastalOperationsArea: []
+            }
+          ])
         })
       })
     }
@@ -90,7 +121,20 @@ describe('GET /exemptions/summary', () => {
       value: {
         submittedExemptions: 0,
         unsubmittedExemptions: 0,
-        withdrawnExemptions: 0
+        withdrawnExemptions: 0,
+        coordinatesInputMethod: {
+          shapefile: 0,
+          kml: 0,
+          manualCoordinates: 0
+        },
+        coordinateSystemVolume: {
+          wgs84: { count: 0, percentage: 0 },
+          bng: { count: 0, percentage: 0 },
+          total: 0
+        },
+        byArticle: {},
+        byMarinePlanArea: {},
+        byCoastalOperationsArea: {}
       }
     })
   })
