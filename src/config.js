@@ -478,7 +478,7 @@ const config = convict({
   },
   iat: {
     inFlightTtlMs: {
-      doc: 'TTL in milliseconds for in-flight (unpublished) iat-answers documents. Mongo TTL index purges abandoned IAT journeys after this period.',
+      doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',
       format: Number,
       default: 24 * 60 * 60 * 1000,
       env: 'IAT_IN_FLIGHT_TTL_MS'

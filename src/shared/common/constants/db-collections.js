@@ -18,4 +18,5 @@ export const collectionMarinePlanAreas = 'marine-plan-areas'
 
 export const collectionMarineLicences = 'marine-licences'
 
-export const collectionIatAnswers = 'iat-answers'
+export const collectionIatContexts = 'iat-contexts'
+export const collectionIatOutcomeDocuments = 'iat-outcome-documents'
