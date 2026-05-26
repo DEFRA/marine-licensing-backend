@@ -62,6 +62,7 @@ async function insertSnapshot(collection, auth, context, payload) {
   const base = {
     contextSlug: context.slug,
     questionLog: context.questionLog ?? [],
+    preamble: payload.preamble,
     outcomeRoute: payload.outcomeRoute,
     outcomeKind: payload.outcomeKind,
     outcomeHeading: payload.outcomeHeading,

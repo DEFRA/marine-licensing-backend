@@ -53,6 +53,7 @@ const focusedOptionSchema = joi.object({
 })
 
 export const outcomeDocumentMintBody = joi.object({
+  preamble: joi.string().max(TEXT_MAX).allow('').required(),
   outcomeRoute: joi.string().max(ROUTE_MAX).required(),
   outcomeKind: joi
     .string()

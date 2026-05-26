@@ -77,6 +77,7 @@ describe('iatContextPatchBody', () => {
 
 describe('outcomeDocumentMintBody', () => {
   const validBody = {
+    preamble: 'The purpose of the MMO marine licence requirement checker tool…',
     outcomeRoute: '/outcome-a',
     outcomeKind: 'terminal-single',
     outcomeHeading: 'You may need …',
@@ -117,5 +118,14 @@ describe('outcomeDocumentMintBody', () => {
       outcomeDocumentMintBody.validate({ ...validBody, focusedOption: rest })
         .error
     ).toBeDefined()
+  })
+  test('requires preamble (frozen at mint time so snapshot survives JSON change)', () => {
+    const { preamble, ...rest } = validBody
+    expect(outcomeDocumentMintBody.validate(rest).error).toBeDefined()
+  })
+  test('accepts empty preamble', () => {
+    expect(
+      outcomeDocumentMintBody.validate({ ...validBody, preamble: '' }).error
+    ).toBeUndefined()
   })
 })

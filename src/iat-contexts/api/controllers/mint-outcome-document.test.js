@@ -22,6 +22,7 @@ describe('mintOutcomeDocumentController', () => {
     ]
   }
   const baseBody = {
+    preamble: 'The purpose of the MMO marine licence requirement checker tool…',
     outcomeRoute: '/outcome-a',
     outcomeKind: 'terminal-single',
     outcomeHeading: 'You may need …',
@@ -77,6 +78,12 @@ describe('mintOutcomeDocumentController', () => {
     const written = insertOne.mock.calls[0][0]
     expect(written.contextSlug).toBe(contextSlug)
     expect(written.capturedAt).toBeInstanceOf(Date)
+  })
+
+  test('persists preamble verbatim from the mint payload', async () => {
+    await mintOutcomeDocumentController.handler(request, global.mockHandler)
+    const written = insertOne.mock.calls[0][0]
+    expect(written.preamble).toBe(baseBody.preamble)
   })
 
   test('404 when context slug unknown / TTL-expired', async () => {

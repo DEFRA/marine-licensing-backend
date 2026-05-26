@@ -33,6 +33,7 @@ describe('iat-contexts + iat-outcome-documents lifecycle (integration)', async (
   })
 
   const mintBody = (focusedId) => ({
+    preamble: 'The purpose of the MMO marine licence requirement checker tool…',
     outcomeRoute: '/outcome-a',
     outcomeKind: 'terminal-single',
     outcomeHeading: 'h',
@@ -99,6 +100,9 @@ describe('iat-contexts + iat-outcome-documents lifecycle (integration)', async (
     expect(snap2Doc.questionLog[1].answers[0].id).toBe('B2')
     expect(snap2Doc.questionLog[2].answers[0].id).toBe('C2')
     expect(snap2Doc.focusedOption.id).toBe('WO_BAR')
+    expect(snap2Doc.preamble).toBe(
+      'The purpose of the MMO marine licence requirement checker tool…'
+    )
 
     // 12: two distinct snapshot docs exist for the same context
     const allSnaps = await globalThis.mockMongo
