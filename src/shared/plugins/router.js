@@ -4,6 +4,7 @@ import { projects } from '../api/projects/index.js'
 import { geoParser } from '../api/geo-parser/index.js'
 import { marineLicences } from '../../marine-licences/api/index.js'
 import { iatContexts } from '../../iat-contexts/api/index.js'
+import { iatOutcomeDocuments } from '../../iat-outcome-documents/api/index.js'
 
 const router = {
   plugin: {
@@ -16,6 +17,7 @@ const router = {
           .concat(geoParser)
           .concat(marineLicences)
           .concat(iatContexts)
+          .concat(iatOutcomeDocuments)
       )
     }
   }
