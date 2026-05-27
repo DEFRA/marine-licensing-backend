@@ -12,6 +12,7 @@ import { updateSiteDetailsController } from './controllers/update-site-details.j
 import { addActivityDetailsController } from './controllers/add-activity-details.js'
 import { deleteActivityDetailsController } from './controllers/delete-activity-details.js'
 import { updateSiteController } from './controllers/update-site.js'
+import { generateCoordinatesCsvController } from './controllers/generate-coordinates-csv.js'
 
 export const marineLicences = [
   {
@@ -88,5 +89,10 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/public-consultation',
     ...updatePublicConsultationController
+  },
+  {
+    method: 'GET',
+    path: '/marine-licence/{id}/generate-coordinates-csv',
+    ...generateCoordinatesCsvController
   }
 ]
