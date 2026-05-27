@@ -20,7 +20,10 @@ export const getOutcomeDocumentController = {
         throw Boom.notFound('Outcome document not found')
       }
 
-      return h.response({ message: 'success', value: doc }).code(StatusCodes.OK)
+      const { _id, ...rest } = doc
+      return h
+        .response({ message: 'success', value: rest })
+        .code(StatusCodes.OK)
     } catch (error) {
       if (error.isBoom) {
         throw error

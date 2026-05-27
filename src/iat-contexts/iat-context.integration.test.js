@@ -72,6 +72,7 @@ describe('iat-contexts + iat-outcome-documents lifecycle (integration)', async (
     const snap1FirstRead = JSON.parse(snap1Read.payload).value
     expect(snap1FirstRead.questionLog).toHaveLength(3)
     expect(snap1FirstRead.questionLog[1].answers[0].id).toBe('B')
+    expect(snap1FirstRead).not.toHaveProperty('_id')
 
     // 7-8: back-track to Q2 with new answer, then Q3 again
     await patch(`/iat-contexts/${ctxSlug}`, answer('/q2', 'B2', 'B prime'))

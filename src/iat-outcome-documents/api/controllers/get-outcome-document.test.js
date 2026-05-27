@@ -15,15 +15,22 @@ describe('getOutcomeDocumentController', () => {
     }
   })
 
-  test('returns the doc when found', async () => {
-    const doc = { slug: validSlug, focusedOption: { id: 'X' }, questionLog: [] }
+  test('returns the doc with _id stripped when found', async () => {
+    const doc = {
+      _id: 'mongo-object-id',
+      slug: validSlug,
+      focusedOption: { id: 'X' },
+      questionLog: []
+    }
     findOne.mockResolvedValue(doc)
     await getOutcomeDocumentController.handler(request, global.mockHandler)
     expect(db.collection).toHaveBeenCalledWith('iat-outcome-documents')
     expect(global.mockHandler.response).toHaveBeenCalledWith({
       message: 'success',
-      value: doc
+      value: { slug: validSlug, focusedOption: { id: 'X' }, questionLog: [] }
     })
+    const { value } = global.mockHandler.response.mock.calls[0][0]
+    expect(value).not.toHaveProperty('_id')
   })
 
   test('404 when absent', async () => {

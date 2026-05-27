@@ -40,7 +40,12 @@ describe('mintOutcomeDocumentController', () => {
 
   beforeEach(() => {
     findOne = vi.fn().mockResolvedValue(baseContext)
-    insertOne = vi.fn().mockResolvedValue({ insertedId: 'x' })
+    // The real MongoDB driver mutates the passed doc in place, adding _id
+    // before the insert resolves. Mirror that so the _id-stripping is tested.
+    insertOne = vi.fn().mockImplementation((doc) => {
+      doc._id = 'mongo-object-id'
+      return Promise.resolve({ insertedId: doc._id })
+    })
     db = {
       collection: vi.fn((name) =>
         name === 'iat-contexts' ? { findOne } : { insertOne }
@@ -71,6 +76,7 @@ describe('mintOutcomeDocumentController', () => {
     )
     expect(responseArg.value.snapshot.contextSlug).toBe(contextSlug)
     expect(responseArg.value.snapshot.focusedOption.id).toBe('WO_FOO')
+    expect(responseArg.value.snapshot).not.toHaveProperty('_id')
   })
 
   test('snapshot includes capturedAt and contextSlug', async () => {

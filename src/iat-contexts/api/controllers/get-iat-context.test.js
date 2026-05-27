@@ -15,15 +15,21 @@ describe('getIatContextController', () => {
     }
   })
 
-  test('returns the context doc when found', async () => {
-    const doc = { slug: validSlug, questionLog: [{ questionRoute: '/q1' }] }
+  test('returns the context doc with _id stripped when found', async () => {
+    const doc = {
+      _id: 'mongo-object-id',
+      slug: validSlug,
+      questionLog: [{ questionRoute: '/q1' }]
+    }
     findOne.mockResolvedValue(doc)
     await getIatContextController.handler(request, global.mockHandler)
     expect(db.collection).toHaveBeenCalledWith('iat-contexts')
     expect(global.mockHandler.response).toHaveBeenCalledWith({
       message: 'success',
-      value: doc
+      value: { slug: validSlug, questionLog: [{ questionRoute: '/q1' }] }
     })
+    const { value } = global.mockHandler.response.mock.calls[0][0]
+    expect(value).not.toHaveProperty('_id')
   })
 
   test('404 when slug unknown / TTL-expired', async () => {

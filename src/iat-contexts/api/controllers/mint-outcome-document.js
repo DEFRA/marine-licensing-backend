@@ -74,7 +74,8 @@ async function insertSnapshot(collection, auth, context, payload) {
     const slug = generateSlug()
     const doc = addCreateAuditFieldsOptional(auth, { ...base, slug })
     await collection.insertOne(doc)
-    return doc
+    const { _id, ...safeDoc } = doc
+    return safeDoc
   } catch (error) {
     if (error.code === DUPLICATE_KEY_CODE) {
       const retrySlug = generateSlug()
@@ -83,7 +84,8 @@ async function insertSnapshot(collection, auth, context, payload) {
         slug: retrySlug
       })
       await collection.insertOne(doc)
-      return doc
+      const { _id, ...safeDoc } = doc
+      return safeDoc
     }
     throw error
   }
