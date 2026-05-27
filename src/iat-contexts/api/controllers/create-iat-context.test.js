@@ -46,4 +46,37 @@ describe('createIatContextController', () => {
   test('payload is ignored (parse: false)', () => {
     expect(createIatContextController.options.payload).toEqual({ parse: false })
   })
+
+  test('re-throws non-duplicate-key insert errors verbatim', async () => {
+    const writeErr = Object.assign(new Error('write concern failed'), {
+      code: 64
+    })
+    insertOne.mockRejectedValue(writeErr)
+    await expect(
+      createIatContextController.handler(request, global.mockHandler)
+    ).rejects.toThrow(/write concern failed/)
+  })
+
+  test('re-throws Boom errors without wrapping', async () => {
+    const boomErr = Object.assign(new Error('boom'), {
+      isBoom: true,
+      output: { statusCode: 503 }
+    })
+    insertOne.mockRejectedValue(boomErr)
+    await expect(
+      createIatContextController.handler(request, global.mockHandler)
+    ).rejects.toBe(boomErr)
+    expect(request.logger.error).not.toHaveBeenCalled()
+  })
+
+  test('logs and wraps non-Boom errors as Boom.internal', async () => {
+    insertOne.mockRejectedValue(new Error('mongo down'))
+    await expect(
+      createIatContextController.handler(request, global.mockHandler)
+    ).rejects.toThrow(/mongo down/)
+    expect(request.logger.error).toHaveBeenCalledWith(
+      expect.any(Object),
+      'Error creating IAT context'
+    )
+  })
 })

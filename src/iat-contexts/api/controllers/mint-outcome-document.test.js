@@ -112,4 +112,48 @@ describe('mintOutcomeDocumentController', () => {
       insertOne.mock.calls[1][0].slug
     )
   })
+
+  test('retries with a new slug on insertOne duplicate-key collision', async () => {
+    const { generateSlug } =
+      await import('../../../iat-shared/helpers/generate-slug.js')
+    generateSlug
+      .mockReturnValueOnce('B'.repeat(22))
+      .mockReturnValueOnce('D'.repeat(22))
+    insertOne
+      .mockRejectedValueOnce(Object.assign(new Error('dup'), { code: 11000 }))
+      .mockImplementationOnce((doc) => {
+        doc._id = 'retry-id'
+        return Promise.resolve({ insertedId: doc._id })
+      })
+    await mintOutcomeDocumentController.handler(request, global.mockHandler)
+    expect(insertOne).toHaveBeenCalledTimes(2)
+    expect(insertOne.mock.calls[1][0].slug).toBe('D'.repeat(22))
+  })
+
+  test('re-throws non-duplicate-key insert errors verbatim', async () => {
+    insertOne.mockRejectedValue(
+      Object.assign(new Error('write concern failed'), { code: 64 })
+    )
+    await expect(
+      mintOutcomeDocumentController.handler(request, global.mockHandler)
+    ).rejects.toThrow(/write concern failed/)
+  })
+
+  test('logs and wraps non-Boom errors from findOne as Boom.internal', async () => {
+    findOne.mockRejectedValue(new Error('mongo down'))
+    await expect(
+      mintOutcomeDocumentController.handler(request, global.mockHandler)
+    ).rejects.toThrow(/mongo down/)
+    expect(request.logger.error).toHaveBeenCalledWith(
+      expect.any(Object),
+      'Error minting outcome document'
+    )
+  })
+
+  test('falls back to an empty questionLog when the context has no questionLog field', async () => {
+    findOne.mockResolvedValue({ slug: contextSlug })
+    await mintOutcomeDocumentController.handler(request, global.mockHandler)
+    const written = insertOne.mock.calls[0][0]
+    expect(written.questionLog).toEqual([])
+  })
 })

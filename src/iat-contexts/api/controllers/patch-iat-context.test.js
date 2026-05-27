@@ -106,4 +106,34 @@ describe('patchIatContextController', () => {
     expect(update.updatedAt).toBeInstanceOf(Date)
     expect('updatedBy' in update).toBe(true)
   })
+
+  test('404 when updateOne matchedCount is 0 (context deleted between findOne and updateOne)', async () => {
+    findOne.mockResolvedValue({ ...ctxBase })
+    updateOne.mockResolvedValue({ matchedCount: 0 })
+    request.payload = mkPayload('/q4', 'D', 'D')
+    await expect(
+      patchIatContextController.handler(request, global.mockHandler)
+    ).rejects.toThrow('IAT context not found or expired')
+  })
+
+  test('logs and wraps non-Boom errors as Boom.internal', async () => {
+    findOne.mockRejectedValue(new Error('mongo down'))
+    request.payload = mkPayload('/q1', 'A', 'A')
+    await expect(
+      patchIatContextController.handler(request, global.mockHandler)
+    ).rejects.toThrow(/mongo down/)
+    expect(request.logger.error).toHaveBeenCalledWith(
+      expect.any(Object),
+      'Error patching IAT context'
+    )
+  })
+
+  test('falls back to an empty questionLog when the existing context has no questionLog field', async () => {
+    findOne.mockResolvedValue({ slug: validSlug })
+    request.payload = mkPayload('/q1', 'A', 'A')
+    await patchIatContextController.handler(request, global.mockHandler)
+    const stored = updateOne.mock.calls[0][1].$set.questionLog
+    expect(stored).toHaveLength(1)
+    expect(stored[0].questionRoute).toBe('/q1')
+  })
 })

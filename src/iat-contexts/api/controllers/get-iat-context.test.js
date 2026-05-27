@@ -38,4 +38,27 @@ describe('getIatContextController', () => {
       getIatContextController.handler(request, global.mockHandler)
     ).rejects.toThrow('IAT context not found or expired')
   })
+
+  test('re-throws Boom errors without wrapping (preserves 4xx statusCodes)', async () => {
+    const boomErr = Object.assign(new Error('original boom'), {
+      isBoom: true,
+      output: { statusCode: 403 }
+    })
+    findOne.mockRejectedValue(boomErr)
+    await expect(
+      getIatContextController.handler(request, global.mockHandler)
+    ).rejects.toBe(boomErr)
+    expect(request.logger.error).not.toHaveBeenCalled()
+  })
+
+  test('logs and wraps non-Boom errors as Boom.internal', async () => {
+    findOne.mockRejectedValue(new Error('mongo down'))
+    await expect(
+      getIatContextController.handler(request, global.mockHandler)
+    ).rejects.toThrow(/mongo down/)
+    expect(request.logger.error).toHaveBeenCalledWith(
+      expect.any(Object),
+      'Error fetching IAT context'
+    )
+  })
 })
