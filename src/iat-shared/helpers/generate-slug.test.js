@@ -12,4 +12,12 @@ describe('generateSlug', () => {
     const b = generateSlug()
     expect(a).not.toBe(b)
   })
+
+  test('produces a UUIDv7 (version 7, variant 10) — protects index locality on the slug field', () => {
+    const slug = generateSlug()
+    const bytes = Buffer.from(slug, 'base64url')
+    expect(bytes.length).toBe(16)
+    expect(bytes[6] >> 4).toBe(0x7)
+    expect(bytes[8] >> 6).toBe(0b10)
+  })
 })
