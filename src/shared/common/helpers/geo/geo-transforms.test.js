@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { formatGeoForStorage } from './geo-transforms.js'
+import {
+  coordinatesToDegreesDecimalMinutes,
+  formatGeoForStorage
+} from './geo-transforms.js'
 import { mockFeatureCollection } from './test.fixture.js'
 
 describe('geo-transforms', () => {
@@ -47,5 +50,26 @@ describe('geo-transforms', () => {
         type: 'Feature'
       })
     })
+  })
+  describe('coordinatesToDegreesDecimalMinutes', () => {
+    it.each([
+      [53.386185, true, `53° 23.1711' N`],
+      [-3.007353, false, `03° 00.4412' W`],
+      [53.4808, true, `53° 28.8480' N`],
+      [-2.2426005, false, `02° 14.5560' W`],
+      [55.9533, true, `55° 57.1980' N`],
+      [-3.188355, false, `03° 11.3013' W`],
+      [51.4816, true, `51° 28.8960' N`],
+      [-3.179151, false, `03° 10.7491' W`]
+    ])(
+      'should correctly convert %s to Degrees Decimal Minutes format',
+      (coordinateInput, isLatitude, expectedResult) => {
+        const result = coordinatesToDegreesDecimalMinutes(
+          coordinateInput,
+          isLatitude
+        )
+        expect(result).toEqual(expectedResult)
+      }
+    )
   })
 })

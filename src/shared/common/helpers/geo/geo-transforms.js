@@ -27,3 +27,37 @@ export const formatGeoForStorage = (geoJson) => {
     properties: feature.properties
   }))
 }
+
+/**
+ * Convert WGS84 to Degrees Decimal Minutes format
+ *
+ * @param {string} coordinate - coordinate to convert
+ * @param {boolean} isLatitude - is this a latitude value
+
+ */
+export const coordinatesToDegreesDecimalMinutes = (coordinate, isLatitude) => {
+  if (isNaN(coordinate) || coordinate < -180 || coordinate > 180) {
+    throw new Error(`Invalid coordinate value: ${coordinate}`)
+  }
+  if (isLatitude && (coordinate < -90 || coordinate > 90)) {
+    throw new Error(`Latitude out of range: ${coordinate}`)
+  }
+
+  // Remove the minus sign so the maths works correctly; we track N/S/E/W separately
+  const absolute = Math.abs(coordinate)
+
+  const degrees = Math.floor(absolute)
+  const minutes = ((absolute - degrees) * 60).toFixed(4)
+  const direction = isLatitude
+    ? coordinate >= 0
+      ? 'N'
+      : 'S'
+    : coordinate >= 0
+      ? 'E'
+      : 'W'
+
+  const paddedDegrees = String(degrees).padStart(2, '0')
+  const paddedMinutes = minutes.padStart(7, '0')
+
+  return `${paddedDegrees}° ${paddedMinutes}' ${direction}`
+}
