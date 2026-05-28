@@ -4,6 +4,9 @@ import { ObjectId } from 'mongodb'
 import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
 import Boom from '@hapi/boom'
 import { getSiteCoordinates } from '../csv/site-details.js'
+import { convertCoordinatesToDdm } from '../csv/coordinates-to-ddm.js'
+import { csvOutput } from '../csv/csv-output.js'
+import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 
 const csvHeaders = [
   'Lat Degree',
@@ -31,8 +34,20 @@ export const generateCoordinatesCsvController = {
     const stream = stringify({ header: true, columns: csvHeaders })
 
     marineLicenceCursor.on('data', (doc) => {
-      const coordinates = getSiteCoordinates(doc.siteDetails) // eslint-disable-line no-unused-vars
-      stream.write(doc)
+      try {
+        const coordinates = getSiteCoordinates(doc.siteDetails)
+        const ddmCoordinates = convertCoordinatesToDdm(coordinates)
+        const csvData = csvOutput(ddmCoordinates)
+        csvData.forEach((row) => {
+          stream.write(row)
+        })
+      } catch (err) {
+        request.logger.error(
+          structureErrorForECS(err),
+          `ERROR: Failed to output CSV file`
+        )
+        stream.destroy(err)
+      }
     })
 
     marineLicenceCursor.on('end', () => stream.end())

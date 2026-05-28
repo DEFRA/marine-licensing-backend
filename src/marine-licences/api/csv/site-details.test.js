@@ -12,7 +12,7 @@ vi.mock('../../../shared/common/helpers/geo/geo-utils.js', () => ({
   singleOSGB36toWGS84: vi.fn()
 }))
 
-const mockPolygonRing = [
+const mockPolygonFeature = [
   [-0.1, 51.5],
   [-0.1, 51.501],
   [-0.099, 51.501],
@@ -29,27 +29,27 @@ const makeCircleSite = (overrides = {}) => ({
   ...overrides
 })
 
-const makePolygonFeature = (ring) => ({
+const makePolygonFeature = (feature) => ({
   type: 'Feature',
-  geometry: { type: 'Polygon', coordinates: [ring] }
+  geometry: { type: 'Polygon', coordinates: [feature] }
 })
 
-const makeFileUploadSite = (...rings) => ({
+const makeFileUploadSite = (...features) => ({
   coordinatesType: 'file',
   geoJSON: {
     type: 'FeatureCollection',
-    features: rings.map(makePolygonFeature)
+    features: features.map(makePolygonFeature)
   }
 })
 
 beforeEach(() => {
   vi.clearAllMocks()
-  generateCirclePolygon.mockReturnValue(mockPolygonRing)
+  generateCirclePolygon.mockReturnValue(mockPolygonFeature)
 })
 
 describe('getSiteCoordinates', () => {
   describe('circle sites', () => {
-    it('returns one entry containing the polygon ring for a WGS84 circle site', () => {
+    it('returns one entry containing the polygon feature for a WGS84 circle site', () => {
       const result = getSiteCoordinates([makeCircleSite()])
 
       expect(generateCirclePolygon).toHaveBeenCalledWith({
@@ -58,7 +58,7 @@ describe('getSiteCoordinates', () => {
         radiusMetres: 50
       })
       expect(result).toHaveLength(1)
-      expect(result[0]).toEqual(mockPolygonRing)
+      expect(result[0]).toEqual(mockPolygonFeature)
     })
 
     it('converts OSGB36 to WGS84 before calling generateCirclePolygon for a circle site', () => {
@@ -79,7 +79,7 @@ describe('getSiteCoordinates', () => {
         radiusMetres: 100
       })
       expect(result).toHaveLength(1)
-      expect(result[0]).toEqual(mockPolygonRing)
+      expect(result[0]).toEqual(mockPolygonFeature)
     })
 
     it('returns one entry per circle site', () => {
@@ -145,35 +145,37 @@ describe('getSiteCoordinates', () => {
   })
 
   describe('file upload sites (coordinatesType === "file")', () => {
-    const ring1 = [
+    const feature1 = [
       [-1.0, 50.0],
       [-1.0, 51.0],
       [-2.0, 51.0],
       [-1.0, 50.0]
     ]
-    const ring2 = [
+    const feature2 = [
       [-3.0, 52.0],
       [-3.0, 53.0],
       [-4.0, 53.0],
       [-3.0, 52.0]
     ]
 
-    it('returns one entry for the site containing the feature coordinates', () => {
-      const result = getSiteCoordinates([makeFileUploadSite(ring1)])
+    it('returns one entry for the site containing the outer feature coordinates', () => {
+      const result = getSiteCoordinates([makeFileUploadSite(feature1)])
 
       expect(result).toHaveLength(1)
-      expect(result[0]).toEqual([[ring1]])
+      expect(result[0]).toEqual([feature1])
     })
 
     it('returns one entry for the site even when it has multiple features', () => {
-      const result = getSiteCoordinates([makeFileUploadSite(ring1, ring2)])
+      const result = getSiteCoordinates([
+        makeFileUploadSite(feature1, feature2)
+      ])
 
       expect(result).toHaveLength(1)
-      expect(result[0]).toEqual([[ring1], [ring2]])
+      expect(result[0]).toEqual([feature1, feature2])
     })
 
     it('does not call generateCirclePolygon or singleOSGB36toWGS84 for file upload sites', () => {
-      getSiteCoordinates([makeFileUploadSite(ring1)])
+      getSiteCoordinates([makeFileUploadSite(feature1)])
 
       expect(generateCirclePolygon).not.toHaveBeenCalled()
       expect(singleOSGB36toWGS84).not.toHaveBeenCalled()

@@ -34,7 +34,7 @@ const polygonToCoords = (site) => {
 }
 
 const fileUploadToCoords = (site) =>
-  site.geoJSON.features.map((feature) => feature.geometry.coordinates)
+  site.geoJSON.features.map((feature) => feature.geometry.coordinates[0])
 
 /**
  * Returns one element per site, preserving site grouping for CSV row generation.
