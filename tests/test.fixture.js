@@ -126,6 +126,10 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       consent: 'no',
       reason: 'Test public register details'
     },
+    preferredDates: {
+      start: { month: '01', year: '2027' },
+      end: { month: '12', year: '2027' }
+    },
     publicConsultation: {
       consulted: 'yes',
       details: 'Public consultation details'
