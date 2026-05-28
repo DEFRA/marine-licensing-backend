@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import { generateCoordinatesCsvController } from './generate-coordinates-csv.js'
+import * as siteDetailsModule from '../csv/site-details.js'
 
 describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
   const mockId = 'a'.repeat(24)
@@ -51,6 +52,29 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
     mockCursor.emit('end')
 
     expect(endSpy).toHaveBeenCalled()
+  })
+
+  it('should call getSiteCoordinates with doc.siteDetails when the cursor emits data', async () => {
+    const getSiteCoordinatesSpy = vi.spyOn(
+      siteDetailsModule,
+      'getSiteCoordinates'
+    )
+    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+
+    const mockDoc = {
+      siteDetails: [
+        {
+          coordinatesType: 'coordinates',
+          coordinatesEntry: 'single',
+          coordinateSystem: 'wgs84',
+          coordinates: { latitude: '51.5', longitude: '-0.1' },
+          circleWidth: '100'
+        }
+      ]
+    }
+    mockCursor.emit('data', mockDoc)
+
+    expect(getSiteCoordinatesSpy).toHaveBeenCalledWith(mockDoc.siteDetails)
   })
 
   it('should write each doc from the cursor into the csv stream', async () => {

@@ -3,6 +3,7 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { ObjectId } from 'mongodb'
 import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
 import Boom from '@hapi/boom'
+import { getSiteCoordinates } from '../csv/site-details.js'
 
 const csvHeaders = [
   'Lat Degree',
@@ -30,6 +31,7 @@ export const generateCoordinatesCsvController = {
     const stream = stringify({ header: true, columns: csvHeaders })
 
     marineLicenceCursor.on('data', (doc) => {
+      const coordinates = getSiteCoordinates(doc.siteDetails) // eslint-disable-line no-unused-vars
       stream.write(doc)
     })
 
