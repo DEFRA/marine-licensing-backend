@@ -1,6 +1,8 @@
 import { stringify } from 'csv-stringify'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { ObjectId } from 'mongodb'
+import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
+import Boom from '@hapi/boom'
 
 const csvHeaders = [
   'Lat Degree',
@@ -12,6 +14,12 @@ const csvHeaders = [
 
 export const generateCoordinatesCsvController = {
   handler: async (request, h) => {
+    const isUserEntraIdUser = isEntraIdUser(request)
+
+    if (!isUserEntraIdUser) {
+      throw Boom.forbidden('Not authorised to view CSV data')
+    }
+
     const { params, db } = request
 
     const marineLicenceCursor = db

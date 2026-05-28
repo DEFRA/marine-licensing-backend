@@ -17,6 +17,7 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
     const mockCollection = vi.fn().mockReturnValue({ find: mockFind })
 
     mockRequest = {
+      auth: { artifacts: { decoded: { tid: 'tenant-id' } } },
       params: { id: mockId },
       db: { collection: mockCollection }
     }
