@@ -28,7 +28,7 @@ describe('Generate coordinates CSV - integration tests', async () => {
       }
     })
 
-  test('returns 200 with correct data', async () => {
+  test('returns 200 with correct headers', async () => {
     const marineLicenceId = new ObjectId()
     await globalThis.mockMongo
       .collection('marine-licences')
@@ -50,6 +50,38 @@ describe('Generate coordinates CSV - integration tests', async () => {
     expect(firstLine).toBe(
       'Lat Degree,Lat Dec Min,Long Degree,Long Dec Min,objectid'
     )
+  })
+
+  test('returns CSV rows for a polygon site', async () => {
+    const marineLicenceId = new ObjectId()
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: marineLicenceId,
+      siteDetails: [
+        {
+          coordinatesType: 'polygon',
+          coordinatesEntry: 'multiple',
+          coordinateSystem: 'wgs84',
+          coordinates: [
+            { latitude: '51.5', longitude: '-0.1' },
+            { latitude: '51.6', longitude: '-0.2' }
+          ]
+        }
+      ]
+    })
+
+    const response = await injectAsEntraIdUser(
+      getServer(),
+      marineLicenceId.toString()
+    )
+
+    expect(response.statusCode).toBe(200)
+
+    const lines = response.payload.split('\n').filter(Boolean)
+    expect(lines).toHaveLength(3) // header + 2 coordinate rows
+
+    expect(lines[1]).toBe('51,30,0,6,0')
+    expect(lines[2]).toBe('51,36,0,12,0')
   })
 
   test('returns 403 for a non-Entra ID user', async () => {

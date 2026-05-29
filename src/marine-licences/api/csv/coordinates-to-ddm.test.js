@@ -15,14 +15,14 @@ beforeEach(() => {
 
 describe('convertCoordinatesToDdm', () => {
   describe('circle and polygon sites', () => {
-    it('converts each point in the ring to a DDM { lat, lon } object', () => {
-      const ring = [
+    it('converts each point in the feature to a DDM { lat, lon } object', () => {
+      const feature = [
         [-0.1, 51.5],
         [-0.2, 51.6],
         [-0.1, 51.5]
       ]
 
-      const result = convertCoordinatesToDdm([ring])
+      const result = convertCoordinatesToDdm([feature])
 
       expect(result).toEqual([
         [
@@ -34,9 +34,9 @@ describe('convertCoordinatesToDdm', () => {
     })
 
     it('calls coordinatesToDegreesDecimalMinutes with lat as isLatitude=true and lon as isLatitude=false', () => {
-      const ring = [[-0.1, 51.5]]
+      const feature = [[-0.1, 51.5]]
 
-      convertCoordinatesToDdm([ring])
+      convertCoordinatesToDdm([feature])
 
       expect(coordinatesToDegreesDecimalMinutes).toHaveBeenCalledWith(
         51.5,
@@ -49,36 +49,33 @@ describe('convertCoordinatesToDdm', () => {
     })
 
     it('returns one entry per site', () => {
-      const ring1 = [[-0.1, 51.5]]
-      const ring2 = [[-1.0, 52.0]]
+      const feature1 = [[-0.1, 51.5]]
+      const feature2 = [[-1.0, 52.0]]
 
-      const result = convertCoordinatesToDdm([ring1, ring2])
+      const result = convertCoordinatesToDdm([feature1, feature2])
 
       expect(result).toHaveLength(2)
     })
   })
 
   describe('file upload sites', () => {
-    it('converts each feature ring preserving the nested structure', () => {
-      const ring1 = [
+    it('flattens all feature features into a single array matching the manual site structure', () => {
+      const feature1 = [
         [-1.0, 50.0],
         [-1.0, 51.0]
       ]
-      const ring2 = [
+      const feature2 = [
         [-3.0, 52.0],
         [-4.0, 53.0]
       ]
-      const fileUploadSite = [ring1, ring2]
+      const fileUploadSite = [feature1, feature2]
 
       const result = convertCoordinatesToDdm([fileUploadSite])
 
       expect(result).toHaveLength(1)
-      expect(result[0]).toHaveLength(2)
-      expect(result[0][0]).toEqual([
+      expect(result[0]).toEqual([
         { lat: '50° N', lon: '-1° W' },
-        { lat: '51° N', lon: '-1° W' }
-      ])
-      expect(result[0][1]).toEqual([
+        { lat: '51° N', lon: '-1° W' },
         { lat: '52° N', lon: '-3° W' },
         { lat: '53° N', lon: '-4° W' }
       ])

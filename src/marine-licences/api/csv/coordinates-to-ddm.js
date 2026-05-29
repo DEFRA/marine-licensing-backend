@@ -5,18 +5,18 @@ const convertPointsToDDM = ([lon, lat]) => ({
   lon: coordinatesToDegreesDecimalMinutes(lon, false)
 })
 
-const convertSite = (ring) => ring.map(convertPointsToDDM)
+const convertSite = (feature) => feature.map(convertPointsToDDM)
 
 /**
  * Converts a site coordinates array (output of getSiteCoordinates) to DDM format.
+ * File upload features are flattened into a single array, matching the manual site structure.
  *
- * - Circle/polygon sites: site of [lon, lat] pairs → site of of { lat, lon } DDM strings
- * - File upload sites: array of feature sites → same structure with DDM strings
+ * Both site types produce: [{ lat, lon }, ...]
  */
 export const convertCoordinatesToDdm = (siteCoordinates) =>
   siteCoordinates.map((site) => {
     if (Array.isArray(site[0]?.[0])) {
-      return site.map(convertSite)
+      return site.flatMap(convertSite)
     }
     return convertSite(site)
   })

@@ -7,6 +7,7 @@ import { getSiteCoordinates } from '../csv/site-details.js'
 import { convertCoordinatesToDdm } from '../csv/coordinates-to-ddm.js'
 import { csvOutput } from '../csv/csv-output.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
+import { coordinatesToCsvObject } from '../csv/coordinates-to-csv.js'
 
 const csvHeaders = [
   'Lat Degree',
@@ -37,7 +38,8 @@ export const generateCoordinatesCsvController = {
       try {
         const coordinates = getSiteCoordinates(doc.siteDetails)
         const ddmCoordinates = convertCoordinatesToDdm(coordinates)
-        const csvData = csvOutput(ddmCoordinates)
+        const parsedDdmCoordinates = coordinatesToCsvObject(ddmCoordinates)
+        const csvData = csvOutput(parsedDdmCoordinates)
         csvData.forEach((row) => {
           stream.write(row)
         })
