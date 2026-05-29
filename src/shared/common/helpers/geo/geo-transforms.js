@@ -31,7 +31,7 @@ export const formatGeoForStorage = (geoJson) => {
 /**
  * Convert WGS84 to Degrees Decimal Minutes format
  *
- * @param {string} coordinate - coordinate to convert
+ * @param {number} coordinate - coordinate to convert
  * @param {boolean} isLatitude - is this a latitude value
 
  */
