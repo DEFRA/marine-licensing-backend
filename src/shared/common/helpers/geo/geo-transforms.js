@@ -28,18 +28,35 @@ export const formatGeoForStorage = (geoJson) => {
   }))
 }
 
+const LONGITUDE_MAX = 180
+const LATITUDE_MAX = 90
+const MINUTES_PER_DEGREE = 60
+const MINUTES_DECIMAL_PLACES = 4
+const DEGREE_PAD_LENGTH = 2
+const MINUTES_PAD_LENGTH = 7
+
+const DIRECTIONS = {
+  north: 'N',
+  south: 'S',
+  east: 'E',
+  west: 'W'
+}
+
 /**
  * Convert WGS84 to Degrees Decimal Minutes format
  *
  * @param {number} coordinate - coordinate to convert
  * @param {boolean} isLatitude - is this a latitude value
-
  */
 export const coordinatesToDegreesDecimalMinutes = (coordinate, isLatitude) => {
-  if (isNaN(coordinate) || coordinate < -180 || coordinate > 180) {
+  if (
+    Number.isNaN(coordinate) ||
+    coordinate < -LONGITUDE_MAX ||
+    coordinate > LONGITUDE_MAX
+  ) {
     throw new Error(`Invalid coordinate value: ${coordinate}`)
   }
-  if (isLatitude && (coordinate < -90 || coordinate > 90)) {
+  if (isLatitude && (coordinate < -LATITUDE_MAX || coordinate > LATITUDE_MAX)) {
     throw new Error(`Latitude out of range: ${coordinate}`)
   }
 
@@ -47,17 +64,20 @@ export const coordinatesToDegreesDecimalMinutes = (coordinate, isLatitude) => {
   const absolute = Math.abs(coordinate)
 
   const degrees = Math.floor(absolute)
-  const minutes = ((absolute - degrees) * 60).toFixed(4)
+  const minutes = ((absolute - degrees) * MINUTES_PER_DEGREE).toFixed(
+    MINUTES_DECIMAL_PLACES
+  )
+  const isPositive = coordinate >= 0
   const direction = isLatitude
-    ? coordinate >= 0
-      ? 'N'
-      : 'S'
-    : coordinate >= 0
-      ? 'E'
-      : 'W'
+    ? isPositive
+      ? DIRECTIONS.north
+      : DIRECTIONS.south
+    : isPositive
+      ? DIRECTIONS.east
+      : DIRECTIONS.west
 
-  const paddedDegrees = String(degrees).padStart(2, '0')
-  const paddedMinutes = minutes.padStart(7, '0')
+  const paddedDegrees = String(degrees).padStart(DEGREE_PAD_LENGTH, '0')
+  const paddedMinutes = minutes.padStart(MINUTES_PAD_LENGTH, '0')
 
   return `${paddedDegrees}° ${paddedMinutes}' ${direction}`
 }
