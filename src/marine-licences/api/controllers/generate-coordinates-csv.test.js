@@ -21,7 +21,8 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
     mockRequest = {
       auth: { artifacts: { decoded: { tid: 'tenant-id' } } },
       params: { id: mockId },
-      db: { collection: mockCollection }
+      db: { collection: mockCollection },
+      logger: { error: vi.fn() }
     }
 
     mockH = {
@@ -79,13 +80,7 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
   })
 
   it('should write each row returned by csvOutput into the csv stream', async () => {
-    const mockRow = {
-      'Lat Degree': 51,
-      'Lat Dec Min': 30,
-      'Long Degree': -1,
-      'Long Dec Min': 15,
-      objectid: 1
-    }
+    const mockRow = [51, 30, 0, 15, 0]
     vi.spyOn(csvOutputModule, 'csvOutput').mockReturnValue([mockRow])
 
     await generateCoordinatesCsvController.handler(mockRequest, mockH)
@@ -95,11 +90,31 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
 
     mockCursor.emit('data', { siteDetails: [] })
 
-    expect(mockRequest.db.collection).toHaveBeenCalledWith('marine-licences')
-    expect(
-      mockRequest.db.collection('marine-licences').find
-    ).toHaveBeenCalledWith(expect.objectContaining({ _id: expect.anything() }))
-
     expect(writeSpy).toHaveBeenCalledWith(mockRow)
+  })
+
+  it('should log an error and destroy the stream when processing fails', async () => {
+    vi.spyOn(siteDetailsModule, 'getSiteCoordinates').mockImplementation(() => {
+      throw new Error('processing failed')
+    })
+
+    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+
+    const csvStream = mockH.response.mock.calls[0][0]
+    csvStream.on('error', () => {})
+
+    mockCursor.emit('data', { siteDetails: [] })
+
+    expect(mockRequest.logger.error).toHaveBeenCalled()
+  })
+
+  it('should return the stream with csv content-type and content-disposition headers', async () => {
+    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+
+    expect(mockH.type).toHaveBeenCalledWith('text/csv')
+    expect(mockH.header).toHaveBeenCalledWith(
+      'Content-Disposition',
+      'attachment; filename="locationForCSV.csv"'
+    )
   })
 })

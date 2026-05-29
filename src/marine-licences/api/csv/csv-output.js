@@ -1,12 +1,12 @@
 export const csvOutput = (coordinates) => {
   const rows = []
   coordinates.forEach((site, index) => {
-    site.forEach((coordinates) => {
+    site.forEach((coord) => {
       rows.push([
-        coordinates.latDegree,
-        coordinates.latDecMin,
-        coordinates.longDegree,
-        coordinates.longDecMin,
+        coord.latDegree,
+        coord.latDecMin,
+        coord.longDegree,
+        coord.longDecMin,
         index
       ])
     })

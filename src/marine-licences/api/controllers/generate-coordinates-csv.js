@@ -27,12 +27,11 @@ export const generateCoordinatesCsvController = {
 
     const { params, db } = request
 
+    const stream = stringify({ header: true, columns: csvHeaders })
     const marineLicenceCursor = db
       .collection(collectionMarineLicences)
       .find({ _id: ObjectId.createFromHexString(params.id) })
       .stream()
-
-    const stream = stringify({ header: true, columns: csvHeaders })
 
     marineLicenceCursor.on('data', (doc) => {
       try {
@@ -40,13 +39,11 @@ export const generateCoordinatesCsvController = {
         const ddmCoordinates = convertCoordinatesToDdm(coordinates)
         const parsedDdmCoordinates = coordinatesToCsvObject(ddmCoordinates)
         const csvData = csvOutput(parsedDdmCoordinates)
-        csvData.forEach((row) => {
-          stream.write(row)
-        })
+        csvData.forEach((row) => stream.write(row))
       } catch (err) {
         request.logger.error(
           structureErrorForECS(err),
-          `ERROR: Failed to output CSV file`
+          `Failed to output CSV file`
         )
         stream.destroy(err)
       }
