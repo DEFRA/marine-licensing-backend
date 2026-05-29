@@ -42,6 +42,13 @@ const DIRECTIONS = {
   west: 'W'
 }
 
+const getDirection = (coordinate, isLatitude) => {
+  if (isLatitude) {
+    return coordinate >= 0 ? DIRECTIONS.north : DIRECTIONS.south
+  }
+  return coordinate >= 0 ? DIRECTIONS.east : DIRECTIONS.west
+}
+
 /**
  * Convert WGS84 to Degrees Decimal Minutes format
  *
@@ -67,14 +74,7 @@ export const coordinatesToDegreesDecimalMinutes = (coordinate, isLatitude) => {
   const minutes = ((absolute - degrees) * MINUTES_PER_DEGREE).toFixed(
     MINUTES_DECIMAL_PLACES
   )
-  const isPositive = coordinate >= 0
-  const direction = isLatitude
-    ? isPositive
-      ? DIRECTIONS.north
-      : DIRECTIONS.south
-    : isPositive
-      ? DIRECTIONS.east
-      : DIRECTIONS.west
+  const direction = getDirection(coordinate, isLatitude)
 
   const paddedDegrees = String(degrees).padStart(DEGREE_PAD_LENGTH, '0')
   const paddedMinutes = minutes.padStart(MINUTES_PAD_LENGTH, '0')
