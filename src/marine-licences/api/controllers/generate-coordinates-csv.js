@@ -42,7 +42,7 @@ export const generateCoordinatesCsvController = {
 
     const siteTransform = new Transform({
       objectMode: true,
-      transform([index, site], _, callback) {
+      transform([_index, site], _, callback) {
         const coords = getSiteCoordinates([site])
         const ddm = convertCoordinatesToDdm(coords)
         const csvObjects = coordinatesToCsvObject(ddm)
