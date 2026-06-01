@@ -66,5 +66,7 @@ function mergeAnswer(existing, newEntry) {
   if (idx === -1) {
     return [...existing, newEntry]
   }
+  // The answered question was found in the existing answer section, so the user
+  // went back and changed their answer.  Delete everything after this answer.
   return [...existing.slice(0, idx), newEntry]
 }
