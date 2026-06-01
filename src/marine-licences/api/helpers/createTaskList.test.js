@@ -36,6 +36,10 @@ describe('createTaskList', () => {
       siteDetails: [mockCompleteSite],
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       projectBackground: 'Some background',
       publicRegister: 'Public Register Info',
       publicConsultation: {
@@ -49,6 +53,7 @@ describe('createTaskList', () => {
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED,
       publicRegister: COMPLETED
@@ -62,6 +67,10 @@ describe('createTaskList', () => {
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       publicRegister: 'Public Register Info',
       publicConsultation: {
         consulted: 'yes',
@@ -74,6 +83,7 @@ describe('createTaskList', () => {
       publicRegister: COMPLETED,
       siteDetails: IN_PROGRESS,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED
     })
@@ -88,7 +98,11 @@ describe('createTaskList', () => {
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
       siteDetails: [siteWithoutSiteName],
-      projectBackground: 'Test project background'
+      projectBackground: 'Test project background',
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      }
     }
 
     expect(createTaskList(marineLicence)).toEqual({
@@ -96,6 +110,7 @@ describe('createTaskList', () => {
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicConsultation: INCOMPLETE,
       publicRegister: INCOMPLETE
@@ -342,6 +357,7 @@ describe('createTaskList', () => {
       projectName: INCOMPLETE,
       specialLegalPowers: INCOMPLETE,
       otherAuthorities: INCOMPLETE,
+      preferredDates: INCOMPLETE,
       projectBackground: INCOMPLETE,
       publicRegister: INCOMPLETE,
       publicConsultation: INCOMPLETE,
@@ -355,6 +371,10 @@ describe('createTaskList', () => {
       specialLegalPowers: 'some powers',
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       projectBackground: 'Some background',
       publicConsultation: {
         consulted: 'yes',
@@ -369,6 +389,7 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: COMPLETED,
       publicConsultation: COMPLETED,
