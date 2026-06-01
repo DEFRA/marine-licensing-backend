@@ -1,3 +1,4 @@
+import Boom from '@hapi/boom'
 import { buffer } from '@turf/turf'
 
 const coastalAreasLabelProperty = 'marine_are'
@@ -56,18 +57,22 @@ const getDirection = (coordinate, isLatitude) => {
  * @param {boolean} isLatitude - is this a latitude value
  */
 export const coordinatesToDegreesDecimalMinutes = (coordinate, isLatitude) => {
-  if (
-    Number.isNaN(coordinate) ||
-    coordinate < -LONGITUDE_MAX ||
-    coordinate > LONGITUDE_MAX
-  ) {
-    throw new Error(`Invalid coordinate value: ${coordinate}`)
-  }
-  if (isLatitude && (coordinate < -LATITUDE_MAX || coordinate > LATITUDE_MAX)) {
-    throw new Error(`Latitude out of range: ${coordinate}`)
+  if (typeof coordinate !== 'number') {
+    throw Boom.internal(`Invalid coordinate value: ${coordinate}`)
   }
 
-  // Remove the minus sign so the maths works correctly; we track N/S/E/W separately
+  if (
+    !isLatitude &&
+    (coordinate < -LONGITUDE_MAX || coordinate > LONGITUDE_MAX)
+  ) {
+    throw Boom.internal(`Longitude out of range: ${coordinate}`)
+  }
+
+  if (isLatitude && (coordinate < -LATITUDE_MAX || coordinate > LATITUDE_MAX)) {
+    throw Boom.internal(`Latitude out of range: ${coordinate}`)
+  }
+
+  // Remove the minus sign so the maths works correctly
   const absolute = Math.abs(coordinate)
 
   const degrees = Math.floor(absolute)
