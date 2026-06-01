@@ -1,3 +1,4 @@
+import { Transform } from 'node:stream'
 import { stringify } from 'csv-stringify'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { ObjectId } from 'mongodb'
@@ -6,7 +7,6 @@ import Boom from '@hapi/boom'
 import { getSiteCoordinates } from '../csv/site-details.js'
 import { convertCoordinatesToDdm } from '../csv/coordinates-to-ddm.js'
 import { csvOutput } from '../csv/csv-output.js'
-import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { coordinatesToCsvObject } from '../csv/coordinates-to-csv.js'
 
 const csvHeaders = [
@@ -27,33 +27,41 @@ export const generateCoordinatesCsvController = {
 
     const { params, db } = request
 
-    const stream = stringify({ header: true, columns: csvHeaders })
-    const marineLicenceCursor = db
+    const doc = await db
       .collection(collectionMarineLicences)
-      .find({ _id: ObjectId.createFromHexString(params.id) })
-      .stream()
+      .findOne(
+        { _id: ObjectId.createFromHexString(params.id) },
+        { projection: { siteDetails: 1 } }
+      )
 
-    marineLicenceCursor.on('data', (doc) => {
-      try {
-        const coordinates = getSiteCoordinates(doc.siteDetails)
-        const ddmCoordinates = convertCoordinatesToDdm(coordinates)
-        const parsedDdmCoordinates = coordinatesToCsvObject(ddmCoordinates)
-        const csvData = csvOutput(parsedDdmCoordinates)
-        csvData.forEach((row) => stream.write(row))
-      } catch (err) {
-        request.logger.error(
-          structureErrorForECS(err),
-          `Failed to output CSV file`
-        )
-        stream.destroy(err)
+    if (!doc) {
+      throw Boom.notFound('Marine licence not found')
+    }
+
+    const csvStream = stringify({ header: true, columns: csvHeaders })
+
+    const siteTransform = new Transform({
+      objectMode: true,
+      transform([index, site], _, callback) {
+        const coords = getSiteCoordinates([site])
+        const ddm = convertCoordinatesToDdm(coords)
+        const csvObjects = coordinatesToCsvObject(ddm)
+        for (const row of csvOutput(csvObjects)) {
+          this.push(row)
+        }
+        callback()
       }
     })
 
-    marineLicenceCursor.on('end', () => stream.end())
-    marineLicenceCursor.on('error', (err) => stream.destroy(err))
+    siteTransform.pipe(csvStream)
+
+    for (const entry of (doc.siteDetails ?? []).entries()) {
+      siteTransform.write(entry)
+    }
+    siteTransform.end()
 
     return h
-      .response(stream)
+      .response(csvStream)
       .type('text/csv')
       .header(
         'Content-Disposition',

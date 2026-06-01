@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events'
 import { vi } from 'vitest'
 import { generateCoordinatesCsvController } from './generate-coordinates-csv.js'
 import * as siteDetailsModule from '../csv/site-details.js'
@@ -7,16 +6,27 @@ import * as csvOutputModule from '../csv/csv-output.js'
 describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
   const mockId = 'a'.repeat(24)
 
-  let mockCursor
+  const mockSite = {
+    coordinatesType: 'coordinates',
+    coordinatesEntry: 'single',
+    coordinateSystem: 'wgs84',
+    coordinates: { latitude: '51.5', longitude: '-0.1' },
+    circleWidth: '100'
+  }
+
+  const mockDoc = { siteDetails: [mockSite] }
+
+  let mockFindOne
   let mockRequest
   let mockH
 
-  beforeEach(() => {
-    mockCursor = new EventEmitter()
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
-    const mockStream = vi.fn().mockReturnValue(mockCursor)
-    const mockFind = vi.fn().mockReturnValue({ stream: mockStream })
-    const mockCollection = vi.fn().mockReturnValue({ find: mockFind })
+  beforeEach(() => {
+    mockFindOne = vi.fn().mockResolvedValue(mockDoc)
+    const mockCollection = vi.fn().mockReturnValue({ findOne: mockFindOne })
 
     mockRequest = {
       auth: { artifacts: { decoded: { tid: 'tenant-id' } } },
@@ -32,80 +42,50 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
     }
   })
 
-  it('should destroy the csv stream when the cursor emits an error', async () => {
-    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+  it('should return 403 when user is not an Entra ID user', async () => {
+    mockRequest.auth.artifacts.decoded = {}
 
-    const csvStream = mockH.response.mock.calls[0][0]
-    const destroySpy = vi.spyOn(csvStream, 'destroy')
-    csvStream.on('error', () => {})
-
-    const err = new Error('cursor error')
-    mockCursor.emit('error', err)
-
-    expect(destroySpy).toHaveBeenCalledWith(err)
+    await expect(
+      generateCoordinatesCsvController.handler(mockRequest, mockH)
+    ).rejects.toThrow('Not authorised to view CSV data')
   })
 
-  it('should end the csv stream when the cursor ends', async () => {
-    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+  it('should throw a 404 when the document is not found', async () => {
+    mockFindOne.mockResolvedValue(null)
 
-    const csvStream = mockH.response.mock.calls[0][0]
-    const endSpy = vi.spyOn(csvStream, 'end')
-
-    mockCursor.emit('end')
-
-    expect(endSpy).toHaveBeenCalled()
+    await expect(
+      generateCoordinatesCsvController.handler(mockRequest, mockH)
+    ).rejects.toThrow('Marine licence not found')
   })
 
-  it('should call getSiteCoordinates with doc.siteDetails when the cursor emits data', async () => {
+  it('should call getSiteCoordinates once per site', async () => {
     const getSiteCoordinatesSpy = vi.spyOn(
       siteDetailsModule,
       'getSiteCoordinates'
     )
-    await generateCoordinatesCsvController.handler(mockRequest, mockH)
-
-    const mockDoc = {
-      siteDetails: [
-        {
-          coordinatesType: 'coordinates',
-          coordinatesEntry: 'single',
-          coordinateSystem: 'wgs84',
-          coordinates: { latitude: '51.5', longitude: '-0.1' },
-          circleWidth: '100'
-        }
-      ]
-    }
-    mockCursor.emit('data', mockDoc)
-
-    expect(getSiteCoordinatesSpy).toHaveBeenCalledWith(mockDoc.siteDetails)
-  })
-
-  it('should write each row returned by csvOutput into the csv stream', async () => {
-    const mockRow = [51, 30, 0, 15, 0]
-    vi.spyOn(csvOutputModule, 'csvOutput').mockReturnValue([mockRow])
 
     await generateCoordinatesCsvController.handler(mockRequest, mockH)
 
-    const csvStream = mockH.response.mock.calls[0][0]
-    const writeSpy = vi.spyOn(csvStream, 'write')
-
-    mockCursor.emit('data', { siteDetails: [] })
-
-    expect(writeSpy).toHaveBeenCalledWith(mockRow)
+    expect(getSiteCoordinatesSpy).toHaveBeenCalledTimes(1)
+    expect(getSiteCoordinatesSpy).toHaveBeenCalledWith([mockSite])
   })
 
-  it('should log an error and destroy the stream when processing fails', async () => {
+  it('should call csvOutput once per site', async () => {
+    const csvOutputSpy = vi.spyOn(csvOutputModule, 'csvOutput')
+
+    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+
+    expect(csvOutputSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('should throw when processing a site fails', async () => {
     vi.spyOn(siteDetailsModule, 'getSiteCoordinates').mockImplementation(() => {
       throw new Error('processing failed')
     })
 
-    await generateCoordinatesCsvController.handler(mockRequest, mockH)
-
-    const csvStream = mockH.response.mock.calls[0][0]
-    csvStream.on('error', () => {})
-
-    mockCursor.emit('data', { siteDetails: [] })
-
-    expect(mockRequest.logger.error).toHaveBeenCalled()
+    await expect(
+      generateCoordinatesCsvController.handler(mockRequest, mockH)
+    ).rejects.toThrow('processing failed')
   })
 
   it('should return the stream with csv content-type and content-disposition headers', async () => {
