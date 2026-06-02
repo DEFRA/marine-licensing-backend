@@ -1,6 +1,9 @@
 import { getMarineLicenceController } from './get-marine-licence.js'
 import { vi } from 'vitest'
-import { requestFromApplicantUser } from '../../../../.vite/mocks.js'
+import {
+  requestFromApplicantUser,
+  requestFromInternalUser
+} from '../../../../.vite/mocks.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { preferredDates } from '../../models/test-fixtures.js'
 
@@ -137,6 +140,25 @@ describe('GET /marine-licence', () => {
             }
           }
         })
+      )
+    })
+
+    it('should allow an internal (Entra ID) user to access any marine licence', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: 'someone-elses-id'
+      })
+
+      await authenticatedController.handler(
+        requestFromInternalUser({ params: { id: mockId } }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'success' })
       )
     })
 
