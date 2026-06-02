@@ -168,12 +168,12 @@ describe('Get exemption summary - integration tests', () => {
       coordinatesInputMethod: {
         shapefile: 1,
         kml: 1,
-        manualCoordinates: 2
+        manualCoordinates: 1
       },
       coordinateSystemVolume: {
-        wgs84: { count: 3, percentage: 75 },
-        bng: { count: 1, percentage: 25 },
-        total: 4
+        wgs84: { count: 2, percentage: 66.7 },
+        bng: { count: 1, percentage: 33.3 },
+        total: 3
       },
       byArticle: {
         25: 2,

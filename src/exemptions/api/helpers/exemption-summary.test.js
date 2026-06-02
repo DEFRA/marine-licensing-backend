@@ -18,6 +18,17 @@ describe('exemption-summary helper', () => {
         EXEMPTION_STATUS.DRAFT,
         EXEMPTION_STATUS.WITHDRAWN
       ])
+      expect(pipeline[1].$facet.shapefileExemptions[0]).toEqual({
+        $match: {
+          status: {
+            $in: [
+              EXEMPTION_STATUS.ACTIVE,
+              EXEMPTION_STATUS.SUBMITTED,
+              EXEMPTION_STATUS.WITHDRAWN
+            ]
+          }
+        }
+      })
       expect(pipeline[1].$facet).toMatchObject({
         statusCounts: expect.any(Array),
         shapefileExemptions: expect.any(Array),
@@ -101,6 +112,28 @@ describe('exemption-summary helper', () => {
         },
         byCoastalOperationsArea: {
           South: 1
+        }
+      })
+    })
+
+    it('maps reporting metrics independently of draft status counts', () => {
+      expect(
+        buildExemptionSummaryValue({
+          statusCounts: [{ _id: EXEMPTION_STATUS.DRAFT, count: 5 }],
+          shapefileExemptions: [],
+          kmlExemptions: [],
+          manualCoordinatesExemptions: [{ count: 2 }],
+          coordinateSystemVolume: [{ _id: 'wgs84', count: 2 }],
+          byArticle: [],
+          byMarinePlanArea: [],
+          byCoastalOperationsArea: []
+        })
+      ).toMatchObject({
+        unsubmittedExemptions: 5,
+        coordinatesInputMethod: {
+          shapefile: 0,
+          kml: 0,
+          manualCoordinates: 2
         }
       })
     })

@@ -8,6 +8,20 @@ const SUMMARY_STATUSES = [
   EXEMPTION_STATUS.WITHDRAWN
 ]
 
+const REPORTING_STATUSES = [
+  EXEMPTION_STATUS.ACTIVE,
+  EXEMPTION_STATUS.SUBMITTED,
+  EXEMPTION_STATUS.WITHDRAWN
+]
+
+const excludeDraftExemptionsMatch = {
+  $match: {
+    status: { $in: REPORTING_STATUSES }
+  }
+}
+
+const reportingFacet = (stages) => [excludeDraftExemptionsMatch, ...stages]
+
 export const buildExemptionSummaryPipeline = () => [
   {
     $match: {
@@ -17,7 +31,7 @@ export const buildExemptionSummaryPipeline = () => [
   {
     $facet: {
       statusCounts: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
-      shapefileExemptions: [
+      shapefileExemptions: reportingFacet([
         {
           $match: {
             siteDetails: {
@@ -29,8 +43,8 @@ export const buildExemptionSummaryPipeline = () => [
           }
         },
         { $count: 'count' }
-      ],
-      kmlExemptions: [
+      ]),
+      kmlExemptions: reportingFacet([
         {
           $match: {
             siteDetails: {
@@ -42,8 +56,8 @@ export const buildExemptionSummaryPipeline = () => [
           }
         },
         { $count: 'count' }
-      ],
-      manualCoordinatesExemptions: [
+      ]),
+      manualCoordinatesExemptions: reportingFacet([
         {
           $match: {
             siteDetails: {
@@ -52,8 +66,8 @@ export const buildExemptionSummaryPipeline = () => [
           }
         },
         { $count: 'count' }
-      ],
-      coordinateSystemVolume: [
+      ]),
+      coordinateSystemVolume: reportingFacet([
         { $unwind: '$siteDetails' },
         {
           $group: {
@@ -67,23 +81,23 @@ export const buildExemptionSummaryPipeline = () => [
             count: { $sum: 1 }
           }
         }
-      ],
-      byArticle: [
+      ]),
+      byArticle: reportingFacet([
         {
           $match: {
             'mcmsContext.articleCode': { $exists: true, $nin: [null, ''] }
           }
         },
         { $group: { _id: '$mcmsContext.articleCode', count: { $sum: 1 } } }
-      ],
-      byMarinePlanArea: [
+      ]),
+      byMarinePlanArea: reportingFacet([
         { $unwind: '$marinePlanAreas' },
         { $group: { _id: '$marinePlanAreas', count: { $sum: 1 } } }
-      ],
-      byCoastalOperationsArea: [
+      ]),
+      byCoastalOperationsArea: reportingFacet([
         { $unwind: '$coastalOperationsAreas' },
         { $group: { _id: '$coastalOperationsAreas', count: { $sum: 1 } } }
-      ]
+      ])
     }
   }
 ]
