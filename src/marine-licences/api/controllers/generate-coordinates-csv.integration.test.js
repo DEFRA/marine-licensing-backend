@@ -78,10 +78,11 @@ describe('Generate coordinates CSV - integration tests', async () => {
     expect(response.statusCode).toBe(200)
 
     const lines = response.payload.split('\n').filter(Boolean)
-    expect(lines).toHaveLength(3) // header + 2 coordinate rows
+    expect(lines).toHaveLength(4) // header + 2 coordinate rows + closing coordinate
 
     expect(lines[1]).toBe('51,30,0,6,1')
     expect(lines[2]).toBe('51,36,0,12,1')
+    expect(lines[3]).toBe('51,30,0,6,1')
   })
 
   test('returns 403 for a non-Entra ID user', async () => {

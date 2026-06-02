@@ -93,7 +93,7 @@ describe('getSiteCoordinates', () => {
   })
 
   describe('polygon sites', () => {
-    it('returns mapped [lon, lat] pairs for a WGS84 polygon site', () => {
+    it('returns mapped [lon, lat] pairs with closing coordinate for a WGS84 polygon site', () => {
       const site = {
         coordinatesType: 'coordinates',
         coordinatesEntry: 'multiple',
@@ -111,11 +111,36 @@ describe('getSiteCoordinates', () => {
       expect(result[0]).toEqual([
         [-0.1, 51.5],
         [-0.2, 51.6],
-        [-0.3, 51.7]
+        [-0.3, 51.7],
+        [-0.1, 51.5]
       ])
     })
 
-    it('converts each OSGB36 coordinate to WGS84 for a polygon site', () => {
+    it('does not duplicate the closing coordinate when the polygon is already closed', () => {
+      const site = {
+        coordinatesType: 'coordinates',
+        coordinatesEntry: 'multiple',
+        coordinateSystem: 'wgs84',
+        coordinates: [
+          { latitude: '51.5', longitude: '-0.1' },
+          { latitude: '51.6', longitude: '-0.2' },
+          { latitude: '51.7', longitude: '-0.3' },
+          { latitude: '51.5', longitude: '-0.1' }
+        ]
+      }
+
+      const result = getSiteCoordinates([site])
+
+      expect(result[0]).toHaveLength(4)
+      expect(result[0]).toEqual([
+        [-0.1, 51.5],
+        [-0.2, 51.6],
+        [-0.3, 51.7],
+        [-0.1, 51.5]
+      ])
+    })
+
+    it('converts each OSGB36 coordinate to WGS84 and closes the polygon', () => {
       singleOSGB36toWGS84
         .mockReturnValueOnce([-0.1, 51.5])
         .mockReturnValueOnce([-0.2, 51.6])
@@ -139,7 +164,8 @@ describe('getSiteCoordinates', () => {
       expect(result[0]).toEqual([
         [-0.1, 51.5],
         [-0.2, 51.6],
-        [-0.3, 51.7]
+        [-0.3, 51.7],
+        [-0.1, 51.5]
       ])
     })
   })

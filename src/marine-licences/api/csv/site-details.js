@@ -1,4 +1,5 @@
 import { generateCirclePolygon } from '../../../shared/common/helpers/emp/transforms/circle-to-polygon.js'
+import { areCoordsTheSame } from '../../../shared/common/helpers/emp/transforms/are-coords-the-same.js'
 import { singleOSGB36toWGS84 } from '../../../shared/common/helpers/geo/geo-utils.js'
 import { COORDINATE_SYSTEMS } from '../../../shared/common/constants/coordinates.js'
 
@@ -23,14 +24,19 @@ const circleToCoords = (site) => {
 const polygonToCoords = (site) => {
   const { coordinateSystem, coordinates } = site
 
-  if (coordinateSystem === WGS84) {
-    return coordinates.map((coord) => [
-      Number.parseFloat(coord.longitude),
-      Number.parseFloat(coord.latitude)
-    ])
+  const coords =
+    coordinateSystem === WGS84
+      ? coordinates.map((coord) => [
+          Number.parseFloat(coord.longitude),
+          Number.parseFloat(coord.latitude)
+        ])
+      : coordinates.map((coord) => singleOSGB36toWGS84(coord))
+
+  if (!areCoordsTheSame(coords[0], coords.at(-1))) {
+    coords.push(coords[0])
   }
 
-  return coordinates.map((coord) => singleOSGB36toWGS84(coord))
+  return coords
 }
 
 const fileUploadToCoords = (site) =>
