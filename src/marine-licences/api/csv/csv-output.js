@@ -1,5 +1,5 @@
-export const csvOutput = (coordinates) =>
-  coordinates.flatMap((site, index) =>
+export const csvOutput = (coordinates, index) =>
+  coordinates.flatMap((site) =>
     site.map((coord) => [
       coord.latDegree,
       coord.latDecMin,

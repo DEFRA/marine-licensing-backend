@@ -42,11 +42,11 @@ export const generateCoordinatesCsvController = {
 
     const siteTransform = new Transform({
       objectMode: true,
-      transform([_index, site], _, callback) {
+      transform([index, site], _, callback) {
         const coords = getSiteCoordinates([site])
         const ddm = convertCoordinatesToDdm(coords)
         const csvObjects = coordinatesToCsvObject(ddm)
-        for (const row of csvOutput(csvObjects)) {
+        for (const row of csvOutput(csvObjects, index)) {
           this.push(row)
         }
         callback()
