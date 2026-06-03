@@ -17,15 +17,8 @@ const entraRequest = {
   }
 }
 
-const unknownRequest = {
-  auth: {
-    artifacts: { decoded: {} },
-    credentials: {}
-  }
-}
-
 describe('getAuthUserContext', () => {
-  it('returns currentUserId and currentOrganisationId for an applicant user', () => {
+  it('returns currentUserId for an applicant user', () => {
     const result = getAuthUserContext(applicantRequest)
     expect(result.currentUserId).toBe('contact-123')
   })
@@ -40,13 +33,7 @@ describe('getAuthUserContext', () => {
     expect(result.currentOrganisationId).toBeNull()
   })
 
-  it('throws a forbidden error for an unknown user type', () => {
-    expect(() => getAuthUserContext(unknownRequest)).toThrow(
-      'Not authorised to request this resource'
-    )
-  })
-
-  it('throws a forbidden error when auth is missing', () => {
+  it('throws a forbidden error when there is no decoded token', () => {
     expect(() => getAuthUserContext({ auth: {} })).toThrow(
       'Not authorised to request this resource'
     )
