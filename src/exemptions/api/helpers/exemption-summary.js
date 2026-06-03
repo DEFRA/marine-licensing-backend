@@ -22,6 +22,57 @@ const excludeDraftExemptionsMatch = {
 
 const reportingFacet = (stages) => [excludeDraftExemptionsMatch, ...stages]
 
+const countExemptionsWithSiteMatch = (siteMatch) =>
+  reportingFacet([
+    { $match: { siteDetails: { $elemMatch: siteMatch } } },
+    { $count: 'count' }
+  ])
+
+const groupByFieldFacet = (field) =>
+  reportingFacet([
+    { $unwind: `$${field}` },
+    { $group: { _id: `$${field}`, count: { $sum: 1 } } }
+  ])
+
+const buildReportingFacets = () => ({
+  shapefileExemptions: countExemptionsWithSiteMatch({
+    coordinatesType: 'file',
+    fileUploadType: 'shapefile'
+  }),
+  kmlExemptions: countExemptionsWithSiteMatch({
+    coordinatesType: 'file',
+    fileUploadType: 'kml'
+  }),
+  manualCoordinatesExemptions: countExemptionsWithSiteMatch({
+    coordinatesType: 'coordinates'
+  }),
+  coordinateSystemVolume: reportingFacet([
+    { $unwind: '$siteDetails' },
+    {
+      $group: {
+        _id: {
+          $cond: [
+            { $eq: ['$siteDetails.coordinatesType', 'file'] },
+            COORDINATE_SYSTEMS.WGS84,
+            '$siteDetails.coordinateSystem'
+          ]
+        },
+        count: { $sum: 1 }
+      }
+    }
+  ]),
+  byArticle: reportingFacet([
+    {
+      $match: {
+        'mcmsContext.articleCode': { $exists: true, $nin: [null, ''] }
+      }
+    },
+    { $group: { _id: '$mcmsContext.articleCode', count: { $sum: 1 } } }
+  ]),
+  byMarinePlanArea: groupByFieldFacet('marinePlanAreas'),
+  byCoastalOperationsArea: groupByFieldFacet('coastalOperationsAreas')
+})
+
 export const buildExemptionSummaryPipeline = () => [
   {
     $match: {
@@ -31,73 +82,7 @@ export const buildExemptionSummaryPipeline = () => [
   {
     $facet: {
       statusCounts: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
-      shapefileExemptions: reportingFacet([
-        {
-          $match: {
-            siteDetails: {
-              $elemMatch: {
-                coordinatesType: 'file',
-                fileUploadType: 'shapefile'
-              }
-            }
-          }
-        },
-        { $count: 'count' }
-      ]),
-      kmlExemptions: reportingFacet([
-        {
-          $match: {
-            siteDetails: {
-              $elemMatch: {
-                coordinatesType: 'file',
-                fileUploadType: 'kml'
-              }
-            }
-          }
-        },
-        { $count: 'count' }
-      ]),
-      manualCoordinatesExemptions: reportingFacet([
-        {
-          $match: {
-            siteDetails: {
-              $elemMatch: { coordinatesType: 'coordinates' }
-            }
-          }
-        },
-        { $count: 'count' }
-      ]),
-      coordinateSystemVolume: reportingFacet([
-        { $unwind: '$siteDetails' },
-        {
-          $group: {
-            _id: {
-              $cond: [
-                { $eq: ['$siteDetails.coordinatesType', 'file'] },
-                COORDINATE_SYSTEMS.WGS84,
-                '$siteDetails.coordinateSystem'
-              ]
-            },
-            count: { $sum: 1 }
-          }
-        }
-      ]),
-      byArticle: reportingFacet([
-        {
-          $match: {
-            'mcmsContext.articleCode': { $exists: true, $nin: [null, ''] }
-          }
-        },
-        { $group: { _id: '$mcmsContext.articleCode', count: { $sum: 1 } } }
-      ]),
-      byMarinePlanArea: reportingFacet([
-        { $unwind: '$marinePlanAreas' },
-        { $group: { _id: '$marinePlanAreas', count: { $sum: 1 } } }
-      ]),
-      byCoastalOperationsArea: reportingFacet([
-        { $unwind: '$coastalOperationsAreas' },
-        { $group: { _id: '$coastalOperationsAreas', count: { $sum: 1 } } }
-      ])
+      ...buildReportingFacets()
     }
   }
 ]
