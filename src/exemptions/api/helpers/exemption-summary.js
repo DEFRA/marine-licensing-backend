@@ -73,6 +73,17 @@ const buildReportingFacets = () => ({
   byCoastalOperationsArea: groupByFieldFacet('coastalOperationsAreas')
 })
 
+export const EMPTY_EXEMPTION_SUMMARY_FACET = {
+  statusCounts: [],
+  shapefileExemptions: [],
+  kmlExemptions: [],
+  manualCoordinatesExemptions: [],
+  coordinateSystemVolume: [],
+  byArticle: [],
+  byMarinePlanArea: [],
+  byCoastalOperationsArea: []
+}
+
 export const buildExemptionSummaryPipeline = () => [
   {
     $match: {

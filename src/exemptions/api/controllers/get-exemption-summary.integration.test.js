@@ -22,6 +22,34 @@ describe('Get exemption summary - integration tests', () => {
     await globalThis.mockMongo.collection(collectionExemptions).deleteMany({})
   })
 
+  test('returns zero counts when no exemptions exist', async () => {
+    const { statusCode, body } = await makeGetRequest({
+      server,
+      url: '/exemptions/summary',
+      isInternalUser: true
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body).toEqual({
+      submittedExemptions: 0,
+      unsubmittedExemptions: 0,
+      withdrawnExemptions: 0,
+      coordinatesInputMethod: {
+        shapefile: 0,
+        kml: 0,
+        manualCoordinates: 0
+      },
+      coordinateSystemVolume: {
+        wgs84: { count: 0, percentage: 0 },
+        bng: { count: 0, percentage: 0 },
+        total: 0
+      },
+      byArticle: {},
+      byMarinePlanArea: {},
+      byCoastalOperationsArea: {}
+    })
+  })
+
   test('returns aggregated counts for internal users', async () => {
     const exemptions = [
       createCompleteExemption({

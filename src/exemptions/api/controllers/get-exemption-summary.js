@@ -4,7 +4,8 @@ import { collectionExemptions } from '../../../shared/common/constants/db-collec
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import {
   buildExemptionSummaryPipeline,
-  buildExemptionSummaryValue
+  buildExemptionSummaryValue,
+  EMPTY_EXEMPTION_SUMMARY_FACET
 } from '../helpers/exemption-summary.js'
 
 export const getExemptionSummaryController = {
@@ -19,7 +20,9 @@ export const getExemptionSummaryController = {
       return h
         .response({
           message: 'success',
-          value: buildExemptionSummaryValue(summaryResult)
+          value: buildExemptionSummaryValue(
+            summaryResult ?? EMPTY_EXEMPTION_SUMMARY_FACET
+          )
         })
         .code(StatusCodes.OK)
     } catch (error) {

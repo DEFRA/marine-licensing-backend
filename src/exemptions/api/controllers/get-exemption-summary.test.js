@@ -88,6 +88,46 @@ describe('GET /exemptions/summary', () => {
     expect(mockAggregate).toHaveBeenCalledWith(buildExemptionSummaryPipeline())
   })
 
+  it('returns zero counts when aggregation returns no documents', async () => {
+    mockDb = {
+      collection: vi.fn().mockReturnValue({
+        aggregate: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue([])
+        })
+      })
+    }
+
+    const request = {
+      db: mockDb,
+      auth: { artifacts: { decoded: { tid: 'entra-tenant-id' } } },
+      logger: mockLogger
+    }
+
+    await getExemptionSummaryController.handler(request, mockHandler)
+
+    expect(mockHandler.response).toHaveBeenCalledWith({
+      message: 'success',
+      value: {
+        submittedExemptions: 0,
+        unsubmittedExemptions: 0,
+        withdrawnExemptions: 0,
+        coordinatesInputMethod: {
+          shapefile: 0,
+          kml: 0,
+          manualCoordinates: 0
+        },
+        coordinateSystemVolume: {
+          wgs84: { count: 0, percentage: 0 },
+          bng: { count: 0, percentage: 0 },
+          total: 0
+        },
+        byArticle: {},
+        byMarinePlanArea: {},
+        byCoastalOperationsArea: {}
+      }
+    })
+  })
+
   it('returns zero counts when statuses are missing', async () => {
     mockDb = {
       collection: vi.fn().mockReturnValue({
