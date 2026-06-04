@@ -4,7 +4,6 @@ import { ObjectId } from 'mongodb'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import Wreck from '@hapi/wreck'
-import { INCOMPLETE } from '../../../shared/helpers/task-list-utils.js'
 
 vi.mock('../../../shared/common/helpers/dynamics/get-access-token.js', () => ({
   getDynamicsAccessToken: vi.fn().mockResolvedValue('abc')
@@ -100,7 +99,7 @@ describe('Get marine licence - integration tests', async () => {
         siteDetails: 'INCOMPLETE',
         publicRegister: 'COMPLETED',
         publicConsultation: 'INCOMPLETE',
-        waterFrameworkDirective: INCOMPLETE
+        waterFrameworkDirective: 'INCOMPLETE'
       }
     })
   })
