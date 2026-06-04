@@ -2,11 +2,10 @@ import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { addCreateAuditFieldsOptional } from '../../../shared/common/helpers/mongo-audit.js'
 import { collectionIatContexts } from '../../../shared/common/constants/db-collections.js'
+import { MONGO_DUPLICATE_KEY_CODE } from '../../../shared/common/constants/mongo.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { generateSlug } from '../../../iat-shared/helpers/generate-slug.js'
 import { config } from '../../../config.js'
-
-const DUPLICATE_KEY_CODE = 11000
 
 export const createIatContextController = {
   options: {
@@ -44,7 +43,7 @@ async function insertWithSlug(db, auth, expiresAt) {
     )
     return slug
   } catch (error) {
-    if (error.code === DUPLICATE_KEY_CODE) {
+    if (error.code === MONGO_DUPLICATE_KEY_CODE) {
       const retrySlug = generateSlug()
       await collection.insertOne(
         addCreateAuditFieldsOptional(auth, { ...baseDoc, slug: retrySlug })

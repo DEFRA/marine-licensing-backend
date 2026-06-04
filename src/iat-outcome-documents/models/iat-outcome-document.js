@@ -1,6 +1,5 @@
 import joi from 'joi'
-
-const SLUG_PATTERN = /^[A-Za-z0-9_-]{22}$/
+import { SLUG_PATTERN } from '../../shared/common/constants/iat.js'
 
 export const outcomeDocumentSlugParams = joi.object({
   slug: joi.string().pattern(SLUG_PATTERN).required().messages({

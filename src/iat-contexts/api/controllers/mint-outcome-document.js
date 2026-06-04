@@ -9,10 +9,9 @@ import {
   collectionIatContexts,
   collectionIatOutcomeDocuments
 } from '../../../shared/common/constants/db-collections.js'
+import { MONGO_DUPLICATE_KEY_CODE } from '../../../shared/common/constants/mongo.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { generateSlug } from '../../../iat-shared/helpers/generate-slug.js'
-
-const DUPLICATE_KEY_CODE = 11000
 
 export const mintOutcomeDocumentController = {
   options: {
@@ -77,7 +76,7 @@ async function insertSnapshot(collection, auth, context, payload) {
     const { _id, ...safeDoc } = doc
     return safeDoc
   } catch (error) {
-    if (error.code === DUPLICATE_KEY_CODE) {
+    if (error.code === MONGO_DUPLICATE_KEY_CODE) {
       const retrySlug = generateSlug()
       const doc = addCreateAuditFieldsOptional(auth, {
         ...base,

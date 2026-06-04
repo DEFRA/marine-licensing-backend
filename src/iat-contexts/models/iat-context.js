@@ -1,6 +1,6 @@
 import joi from 'joi'
+import { SLUG_PATTERN } from '../../shared/common/constants/iat.js'
 
-const SLUG_PATTERN = /^[A-Za-z0-9_-]{22}$/
 const ROUTE_MAX = 200
 const TEXT_MAX = 5000
 const ANSWER_ID_MAX = 100
