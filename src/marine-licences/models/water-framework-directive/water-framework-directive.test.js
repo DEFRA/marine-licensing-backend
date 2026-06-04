@@ -14,7 +14,10 @@ describe('waterFrameworkDirective', () => {
     test('should pass with yes', () => {
       const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
-        waterFrameworkDirective: { nauticalMile: 'yes' }
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'no'
+        }
       })
       expect(error).toBeUndefined()
     })
@@ -49,6 +52,71 @@ describe('waterFrameworkDirective', () => {
         waterFrameworkDirective: { nauticalMile: '' }
       })
       expect(error.message).toContain('NAUTICAL_MILE_REQUIRED')
+    })
+  })
+
+  describe('excludedActivities', () => {
+    test('should pass with yes', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'yes'
+        }
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should pass with no', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'no'
+        }
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should fail if missing', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: { nauticalMile: 'yes' }
+      })
+      expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
+    })
+
+    test('should fail if not a valid value', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'maybe'
+        }
+      })
+      expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
+    })
+
+    test('should fail if empty string', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: ''
+        }
+      })
+      expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
+    })
+
+    test('should fail if provided nauticalMile no', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'no',
+          excludedActivities: 'yes'
+        }
+      })
+      expect(error).toBeDefined()
     })
   })
 })
