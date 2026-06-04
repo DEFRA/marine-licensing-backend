@@ -3,9 +3,8 @@ import { StatusCodes } from 'http-status-codes'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
-import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
-import { isApplicantUser } from '../../../exemptions/api/helpers/is-applicant-user.js'
+import { getAuthUserContext } from '../../../shared/helpers/get-auth-user-context.js'
 
 export const getMarineLicenceController = ({ requiresAuth }) => ({
   options: {
@@ -26,8 +25,7 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       let marineLicence
 
       if (requiresAuth) {
-        const isApplicant = isApplicantUser(request)
-        const currentUserId = isApplicant ? getContactId(request.auth) : null
+        const { currentUserId } = getAuthUserContext(request)
         marineLicence = await marineLicenceService.getMarineLicenceById({
           id,
           currentUserId
