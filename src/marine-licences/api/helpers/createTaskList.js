@@ -153,7 +153,7 @@ const getSiteDetailsStatus = (siteDetails) => {
 }
 
 const getWaterFrameworkDirectiveStatus = (wfd) => {
-  if (wfd && wfd.nauticalMile === 'no') {
+  if (wfd?.nauticalMile === 'no') {
     return COMPLETED
   }
 
