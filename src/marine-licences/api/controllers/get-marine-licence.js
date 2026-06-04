@@ -5,6 +5,7 @@ import { createTaskList } from '../helpers/createTaskList.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
+import { isApplicantUser } from '../../../exemptions/api/helpers/is-applicant-user.js'
 
 export const getMarineLicenceController = ({ requiresAuth }) => ({
   options: {
@@ -25,7 +26,8 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       let marineLicence
 
       if (requiresAuth) {
-        const currentUserId = getContactId(request.auth)
+        const isApplicant = isApplicantUser(request)
+        const currentUserId = isApplicant ? getContactId(request.auth) : null
         marineLicence = await marineLicenceService.getMarineLicenceById({
           id,
           currentUserId
