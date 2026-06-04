@@ -3,10 +3,10 @@ import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../models/get-exemption.js'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { ExemptionService } from '../services/exemption.service.js'
-import { isApplicantUser } from '../helpers/is-applicant-user.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { getOrganisationIdFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { EXEMPTION_STATUS_LABEL } from '../../constants/exemption.js'
+import { isApplicantUser } from '../../../shared/helpers/is-applicant-user.js'
 
 export const getExemptionController = ({ requiresAuth }) => ({
   options: {
