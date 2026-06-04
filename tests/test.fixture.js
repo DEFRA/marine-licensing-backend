@@ -104,6 +104,8 @@ export const mockMultipleSite = {
   ]
 }
 
+export const mockWaterFrameworkDirective = { nauticalMile: 'yes' }
+
 export const createCompleteMarineLicence = (overrides = {}) => {
   const marineLicenceId = overrides._id || new ObjectId()
   const contactId =
@@ -138,6 +140,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     createdAt: new Date('2026-12-01'),
     updatedAt: new Date('2026-12-01'),
     siteDetails: [mockFileUploadSite],
+    waterFrameworkDirective: mockWaterFrameworkDirective,
     ...overrides
   }
 }
