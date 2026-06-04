@@ -1,18 +1,18 @@
-import { waterFrameworkDirective } from './water-framework-directive.js'
+import { waterFrameworkDirectiveSchema } from './water-framework-directive.js'
 
 describe('waterFrameworkDirective', () => {
   const validId = 'a'.repeat(24)
 
   describe('waterFrameworkDirective object', () => {
     test('should fail if waterFrameworkDirective object is missing', () => {
-      const { error } = waterFrameworkDirective.validate({ id: validId })
+      const { error } = waterFrameworkDirectiveSchema.validate({ id: validId })
       expect(error.message).toContain('WATER_FRAMEWORK_DIRECTIVE_REQUIRED')
     })
   })
 
   describe('nauticalMile', () => {
     test('should pass with yes', () => {
-      const { error } = waterFrameworkDirective.validate({
+      const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: { nauticalMile: 'yes' }
       })
@@ -20,7 +20,7 @@ describe('waterFrameworkDirective', () => {
     })
 
     test('should pass with no', () => {
-      const { error } = waterFrameworkDirective.validate({
+      const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: { nauticalMile: 'no' }
       })
@@ -28,7 +28,7 @@ describe('waterFrameworkDirective', () => {
     })
 
     test('should fail if missing', () => {
-      const { error } = waterFrameworkDirective.validate({
+      const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: {}
       })
@@ -36,7 +36,7 @@ describe('waterFrameworkDirective', () => {
     })
 
     test('should fail if not a valid value', () => {
-      const { error } = waterFrameworkDirective.validate({
+      const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: { nauticalMile: 'maybe' }
       })
@@ -44,7 +44,7 @@ describe('waterFrameworkDirective', () => {
     })
 
     test('should fail if empty string', () => {
-      const { error } = waterFrameworkDirective.validate({
+      const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: { nauticalMile: '' }
       })

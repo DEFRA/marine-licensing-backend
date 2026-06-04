@@ -1,7 +1,7 @@
 import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
 
-export const waterFrameworkDirective = joi
+export const waterFrameworkDirectiveSchema = joi
   .object({
     waterFrameworkDirective: joi
       .object({
