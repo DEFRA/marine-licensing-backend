@@ -136,7 +136,8 @@ describe('GET /marine-licence', () => {
               projectBackground: 'COMPLETED',
               publicRegister: 'COMPLETED',
               publicConsultation: 'COMPLETED',
-              siteDetails: 'INCOMPLETE'
+              siteDetails: 'INCOMPLETE',
+              waterFrameworkDirective: 'INCOMPLETE'
             }
           }
         })
