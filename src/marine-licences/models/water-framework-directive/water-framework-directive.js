@@ -12,6 +12,17 @@ const waterFrameworkDirectiveDetails = {
     otherwise: joi.forbidden().messages({
       'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
     })
+  }),
+  previousAssessment: joi.when('nauticalMile', {
+    is: 'yes',
+    then: joi.string().valid('yes', 'no').required().messages({
+      'string.empty': 'PREVIOUS_ASSESSMENT_REQUIRED',
+      'any.only': 'PREVIOUS_ASSESSMENT_REQUIRED',
+      'any.required': 'PREVIOUS_ASSESSMENT_REQUIRED'
+    }),
+    otherwise: joi.forbidden().messages({
+      'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
+    })
   })
 }
 

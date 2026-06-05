@@ -44,7 +44,8 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
 
     expect(updatedLicence.waterFrameworkDirective).toEqual({
       excludedActivities: 'no',
-      nauticalMile: 'yes'
+      nauticalMile: 'yes',
+      previousAssessment: 'no'
     })
   })
 
