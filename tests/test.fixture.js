@@ -104,7 +104,10 @@ export const mockMultipleSite = {
   ]
 }
 
-export const mockWaterFrameworkDirective = { nauticalMile: 'yes' }
+export const mockWaterFrameworkDirective = {
+  nauticalMile: 'yes',
+  excludedActivities: 'no'
+}
 
 const completedActivityDetails = [
   {
