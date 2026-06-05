@@ -56,67 +56,71 @@ describe('waterFrameworkDirective', () => {
   })
 
   describe('excludedActivities', () => {
-    test('should pass with yes', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          excludedActivities: 'yes'
-        }
+    describe('nauticalMile yes', () => {
+      test('should pass with yes', () => {
+        const { error } = waterFrameworkDirectiveSchema.validate({
+          id: validId,
+          waterFrameworkDirective: {
+            nauticalMile: 'yes',
+            excludedActivities: 'yes'
+          }
+        })
+        expect(error).toBeUndefined()
       })
-      expect(error).toBeUndefined()
+
+      test('should pass with no', () => {
+        const { error } = waterFrameworkDirectiveSchema.validate({
+          id: validId,
+          waterFrameworkDirective: {
+            nauticalMile: 'yes',
+            excludedActivities: 'no'
+          }
+        })
+        expect(error).toBeUndefined()
+      })
+
+      test('should fail if missing', () => {
+        const { error } = waterFrameworkDirectiveSchema.validate({
+          id: validId,
+          waterFrameworkDirective: { nauticalMile: 'yes' }
+        })
+        expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
+      })
+
+      test('should fail if not a valid value', () => {
+        const { error } = waterFrameworkDirectiveSchema.validate({
+          id: validId,
+          waterFrameworkDirective: {
+            nauticalMile: 'yes',
+            excludedActivities: 'maybe'
+          }
+        })
+        expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
+      })
+
+      test('should fail if empty string', () => {
+        const { error } = waterFrameworkDirectiveSchema.validate({
+          id: validId,
+          waterFrameworkDirective: {
+            nauticalMile: 'yes',
+            excludedActivities: ''
+          }
+        })
+        expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
+      })
     })
 
-    test('should pass with no', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          excludedActivities: 'no'
-        }
+    describe('nauticalMile no', () => {
+      test('should fail if provided', () => {
+        const { error } = waterFrameworkDirectiveSchema.validate({
+          id: validId,
+          waterFrameworkDirective: {
+            nauticalMile: 'no',
+            excludedActivities: 'yes'
+          }
+        })
+        expect(error.message).toContain('WATER_FRAMEWORK_DIRECTIVE_INVALID')
       })
-      expect(error).toBeUndefined()
-    })
-
-    test('should fail if missing', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: { nauticalMile: 'yes' }
-      })
-      expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
-    })
-
-    test('should fail if not a valid value', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          excludedActivities: 'maybe'
-        }
-      })
-      expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
-    })
-
-    test('should fail if empty string', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          excludedActivities: ''
-        }
-      })
-      expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
-    })
-
-    test('should fail if provided nauticalMile no', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'no',
-          excludedActivities: 'yes'
-        }
-      })
-      expect(error).toBeDefined()
     })
   })
 })

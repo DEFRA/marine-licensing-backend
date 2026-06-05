@@ -9,7 +9,9 @@ const waterFrameworkDirectiveDetails = {
       'any.only': 'EXCLUDED_ACTIVITIES_REQUIRED',
       'any.required': 'EXCLUDED_ACTIVITIES_REQUIRED'
     }),
-    otherwise: joi.forbidden()
+    otherwise: joi.forbidden().messages({
+      'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
+    })
   })
 }
 
