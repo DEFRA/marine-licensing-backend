@@ -124,10 +124,19 @@ describe('mcmsContext validation schema', () => {
         expect(result.error.message).toContain('"pdfDownloadUrl" is required')
       })
 
-      it('should validate with different valid URL formats', () => {
+      it('should validate legacy and new self-hosted URL formats', () => {
+        const newSlug = 'B'.repeat(22)
         const urls = [
           'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
-          'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123'
+          'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123',
+          `https://get-permission-for-marine-work.defra.gov.uk/outcome-documents/${newSlug}`,
+          `https://marine-licensing-frontend.dev.cdp-int.defra.cloud/outcome-documents/${newSlug}`,
+          `https://marine-licensing-frontend.test.cdp-int.defra.cloud/outcome-documents/${newSlug}`,
+          `https://marine-licensing-frontend.perf-test.cdp-int.defra.cloud/outcome-documents/${newSlug}`,
+          `http://marine-licensing-frontend.local:3000/outcome-documents/${newSlug}`,
+          `http://localhost:3000/outcome-documents/${newSlug}`,
+          // base64url slug containing an underscore (regression for the old [a-zA-Z0-9-] charset)
+          'https://get-permission-for-marine-work.defra.gov.uk/outcome-documents/ab_cd-EF1234567890123456'
         ]
 
         urls.forEach((url) => {
@@ -140,16 +149,32 @@ describe('mcmsContext validation schema', () => {
         })
       })
 
-      it('should fail with invalid URL format', () => {
+      it('should fail with an unknown host', () => {
+        const contextWithInvalidUrl = {
+          ...validMcmsContext,
+          pdfDownloadUrl: `https://evil.example.com/outcome-documents/${'B'.repeat(22)}`
+        }
+        const result = mcmsContext.validate(contextWithInvalidUrl)
+        expect(result.error).toBeDefined()
+      })
+
+      it('should fail with an allowed host but a non-outcome-document path', () => {
+        const contextWithInvalidUrl = {
+          ...validMcmsContext,
+          pdfDownloadUrl:
+            'https://get-permission-for-marine-work.defra.gov.uk/not-a-document/123'
+        }
+        const result = mcmsContext.validate(contextWithInvalidUrl)
+        expect(result.error).toBeDefined()
+      })
+
+      it('should fail with a non-outcome-document URL', () => {
         const contextWithInvalidUrl = {
           ...validMcmsContext,
           pdfDownloadUrl: 'https://test.com/test.pdf'
         }
         const result = mcmsContext.validate(contextWithInvalidUrl)
         expect(result.error).toBeDefined()
-        expect(result.error.message).toContain(
-          '"pdfDownloadUrl" with value "https://test.com/test.pdf" fails to match the required pattern: /^https:\\/\\/[^/]+\\.marinemanagement\\.org\\.uk\\/[^/]+\\/journey\\/self-service\\/outcome-document\\/[a-zA-Z0-9-]+$/'
-        )
       })
     })
 
