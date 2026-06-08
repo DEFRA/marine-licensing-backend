@@ -25,6 +25,5 @@ export const buildTaskList = (entity, tasks) => {
       taskList[taskName] = status
     }
   }
-
   return taskList
 }

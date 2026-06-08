@@ -21,7 +21,7 @@ import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get
 const checkForIncompleteTasks = (marineLicence, isCitizen) => {
   const taskList = createTaskList(marineLicence, isCitizen)
   const incompleteTasks = Object.entries(taskList)
-    .filter(([task]) => task !== 'siteDetails') // Temporary until Manual Coordinates are available
+    .filter(([task]) => task !== 'waterFrameworkDirective') // Temporary until Water Framework Directive is complete
     .filter(([_task, status]) => status !== 'COMPLETED')
     .map(([task]) => task)
 
