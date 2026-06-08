@@ -14,6 +14,7 @@ import { addActivityDetailsController } from './controllers/add-activity-details
 import { deleteActivityDetailsController } from './controllers/delete-activity-details.js'
 import { updateSiteController } from './controllers/update-site.js'
 import { generateCoordinatesCsvController } from './controllers/generate-coordinates-csv.js'
+import { updateWaterFrameworkDirectiveController } from './controllers/update-water-framework-directive.js'
 
 export const marineLicences = [
   {
@@ -100,5 +101,10 @@ export const marineLicences = [
     method: 'GET',
     path: '/marine-licence/{id}/generate-coordinates-csv',
     ...generateCoordinatesCsvController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/water-framework-directive',
+    ...updateWaterFrameworkDirectiveController
   }
 ]
