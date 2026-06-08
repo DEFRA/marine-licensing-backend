@@ -72,7 +72,7 @@ describe('mintOutcomeDocumentController', () => {
     const responseArg = global.mockHandler.response.mock.calls[0][0]
     expect(responseArg.value.slug).toBe('B'.repeat(22))
     expect(responseArg.value.viewUrl).toBe(
-      `/outcome-documents/${'B'.repeat(22)}`
+      `/journey/self-service/outcome-document/${'B'.repeat(22)}`
     )
     expect(responseArg.value.snapshot.contextSlug).toBe(contextSlug)
     expect(responseArg.value.snapshot.focusedOption.id).toBe('WO_FOO')

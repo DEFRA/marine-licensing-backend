@@ -39,7 +39,7 @@ export const mintOutcomeDocumentController = {
           message: 'success',
           value: {
             slug: snapshot.slug,
-            viewUrl: `/outcome-documents/${snapshot.slug}`,
+            viewUrl: `/journey/self-service/outcome-document/${snapshot.slug}`,
             snapshot
           }
         })
