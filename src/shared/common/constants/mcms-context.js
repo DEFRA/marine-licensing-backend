@@ -4,15 +4,6 @@ export const requiredQueryParams = {
   pdfDownloadUrl: 'pdfDownloadUrl'
 }
 
-export const allowedOutcomeDocumentHosts = [
-  'localhost:3000',
-  'marine-licensing-frontend.local:3000',
-  'marine-licensing-frontend.dev.cdp-int.defra.cloud',
-  'marine-licensing-frontend.test.cdp-int.defra.cloud',
-  'marine-licensing-frontend.perf-test.cdp-int.defra.cloud',
-  'get-permission-for-marine-work.defra.gov.uk'
-]
-
 export const articleCodes = [
   '13',
   '17',

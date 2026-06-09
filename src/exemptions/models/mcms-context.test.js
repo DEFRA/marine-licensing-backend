@@ -3,6 +3,7 @@ import {
   activityTypes,
   articleCodes
 } from '../../shared/common/constants/mcms-context.js'
+import { config } from '../../config.js'
 
 describe('mcmsContext validation schema', () => {
   const validMcmsContext = {
@@ -124,19 +125,14 @@ describe('mcmsContext validation schema', () => {
         expect(result.error.message).toContain('"pdfDownloadUrl" is required')
       })
 
-      it('should validate legacy and new self-hosted URL formats', () => {
+      it('should validate legacy MCMS and configured-app-host URL formats', () => {
         const newSlug = 'B'.repeat(22)
         const urls = [
           'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
           'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123',
-          `https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/${newSlug}`,
-          `https://marine-licensing-frontend.dev.cdp-int.defra.cloud/journey/self-service/outcome-document/${newSlug}`,
-          `https://marine-licensing-frontend.test.cdp-int.defra.cloud/journey/self-service/outcome-document/${newSlug}`,
-          `https://marine-licensing-frontend.perf-test.cdp-int.defra.cloud/journey/self-service/outcome-document/${newSlug}`,
-          `http://marine-licensing-frontend.local:3000/journey/self-service/outcome-document/${newSlug}`,
           `http://localhost:3000/journey/self-service/outcome-document/${newSlug}`,
           // base64url slug containing an underscore (regression for the old [a-zA-Z0-9-] charset)
-          'https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/ab_cd-EF1234567890123456'
+          'http://localhost:3000/journey/self-service/outcome-document/ab_cd-EF1234567890123456'
         ]
 
         urls.forEach((url) => {
@@ -149,31 +145,58 @@ describe('mcmsContext validation schema', () => {
         })
       })
 
-      it('rejects the removed /outcome-documents/{slug} path on a self-hosted host', () => {
-        const contextWithRemovedPath = {
-          ...validMcmsContext,
-          pdfDownloadUrl: `https://get-permission-for-marine-work.defra.gov.uk/outcome-documents/${'B'.repeat(22)}`
+      it.each([
+        `https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/${'B'.repeat(22)}`,
+        `https://marine-licensing-frontend.dev.cdp-int.defra.cloud/journey/self-service/outcome-document/${'B'.repeat(22)}`,
+        `https://marine-licensing-frontend.test.cdp-int.defra.cloud/journey/self-service/outcome-document/${'B'.repeat(22)}`,
+        `https://marine-licensing-frontend.perf-test.cdp-int.defra.cloud/journey/self-service/outcome-document/${'B'.repeat(22)}`,
+        `http://marine-licensing-frontend.local:3000/journey/self-service/outcome-document/${'B'.repeat(22)}`
+      ])(
+        'rejects an outcome-document URL on %s when it is not the configured front-end host (no hardcoded host list)',
+        (pdfDownloadUrl) => {
+          const result = mcmsContext.validate({
+            ...validMcmsContext,
+            pdfDownloadUrl
+          })
+          expect(result.error).toBeDefined()
         }
-        const result = mcmsContext.validate(contextWithRemovedPath)
+      )
+
+      it('accepts an outcome-document URL on the host configured via frontEndBaseUrl', () => {
+        const spy = vi
+          .spyOn(config, 'get')
+          .mockReturnValue(
+            'https://get-permission-for-marine-work.defra.gov.uk'
+          )
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeUndefined()
+        spy.mockRestore()
+      })
+
+      it('rejects the removed /outcome-documents/{slug} path on the app host', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `http://localhost:3000/outcome-documents/${'B'.repeat(22)}`
+        })
         expect(result.error).toBeDefined()
       })
 
       it('should fail with an unknown host', () => {
-        const contextWithInvalidUrl = {
+        const result = mcmsContext.validate({
           ...validMcmsContext,
           pdfDownloadUrl: `https://evil.example.com/journey/self-service/outcome-document/${'B'.repeat(22)}`
-        }
-        const result = mcmsContext.validate(contextWithInvalidUrl)
+        })
         expect(result.error).toBeDefined()
       })
 
-      it('should fail with an allowed host but a non-outcome-document path', () => {
-        const contextWithInvalidUrl = {
+      it('rejects the app host with a non-outcome-document path', () => {
+        const result = mcmsContext.validate({
           ...validMcmsContext,
-          pdfDownloadUrl:
-            'https://get-permission-for-marine-work.defra.gov.uk/not-a-document/123'
-        }
-        const result = mcmsContext.validate(contextWithInvalidUrl)
+          pdfDownloadUrl: 'http://localhost:3000/not-a-document/123'
+        })
         expect(result.error).toBeDefined()
       })
 
