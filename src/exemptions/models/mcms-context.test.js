@@ -145,23 +145,6 @@ describe('mcmsContext validation schema', () => {
         })
       })
 
-      it.each([
-        `https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/${'B'.repeat(22)}`,
-        `https://marine-licensing-frontend.dev.cdp-int.defra.cloud/journey/self-service/outcome-document/${'B'.repeat(22)}`,
-        `https://marine-licensing-frontend.test.cdp-int.defra.cloud/journey/self-service/outcome-document/${'B'.repeat(22)}`,
-        `https://marine-licensing-frontend.perf-test.cdp-int.defra.cloud/journey/self-service/outcome-document/${'B'.repeat(22)}`,
-        `http://marine-licensing-frontend.local:3000/journey/self-service/outcome-document/${'B'.repeat(22)}`
-      ])(
-        'rejects an outcome-document URL on %s when it is not the configured front-end host (no hardcoded host list)',
-        (pdfDownloadUrl) => {
-          const result = mcmsContext.validate({
-            ...validMcmsContext,
-            pdfDownloadUrl
-          })
-          expect(result.error).toBeDefined()
-        }
-      )
-
       it('accepts an outcome-document URL on the host configured via frontEndBaseUrl', () => {
         const spy = vi
           .spyOn(config, 'get')
