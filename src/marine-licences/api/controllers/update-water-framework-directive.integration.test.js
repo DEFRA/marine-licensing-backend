@@ -1,6 +1,9 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import {
+  createCompleteMarineLicence,
+  mockWaterFrameworkDirective
+} from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
@@ -22,7 +25,7 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
 
     const payload = {
       id: marineLicenceId.toString(),
-      waterFrameworkDirective: { nauticalMile: 'yes' }
+      waterFrameworkDirective: mockWaterFrameworkDirective
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -40,7 +43,9 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
       .findOne({ _id: marineLicenceId })
 
     expect(updatedLicence.waterFrameworkDirective).toEqual({
-      nauticalMile: 'yes'
+      excludedActivities: 'no',
+      nauticalMile: 'yes',
+      previousAssessment: 'no'
     })
   })
 
@@ -82,7 +87,7 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
 
     const payload = {
       id: nonExistentId.toString(),
-      waterFrameworkDirective: { nauticalMile: 'yes' }
+      waterFrameworkDirective: mockWaterFrameworkDirective
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -108,7 +113,7 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
 
     const payload = {
       id: marineLicenceId.toString(),
-      waterFrameworkDirective: { nauticalMile: 'yes' }
+      waterFrameworkDirective: mockWaterFrameworkDirective
     }
 
     const { statusCode, body } = await makePatchRequest({
