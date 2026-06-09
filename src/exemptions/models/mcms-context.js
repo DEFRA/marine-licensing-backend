@@ -6,7 +6,8 @@ import {
   allowedOutcomeDocumentHosts
 } from '../../shared/common/constants/mcms-context.js'
 
-const NEW_DOC_PATH = /^\/outcome-documents\/[A-Za-z0-9_-]+$/
+const NEW_DOC_PATH =
+  /^\/journey\/self-service\/outcome-document\/[A-Za-z0-9_-]+$/
 const LEGACY_DOC_PATH =
   /^\/[^/]+\/journey\/self-service\/outcome-document\/[A-Za-z0-9_-]+$/
 

@@ -129,14 +129,14 @@ describe('mcmsContext validation schema', () => {
         const urls = [
           'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
           'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123',
-          `https://get-permission-for-marine-work.defra.gov.uk/outcome-documents/${newSlug}`,
-          `https://marine-licensing-frontend.dev.cdp-int.defra.cloud/outcome-documents/${newSlug}`,
-          `https://marine-licensing-frontend.test.cdp-int.defra.cloud/outcome-documents/${newSlug}`,
-          `https://marine-licensing-frontend.perf-test.cdp-int.defra.cloud/outcome-documents/${newSlug}`,
-          `http://marine-licensing-frontend.local:3000/outcome-documents/${newSlug}`,
-          `http://localhost:3000/outcome-documents/${newSlug}`,
+          `https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/${newSlug}`,
+          `https://marine-licensing-frontend.dev.cdp-int.defra.cloud/journey/self-service/outcome-document/${newSlug}`,
+          `https://marine-licensing-frontend.test.cdp-int.defra.cloud/journey/self-service/outcome-document/${newSlug}`,
+          `https://marine-licensing-frontend.perf-test.cdp-int.defra.cloud/journey/self-service/outcome-document/${newSlug}`,
+          `http://marine-licensing-frontend.local:3000/journey/self-service/outcome-document/${newSlug}`,
+          `http://localhost:3000/journey/self-service/outcome-document/${newSlug}`,
           // base64url slug containing an underscore (regression for the old [a-zA-Z0-9-] charset)
-          'https://get-permission-for-marine-work.defra.gov.uk/outcome-documents/ab_cd-EF1234567890123456'
+          'https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/ab_cd-EF1234567890123456'
         ]
 
         urls.forEach((url) => {
@@ -149,10 +149,19 @@ describe('mcmsContext validation schema', () => {
         })
       })
 
+      it('rejects the removed /outcome-documents/{slug} path on a self-hosted host', () => {
+        const contextWithRemovedPath = {
+          ...validMcmsContext,
+          pdfDownloadUrl: `https://get-permission-for-marine-work.defra.gov.uk/outcome-documents/${'B'.repeat(22)}`
+        }
+        const result = mcmsContext.validate(contextWithRemovedPath)
+        expect(result.error).toBeDefined()
+      })
+
       it('should fail with an unknown host', () => {
         const contextWithInvalidUrl = {
           ...validMcmsContext,
-          pdfDownloadUrl: `https://evil.example.com/outcome-documents/${'B'.repeat(22)}`
+          pdfDownloadUrl: `https://evil.example.com/journey/self-service/outcome-document/${'B'.repeat(22)}`
         }
         const result = mcmsContext.validate(contextWithInvalidUrl)
         expect(result.error).toBeDefined()
