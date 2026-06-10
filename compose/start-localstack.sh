@@ -38,3 +38,9 @@ aws --endpoint-url=http://localhost:4566 s3api put-bucket-notification-configura
 # Fix multiple errors per second - this is probably the cdp-uploader test harness leakage.
 # We can add this in here - as compose is only used for local dev.
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploader-download-requests
+
+# Marine plan policies queues (ML-1285). DLQ first so the main queue's redrive
+# policy can reference it. maxReceiveCount is deliberately high: abandonment is
+# owned by the worker's 36-hour check; the DLQ is a poison-message backstop.
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies_deadletter.fifo --attributes "{\"FifoQueue\":\"true\",\"ContentBasedDeduplication\":\"false\"}"
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies.fifo --attributes "{\"FifoQueue\":\"true\",\"ContentBasedDeduplication\":\"false\",\"VisibilityTimeout\":\"180\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_policies_deadletter.fifo\\\",\\\"maxReceiveCount\\\":\\\"1000\\\"}\"}"

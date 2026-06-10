@@ -41,7 +41,14 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
 
       const { _id, ...rest } = marineLicence
       const taskList = createTaskList(marineLicence, isCitizen)
-      const response = { id: _id.toString(), ...rest, taskList }
+      const response = {
+        id: _id.toString(),
+        ...rest,
+        policyJob: rest.policyJob ?? null,
+        marinePlanPolicies: rest.marinePlanPolicies ?? [],
+        policyResponses: rest.policyResponses ?? [],
+        taskList
+      }
 
       return h
         .response({ message: 'success', value: response })

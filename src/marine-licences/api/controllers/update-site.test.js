@@ -25,6 +25,9 @@ describe('PATCH /marine-licence/site', () => {
 
       const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi
+          .fn()
+          .mockResolvedValue({ siteDetails: [mockFileUploadSite] }),
         updateOne: mockUpdateOne
       }))
 
@@ -50,6 +53,9 @@ describe('PATCH /marine-licence/site', () => {
       const { mockMongo, mockHandler } = global
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi
+          .fn()
+          .mockResolvedValue({ siteDetails: [mockFileUploadSite] }),
         updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }))
 
@@ -68,6 +74,9 @@ describe('PATCH /marine-licence/site', () => {
       const mockError = 'Database exploded'
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi
+          .fn()
+          .mockResolvedValue({ siteDetails: [mockFileUploadSite] }),
         updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }))
 

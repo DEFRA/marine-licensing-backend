@@ -9,3 +9,11 @@ export const MARINE_LICENCE_STATUS_LABEL = {
   ACTIVE: 'Active',
   SUBMITTED: 'Submitted'
 }
+
+export const POLICY_JOB_STATUS = {
+  PENDING: 'pending',
+  COMPUTING: 'computing',
+  READY: 'ready',
+  FAILED: 'failed',
+  ABANDONED: 'abandoned'
+}

@@ -6,6 +6,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { tenMegaBytes } from '../../../shared/constants/site-details.js'
+import { buildPolicyResetFields } from '../helpers/policy-reset.js'
 
 export const updateSiteDetailsController = {
   options: {
@@ -32,11 +33,20 @@ export const updateSiteDetailsController = {
           : { ...site, activityDetails: [createActivityDetails()] }
       )
 
-      const result = await db.collection(collectionMarineLicences).updateOne(
-        { _id: ObjectId.createFromHexString(id) },
+      const _id = ObjectId.createFromHexString(id)
+      const collection = db.collection(collectionMarineLicences)
+
+      const existing = await collection.findOne(
+        { _id },
+        { projection: { policyJobId: 1 } }
+      )
+
+      const result = await collection.updateOne(
+        { _id },
         {
           $set: {
             siteDetails: siteDetailsWithActivity,
+            ...buildPolicyResetFields(id, existing, siteDetailsWithActivity),
             updatedAt,
             updatedBy
           }

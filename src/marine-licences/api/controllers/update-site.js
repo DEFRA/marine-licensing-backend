@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { buildPolicyResetFields } from '../helpers/policy-reset.js'
 
 export const updateSiteController = {
   options: {
@@ -22,14 +23,35 @@ export const updateSiteController = {
       const { payload, db } = request
       const { id, siteIndex, siteDetails, updatedAt, updatedBy } = payload
       const sitePath = `siteDetails.${siteIndex}`
+      const _id = ObjectId.createFromHexString(id)
+      const collection = db.collection(collectionMarineLicences)
 
-      const result = await db.collection(collectionMarineLicences).updateOne(
+      const existing = await collection.findOne(
+        { _id },
+        { projection: { siteDetails: 1, policyJobId: 1 } }
+      )
+
+      if (!existing || existing.siteDetails?.[siteIndex] === undefined) {
+        throw Boom.notFound(
+          `Marine licence not found or invalid site index of ${siteIndex} for Marine Licence ${id}`
+        )
+      }
+
+      const newSiteDetails = [...existing.siteDetails]
+      newSiteDetails[siteIndex] = siteDetails
+
+      const result = await collection.updateOne(
         {
-          _id: ObjectId.createFromHexString(id),
+          _id,
           [sitePath]: { $exists: true }
         },
         {
-          $set: { [sitePath]: siteDetails, updatedAt, updatedBy }
+          $set: {
+            [sitePath]: siteDetails,
+            ...buildPolicyResetFields(id, existing, newSiteDetails),
+            updatedAt,
+            updatedBy
+          }
         }
       )
 
