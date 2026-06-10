@@ -2,6 +2,17 @@ import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
 
 const waterFrameworkDirectiveDetails = {
+  assessmentChanged: joi.when('nauticalMile', {
+    is: 'yes',
+    then: joi.string().valid('yes', 'no').required().messages({
+      'string.empty': 'ASSESSMENT_CHANGED_REQUIRED',
+      'any.only': 'ASSESSMENT_CHANGED_REQUIRED',
+      'any.required': 'ASSESSMENT_CHANGED_REQUIRED'
+    }),
+    otherwise: joi.forbidden().messages({
+      'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
+    })
+  }),
   excludedActivities: joi.when('nauticalMile', {
     is: 'yes',
     then: joi.string().valid('yes', 'no').required().messages({
