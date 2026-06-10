@@ -27,31 +27,32 @@ function isOwnHost(host) {
 }
 
 function validatePdfDownloadUrl(value, helpers) {
+  const INVALID = 'any.invalid'
   let url
   try {
     url = new URL(value)
   } catch {
-    return helpers.error('any.invalid')
+    return helpers.error(INVALID)
   }
   if (isMcmsHost(url.host)) {
     if (url.protocol !== 'https:') {
-      return helpers.error('any.invalid')
+      return helpers.error(INVALID)
     }
     if (!MCMS_DOC_PATH.test(url.pathname)) {
-      return helpers.error('any.invalid')
+      return helpers.error(INVALID)
     }
     return value
   }
   if (isOwnHost(url.host)) {
     if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-      return helpers.error('any.invalid')
+      return helpers.error(INVALID)
     }
     if (!NEW_DOC_PATH.test(url.pathname)) {
-      return helpers.error('any.invalid')
+      return helpers.error(INVALID)
     }
     return value
   }
-  return helpers.error('any.invalid')
+  return helpers.error(INVALID)
 }
 
 export const mcmsContext = joi
