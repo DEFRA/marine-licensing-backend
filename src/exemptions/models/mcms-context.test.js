@@ -191,6 +191,50 @@ describe('mcmsContext validation schema', () => {
         const result = mcmsContext.validate(contextWithInvalidUrl)
         expect(result.error).toBeDefined()
       })
+
+      it('should fail when pdfDownloadUrl is not a parseable URL', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: 'not-a-valid-url'
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects a legacy MCMS host served over http instead of https', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl:
+            'http://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/123'
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects a legacy MCMS host with a non-outcome-document path', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl:
+            'https://marinelicensing.marinemanagement.org.uk/not-a-document/123'
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects the app host served over a non-http(s) protocol', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `ftp://localhost:3000/journey/self-service/outcome-document/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects the URL when frontEndBaseUrl is misconfigured', () => {
+        const spy = vi.spyOn(config, 'get').mockReturnValue('not a url')
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `https://example.com/journey/self-service/outcome-document/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeDefined()
+        spy.mockRestore()
+      })
     })
 
     describe('iatQueryString validation', () => {
