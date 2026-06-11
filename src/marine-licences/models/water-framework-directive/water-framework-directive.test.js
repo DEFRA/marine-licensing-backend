@@ -73,6 +73,7 @@ describe('waterFrameworkDirective', () => {
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'yes',
+          assessmentChanged: 'yes',
           previousAssessment: 'yes'
         }
       })
@@ -108,6 +109,7 @@ describe('waterFrameworkDirective', () => {
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'yes',
+          assessmentChanged: 'yes',
           excludedActivities: 'yes'
         }
       })
@@ -119,6 +121,7 @@ describe('waterFrameworkDirective', () => {
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'yes',
+          assessmentChanged: 'yes',
           excludedActivities: 'yes',
           previousAssessment: 'maybe'
         }
@@ -135,6 +138,42 @@ describe('waterFrameworkDirective', () => {
         }
       })
       expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
+    })
+
+    test('should fail if missing assessmentChanged', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'yes',
+          previousAssessment: 'yes'
+        }
+      })
+      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
+    })
+
+    test('should fail if not a valid value for assessmentChanged', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          assessmentChanged: 'maybe'
+        }
+      })
+      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
+    })
+
+    test('should fail if empty string for assessmentChanged', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          assessmentChanged: ''
+        }
+      })
+      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
     })
   })
 
