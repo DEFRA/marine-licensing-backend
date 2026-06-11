@@ -1,6 +1,7 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { StatusCodes } from 'http-status-codes'
 import { mintOutcomeDocumentController } from './mint-outcome-document.js'
+import { config } from '../../../config.js'
 
 vi.mock('../../../iat-shared/helpers/generate-slug.js', () => ({
   generateSlug: vi.fn(() => 'B'.repeat(22))
@@ -77,6 +78,20 @@ describe('mintOutcomeDocumentController', () => {
     expect(responseArg.value.snapshot.contextSlug).toBe(contextSlug)
     expect(responseArg.value.snapshot.focusedOption.id).toBe('WO_FOO')
     expect(responseArg.value.snapshot).not.toHaveProperty('_id')
+  })
+
+  test('builds an absolute answersUrl from frontEndBaseUrl config', async () => {
+    const spy = vi.spyOn(config, 'get').mockReturnValue('https://fe.example')
+
+    await mintOutcomeDocumentController.handler(request, global.mockHandler)
+
+    const responseArg = global.mockHandler.response.mock.calls[0][0]
+    expect(spy).toHaveBeenCalledWith('frontEndBaseUrl')
+    expect(responseArg.value.answersUrl).toBe(
+      `https://fe.example/journey/self-service/outcome-document/${'B'.repeat(22)}`
+    )
+
+    spy.mockRestore()
   })
 
   test('snapshot includes capturedAt and contextSlug', async () => {

@@ -3,6 +3,7 @@ import {
   activityTypes,
   articleCodes
 } from '../../shared/common/constants/mcms-context.js'
+import { config } from '../../config.js'
 
 describe('mcmsContext validation schema', () => {
   const validMcmsContext = {
@@ -124,10 +125,14 @@ describe('mcmsContext validation schema', () => {
         expect(result.error.message).toContain('"pdfDownloadUrl" is required')
       })
 
-      it('should validate with different valid URL formats', () => {
+      it('should validate legacy MCMS and configured-app-host URL formats', () => {
+        const newSlug = 'B'.repeat(22)
         const urls = [
           'https://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/b87ae3f7-48f3-470d-b29b-5a5abfdaa49f',
-          'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123'
+          'https://marinelicensingtest.marinemanagement.org.uk/path/journey/self-service/outcome-document/123',
+          `http://localhost:3000/journey/self-service/outcome-document/${newSlug}`,
+          // base64url slug containing an underscore (regression for the old [a-zA-Z0-9-] charset)
+          'http://localhost:3000/journey/self-service/outcome-document/ab_cd-EF1234567890123456'
         ]
 
         urls.forEach((url) => {
@@ -140,16 +145,95 @@ describe('mcmsContext validation schema', () => {
         })
       })
 
-      it('should fail with invalid URL format', () => {
+      it('accepts an outcome-document URL on the host configured via frontEndBaseUrl', () => {
+        const spy = vi
+          .spyOn(config, 'get')
+          .mockReturnValue(
+            'https://get-permission-for-marine-work.defra.gov.uk'
+          )
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `https://get-permission-for-marine-work.defra.gov.uk/journey/self-service/outcome-document/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeUndefined()
+        spy.mockRestore()
+      })
+
+      it('rejects the removed /outcome-documents/{slug} path on the app host', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `http://localhost:3000/outcome-documents/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('should fail with an unknown host', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `https://evil.example.com/journey/self-service/outcome-document/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects the app host with a non-outcome-document path', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: 'http://localhost:3000/not-a-document/123'
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('should fail with a non-outcome-document URL', () => {
         const contextWithInvalidUrl = {
           ...validMcmsContext,
           pdfDownloadUrl: 'https://test.com/test.pdf'
         }
         const result = mcmsContext.validate(contextWithInvalidUrl)
         expect(result.error).toBeDefined()
-        expect(result.error.message).toContain(
-          '"pdfDownloadUrl" with value "https://test.com/test.pdf" fails to match the required pattern: /^https:\\/\\/[^/]+\\.marinemanagement\\.org\\.uk\\/[^/]+\\/journey\\/self-service\\/outcome-document\\/[a-zA-Z0-9-]+$/'
-        )
+      })
+
+      it('should fail when pdfDownloadUrl is not a parseable URL', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: 'not-a-valid-url'
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects a legacy MCMS host served over http instead of https', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl:
+            'http://marinelicensing.marinemanagement.org.uk/path/journey/self-service/outcome-document/123'
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects a legacy MCMS host with a non-outcome-document path', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl:
+            'https://marinelicensing.marinemanagement.org.uk/not-a-document/123'
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects the app host served over a non-http(s) protocol', () => {
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `ftp://localhost:3000/journey/self-service/outcome-document/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeDefined()
+      })
+
+      it('rejects the URL when frontEndBaseUrl is misconfigured', () => {
+        const spy = vi.spyOn(config, 'get').mockReturnValue('not a url')
+        const result = mcmsContext.validate({
+          ...validMcmsContext,
+          pdfDownloadUrl: `https://example.com/journey/self-service/outcome-document/${'B'.repeat(22)}`
+        })
+        expect(result.error).toBeDefined()
+        spy.mockRestore()
       })
     })
 
