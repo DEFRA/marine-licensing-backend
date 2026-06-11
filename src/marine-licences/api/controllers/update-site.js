@@ -31,7 +31,7 @@ export const updateSiteController = {
         { projection: { siteDetails: 1, policyJobId: 1 } }
       )
 
-      if (!existing || existing.siteDetails?.[siteIndex] === undefined) {
+      if (existing?.siteDetails?.[siteIndex] === undefined) {
         throw Boom.notFound(
           `Marine licence not found or invalid site index of ${siteIndex} for Marine Licence ${id}`
         )
