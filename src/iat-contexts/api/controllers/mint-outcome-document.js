@@ -12,6 +12,7 @@ import {
 import { MONGO_DUPLICATE_KEY_CODE } from '../../../shared/common/constants/mongo.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { generateSlug } from '../../../iat-shared/helpers/generate-slug.js'
+import { config } from '../../../config.js'
 
 export const mintOutcomeDocumentController = {
   options: {
@@ -40,6 +41,7 @@ export const mintOutcomeDocumentController = {
           value: {
             slug: snapshot.slug,
             viewUrl: `/journey/self-service/outcome-document/${snapshot.slug}`,
+            answersUrl: `${config.get('frontEndBaseUrl')}/journey/self-service/outcome-document/${snapshot.slug}`,
             snapshot
           }
         })
