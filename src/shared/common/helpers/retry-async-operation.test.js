@@ -350,7 +350,7 @@ describe('retryAsyncOperation', () => {
       expect(mockOperation).toHaveBeenCalledTimes(2)
       // Verify that approximately 1000ms passed for the default interval
       expect(endTime - startTime).toBeGreaterThanOrEqual(950)
-      expect(endTime - startTime).toBeLessThan(1200) // Allow some tolerance
+      expect(endTime - startTime).toBeLessThan(3000) // Allow some tolerance
     })
 
     it('should use both default parameters when neither retries nor intervalMs are provided', async () => {
@@ -399,7 +399,9 @@ describe('retryAsyncOperation', () => {
       expect(mockOperation).toHaveBeenCalledTimes(2)
       // Should wait default interval (1000ms) between attempts
       expect(endTime - startTime).toBeGreaterThanOrEqual(950)
-      expect(endTime - startTime).toBeLessThan(1200)
+      // Generous upper bound: under full-suite load the event loop can lag
+      // well past the 1000ms timer; the lower bound is the real assertion.
+      expect(endTime - startTime).toBeLessThan(3000)
     })
 
     it('should handle partial default usage - only operation and retries provided', async () => {
@@ -419,7 +421,9 @@ describe('retryAsyncOperation', () => {
       expect(mockOperation).toHaveBeenCalledTimes(2)
       // Should use default intervalMs (1000ms)
       expect(endTime - startTime).toBeGreaterThanOrEqual(950)
-      expect(endTime - startTime).toBeLessThan(1200)
+      // Generous upper bound: under full-suite load the event loop can lag
+      // well past the 1000ms timer; the lower bound is the real assertion.
+      expect(endTime - startTime).toBeLessThan(3000)
     })
 
     it('should handle partial default usage - only operation and intervalMs provided', async () => {

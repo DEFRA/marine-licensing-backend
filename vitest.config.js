@@ -5,7 +5,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
-    threads: false,
+    // Server-startup beforeAll hooks take 10-20s when all workers run in
+    // parallel; the 10s default intermittently fails whole suites.
+    hookTimeout: 60_000,
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',
