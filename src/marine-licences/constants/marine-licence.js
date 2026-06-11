@@ -17,3 +17,12 @@ export const POLICY_JOB_STATUS = {
   FAILED: 'failed',
   ABANDONED: 'abandoned'
 }
+
+// ECS event.action values for marine plan policy calculation logs
+export const POLICY_EVENT_ACTION = {
+  JOB_STALE: 'mp-policies:job-stale',
+  JOB_ABANDONED: 'mp-policies:job-abandoned',
+  JOB_COMPLETE: 'mp-policies:job-complete',
+  ARCGIS_QUERY: 'mp-policies:arcgis-query',
+  WORDING_FETCH: 'mp-policies:wording-fetch'
+}

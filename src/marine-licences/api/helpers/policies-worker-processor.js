@@ -2,7 +2,10 @@ import { ObjectId } from 'mongodb'
 import { config } from '../../../config.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
-import { POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
+import {
+  POLICY_JOB_STATUS,
+  POLICY_EVENT_ACTION
+} from '../../constants/marine-licence.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
 import { getPolicyContent } from './policy-wording-client.js'
 import { deletePolicyJob, extendVisibility } from './policies-sqs-client.js'
@@ -40,6 +43,76 @@ const fetchPolicies = async ({ siteDetails, db, logger }) => {
   return marinePlanPolicies
 }
 
+// Conditional on policyJobId so a site edit mid-flight is never overwritten
+const setJobStatus = ({ collection, _id, policyJobId }, status, extra = {}) =>
+  collection.updateOne(
+    { _id, policyJobId },
+    { $set: { policyJob: status, ...extra } }
+  )
+
+const logStaleJob = ({ logger }, detail) =>
+  logger.info(
+    { event: { action: POLICY_EVENT_ACTION.JOB_STALE, outcome: 'success' } },
+    detail
+  )
+
+const hasExceededRetryBudget = (licence, abandonAfterMs) => {
+  const queuedAt = new Date(licence.policyJobQueuedAt).getTime()
+  return Date.now() - queuedAt > abandonAfterMs
+}
+
+const abandonJob = async (job) => {
+  await setJobStatus(job, POLICY_JOB_STATUS.ABANDONED)
+  job.logger.warn(
+    {
+      event: { action: POLICY_EVENT_ACTION.JOB_ABANDONED, outcome: 'failure' }
+    },
+    `Policy job abandoned after exceeding the retry budget for licence ${job.licenceId}`
+  )
+}
+
+const computeAndStorePolicies = async (job, licence, db) => {
+  const { licenceId, logger } = job
+  const marinePlanPolicies = await fetchPolicies({
+    siteDetails: licence.siteDetails,
+    db,
+    logger
+  })
+
+  const result = await setJobStatus(job, POLICY_JOB_STATUS.READY, {
+    marinePlanPolicies
+  })
+  if (result.matchedCount > 0) {
+    logger.info(
+      {
+        event: { action: POLICY_EVENT_ACTION.JOB_COMPLETE, outcome: 'success' }
+      },
+      `Policy job complete for licence ${licenceId}: ${marinePlanPolicies.length} applicable policies`
+    )
+  } else {
+    logStaleJob(
+      job,
+      `Discarding policy job result computed for stale sites on licence ${licenceId}`
+    )
+  }
+}
+
+const handleJobFailure = async (job, error, message, retryAfterCapMs) => {
+  job.logger.error(
+    structureErrorForECS(error),
+    `Policy calculation failed for licence ${job.licenceId}; the queue will retry`
+  )
+  await setJobStatus(job, POLICY_JOB_STATUS.FAILED)
+  if (error instanceof RetryAfterError && error.retryAfterSeconds) {
+    const cappedSeconds = Math.min(
+      error.retryAfterSeconds,
+      Math.round(retryAfterCapMs / millisecondsPerSecond)
+    )
+    await extendVisibility(message.ReceiptHandle, cappedSeconds)
+  }
+  // message deliberately not deleted — SQS redelivers after the visibility timeout
+}
+
 /**
  * Processes one policy-calculation job from the main queue.
  *
@@ -61,81 +134,34 @@ export const processPolicyJob = async (server, message) => {
     return
   }
   const { licenceId, policyJobId } = body
-  const _id = ObjectId.createFromHexString(licenceId)
-  const collection = db.collection(collectionMarineLicences)
+  const job = {
+    collection: db.collection(collectionMarineLicences),
+    _id: ObjectId.createFromHexString(licenceId),
+    licenceId,
+    policyJobId,
+    logger
+  }
 
-  const licence = await collection.findOne({ _id })
+  const licence = await job.collection.findOne({ _id: job._id })
   if (!licence || licence.policyJobId !== policyJobId) {
-    logger.info(
-      { event: { action: 'mp-policies:job-stale', outcome: 'success' } },
-      `Discarding stale policy job for licence ${licenceId}`
-    )
+    logStaleJob(job, `Discarding stale policy job for licence ${licenceId}`)
     await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
     return
   }
 
-  const queuedAt = new Date(licence.policyJobQueuedAt).getTime()
-  if (Date.now() - queuedAt > abandonAfterMs) {
-    await collection.updateOne(
-      { _id, policyJobId },
-      { $set: { policyJob: POLICY_JOB_STATUS.ABANDONED } }
-    )
-    logger.warn(
-      { event: { action: 'mp-policies:job-abandoned', outcome: 'failure' } },
-      `Policy job abandoned after exceeding the retry budget for licence ${licenceId}`
-    )
+  if (hasExceededRetryBudget(licence, abandonAfterMs)) {
+    await abandonJob(job)
     await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
     return
   }
 
-  await collection.updateOne(
-    { _id, policyJobId },
-    { $set: { policyJob: POLICY_JOB_STATUS.COMPUTING } }
-  )
+  await setJobStatus(job, POLICY_JOB_STATUS.COMPUTING)
 
   try {
-    const marinePlanPolicies = await fetchPolicies({
-      siteDetails: licence.siteDetails,
-      db,
-      logger
-    })
-
-    // Conditional on policyJobId so a site edit mid-flight is never overwritten
-    const result = await collection.updateOne(
-      { _id, policyJobId },
-      {
-        $set: { marinePlanPolicies, policyJob: POLICY_JOB_STATUS.READY }
-      }
-    )
-    if (result.matchedCount > 0) {
-      logger.info(
-        { event: { action: 'mp-policies:job-complete', outcome: 'success' } },
-        `Policy job complete for licence ${licenceId}: ${marinePlanPolicies.length} applicable policies`
-      )
-    } else {
-      logger.info(
-        { event: { action: 'mp-policies:job-stale', outcome: 'success' } },
-        `Discarding policy job result computed for stale sites on licence ${licenceId}`
-      )
-    }
+    await computeAndStorePolicies(job, licence, db)
     await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
   } catch (error) {
-    logger.error(
-      structureErrorForECS(error),
-      `Policy calculation failed for licence ${licenceId}; the queue will retry`
-    )
-    await collection.updateOne(
-      { _id, policyJobId },
-      { $set: { policyJob: POLICY_JOB_STATUS.FAILED } }
-    )
-    if (error instanceof RetryAfterError && error.retryAfterSeconds) {
-      const cappedSeconds = Math.min(
-        error.retryAfterSeconds,
-        Math.round(retryAfterCapMs / millisecondsPerSecond)
-      )
-      await extendVisibility(message.ReceiptHandle, cappedSeconds)
-    }
-    // message deliberately not deleted — SQS redelivers after the visibility timeout
+    await handleJobFailure(job, error, message, retryAfterCapMs)
   }
 }
 
@@ -151,20 +177,27 @@ export const processDlqJob = async (server, message) => {
   const body = parseMessageBody(message, logger)
   if (body) {
     const { licenceId, policyJobId } = body
-    const result = await db
-      .collection(collectionMarineLicences)
-      .updateOne(
-        { _id: ObjectId.createFromHexString(licenceId), policyJobId },
-        { $set: { policyJob: POLICY_JOB_STATUS.ABANDONED } }
-      )
+    const job = {
+      collection: db.collection(collectionMarineLicences),
+      _id: ObjectId.createFromHexString(licenceId),
+      licenceId,
+      policyJobId,
+      logger
+    }
+    const result = await setJobStatus(job, POLICY_JOB_STATUS.ABANDONED)
     if (result.matchedCount > 0) {
       logger.warn(
-        { event: { action: 'mp-policies:job-abandoned', outcome: 'failure' } },
+        {
+          event: {
+            action: POLICY_EVENT_ACTION.JOB_ABANDONED,
+            outcome: 'failure'
+          }
+        },
         `Policy job dead-lettered and marked abandoned for licence ${licenceId}`
       )
     } else {
-      logger.info(
-        { event: { action: 'mp-policies:job-stale', outcome: 'success' } },
+      logStaleJob(
+        job,
         `Discarding stale dead-lettered policy job for licence ${licenceId}`
       )
     }

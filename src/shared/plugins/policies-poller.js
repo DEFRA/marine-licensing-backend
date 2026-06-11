@@ -5,16 +5,20 @@ const receiveErrorBackoffMs = 5000
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+const processMessages = async (server, state, messages, processMessage) => {
+  for (const message of messages) {
+    if (!state.running) {
+      return
+    }
+    await processMessage(server, message)
+  }
+}
+
 const runLoop = async (server, state, { receiveMessages, processMessage }) => {
   while (state.running) {
     try {
       const messages = await receiveMessages()
-      for (const message of messages) {
-        if (!state.running) {
-          break
-        }
-        await processMessage(server, message)
-      }
+      await processMessages(server, state, messages, processMessage)
     } catch (error) {
       server.logger.error(
         structureErrorForECS(error),

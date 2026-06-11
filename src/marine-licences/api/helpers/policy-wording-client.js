@@ -1,5 +1,6 @@
 import { config } from '../../../config.js'
 import { collectionMarinePlanPolicyWording } from '../../../shared/common/constants/db-collections.js'
+import { POLICY_EVENT_ACTION } from '../../constants/marine-licence.js'
 import { timedJsonFetch } from './policies-http.js'
 
 // The content fields the front end renders. All are HTML strings on the
@@ -35,7 +36,7 @@ const refreshPolicyDataset = async (collection, logger) => {
   const policies = await timedJsonFetch({
     url: govukPoliciesUrl,
     timeoutMs: wordingTimeoutMs,
-    eventAction: 'mp-policies:wording-fetch',
+    eventAction: POLICY_EVENT_ACTION.WORDING_FETCH,
     upstreamName: 'GOV.UK marine plan policies fetch',
     logger
   })

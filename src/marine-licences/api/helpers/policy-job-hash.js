@@ -12,12 +12,14 @@ const GEOMETRY_FIELDS = [
   'geoJSON'
 ]
 
+const compareStrings = (a, b) => a.localeCompare(b)
+
 const stableStringify = (value) => {
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(',')}]`
   }
   if (value && typeof value === 'object') {
-    const keys = Object.keys(value).sort()
+    const keys = Object.keys(value).sort(compareStrings)
     return `{${keys
       .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
       .join(',')}}`
@@ -42,7 +44,7 @@ const extractSiteGeometry = (site) =>
 export const computePolicyJobId = (licenceId, siteDetails = []) => {
   const sortedGeometries = siteDetails
     .map((site) => stableStringify(extractSiteGeometry(site)))
-    .sort()
+    .sort(compareStrings)
 
   return createHash('sha256')
     .update(`${licenceId}:${sortedGeometries.join('|')}`)

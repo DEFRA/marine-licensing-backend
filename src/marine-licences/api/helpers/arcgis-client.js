@@ -1,5 +1,6 @@
 import { config } from '../../../config.js'
 import { buildEmpGeometries } from '../../../shared/common/helpers/emp/transforms/site-details.js'
+import { POLICY_EVENT_ACTION } from '../../constants/marine-licence.js'
 import { timedJsonFetch } from './policies-http.js'
 
 // Field names match the PolicyData_MDP layer schema exactly
@@ -41,7 +42,7 @@ export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
         })
       },
       timeoutMs: arcgisTimeoutMs,
-      eventAction: 'mp-policies:arcgis-query',
+      eventAction: POLICY_EVENT_ACTION.ARCGIS_QUERY,
       upstreamName: 'ArcGIS feature-server query',
       logger
     })

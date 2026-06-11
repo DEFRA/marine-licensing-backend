@@ -2,10 +2,20 @@ import convict from 'convict'
 import convictFormatWithValidator from 'convict-format-with-validator'
 
 import { convictValidateMongoUri } from './shared/common/helpers/convict/validate-mongo-uri.js'
+import {
+  convictRequiredFromEnvInCdp,
+  requiredFromEnvInCdp,
+  isCdpProductionLikeEnvironment,
+  isNotCdpProductionLikeEnvironment
+} from './shared/common/helpers/convict/required-from-env-in-cdp.js'
+import { policiesSchema } from './config/policies.js'
 import { configDotenv } from 'dotenv'
 
 convict.addFormat(convictValidateMongoUri)
+convict.addFormat(convictRequiredFromEnvInCdp)
 convict.addFormats(convictFormatWithValidator)
+
+export { isCdpProductionLikeEnvironment, isNotCdpProductionLikeEnvironment }
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
@@ -20,44 +30,6 @@ const oneMinuteInMS = 60 * 1000
 
 /** Default minutes before a stuck `in_progress` Dynamics queue item may be reclaimed. */
 const dynamicsQueueClaimStaleDefaultMinutes = 30
-
-// Custom convict format that requires an env var override for vars that have non-prod default values set.
-// Applied to sensitive configs like API URLs, credentials, and service endpoints.
-const requiredFromEnvInCdp = 'required-from-env-in-cdp'
-
-export const isCdpProductionLikeEnvironment = (env) =>
-  ['prod', 'perf-test', 'test'].includes(env)
-
-export const isNotCdpProductionLikeEnvironment = (env) =>
-  !isCdpProductionLikeEnvironment(env)
-
-/**
- * 'required-from-env-in-cdp' format: When you must have an env var override the default value.
- * This is used for sensitive vars that take local-config default values and the prod values MUST come from the
- * environment.
- *
- * This is concerned with cdpEnvironments: prod (which is production), and perf-test (which is the equivalent of
- * pre-production), and test.
- */
-convict.addFormat({
-  name: requiredFromEnvInCdp,
-  validate: function (val, schema) {
-    const env = process.env.ENVIRONMENT ?? 'local'
-    // Validate that `requiredFromEnvInCdp` env vars are set from the environment on these CDP environments
-    if (isNotCdpProductionLikeEnvironment(env)) {
-      return
-    }
-
-    const invalidValues = schema.default === undefined ? [] : [schema.default] // never allow the default
-    invalidValues.push('') // dont allow empty strings
-
-    if (invalidValues.includes(val)) {
-      throw new Error(
-        `${schema.env || 'Configuration value'} must be set for ${env} environment (current value is invalid for production)`
-      )
-    }
-  }
-})
 
 const config = convict({
   serviceVersion: {
@@ -476,78 +448,7 @@ const config = convict({
       }
     }
   },
-  policies: {
-    isEnabled: {
-      doc: 'Enable the marine plan policy calculation workers',
-      format: Boolean,
-      default: true,
-      env: 'MARINE_POLICIES_ENABLED'
-    },
-    sqsEndpoint: {
-      doc: 'SQS endpoint (LocalStack locally, AWS default in CDP)',
-      format: requiredFromEnvInCdp,
-      default: 'http://localhost:4566',
-      env: 'SQS_ENDPOINT'
-    },
-    sqsQueueUrl: {
-      doc: 'URL of the marine plan policies FIFO queue',
-      format: requiredFromEnvInCdp,
-      default:
-        'http://localhost:4566/000000000000/marine_licensing_policies.fifo',
-      env: 'MARINE_POLICIES_SQS_QUEUE_URL'
-    },
-    sqsDlqUrl: {
-      doc: 'URL of the marine plan policies FIFO dead-letter queue',
-      format: requiredFromEnvInCdp,
-      default:
-        'http://localhost:4566/000000000000/marine_licensing_policies_deadletter.fifo',
-      env: 'MARINE_POLICIES_SQS_DLQ_URL'
-    },
-    arcgisUrl: {
-      doc: 'URL of the DEFRA ArcGIS FeatureServer layer used to find applicable marine plan policies (public; same value in all environments)',
-      format: String,
-      default:
-        'https://services.arcgis.com/JJzESW51TqeY9uat/ArcGIS/rest/services/PolicyData_MDP/FeatureServer/0',
-      env: 'ARCGIS_FEATURE_SERVER_URL'
-    },
-    govukPoliciesUrl: {
-      doc: 'URL of the GOV.UK marine-plans-explorer policies API (public; same value in all environments)',
-      format: String,
-      default:
-        'https://environment.data.gov.uk/marine-plans-explorer/api/policies',
-      env: 'GOVUK_MARINE_POLICIES_API_URL'
-    },
-    arcgisTimeoutMs: {
-      doc: 'Per-request timeout for ArcGIS feature-server queries',
-      format: Number,
-      default: 90_000,
-      env: 'MARINE_POLICIES_ARCGIS_TIMEOUT_MS'
-    },
-    wordingTimeoutMs: {
-      doc: 'Per-request timeout for GOV.UK policy wording fetches',
-      format: Number,
-      default: 30_000,
-      env: 'MARINE_POLICIES_WORDING_TIMEOUT_MS'
-    },
-    userAgent: {
-      doc: 'User-Agent header sent on outbound policy-calculation HTTP calls',
-      format: String,
-      default: 'marine-licensing-backend/1.0',
-      env: 'MARINE_POLICIES_USER_AGENT'
-    },
-    retryAfterCapMs: {
-      doc: 'Maximum wait honoured from an upstream Retry-After header',
-      format: Number,
-      default: 600_000,
-      env: 'MARINE_POLICIES_RETRY_AFTER_CAP_MS'
-    },
-    abandonAfterMs: {
-      doc: 'Age after which a policy-calculation job that has not succeeded is marked abandoned',
-      format: Number,
-      default: 36 * 60 * 60 * 1000,
-      env: 'MARINE_POLICIES_ABANDON_AFTER_MS'
-    }
-  },
+  policies: policiesSchema,
   iat: {
     inFlightTtlMs: {
       doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',

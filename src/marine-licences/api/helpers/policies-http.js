@@ -1,4 +1,5 @@
 import { Agent, ProxyAgent, fetch } from 'undici'
+import { StatusCodes } from 'http-status-codes'
 import { config } from '../../../config.js'
 
 // pipelining: 0 makes undici close the socket after each request instead of
@@ -80,7 +81,10 @@ export const timedJsonFetch = async ({
       }
     })
 
-    if (response.status === 429 || response.status === 503) {
+    if (
+      response.status === StatusCodes.TOO_MANY_REQUESTS ||
+      response.status === StatusCodes.SERVICE_UNAVAILABLE
+    ) {
       const retryAfterSeconds = parseRetryAfterSeconds(
         response.headers.get('retry-after')
       )
