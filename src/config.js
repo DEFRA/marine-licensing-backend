@@ -4,18 +4,19 @@ import convictFormatWithValidator from 'convict-format-with-validator'
 import { convictValidateMongoUri } from './shared/common/helpers/convict/validate-mongo-uri.js'
 import {
   convictRequiredFromEnvInCdp,
-  requiredFromEnvInCdp,
-  isCdpProductionLikeEnvironment,
-  isNotCdpProductionLikeEnvironment
+  requiredFromEnvInCdp
 } from './shared/common/helpers/convict/required-from-env-in-cdp.js'
 import { policiesSchema } from './config/policies.js'
 import { configDotenv } from 'dotenv'
 
+export {
+  isCdpProductionLikeEnvironment,
+  isNotCdpProductionLikeEnvironment
+} from './shared/common/helpers/convict/required-from-env-in-cdp.js'
+
 convict.addFormat(convictValidateMongoUri)
 convict.addFormat(convictRequiredFromEnvInCdp)
 convict.addFormats(convictFormatWithValidator)
-
-export { isCdpProductionLikeEnvironment, isNotCdpProductionLikeEnvironment }
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'

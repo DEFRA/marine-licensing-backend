@@ -29,7 +29,12 @@ describe('policies-sqs-client', () => {
   })
 
   it('should send a policy job as a FIFO message grouped by licence and deduped by job id', async () => {
-    await sendPolicyJob({ licenceId: 'licence-1', policyJobId: 'hash-1' })
+    const queuedAt = new Date('2026-06-11T10:00:00.000Z')
+    await sendPolicyJob({
+      licenceId: 'licence-1',
+      policyJobId: 'hash-1',
+      queuedAt
+    })
 
     const command = mockSend.mock.calls[0][0]
     expect(command).toBeInstanceOf(SendMessageCommand)
@@ -39,7 +44,8 @@ describe('policies-sqs-client', () => {
       MessageDeduplicationId: 'hash-1',
       MessageBody: JSON.stringify({
         licenceId: 'licence-1',
-        policyJobId: 'hash-1'
+        policyJobId: 'hash-1',
+        queuedAt
       })
     })
   })

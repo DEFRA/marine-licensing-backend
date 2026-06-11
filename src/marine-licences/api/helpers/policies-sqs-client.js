@@ -25,14 +25,14 @@ export const resetSqsClient = () => {
   sqsClientInstance = null
 }
 
-export const sendPolicyJob = async ({ licenceId, policyJobId }) => {
+export const sendPolicyJob = async ({ licenceId, policyJobId, queuedAt }) => {
   const { sqsQueueUrl } = config.get('policies')
   return getSqsClient().send(
     new SendMessageCommand({
       QueueUrl: sqsQueueUrl,
       MessageGroupId: licenceId,
       MessageDeduplicationId: policyJobId,
-      MessageBody: JSON.stringify({ licenceId, policyJobId })
+      MessageBody: JSON.stringify({ licenceId, policyJobId, queuedAt })
     })
   )
 }

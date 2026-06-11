@@ -1,10 +1,5 @@
 import { requiredFromEnvInCdp } from '../shared/common/helpers/convict/required-from-env-in-cdp.js'
 
-const oneHourInMs = 60 * 60 * 1000
-
-/** Default hours before a policy-calculation job that has not succeeded is marked abandoned. */
-const policyJobAbandonAfterDefaultHours = 36
-
 // Convict schema fragment for the marine plan policy calculation workers,
 // spread into the main schema in src/config.js.
 export const policiesSchema = {
@@ -71,11 +66,5 @@ export const policiesSchema = {
     format: Number,
     default: 600_000,
     env: 'MARINE_POLICIES_RETRY_AFTER_CAP_MS'
-  },
-  abandonAfterMs: {
-    doc: 'Age after which a policy-calculation job that has not succeeded is marked abandoned',
-    format: Number,
-    default: policyJobAbandonAfterDefaultHours * oneHourInMs,
-    env: 'MARINE_POLICIES_ABANDON_AFTER_MS'
   }
 }

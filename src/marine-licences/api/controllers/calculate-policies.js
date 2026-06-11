@@ -9,11 +9,11 @@ import { POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
 import { computePolicyJobId } from '../helpers/policy-job-hash.js'
 import { sendPolicyJob } from '../helpers/policies-sqs-client.js'
 
-const IN_FLIGHT_OR_READY = [
+const IN_FLIGHT_OR_READY = new Set([
   POLICY_JOB_STATUS.PENDING,
   POLICY_JOB_STATUS.COMPUTING,
   POLICY_JOB_STATUS.READY
-]
+])
 
 export const calculatePoliciesController = {
   options: {
@@ -49,7 +49,7 @@ export const calculatePoliciesController = {
       // guard is what actually makes repeated clicks idempotent.
       if (
         marineLicence.policyJobId === policyJobId &&
-        IN_FLIGHT_OR_READY.includes(marineLicence.policyJob)
+        IN_FLIGHT_OR_READY.has(marineLicence.policyJob)
       ) {
         return h
           .response({
@@ -59,13 +59,14 @@ export const calculatePoliciesController = {
           .code(StatusCodes.ACCEPTED)
       }
 
+      const queuedAt = new Date()
       await collection.updateOne(
         { _id },
         {
           $set: {
             policyJob: POLICY_JOB_STATUS.PENDING,
             policyJobId,
-            policyJobQueuedAt: new Date(),
+            policyJobQueuedAt: queuedAt,
             updatedAt,
             updatedBy
           }
@@ -73,7 +74,9 @@ export const calculatePoliciesController = {
       )
 
       try {
-        await sendPolicyJob({ licenceId: id, policyJobId })
+        // queuedAt rides in the message so the DLQ worker can tell a stale
+        // dead-letter from a retried job that reuses the same policyJobId
+        await sendPolicyJob({ licenceId: id, policyJobId, queuedAt })
       } catch (error) {
         // Roll back so the document is not stuck in 'pending' with no
         // message in flight (the idempotency guard would block retries)

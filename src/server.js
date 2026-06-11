@@ -59,7 +59,7 @@ async function createServer() {
   // processDynamicsQueuePlugin - polls exemption queue and syncs to Dynamics 365
   // processEmpQueuePlugin - polls exemption queue and syncs to "Explore Marine Planning"
   // policiesWorkerPlugin - long-polls the marine plan policies SQS queue and computes applicable policies
-  // policiesDlqWorkerPlugin - long-polls the policies dead-letter queue and marks poison jobs abandoned
+  // policiesDlqWorkerPlugin - long-polls the policies dead-letter queue and marks dead-lettered jobs failed
   await server.register([
     requestTracing,
     requestLogger,

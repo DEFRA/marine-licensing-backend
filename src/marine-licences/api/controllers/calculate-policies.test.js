@@ -104,7 +104,8 @@ describe('POST /marine-licence/calculate-policies', () => {
       )
       expect(sendPolicyJob).toHaveBeenCalledWith({
         licenceId: id,
-        policyJobId: expectedJobId
+        policyJobId: expectedJobId,
+        queuedAt: expect.any(Date)
       })
       expect(global.mockHandler.response).toHaveBeenCalledWith({
         message: 'success',
@@ -135,7 +136,7 @@ describe('POST /marine-licence/calculate-policies', () => {
       expect(global.mockHandler.code).toHaveBeenCalledWith(202)
     })
 
-    it('should re-queue when the same geometry previously abandoned', async () => {
+    it('should re-queue when the same geometry previously failed', async () => {
       const _id = new ObjectId()
       const id = _id.toHexString()
       const policyJobId = computePolicyJobId(id, [mockFileUploadSite])
@@ -143,7 +144,7 @@ describe('POST /marine-licence/calculate-policies', () => {
         _id,
         siteDetails: [mockFileUploadSite],
         policyJobId,
-        policyJob: 'abandoned'
+        policyJob: 'failed'
       })
 
       await calculatePoliciesController.handler(request, global.mockHandler)

@@ -87,23 +87,6 @@ describe('policies-worker-processor', () => {
       expect(queryArcGISPolicies).not.toHaveBeenCalled()
     })
 
-    it('should abandon jobs older than the 36-hour budget', async () => {
-      const thirtySevenHoursAgo = new Date(Date.now() - 37 * 60 * 60 * 1000)
-      const { server, mockUpdateOne } = setupMocks(
-        buildLicence({ policyJobQueuedAt: thirtySevenHoursAgo })
-      )
-
-      await processPolicyJob(server, buildMessage())
-
-      expect(mockUpdateOne).toHaveBeenCalledWith(
-        { _id: ObjectId.createFromHexString(licenceId), policyJobId },
-        { $set: { policyJob: 'abandoned' } }
-      )
-      expect(deletePolicyJob).toHaveBeenCalledWith(queueUrl, receiptHandle)
-      expect(queryArcGISPolicies).not.toHaveBeenCalled()
-      expect(server.logger.warn).toHaveBeenCalled()
-    })
-
     it('should compute policies, store them with their content, mark ready and delete the message', async () => {
       const licence = buildLicence()
       const { server, mockUpdateOne } = setupMocks(licence)
@@ -167,7 +150,7 @@ describe('policies-worker-processor', () => {
       expect(deletePolicyJob).toHaveBeenCalledWith(queueUrl, receiptHandle)
     })
 
-    it('should mark the job failed and keep the message on transient errors', async () => {
+    it('should keep the message and leave the status as computing on transient errors', async () => {
       const { server, mockUpdateOne } = setupMocks(buildLicence())
       vi.mocked(queryArcGISPolicies).mockRejectedValue(
         new Error('ArcGIS timed out')
@@ -175,9 +158,11 @@ describe('policies-worker-processor', () => {
 
       await processPolicyJob(server, buildMessage())
 
-      expect(mockUpdateOne).toHaveBeenLastCalledWith(
+      // only the computing write — failed is owned by the DLQ worker
+      expect(mockUpdateOne).toHaveBeenCalledTimes(1)
+      expect(mockUpdateOne).toHaveBeenCalledWith(
         { _id: ObjectId.createFromHexString(licenceId), policyJobId },
-        { $set: { policyJob: 'failed' } }
+        { $set: { policyJob: 'computing' } }
       )
       expect(deletePolicyJob).not.toHaveBeenCalled()
       expect(extendVisibility).not.toHaveBeenCalled()
@@ -212,20 +197,39 @@ describe('policies-worker-processor', () => {
   })
 
   describe('processDlqJob', () => {
-    it('should mark the job abandoned when the licence still references it', async () => {
+    it('should mark the job failed when the licence still references it', async () => {
       const { server, mockUpdateOne } = setupMocks(null)
 
       await processDlqJob(server, buildMessage())
 
       expect(mockUpdateOne).toHaveBeenCalledWith(
         { _id: ObjectId.createFromHexString(licenceId), policyJobId },
-        { $set: { policyJob: 'abandoned' } }
+        { $set: { policyJob: 'failed' } }
       )
       expect(deletePolicyJob).toHaveBeenCalledWith(dlqUrl, receiptHandle)
       expect(server.logger.warn).toHaveBeenCalled()
     })
 
-    it('should not abandon a re-triggered job when the dead-lettered message is stale', async () => {
+    it('should guard the failed write on queuedAt when the message carries it', async () => {
+      const queuedAt = new Date('2026-06-11T10:00:00.000Z')
+      const { server, mockUpdateOne } = setupMocks(null)
+
+      await processDlqJob(
+        server,
+        buildMessage({ licenceId, policyJobId, queuedAt })
+      )
+
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          policyJobId,
+          policyJobQueuedAt: queuedAt
+        },
+        { $set: { policyJob: 'failed' } }
+      )
+    })
+
+    it('should not fail a re-triggered job when the dead-lettered message is stale', async () => {
       const { server, mockUpdateOne } = setupMocks(null)
       mockUpdateOne.mockResolvedValue({ matchedCount: 0 })
 

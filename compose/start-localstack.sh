@@ -40,7 +40,8 @@ aws --endpoint-url=http://localhost:4566 s3api put-bucket-notification-configura
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploader-download-requests
 
 # Marine plan policies queues (ML-1285). DLQ first so the main queue's redrive
-# policy can reference it. maxReceiveCount is deliberately high: abandonment is
-# owned by the worker's 36-hour check; the DLQ is a poison-message backstop.
+# policy can reference it. A job gets maxReceiveCount (5) delivery attempts;
+# after that the message dead-letters and the DLQ worker marks the job failed
+# so the user can trigger a fresh calculation from the UI.
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies_deadletter.fifo --attributes "{\"FifoQueue\":\"true\",\"ContentBasedDeduplication\":\"false\"}"
-aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies.fifo --attributes "{\"FifoQueue\":\"true\",\"ContentBasedDeduplication\":\"false\",\"VisibilityTimeout\":\"180\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_policies_deadletter.fifo\\\",\\\"maxReceiveCount\\\":\\\"1000\\\"}\"}"
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies.fifo --attributes "{\"FifoQueue\":\"true\",\"ContentBasedDeduplication\":\"false\",\"VisibilityTimeout\":\"180\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_policies_deadletter.fifo\\\",\\\"maxReceiveCount\\\":\\\"5\\\"}\"}"
