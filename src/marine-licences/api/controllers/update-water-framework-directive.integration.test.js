@@ -43,6 +43,7 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
       .findOne({ _id: marineLicenceId })
 
     expect(updatedLicence.waterFrameworkDirective).toEqual({
+      assessmentChanged: 'no',
       excludedActivities: 'no',
       nauticalMile: 'yes',
       previousAssessment: 'no'
