@@ -175,6 +175,52 @@ describe('waterFrameworkDirective', () => {
       })
       expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
     })
+
+    test('should fail if empty for file upload or s3 data', () => {
+      const { error: fileError } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          uploadedFile: ''
+        }
+      })
+      expect(fileError.message).toContain('UPLOADED_FILE_INVALID')
+
+      const { error: s3Error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          s3Location: ''
+        }
+      })
+      expect(s3Error.message).toContain('S3_LOCATION_INVALID')
+    })
+
+    test('should fail if invalid value for file upload', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          uploadedFile: { invalidValue: 'test' }
+        }
+      })
+      expect(error.message).toContain('UPLOADED_FILE_FILENAME_REQUIRED')
+    })
+
+    test('should fail if invalid value for s3', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          s3Location: { invalidValue: 'test' }
+        }
+      })
+      expect(error.message).toContain('S3_BUCKET_REQUIRED')
+    })
   })
 
   describe('nauticalMile no', () => {

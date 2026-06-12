@@ -1,5 +1,6 @@
 import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
+import { fileUploadValidationSchema } from './file-upload.js'
 
 const waterFrameworkDirectiveDetails = {
   assessmentChanged: joi.when('nauticalMile', {
@@ -34,7 +35,8 @@ const waterFrameworkDirectiveDetails = {
     otherwise: joi.forbidden().messages({
       'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
     })
-  })
+  }),
+  ...fileUploadValidationSchema
 }
 
 export const waterFrameworkDirectiveSchema = joi

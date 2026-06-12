@@ -42,12 +42,9 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(updatedLicence.waterFrameworkDirective).toEqual({
-      assessmentChanged: 'no',
-      excludedActivities: 'no',
-      nauticalMile: 'yes',
-      previousAssessment: 'no'
-    })
+    expect(updatedLicence.waterFrameworkDirective).toEqual(
+      mockWaterFrameworkDirective
+    )
   })
 
   test('successfully updates water framework directive with nauticalMile no', async () => {
