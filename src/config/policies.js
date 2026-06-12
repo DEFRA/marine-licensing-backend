@@ -26,7 +26,7 @@ export const policiesSchema = {
     doc: 'URL of the marine plan policies FIFO dead-letter queue',
     format: requiredFromEnvInCdp,
     default:
-      'http://localhost:4566/000000000000/marine_licensing_policies_deadletter.fifo',
+      'http://localhost:4566/000000000000/marine_licensing_policies-deadletter.fifo',
     env: 'MARINE_POLICIES_SQS_DLQ_URL'
   },
   arcgisUrl: {

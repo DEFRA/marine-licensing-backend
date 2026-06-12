@@ -20,7 +20,7 @@ vi.mock('./policies-sqs-client.js', () => ({
 const queueUrl =
   'http://localhost:4566/000000000000/marine_licensing_policies.fifo'
 const dlqUrl =
-  'http://localhost:4566/000000000000/marine_licensing_policies_deadletter.fifo'
+  'http://localhost:4566/000000000000/marine_licensing_policies-deadletter.fifo'
 
 describe('policies-worker-processor', () => {
   const licenceId = new ObjectId().toHexString()
