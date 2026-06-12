@@ -35,6 +35,6 @@ export const validateWfdUpload = async (waterFrameworkDirective) => {
   }
 
   logger.info(
-    `${this.logSystem}: Successfully validated Water Framework Directive file upload`
+    `${logSystem}: Successfully validated Water Framework Directive file upload`
   )
 }
