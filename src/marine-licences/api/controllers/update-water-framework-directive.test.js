@@ -1,6 +1,9 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateWaterFrameworkDirectiveController } from './update-water-framework-directive.js'
+import { validateWfdUpload } from '../helpers/validateWfdUpload.js'
+
+vi.mock('../helpers/validateWfdUpload.js')
 
 describe('PATCH /marine-licence/water-framework-directive', () => {
   const mockAuditPayload = {
@@ -29,5 +32,9 @@ describe('PATCH /marine-licence/water-framework-directive', () => {
         mockHandler
       )
     ).rejects.toThrow(`Error updating water framework directive: ${mockError}`)
+
+    expect(validateWfdUpload).toHaveBeenCalledWith(
+      mockPayload.waterFrameworkDirective
+    )
   })
 })

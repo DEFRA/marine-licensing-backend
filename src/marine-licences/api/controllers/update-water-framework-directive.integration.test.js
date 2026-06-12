@@ -7,6 +7,8 @@ import {
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
+vi.mock('../helpers/validateWfdUpload.js')
+
 describe('PATCH /marine-licence/water-framework-directive - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
