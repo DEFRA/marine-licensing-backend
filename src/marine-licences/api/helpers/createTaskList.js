@@ -152,12 +152,34 @@ const getSiteDetailsStatus = (siteDetails) => {
   return hasInProgress ? IN_PROGRESS : COMPLETED
 }
 
-const getWaterFrameworkDirectiveStatus = (wfd) => {
-  if (wfd?.nauticalMile === 'no') {
+const checkWaterFrameworkDirective = (wfd) => {
+  const requiredValues = [
+    'assessmentChanged',
+    'previousAssessment',
+    'excludedActivities',
+    'uploadedFile',
+    's3Location'
+  ]
+
+  const siteStatus = getStatusFromRequiredFields(wfd, requiredValues)
+
+  if ([siteStatus].every((s) => s === COMPLETED)) {
     return COMPLETED
   }
 
   return INCOMPLETE
+}
+
+const getWaterFrameworkDirectiveStatus = (wfd) => {
+  if (!wfd) {
+    return INCOMPLETE
+  }
+
+  if (wfd.nauticalMile === 'no') {
+    return COMPLETED
+  }
+
+  return checkWaterFrameworkDirective(wfd)
 }
 
 export const createTaskList = (marineLicence, isCitizen = false) => {
