@@ -1,11 +1,11 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { policyResponseSchema } from '../../models/policy-response.js'
+import { marinePlanPolicyResponseSchema } from '../../models/marine-plan-policy.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 
-export const savePolicyResponseController = {
+export const saveMarinePlanPolicyResponseController = {
   options: {
     payload: {
       parse: true,
@@ -14,7 +14,7 @@ export const savePolicyResponseController = {
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
-      payload: policyResponseSchema
+      payload: marinePlanPolicyResponseSchema
     }
   },
   handler: async (request, h) => {
@@ -26,10 +26,10 @@ export const savePolicyResponseController = {
 
       // Update in place when a response for this policy already exists…
       const updateResult = await collection.updateOne(
-        { _id, 'policyResponses.policyCode': policyCode },
+        { _id, 'marinePlanPolicyResponses.policyCode': policyCode },
         {
           $set: {
-            'policyResponses.$.response': response,
+            'marinePlanPolicyResponses.$.response': response,
             updatedAt,
             updatedBy
           }
@@ -41,7 +41,7 @@ export const savePolicyResponseController = {
         const pushResult = await collection.updateOne(
           { _id },
           {
-            $push: { policyResponses: { policyCode, response } },
+            $push: { marinePlanPolicyResponses: { policyCode, response } },
             $set: { updatedAt, updatedBy }
           }
         )

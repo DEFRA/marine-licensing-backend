@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
-import { createPoliciesPollerPlugin } from './policies-poller.js'
-import { config } from '../../config.js'
+import { createMarinePlanPoliciesPollerPlugin } from './poller.js'
+import { config } from '../../../config.js'
 
-describe('createPoliciesPollerPlugin', () => {
+describe('createMarinePlanPoliciesPollerPlugin', () => {
   const buildServer = () => ({
     app: {},
     ext: vi.fn(),
@@ -23,7 +23,7 @@ describe('createPoliciesPollerPlugin', () => {
     vi.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: false })
     const server = buildServer()
 
-    createPoliciesPollerPlugin({
+    createMarinePlanPoliciesPollerPlugin({
       name: 'test-poller',
       receiveMessages: vi.fn(),
       processMessage: vi.fn()
@@ -46,7 +46,7 @@ describe('createPoliciesPollerPlugin', () => {
         return []
       })
 
-    const plugin = createPoliciesPollerPlugin({
+    const plugin = createMarinePlanPoliciesPollerPlugin({
       name: 'test-poller',
       receiveMessages,
       processMessage
@@ -77,7 +77,7 @@ describe('createPoliciesPollerPlugin', () => {
           return []
         })
 
-      const plugin = createPoliciesPollerPlugin({
+      const plugin = createMarinePlanPoliciesPollerPlugin({
         name: 'test-poller',
         receiveMessages,
         processMessage
@@ -111,7 +111,7 @@ describe('createPoliciesPollerPlugin', () => {
       })
       .mockImplementation(async () => [])
 
-    const plugin = createPoliciesPollerPlugin({
+    const plugin = createMarinePlanPoliciesPollerPlugin({
       name: 'test-poller',
       receiveMessages,
       processMessage

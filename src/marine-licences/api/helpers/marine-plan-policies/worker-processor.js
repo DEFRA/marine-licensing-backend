@@ -1,15 +1,15 @@
 import { ObjectId } from 'mongodb'
-import { config } from '../../../config.js'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
+import { config } from '../../../../config.js'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
+import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
 import {
-  POLICY_JOB_STATUS,
-  POLICY_EVENT_ACTION
-} from '../../constants/marine-licence.js'
+  MARINE_PLAN_POLICY_JOB_STATUS,
+  MARINE_PLAN_POLICY_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
-import { getPolicyContent } from './policy-wording-client.js'
-import { deletePolicyJob, extendVisibility } from './policies-sqs-client.js'
-import { RetryAfterError } from './policies-http.js'
+import { getPolicyContent } from './wording-client.js'
+import { deletePolicyJob, extendVisibility } from './sqs-client.js'
+import { RetryAfterError } from './policy-http.js'
 
 const millisecondsPerSecond = 1000
 
@@ -43,16 +43,21 @@ const fetchPolicies = async ({ siteDetails, db, logger }) => {
   return marinePlanPolicies
 }
 
-// Conditional on policyJobId so a site edit mid-flight is never overwritten
+// Conditional on marinePlanPolicyJobId so a site edit mid-flight is never overwritten
 const setJobStatus = ({ collection, _id, policyJobId }, status, extra = {}) =>
   collection.updateOne(
-    { _id, policyJobId },
-    { $set: { policyJob: status, ...extra } }
+    { _id, marinePlanPolicyJobId: policyJobId },
+    { $set: { marinePlanPolicyJob: status, ...extra } }
   )
 
 const logStaleJob = ({ logger }, detail) =>
   logger.info(
-    { event: { action: POLICY_EVENT_ACTION.JOB_STALE, outcome: 'success' } },
+    {
+      event: {
+        action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_STALE,
+        outcome: 'success'
+      }
+    },
     detail
   )
 
@@ -64,13 +69,16 @@ const computeAndStorePolicies = async (job, licence, db) => {
     logger
   })
 
-  const result = await setJobStatus(job, POLICY_JOB_STATUS.READY, {
+  const result = await setJobStatus(job, MARINE_PLAN_POLICY_JOB_STATUS.READY, {
     marinePlanPolicies
   })
   if (result.matchedCount > 0) {
     logger.info(
       {
-        event: { action: POLICY_EVENT_ACTION.JOB_COMPLETE, outcome: 'success' }
+        event: {
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_COMPLETE,
+          outcome: 'success'
+        }
       },
       `Policy job complete for licence ${licenceId}: ${marinePlanPolicies.length} applicable policies`
     )
@@ -112,7 +120,7 @@ const handleJobFailure = async (job, error, message, retryAfterCapMs) => {
  */
 export const processPolicyJob = async (server, message) => {
   const { db, logger } = server
-  const { sqsQueueUrl, retryAfterCapMs } = config.get('policies')
+  const { sqsQueueUrl, retryAfterCapMs } = config.get('marinePlanPolicies')
 
   const body = parseMessageBody(message, logger)
   if (!body) {
@@ -129,13 +137,13 @@ export const processPolicyJob = async (server, message) => {
   }
 
   const licence = await job.collection.findOne({ _id: job._id })
-  if (!licence || licence.policyJobId !== policyJobId) {
+  if (!licence || licence.marinePlanPolicyJobId !== policyJobId) {
     logStaleJob(job, `Discarding stale policy job for licence ${licenceId}`)
     await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
     return
   }
 
-  await setJobStatus(job, POLICY_JOB_STATUS.COMPUTING)
+  await setJobStatus(job, MARINE_PLAN_POLICY_JOB_STATUS.COMPUTING)
 
   try {
     await computeAndStorePolicies(job, licence, db)
@@ -155,7 +163,7 @@ export const processPolicyJob = async (server, message) => {
  */
 export const processDlqJob = async (server, message) => {
   const { db, logger } = server
-  const { sqsDlqUrl } = config.get('policies')
+  const { sqsDlqUrl } = config.get('marinePlanPolicies')
 
   const body = parseMessageBody(message, logger)
   if (body) {
@@ -170,16 +178,16 @@ export const processDlqJob = async (server, message) => {
     const result = await job.collection.updateOne(
       {
         _id: job._id,
-        policyJobId,
-        ...(queuedAt && { policyJobQueuedAt: new Date(queuedAt) })
+        marinePlanPolicyJobId: policyJobId,
+        ...(queuedAt && { marinePlanPolicyJobQueuedAt: new Date(queuedAt) })
       },
-      { $set: { policyJob: POLICY_JOB_STATUS.FAILED } }
+      { $set: { marinePlanPolicyJob: MARINE_PLAN_POLICY_JOB_STATUS.FAILED } }
     )
     if (result.matchedCount > 0) {
       logger.warn(
         {
           event: {
-            action: POLICY_EVENT_ACTION.JOB_FAILED,
+            action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_FAILED,
             outcome: 'failure'
           }
         },

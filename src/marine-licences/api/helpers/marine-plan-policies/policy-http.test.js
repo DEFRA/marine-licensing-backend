@@ -5,7 +5,7 @@ import {
   RetryAfterError,
   getPoliciesDispatcher,
   resetPoliciesDispatcher
-} from './policies-http.js'
+} from './policy-http.js'
 
 let fetchMock
 

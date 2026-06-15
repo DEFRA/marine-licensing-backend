@@ -1,5 +1,5 @@
-import { config } from '../../config.js'
-import { structureErrorForECS } from '../common/helpers/logging/logger.js'
+import { config } from '../../../config.js'
+import { structureErrorForECS } from '../../common/helpers/logging/logger.js'
 
 const receiveErrorBackoffMs = 5000
 
@@ -36,7 +36,7 @@ const runLoop = async (server, state, { receiveMessages, processMessage }) => {
  * server-side). The loop starts onPostStart and is signalled to stop
  * onPreStop; in-flight work completes before the loop exits.
  */
-export const createPoliciesPollerPlugin = ({
+export const createMarinePlanPoliciesPollerPlugin = ({
   name,
   receiveMessages,
   processMessage
@@ -44,7 +44,7 @@ export const createPoliciesPollerPlugin = ({
   plugin: {
     name,
     register: (server) => {
-      const { isEnabled } = config.get('policies')
+      const { isEnabled } = config.get('marinePlanPolicies')
       if (!isEnabled) {
         return
       }

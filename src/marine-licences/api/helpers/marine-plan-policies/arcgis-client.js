@@ -1,7 +1,7 @@
-import { config } from '../../../config.js'
-import { buildEmpGeometries } from '../../../shared/common/helpers/emp/transforms/site-details.js'
-import { POLICY_EVENT_ACTION } from '../../constants/marine-licence.js'
-import { timedJsonFetch } from './policies-http.js'
+import { config } from '../../../../config.js'
+import { buildEmpGeometries } from '../../../../shared/common/helpers/emp/transforms/site-details.js'
+import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import { timedJsonFetch } from './policy-http.js'
 
 // Field names match the PolicyData_MDP layer schema exactly
 // (PolicyCode, Sector, isSpatial)
@@ -22,7 +22,7 @@ const extractPolicy = (attributes = {}) => {
  * per geometry; results are de-duplicated by policy code.
  */
 export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
-  const { arcgisUrl, arcgisTimeoutMs } = config.get('policies')
+  const { arcgisUrl, arcgisTimeoutMs } = config.get('marinePlanPolicies')
   const geometries = buildEmpGeometries(siteDetails)
   const policiesByCode = new Map()
 
@@ -42,7 +42,7 @@ export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
         })
       },
       timeoutMs: arcgisTimeoutMs,
-      eventAction: POLICY_EVENT_ACTION.ARCGIS_QUERY,
+      eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.ARCGIS_QUERY,
       upstreamName: 'ArcGIS feature-server query',
       logger
     })

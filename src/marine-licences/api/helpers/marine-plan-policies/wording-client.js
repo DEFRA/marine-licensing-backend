@@ -1,7 +1,7 @@
-import { config } from '../../../config.js'
-import { collectionMarinePlanPolicyWording } from '../../../shared/common/constants/db-collections.js'
-import { POLICY_EVENT_ACTION } from '../../constants/marine-licence.js'
-import { timedJsonFetch } from './policies-http.js'
+import { config } from '../../../../config.js'
+import { collectionMarinePlanPolicyWording } from '../../../../shared/common/constants/db-collections.js'
+import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import { timedJsonFetch } from './policy-http.js'
 
 // The content fields the front end renders. All are HTML strings on the
 // GOV.UK marine-plans-explorer policies API.
@@ -29,14 +29,15 @@ const toContent = (cached) =>
   }, {})
 
 const refreshPolicyDataset = async (collection, logger) => {
-  const { govukPoliciesUrl, wordingTimeoutMs } = config.get('policies')
+  const { govukPoliciesUrl, wordingTimeoutMs } =
+    config.get('marinePlanPolicies')
 
   // The API has no per-code route — it returns every policy in one array,
   // so a single fetch refreshes the whole 24h cache for all codes.
   const policies = await timedJsonFetch({
     url: govukPoliciesUrl,
     timeoutMs: wordingTimeoutMs,
-    eventAction: POLICY_EVENT_ACTION.WORDING_FETCH,
+    eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
     upstreamName: 'GOV.UK marine plan policies fetch',
     logger
   })

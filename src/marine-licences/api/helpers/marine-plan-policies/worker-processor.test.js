@@ -1,18 +1,18 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { processPolicyJob, processDlqJob } from './policies-worker-processor.js'
+import { processPolicyJob, processDlqJob } from './worker-processor.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
-import { getPolicyContent } from './policy-wording-client.js'
-import { deletePolicyJob, extendVisibility } from './policies-sqs-client.js'
-import { RetryAfterError } from './policies-http.js'
+import { getPolicyContent } from './wording-client.js'
+import { deletePolicyJob, extendVisibility } from './sqs-client.js'
+import { RetryAfterError } from './policy-http.js'
 
 vi.mock('./arcgis-client.js', () => ({
   queryArcGISPolicies: vi.fn()
 }))
-vi.mock('./policy-wording-client.js', () => ({
+vi.mock('./wording-client.js', () => ({
   getPolicyContent: vi.fn()
 }))
-vi.mock('./policies-sqs-client.js', () => ({
+vi.mock('./sqs-client.js', () => ({
   deletePolicyJob: vi.fn(),
   extendVisibility: vi.fn()
 }))
@@ -34,8 +34,8 @@ describe('policies-worker-processor', () => {
 
   const buildLicence = (overrides = {}) => ({
     _id: ObjectId.createFromHexString(licenceId),
-    policyJobId,
-    policyJobQueuedAt: new Date(),
+    marinePlanPolicyJobId: policyJobId,
+    marinePlanPolicyJobQueuedAt: new Date(),
     siteDetails: [{ coordinatesType: 'coordinates' }],
     ...overrides
   })
@@ -77,7 +77,7 @@ describe('policies-worker-processor', () => {
 
     it('should discard stale messages when sites were edited after queueing', async () => {
       const { server, mockUpdateOne } = setupMocks(
-        buildLicence({ policyJobId: 'a-newer-hash' })
+        buildLicence({ marinePlanPolicyJobId: 'a-newer-hash' })
       )
 
       await processPolicyJob(server, buildMessage())
@@ -115,12 +115,18 @@ describe('policies-worker-processor', () => {
       })
       expect(mockUpdateOne).toHaveBeenNthCalledWith(
         1,
-        { _id: ObjectId.createFromHexString(licenceId), policyJobId },
-        { $set: { policyJob: 'computing' } }
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId
+        },
+        { $set: { marinePlanPolicyJob: 'computing' } }
       )
       expect(mockUpdateOne).toHaveBeenNthCalledWith(
         2,
-        { _id: ObjectId.createFromHexString(licenceId), policyJobId },
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId
+        },
         {
           $set: {
             marinePlanPolicies: [
@@ -130,7 +136,7 @@ describe('policies-worker-processor', () => {
                 ...policyContent
               }
             ],
-            policyJob: 'ready'
+            marinePlanPolicyJob: 'ready'
           }
         }
       )
@@ -161,8 +167,11 @@ describe('policies-worker-processor', () => {
       // only the computing write — failed is owned by the DLQ worker
       expect(mockUpdateOne).toHaveBeenCalledTimes(1)
       expect(mockUpdateOne).toHaveBeenCalledWith(
-        { _id: ObjectId.createFromHexString(licenceId), policyJobId },
-        { $set: { policyJob: 'computing' } }
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId
+        },
+        { $set: { marinePlanPolicyJob: 'computing' } }
       )
       expect(deletePolicyJob).not.toHaveBeenCalled()
       expect(extendVisibility).not.toHaveBeenCalled()
@@ -203,8 +212,11 @@ describe('policies-worker-processor', () => {
       await processDlqJob(server, buildMessage())
 
       expect(mockUpdateOne).toHaveBeenCalledWith(
-        { _id: ObjectId.createFromHexString(licenceId), policyJobId },
-        { $set: { policyJob: 'failed' } }
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId
+        },
+        { $set: { marinePlanPolicyJob: 'failed' } }
       )
       expect(deletePolicyJob).toHaveBeenCalledWith(dlqUrl, receiptHandle)
       expect(server.logger.warn).toHaveBeenCalled()
@@ -222,10 +234,10 @@ describe('policies-worker-processor', () => {
       expect(mockUpdateOne).toHaveBeenCalledWith(
         {
           _id: ObjectId.createFromHexString(licenceId),
-          policyJobId,
-          policyJobQueuedAt: queuedAt
+          marinePlanPolicyJobId: policyJobId,
+          marinePlanPolicyJobQueuedAt: queuedAt
         },
-        { $set: { policyJob: 'failed' } }
+        { $set: { marinePlanPolicyJob: 'failed' } }
       )
     })
 

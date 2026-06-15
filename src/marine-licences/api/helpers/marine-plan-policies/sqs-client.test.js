@@ -13,7 +13,7 @@ import {
   deletePolicyJob,
   extendVisibility,
   resetSqsClient
-} from './policies-sqs-client.js'
+} from './sqs-client.js'
 
 const queueUrl =
   'http://localhost:4566/000000000000/marine_licensing_policies.fifo'

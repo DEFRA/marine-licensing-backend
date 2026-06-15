@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { buildPolicyResetFields } from '../helpers/policy-reset.js'
+import { buildPolicyResetFields } from '../helpers/marine-plan-policies/policy-reset.js'
 
 export const updateSiteController = {
   options: {
@@ -28,7 +28,7 @@ export const updateSiteController = {
 
       const existing = await collection.findOne(
         { _id },
-        { projection: { siteDetails: 1, policyJobId: 1 } }
+        { projection: { siteDetails: 1, marinePlanPolicyJobId: 1 } }
       )
 
       if (existing?.siteDetails?.[siteIndex] === undefined) {

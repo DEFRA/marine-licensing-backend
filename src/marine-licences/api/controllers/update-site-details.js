@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { tenMegaBytes } from '../../../shared/constants/site-details.js'
-import { buildPolicyResetFields } from '../helpers/policy-reset.js'
+import { buildPolicyResetFields } from '../helpers/marine-plan-policies/policy-reset.js'
 
 export const updateSiteDetailsController = {
   options: {
@@ -38,7 +38,7 @@ export const updateSiteDetailsController = {
 
       const existing = await collection.findOne(
         { _id },
-        { projection: { policyJobId: 1 } }
+        { projection: { marinePlanPolicyJobId: 1 } }
       )
 
       const result = await collection.updateOne(

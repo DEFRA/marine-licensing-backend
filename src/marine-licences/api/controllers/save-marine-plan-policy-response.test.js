@@ -1,9 +1,10 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { savePolicyResponseController } from './save-policy-response.js'
+import { saveMarinePlanPolicyResponseController } from './save-marine-plan-policy-response.js'
 
-describe('PATCH /marine-licence/policy-response', () => {
-  const payloadValidator = savePolicyResponseController.options.validate.payload
+describe('PATCH /marine-licence/marine-plan-policy-response', () => {
+  const payloadValidator =
+    saveMarinePlanPolicyResponseController.options.validate.payload
   const mockAuditPayload = {
     updatedAt: new Date('2025-01-01T12:00:00Z'),
     updatedBy: 'user123'
@@ -72,7 +73,7 @@ describe('PATCH /marine-licence/policy-response', () => {
       const mockPayload = buildPayload()
       const mockUpdateOne = setupMocks([{ matchedCount: 1 }])
 
-      await savePolicyResponseController.handler(
+      await saveMarinePlanPolicyResponseController.handler(
         { db: mockMongo, payload: mockPayload },
         mockHandler
       )
@@ -81,11 +82,11 @@ describe('PATCH /marine-licence/policy-response', () => {
       expect(mockUpdateOne).toHaveBeenCalledWith(
         {
           _id: ObjectId.createFromHexString(mockPayload.id),
-          'policyResponses.policyCode': 'S-FISH-1'
+          'marinePlanPolicyResponses.policyCode': 'S-FISH-1'
         },
         {
           $set: {
-            'policyResponses.$.response': mockPayload.response,
+            'marinePlanPolicyResponses.$.response': mockPayload.response,
             ...mockAuditPayload
           }
         }
@@ -101,7 +102,7 @@ describe('PATCH /marine-licence/policy-response', () => {
         { matchedCount: 1 }
       ])
 
-      await savePolicyResponseController.handler(
+      await saveMarinePlanPolicyResponseController.handler(
         { db: mockMongo, payload: mockPayload },
         mockHandler
       )
@@ -111,7 +112,7 @@ describe('PATCH /marine-licence/policy-response', () => {
         { _id: ObjectId.createFromHexString(mockPayload.id) },
         {
           $push: {
-            policyResponses: {
+            marinePlanPolicyResponses: {
               policyCode: 'S-FISH-1',
               response: mockPayload.response
             }
@@ -127,7 +128,7 @@ describe('PATCH /marine-licence/policy-response', () => {
       setupMocks([{ matchedCount: 0 }, { matchedCount: 0 }])
 
       await expect(() =>
-        savePolicyResponseController.handler(
+        saveMarinePlanPolicyResponseController.handler(
           { db: mockMongo, payload: buildPayload() },
           mockHandler
         )
@@ -144,7 +145,7 @@ describe('PATCH /marine-licence/policy-response', () => {
       }))
 
       await expect(() =>
-        savePolicyResponseController.handler(
+        saveMarinePlanPolicyResponseController.handler(
           { db: mockMongo, payload: buildPayload() },
           mockHandler
         )

@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 import { updateSiteDetailsController } from './update-site-details.js'
 import Boom from '@hapi/boom'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
-import { computePolicyJobId } from '../helpers/policy-job-hash.js'
+import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job-hash.js'
 
 describe('PATCH /marine-licences/site-details', () => {
   const payloadValidator = updateSiteDetailsController.options.validate.payload
@@ -101,7 +101,7 @@ describe('PATCH /marine-licences/site-details', () => {
       )
 
       const setFields = mockUpdateOne.mock.calls[0][1].$set
-      expect(setFields).not.toHaveProperty('policyJob')
+      expect(setFields).not.toHaveProperty('marinePlanPolicyJob')
       expect(setFields).not.toHaveProperty('marinePlanPolicies')
     })
 
@@ -110,7 +110,7 @@ describe('PATCH /marine-licences/site-details', () => {
       const mockPayload = buildPayload()
       const mockUpdateOne = setupMocks({
         _id: mockPayload.id,
-        policyJobId: 'hash-of-the-previous-geometry'
+        marinePlanPolicyJobId: 'hash-of-the-previous-geometry'
       })
 
       await updateSiteDetailsController.handler(
@@ -120,12 +120,12 @@ describe('PATCH /marine-licences/site-details', () => {
 
       const setFields = mockUpdateOne.mock.calls[0][1].$set
       expect(setFields).toMatchObject({
-        policyJob: null,
-        policyJobId: null,
-        policyJobQueuedAt: null,
+        marinePlanPolicyJob: null,
+        marinePlanPolicyJobId: null,
+        marinePlanPolicyJobQueuedAt: null,
         marinePlanPolicies: []
       })
-      expect(setFields).not.toHaveProperty('policyResponses')
+      expect(setFields).not.toHaveProperty('marinePlanPolicyResponses')
     })
 
     it('should keep computed policies when the geometry is unchanged', async () => {
@@ -133,7 +133,9 @@ describe('PATCH /marine-licences/site-details', () => {
       const mockPayload = buildPayload()
       const mockUpdateOne = setupMocks({
         _id: mockPayload.id,
-        policyJobId: computePolicyJobId(mockPayload.id, [mockFileUploadSite])
+        marinePlanPolicyJobId: computePolicyJobId(mockPayload.id, [
+          mockFileUploadSite
+        ])
       })
 
       await updateSiteDetailsController.handler(
@@ -142,7 +144,7 @@ describe('PATCH /marine-licences/site-details', () => {
       )
 
       const setFields = mockUpdateOne.mock.calls[0][1].$set
-      expect(setFields).not.toHaveProperty('policyJob')
+      expect(setFields).not.toHaveProperty('marinePlanPolicyJob')
       expect(setFields).not.toHaveProperty('marinePlanPolicies')
     })
   })

@@ -1,6 +1,6 @@
 import { Agent, ProxyAgent, fetch } from 'undici'
 import { StatusCodes } from 'http-status-codes'
-import { config } from '../../../config.js'
+import { config } from '../../../../config.js'
 
 // pipelining: 0 makes undici close the socket after each request instead of
 // holding a keep-alive slot on the upstream (a `Connection: close` header is a
@@ -75,7 +75,7 @@ export const timedJsonFetch = async ({
       dispatcher: getPoliciesDispatcher(),
       signal: AbortSignal.timeout(timeoutMs),
       headers: {
-        'user-agent': config.get('policies').userAgent,
+        'user-agent': config.get('marinePlanPolicies').userAgent,
         accept: 'application/json',
         ...options.headers
       }

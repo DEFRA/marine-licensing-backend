@@ -1,5 +1,5 @@
 import { computePolicyJobId } from './policy-job-hash.js'
-import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
+import { mockFileUploadSite } from '../../../../../tests/test.fixture.js'
 
 describe('computePolicyJobId', () => {
   const licenceId = '507f1f77bcf86cd799439011'

@@ -10,7 +10,7 @@ export const MARINE_LICENCE_STATUS_LABEL = {
   SUBMITTED: 'Submitted'
 }
 
-export const POLICY_JOB_STATUS = {
+export const MARINE_PLAN_POLICY_JOB_STATUS = {
   PENDING: 'pending',
   COMPUTING: 'computing',
   READY: 'ready',
@@ -18,7 +18,7 @@ export const POLICY_JOB_STATUS = {
 }
 
 // ECS event.action values for marine plan policy calculation logs
-export const POLICY_EVENT_ACTION = {
+export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   JOB_STALE: 'mp-policies:job-stale',
   JOB_FAILED: 'mp-policies:job-failed',
   JOB_COMPLETE: 'mp-policies:job-complete',

@@ -1,16 +1,17 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { calculatePoliciesController } from './calculate-policies.js'
-import { computePolicyJobId } from '../helpers/policy-job-hash.js'
-import { sendPolicyJob } from '../helpers/policies-sqs-client.js'
+import { calculateMarinePlanPoliciesController } from './calculate-marine-plan-policies.js'
+import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job-hash.js'
+import { sendPolicyJob } from '../helpers/marine-plan-policies/sqs-client.js'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 
-vi.mock('../helpers/policies-sqs-client.js', () => ({
+vi.mock('../helpers/marine-plan-policies/sqs-client.js', () => ({
   sendPolicyJob: vi.fn()
 }))
 
-describe('POST /marine-licence/calculate-policies', () => {
-  const payloadValidator = calculatePoliciesController.options.validate.payload
+describe('POST /marine-licence/calculate-marine-plan-policies', () => {
+  const payloadValidator =
+    calculateMarinePlanPoliciesController.options.validate.payload
   const mockAuditPayload = {
     updatedAt: new Date('2025-01-01T12:00:00Z'),
     updatedBy: 'user123'
@@ -60,7 +61,7 @@ describe('POST /marine-licence/calculate-policies', () => {
       }))
 
       await expect(() =>
-        calculatePoliciesController.handler(
+        calculateMarinePlanPoliciesController.handler(
           {
             db: mockMongo,
             payload: buildPayload(),
@@ -76,7 +77,10 @@ describe('POST /marine-licence/calculate-policies', () => {
       const { request } = setupMocks({ _id, siteDetails: [] })
 
       await expect(() =>
-        calculatePoliciesController.handler(request, global.mockHandler)
+        calculateMarinePlanPoliciesController.handler(
+          request,
+          global.mockHandler
+        )
       ).rejects.toThrow('Marine licence has no site details')
     })
 
@@ -89,15 +93,18 @@ describe('POST /marine-licence/calculate-policies', () => {
       const id = _id.toHexString()
       const expectedJobId = computePolicyJobId(id, [mockFileUploadSite])
 
-      await calculatePoliciesController.handler(request, global.mockHandler)
+      await calculateMarinePlanPoliciesController.handler(
+        request,
+        global.mockHandler
+      )
 
       expect(mockUpdateOne).toHaveBeenCalledWith(
         { _id },
         {
           $set: {
-            policyJob: 'pending',
-            policyJobId: expectedJobId,
-            policyJobQueuedAt: expect.any(Date),
+            marinePlanPolicyJob: 'pending',
+            marinePlanPolicyJobId: expectedJobId,
+            marinePlanPolicyJobQueuedAt: expect.any(Date),
             ...mockAuditPayload
           }
         }
@@ -109,7 +116,7 @@ describe('POST /marine-licence/calculate-policies', () => {
       })
       expect(global.mockHandler.response).toHaveBeenCalledWith({
         message: 'success',
-        value: { policyJob: 'pending' }
+        value: { marinePlanPolicyJob: 'pending' }
       })
       expect(global.mockHandler.code).toHaveBeenCalledWith(202)
     })
@@ -121,17 +128,20 @@ describe('POST /marine-licence/calculate-policies', () => {
       const { request, mockUpdateOne } = setupMocks({
         _id,
         siteDetails: [mockFileUploadSite],
-        policyJobId,
-        policyJob: 'ready'
+        marinePlanPolicyJobId: policyJobId,
+        marinePlanPolicyJob: 'ready'
       })
 
-      await calculatePoliciesController.handler(request, global.mockHandler)
+      await calculateMarinePlanPoliciesController.handler(
+        request,
+        global.mockHandler
+      )
 
       expect(mockUpdateOne).not.toHaveBeenCalled()
       expect(sendPolicyJob).not.toHaveBeenCalled()
       expect(global.mockHandler.response).toHaveBeenCalledWith({
         message: 'success',
-        value: { policyJob: 'ready' }
+        value: { marinePlanPolicyJob: 'ready' }
       })
       expect(global.mockHandler.code).toHaveBeenCalledWith(202)
     })
@@ -143,11 +153,14 @@ describe('POST /marine-licence/calculate-policies', () => {
       const { request } = setupMocks({
         _id,
         siteDetails: [mockFileUploadSite],
-        policyJobId,
-        policyJob: 'failed'
+        marinePlanPolicyJobId: policyJobId,
+        marinePlanPolicyJob: 'failed'
       })
 
-      await calculatePoliciesController.handler(request, global.mockHandler)
+      await calculateMarinePlanPoliciesController.handler(
+        request,
+        global.mockHandler
+      )
 
       expect(sendPolicyJob).toHaveBeenCalled()
     })
@@ -161,16 +174,19 @@ describe('POST /marine-licence/calculate-policies', () => {
       vi.mocked(sendPolicyJob).mockRejectedValueOnce(new Error('SQS down'))
 
       await expect(() =>
-        calculatePoliciesController.handler(request, global.mockHandler)
+        calculateMarinePlanPoliciesController.handler(
+          request,
+          global.mockHandler
+        )
       ).rejects.toThrow('Error queueing policy calculation')
 
       expect(mockUpdateOne).toHaveBeenLastCalledWith(
         { _id },
         {
           $set: {
-            policyJob: null,
-            policyJobId: null,
-            policyJobQueuedAt: null
+            marinePlanPolicyJob: null,
+            marinePlanPolicyJobId: null,
+            marinePlanPolicyJobQueuedAt: null
           }
         }
       )

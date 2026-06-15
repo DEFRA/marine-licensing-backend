@@ -1,21 +1,21 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { calculatePoliciesSchema } from '../../models/calculate-policies.js'
+import { calculateMarinePlanPoliciesSchema } from '../../models/marine-plan-policy.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
-import { POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
-import { computePolicyJobId } from '../helpers/policy-job-hash.js'
-import { sendPolicyJob } from '../helpers/policies-sqs-client.js'
+import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
+import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job-hash.js'
+import { sendPolicyJob } from '../helpers/marine-plan-policies/sqs-client.js'
 
 const IN_FLIGHT_OR_READY = new Set([
-  POLICY_JOB_STATUS.PENDING,
-  POLICY_JOB_STATUS.COMPUTING,
-  POLICY_JOB_STATUS.READY
+  MARINE_PLAN_POLICY_JOB_STATUS.PENDING,
+  MARINE_PLAN_POLICY_JOB_STATUS.COMPUTING,
+  MARINE_PLAN_POLICY_JOB_STATUS.READY
 ])
 
-export const calculatePoliciesController = {
+export const calculateMarinePlanPoliciesController = {
   options: {
     payload: {
       parse: true,
@@ -24,7 +24,7 @@ export const calculatePoliciesController = {
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
-      payload: calculatePoliciesSchema
+      payload: calculateMarinePlanPoliciesSchema
     }
   },
   handler: async (request, h) => {
@@ -48,13 +48,13 @@ export const calculatePoliciesController = {
       // nothing to do. SQS FIFO dedupe only covers a 5-minute window, so this
       // guard is what actually makes repeated clicks idempotent.
       if (
-        marineLicence.policyJobId === policyJobId &&
-        IN_FLIGHT_OR_READY.has(marineLicence.policyJob)
+        marineLicence.marinePlanPolicyJobId === policyJobId &&
+        IN_FLIGHT_OR_READY.has(marineLicence.marinePlanPolicyJob)
       ) {
         return h
           .response({
             message: 'success',
-            value: { policyJob: marineLicence.policyJob }
+            value: { marinePlanPolicyJob: marineLicence.marinePlanPolicyJob }
           })
           .code(StatusCodes.ACCEPTED)
       }
@@ -64,9 +64,9 @@ export const calculatePoliciesController = {
         { _id },
         {
           $set: {
-            policyJob: POLICY_JOB_STATUS.PENDING,
-            policyJobId,
-            policyJobQueuedAt: queuedAt,
+            marinePlanPolicyJob: MARINE_PLAN_POLICY_JOB_STATUS.PENDING,
+            marinePlanPolicyJobId: policyJobId,
+            marinePlanPolicyJobQueuedAt: queuedAt,
             updatedAt,
             updatedBy
           }
@@ -84,9 +84,9 @@ export const calculatePoliciesController = {
           { _id },
           {
             $set: {
-              policyJob: null,
-              policyJobId: null,
-              policyJobQueuedAt: null
+              marinePlanPolicyJob: null,
+              marinePlanPolicyJobId: null,
+              marinePlanPolicyJobQueuedAt: null
             }
           }
         )
@@ -100,7 +100,7 @@ export const calculatePoliciesController = {
       return h
         .response({
           message: 'success',
-          value: { policyJob: POLICY_JOB_STATUS.PENDING }
+          value: { marinePlanPolicyJob: MARINE_PLAN_POLICY_JOB_STATUS.PENDING }
         })
         .code(StatusCodes.ACCEPTED)
     } catch (error) {

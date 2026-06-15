@@ -5,14 +5,14 @@ import {
   DeleteMessageCommand,
   ChangeMessageVisibilityCommand
 } from '@aws-sdk/client-sqs'
-import { config } from '../../../config.js'
+import { config } from '../../../../config.js'
 
 let sqsClientInstance = null
 
 export const getSqsClient = () => {
   if (!sqsClientInstance) {
     const awsConfig = config.get('aws')
-    const policiesConfig = config.get('policies')
+    const policiesConfig = config.get('marinePlanPolicies')
     sqsClientInstance = new SQSClient({
       region: awsConfig.region,
       endpoint: policiesConfig.sqsEndpoint
@@ -26,7 +26,7 @@ export const resetSqsClient = () => {
 }
 
 export const sendPolicyJob = async ({ licenceId, policyJobId, queuedAt }) => {
-  const { sqsQueueUrl } = config.get('policies')
+  const { sqsQueueUrl } = config.get('marinePlanPolicies')
   return getSqsClient().send(
     new SendMessageCommand({
       QueueUrl: sqsQueueUrl,
@@ -49,10 +49,10 @@ const receiveMessages = async (queueUrl) => {
 }
 
 export const receivePolicyJobs = async () =>
-  receiveMessages(config.get('policies').sqsQueueUrl)
+  receiveMessages(config.get('marinePlanPolicies').sqsQueueUrl)
 
 export const receiveDlqJobs = async () =>
-  receiveMessages(config.get('policies').sqsDlqUrl)
+  receiveMessages(config.get('marinePlanPolicies').sqsDlqUrl)
 
 export const deletePolicyJob = async (queueUrl, receiptHandle) =>
   getSqsClient().send(
@@ -65,7 +65,7 @@ export const deletePolicyJob = async (queueUrl, receiptHandle) =>
 export const extendVisibility = async (receiptHandle, seconds) =>
   getSqsClient().send(
     new ChangeMessageVisibilityCommand({
-      QueueUrl: config.get('policies').sqsQueueUrl,
+      QueueUrl: config.get('marinePlanPolicies').sqsQueueUrl,
       ReceiptHandle: receiptHandle,
       VisibilityTimeout: seconds
     })

@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { queryArcGISPolicies } from './arcgis-client.js'
-import { buildEmpGeometries } from '../../../shared/common/helpers/emp/transforms/site-details.js'
-import { config } from '../../../config.js'
+import { buildEmpGeometries } from '../../../../shared/common/helpers/emp/transforms/site-details.js'
+import { config } from '../../../../config.js'
 
 let fetchMock
 
@@ -10,7 +10,7 @@ beforeEach(() => {
 })
 
 vi.mock(
-  '../../../shared/common/helpers/emp/transforms/site-details.js',
+  '../../../../shared/common/helpers/emp/transforms/site-details.js',
   () => ({
     buildEmpGeometries: vi.fn()
   })
@@ -28,9 +28,9 @@ describe('queryArcGISPolicies', () => {
   beforeEach(() => {
     vi.mocked(buildEmpGeometries).mockReturnValue([geometry])
     vi.spyOn(config, 'get').mockImplementation((key) =>
-      key === 'policies'
+      key === 'marinePlanPolicies'
         ? {
-            ...originalConfigGet('policies'),
+            ...originalConfigGet('marinePlanPolicies'),
             arcgisUrl: 'https://arcgis.example/FeatureServer/0'
           }
         : originalConfigGet(key)

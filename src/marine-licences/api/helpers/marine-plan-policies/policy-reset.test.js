@@ -17,29 +17,33 @@ describe('buildPolicyResetFields', () => {
   })
 
   it('should return no fields when the geometry is unchanged', () => {
-    const existing = { policyJobId: computePolicyJobId(licenceId, [site]) }
+    const existing = {
+      marinePlanPolicyJobId: computePolicyJobId(licenceId, [site])
+    }
     expect(buildPolicyResetFields(licenceId, existing, [site])).toEqual({})
   })
 
   it('should reset the policy state when the geometry changes', () => {
-    const existing = { policyJobId: computePolicyJobId(licenceId, [site]) }
+    const existing = {
+      marinePlanPolicyJobId: computePolicyJobId(licenceId, [site])
+    }
     const movedSite = {
       ...site,
       coordinates: { latitude: '52.0000', longitude: '-0.1278' }
     }
 
     expect(buildPolicyResetFields(licenceId, existing, [movedSite])).toEqual({
-      policyJob: null,
-      policyJobId: null,
-      policyJobQueuedAt: null,
+      marinePlanPolicyJob: null,
+      marinePlanPolicyJobId: null,
+      marinePlanPolicyJobQueuedAt: null,
       marinePlanPolicies: []
     })
   })
 
-  it('should never reset policyResponses', () => {
-    const existing = { policyJobId: 'a-stale-hash' }
+  it('should never reset marinePlanPolicyResponses', () => {
+    const existing = { marinePlanPolicyJobId: 'a-stale-hash' }
     expect(
       buildPolicyResetFields(licenceId, existing, [site])
-    ).not.toHaveProperty('policyResponses')
+    ).not.toHaveProperty('marinePlanPolicyResponses')
   })
 })

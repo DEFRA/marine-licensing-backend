@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { getPolicyContent } from './policy-wording-client.js'
+import { getPolicyContent } from './wording-client.js'
 
 let fetchMock
 
