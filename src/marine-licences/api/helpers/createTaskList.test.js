@@ -7,7 +7,8 @@ import {
 import {
   mockFileUploadSite,
   mockCircleSite,
-  mockMultipleSite
+  mockMultipleSite,
+  mockWaterFrameworkDirective
 } from '../../../../tests/test.fixture.js'
 import { createActivityDetails } from './create-empty-activity-details.js'
 
@@ -225,6 +226,44 @@ describe('createTaskList', () => {
     }
 
     expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+  })
+
+  it('should correctly set waterFrameworkDirective to INCOMPLETE when fields are missing', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: null
+        }
+      ],
+      waterFrameworkDirective: { nauticalMile: 'yes' }
+    }
+
+    expect(createTaskList(marineLicence).waterFrameworkDirective).toBe(
+      INCOMPLETE
+    )
+  })
+
+  it('should correctly set waterFrameworkDirective to COMPLETE when fields are not missing', () => {
+    const marineLicence = {
+      projectName: 'Test Project',
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      siteDetails: [
+        {
+          ...mockFileUploadSite,
+          activityDetails: null
+        }
+      ],
+      waterFrameworkDirective: mockWaterFrameworkDirective
+    }
+
+    expect(createTaskList(marineLicence).waterFrameworkDirective).toBe(
+      COMPLETED
+    )
   })
 
   describe('circle site (coordinatesType=coordinates, coordinatesEntry=single)', () => {
