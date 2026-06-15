@@ -49,14 +49,7 @@ export const parseRetryAfterSeconds = (headerValue) => {
 
 const nanosecondsPerMillisecond = 1_000_000
 
-/**
- * Fetches JSON from an upstream with the policy-calculation HTTP rules:
- * bounded by an AbortSignal timeout, identified by the configured User-Agent,
- * connection closed after the request, and the call duration logged at INFO
- * under a unique ECS event action on both success and failure. 429/503
- * responses with a Retry-After hint throw RetryAfterError so the worker can
- * extend the queue's redelivery timer.
- */
+// 429/503 responses with a Retry-After header throw RetryAfterError so the worker can extend the visibility timeout.
 export const timedJsonFetch = async ({
   url,
   options = {},

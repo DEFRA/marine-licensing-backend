@@ -3,8 +3,6 @@ import { collectionMarinePlanPolicyWording } from '../../../../shared/common/con
 import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import { timedJsonFetch } from './policy-http.js'
 
-// The content fields the front end renders. All are HTML strings on the
-// GOV.UK marine-plans-explorer policies API.
 const CONTENT_FIELDS = [
   'policy',
   'policyAim',
@@ -60,14 +58,6 @@ const refreshPolicyDataset = async (collection, logger) => {
   )
 }
 
-/**
- * Returns the full content for a marine plan policy code: the policy
- * statement, aim, and the what/why/how explanation fields. Content is cached
- * in the marine-plan-policy-wording collection (TTL index expires entries
- * after 24 hours — see the migration) so it survives restarts and is shared
- * across instances; the GOV.UK API is only called when the requested code is
- * not cached, and one call refreshes the entire dataset.
- */
 export const getPolicyContent = async ({ policyCode, db, logger }) => {
   const collection = db.collection(collectionMarinePlanPolicyWording)
 

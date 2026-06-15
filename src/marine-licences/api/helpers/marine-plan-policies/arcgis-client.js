@@ -16,11 +16,6 @@ const extractPolicy = (attributes = {}) => {
   }
 }
 
-/**
- * Queries the DEFRA ArcGIS FeatureServer for the marine plan policies
- * applicable to the licence's site geometries. One spatial-intersection query
- * per geometry; results are de-duplicated by policy code.
- */
 export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
   const { arcgisUrl, arcgisTimeoutMs } = config.get('marinePlanPolicies')
   const geometries = buildEmpGeometries(siteDetails)

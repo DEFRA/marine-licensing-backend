@@ -35,12 +35,6 @@ const extractSiteGeometry = (site) =>
     return geometry
   }, {})
 
-/**
- * Computes the dedupe key for a policy-calculation job: a SHA-256 of the
- * licence id plus the sorted site geometries. Sorting makes the hash
- * insensitive to site order; extracting geometry fields makes it insensitive
- * to non-spatial edits (site names, activity details).
- */
 export const computePolicyJobId = (licenceId, siteDetails = []) => {
   const sortedGeometries = siteDetails
     .map((site) => stableStringify(extractSiteGeometry(site)))

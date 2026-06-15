@@ -108,16 +108,7 @@ const handleJobFailure = async (job, error, message, retryAfterCapMs) => {
   // message deliberately not deleted — SQS redelivers after the visibility timeout
 }
 
-/**
- * Processes one policy-calculation job from the main queue.
- *
- * The message is deleted on success and when it is stale (the licence's
- * policyJobId no longer matches, i.e. sites were edited after it was queued).
- * On transient failure the message is left on the queue so SQS redelivers it
- * after the visibility timeout. The retry budget is owned by the queue's
- * redrive policy (maxReceiveCount: 5): once spent, the message dead-letters
- * and the DLQ worker marks the job failed so the user can trigger a fresh one.
- */
+// On transient failure the message is left on the queue; the DLQ worker marks it failed after maxReceiveCount is spent.
 export const processPolicyJob = async (server, message) => {
   const { db, logger } = server
   const { sqsQueueUrl, retryAfterCapMs } = config.get('marinePlanPolicies')
@@ -153,14 +144,7 @@ export const processPolicyJob = async (server, message) => {
   }
 }
 
-/**
- * Processes one message from the dead-letter queue. A message dead-letters
- * once the main queue's redrive budget (maxReceiveCount: 5) is spent, so the
- * job is marked failed — the front end then offers a Retry that queues a
- * fresh job. The update is guarded on policyJobId AND queuedAt: a retry after
- * failure reuses the same policyJobId (same geometry hash), so the timestamp
- * is what stops a lingering dead-lettered message failing the new run.
- */
+// queuedAt guards against a lingering dead-letter failing a retried job that reuses the same policyJobId (same geometry hash).
 export const processDlqJob = async (server, message) => {
   const { db, logger } = server
   const { sqsDlqUrl } = config.get('marinePlanPolicies')

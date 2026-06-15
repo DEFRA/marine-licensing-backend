@@ -17,7 +17,6 @@ export const MARINE_PLAN_POLICY_JOB_STATUS = {
   FAILED: 'failed'
 }
 
-// ECS event.action values for marine plan policy calculation logs
 export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   JOB_STALE: 'mp-policies:job-stale',
   JOB_FAILED: 'mp-policies:job-failed',

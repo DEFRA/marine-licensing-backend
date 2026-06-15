@@ -1,7 +1,5 @@
 import { requiredFromEnvInCdp } from '../shared/common/helpers/convict/required-from-env-in-cdp.js'
 
-// Convict schema fragment for the marine plan policy calculation workers,
-// spread into the main schema in src/config.js.
 export const marinePlanPoliciesSchema = {
   isEnabled: {
     doc: 'Enable the marine plan policy calculation workers',

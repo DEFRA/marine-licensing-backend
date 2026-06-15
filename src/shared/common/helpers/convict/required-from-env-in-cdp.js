@@ -1,5 +1,3 @@
-// Custom convict format that requires an env var override for vars that have non-prod default values set.
-// Applied to sensitive configs like API URLs, credentials, and service endpoints.
 export const requiredFromEnvInCdp = 'required-from-env-in-cdp'
 
 export const isCdpProductionLikeEnvironment = (env) =>
@@ -8,14 +6,7 @@ export const isCdpProductionLikeEnvironment = (env) =>
 export const isNotCdpProductionLikeEnvironment = (env) =>
   !isCdpProductionLikeEnvironment(env)
 
-/**
- * 'required-from-env-in-cdp' format: When you must have an env var override the default value.
- * This is used for sensitive vars that take local-config default values and the prod values MUST come from the
- * environment.
- *
- * This is concerned with cdpEnvironments: prod (which is production), and perf-test (which is the equivalent of
- * pre-production), and test.
- */
+// Rejects the configured default in prod/perf-test/test CDP environments, forcing the value to come from an env var.
 export const convictRequiredFromEnvInCdp = {
   name: requiredFromEnvInCdp,
   validate: function (val, schema) {

@@ -39,7 +39,7 @@ aws --endpoint-url=http://localhost:4566 s3api put-bucket-notification-configura
 # We can add this in here - as compose is only used for local dev.
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploader-download-requests
 
-# Marine plan policies queues (ML-1285). DLQ first so the main queue's redrive
+# DLQ first so the main queue's redrive
 # policy can reference it. A job gets maxReceiveCount (5) delivery attempts;
 # after that the message dead-letters and the DLQ worker marks the job failed
 # so the user can trigger a fresh calculation from the UI.
