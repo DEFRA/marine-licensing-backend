@@ -8,10 +8,7 @@ import {
 } from '../../../constants/marine-licence.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
 import { getPolicyContent } from './wording-client.js'
-import { deletePolicyJob, extendVisibility } from './sqs-client.js'
-import { RetryAfterError } from './policy-http.js'
-
-const millisecondsPerSecond = 1000
+import { deletePolicyJob } from './sqs-client.js'
 
 const parseMessageBody = (message, logger) => {
   try {
@@ -93,25 +90,18 @@ const computeAndStorePolicies = async (job, licence, db) => {
 // Status deliberately stays 'computing' between attempts so the front end
 // keeps showing the calculating view; 'failed' is terminal and only set when
 // the message dead-letters after the queue's retry budget is spent.
-const handleJobFailure = async (job, error, message, retryAfterCapMs) => {
+// Message deliberately not deleted — SQS redelivers after the visibility timeout.
+const handleJobFailure = (job, error) => {
   job.logger.error(
     structureErrorForECS(error),
     `Policy calculation failed for licence ${job.licenceId}; the queue will retry`
   )
-  if (error instanceof RetryAfterError && error.retryAfterSeconds) {
-    const cappedSeconds = Math.min(
-      error.retryAfterSeconds,
-      Math.round(retryAfterCapMs / millisecondsPerSecond)
-    )
-    await extendVisibility(message.ReceiptHandle, cappedSeconds)
-  }
-  // message deliberately not deleted — SQS redelivers after the visibility timeout
 }
 
 // On transient failure the message is left on the queue; the DLQ worker marks it failed after maxReceiveCount is spent.
 export const processPolicyJob = async (server, message) => {
   const { db, logger } = server
-  const { sqsQueueUrl, retryAfterCapMs } = config.get('marinePlanPolicies')
+  const { sqsQueueUrl } = config.get('marinePlanPolicies')
 
   const body = parseMessageBody(message, logger)
   if (!body) {
@@ -140,7 +130,7 @@ export const processPolicyJob = async (server, message) => {
     await computeAndStorePolicies(job, licence, db)
     await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
   } catch (error) {
-    await handleJobFailure(job, error, message, retryAfterCapMs)
+    handleJobFailure(job, error)
   }
 }
 

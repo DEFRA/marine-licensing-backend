@@ -1,5 +1,4 @@
 import { Agent, ProxyAgent, fetch } from 'undici'
-import { StatusCodes } from 'http-status-codes'
 import { config } from '../../../../config.js'
 
 // pipelining: 0 makes undici close the socket after each request instead of
@@ -23,33 +22,8 @@ export const resetPoliciesDispatcher = () => {
   dispatcherInstance = null
 }
 
-export class RetryAfterError extends Error {
-  constructor(message, { retryAfterSeconds, statusCode }) {
-    super(message)
-    this.name = 'RetryAfterError'
-    this.retryAfterSeconds = retryAfterSeconds
-    this.statusCode = statusCode
-  }
-}
-
-export const parseRetryAfterSeconds = (headerValue) => {
-  if (!headerValue) {
-    return null
-  }
-  const seconds = Number(headerValue)
-  if (Number.isFinite(seconds)) {
-    return Math.max(0, Math.round(seconds))
-  }
-  const retryAt = Date.parse(headerValue)
-  if (!Number.isNaN(retryAt)) {
-    return Math.max(0, Math.round((retryAt - Date.now()) / 1000))
-  }
-  return null
-}
-
 const nanosecondsPerMillisecond = 1_000_000
 
-// 429/503 responses with a Retry-After header throw RetryAfterError so the worker can extend the visibility timeout.
 export const timedJsonFetch = async ({
   url,
   options = {},
@@ -73,19 +47,6 @@ export const timedJsonFetch = async ({
         ...options.headers
       }
     })
-
-    if (
-      response.status === StatusCodes.TOO_MANY_REQUESTS ||
-      response.status === StatusCodes.SERVICE_UNAVAILABLE
-    ) {
-      const retryAfterSeconds = parseRetryAfterSeconds(
-        response.headers.get('retry-after')
-      )
-      throw new RetryAfterError(
-        `${upstreamName} responded with status ${response.status}`,
-        { retryAfterSeconds, statusCode: response.status }
-      )
-    }
 
     if (!response.ok) {
       const error = new Error(

@@ -3,15 +3,13 @@ import {
   SQSClient,
   SendMessageCommand,
   ReceiveMessageCommand,
-  DeleteMessageCommand,
-  ChangeMessageVisibilityCommand
+  DeleteMessageCommand
 } from '@aws-sdk/client-sqs'
 import {
   sendPolicyJob,
   receivePolicyJobs,
   receiveDlqJobs,
   deletePolicyJob,
-  extendVisibility,
   resetSqsClient
 } from './sqs-client.js'
 
@@ -87,18 +85,6 @@ describe('policies-sqs-client', () => {
     expect(command.input).toEqual({
       QueueUrl: queueUrl,
       ReceiptHandle: 'receipt-1'
-    })
-  })
-
-  it('should extend message visibility on the main queue', async () => {
-    await extendVisibility('receipt-1', 300)
-
-    const command = mockSend.mock.calls[0][0]
-    expect(command).toBeInstanceOf(ChangeMessageVisibilityCommand)
-    expect(command.input).toEqual({
-      QueueUrl: queueUrl,
-      ReceiptHandle: 'receipt-1',
-      VisibilityTimeout: 300
     })
   })
 })

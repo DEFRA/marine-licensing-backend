@@ -3,8 +3,7 @@ import { ObjectId } from 'mongodb'
 import { processPolicyJob, processDlqJob } from './worker-processor.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
 import { getPolicyContent } from './wording-client.js'
-import { deletePolicyJob, extendVisibility } from './sqs-client.js'
-import { RetryAfterError } from './policy-http.js'
+import { deletePolicyJob } from './sqs-client.js'
 
 vi.mock('./arcgis-client.js', () => ({
   queryArcGISPolicies: vi.fn()
@@ -13,8 +12,7 @@ vi.mock('./wording-client.js', () => ({
   getPolicyContent: vi.fn()
 }))
 vi.mock('./sqs-client.js', () => ({
-  deletePolicyJob: vi.fn(),
-  extendVisibility: vi.fn()
+  deletePolicyJob: vi.fn()
 }))
 
 const queueUrl =
@@ -174,34 +172,7 @@ describe('policies-worker-processor', () => {
         { $set: { marinePlanPolicyJob: 'computing' } }
       )
       expect(deletePolicyJob).not.toHaveBeenCalled()
-      expect(extendVisibility).not.toHaveBeenCalled()
       expect(server.logger.error).toHaveBeenCalled()
-    })
-
-    it('should honour Retry-After by extending the message visibility', async () => {
-      const { server } = setupMocks(buildLicence())
-      vi.mocked(queryArcGISPolicies).mockRejectedValue(
-        new RetryAfterError('429', { retryAfterSeconds: 30, statusCode: 429 })
-      )
-
-      await processPolicyJob(server, buildMessage())
-
-      expect(extendVisibility).toHaveBeenCalledWith(receiptHandle, 30)
-      expect(deletePolicyJob).not.toHaveBeenCalled()
-    })
-
-    it('should cap the honoured Retry-After at ten minutes', async () => {
-      const { server } = setupMocks(buildLicence())
-      vi.mocked(queryArcGISPolicies).mockRejectedValue(
-        new RetryAfterError('429', {
-          retryAfterSeconds: 86_400,
-          statusCode: 429
-        })
-      )
-
-      await processPolicyJob(server, buildMessage())
-
-      expect(extendVisibility).toHaveBeenCalledWith(receiptHandle, 600)
     })
   })
 

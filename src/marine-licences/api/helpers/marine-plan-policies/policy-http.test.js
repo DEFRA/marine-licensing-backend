@@ -1,8 +1,6 @@
 import { vi } from 'vitest'
 import {
   timedJsonFetch,
-  parseRetryAfterSeconds,
-  RetryAfterError,
   getPoliciesDispatcher,
   resetPoliciesDispatcher
 } from './policy-http.js'
@@ -11,32 +9,6 @@ let fetchMock
 
 beforeEach(() => {
   fetchMock = globalThis.fetchMock
-})
-
-describe('parseRetryAfterSeconds', () => {
-  it('should return null when the header is missing', () => {
-    expect(parseRetryAfterSeconds(null)).toBeNull()
-    expect(parseRetryAfterSeconds('')).toBeNull()
-  })
-
-  it('should parse a delay in seconds', () => {
-    expect(parseRetryAfterSeconds('30')).toBe(30)
-  })
-
-  it('should clamp negative delays to zero', () => {
-    expect(parseRetryAfterSeconds('-5')).toBe(0)
-  })
-
-  it('should parse an HTTP-date relative to now', () => {
-    const inThirtySeconds = new Date(Date.now() + 30_000).toUTCString()
-    const seconds = parseRetryAfterSeconds(inThirtySeconds)
-    expect(seconds).toBeGreaterThanOrEqual(28)
-    expect(seconds).toBeLessThanOrEqual(31)
-  })
-
-  it('should return null for garbage values', () => {
-    expect(parseRetryAfterSeconds('not-a-date')).toBeNull()
-  })
 })
 
 describe('getPoliciesDispatcher', () => {
@@ -90,31 +62,7 @@ describe('timedJsonFetch', () => {
     expect(options.signal).toBeInstanceOf(AbortSignal)
   })
 
-  it('should throw RetryAfterError on 429 with a Retry-After header', async () => {
-    const logger = setupLogger()
-    fetchMock.mockResponseOnce('', {
-      status: 429,
-      headers: { 'retry-after': '30' }
-    })
-
-    const error = await timedJsonFetch(callOptions(logger)).catch((e) => e)
-
-    expect(error).toBeInstanceOf(RetryAfterError)
-    expect(error.retryAfterSeconds).toBe(30)
-    expect(error.statusCode).toBe(429)
-  })
-
-  it('should throw RetryAfterError on 503', async () => {
-    const logger = setupLogger()
-    fetchMock.mockResponseOnce('', { status: 503 })
-
-    const error = await timedJsonFetch(callOptions(logger)).catch((e) => e)
-
-    expect(error).toBeInstanceOf(RetryAfterError)
-    expect(error.retryAfterSeconds).toBeNull()
-  })
-
-  it('should throw and log failure duration on other error statuses', async () => {
+  it('should throw and log failure duration on error statuses', async () => {
     const logger = setupLogger()
     fetchMock.mockResponseOnce('', { status: 500 })
 

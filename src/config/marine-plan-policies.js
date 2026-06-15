@@ -58,11 +58,5 @@ export const marinePlanPoliciesSchema = {
     format: String,
     default: 'marine-licensing-backend/1.0',
     env: 'MARINE_PLAN_POLICIES_USER_AGENT'
-  },
-  retryAfterCapMs: {
-    doc: 'Maximum wait honoured from an upstream Retry-After header',
-    format: Number,
-    default: 600_000,
-    env: 'MARINE_PLAN_POLICIES_RETRY_AFTER_CAP_MS'
   }
 }

@@ -2,8 +2,7 @@ import {
   SQSClient,
   SendMessageCommand,
   ReceiveMessageCommand,
-  DeleteMessageCommand,
-  ChangeMessageVisibilityCommand
+  DeleteMessageCommand
 } from '@aws-sdk/client-sqs'
 import { config } from '../../../../config.js'
 
@@ -59,14 +58,5 @@ export const deletePolicyJob = async (queueUrl, receiptHandle) =>
     new DeleteMessageCommand({
       QueueUrl: queueUrl,
       ReceiptHandle: receiptHandle
-    })
-  )
-
-export const extendVisibility = async (receiptHandle, seconds) =>
-  getSqsClient().send(
-    new ChangeMessageVisibilityCommand({
-      QueueUrl: config.get('marinePlanPolicies').sqsQueueUrl,
-      ReceiptHandle: receiptHandle,
-      VisibilityTimeout: seconds
     })
   )
