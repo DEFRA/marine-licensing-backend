@@ -6,29 +6,26 @@ import { createLogger } from '../../../shared/common/helpers/logging/logger.js'
 const logger = createLogger()
 const logSystem = 'WaterFrameworkDirective:Update Controller'
 
-const ALLOWED_CONTENT_TYPES = [
+const ALLOWED_CONTENT_TYPES = new Set([
   'application/vnd.oasis.opendocument.text',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-]
+])
 
 export const validateWfdUpload = async (waterFrameworkDirective) => {
-  const { s3Location } = waterFrameworkDirective
+  const { s3Bucket, s3Key } = waterFrameworkDirective.s3Location
 
   // Validate S3 bucket against config
   const allowedBucket = config.get('cdp.uploadBucket')
-  if (s3Location.s3Bucket !== allowedBucket) {
+  if (s3Bucket !== allowedBucket) {
     logger.warn(`${logSystem}: S3 bucket validation failed`)
 
     throw Boom.forbidden('Invalid S3 bucket')
   }
 
-  // Validate file size
-  const { s3Bucket, s3Key } = s3Location
-
   const metadata = await blobService.validateFileSize(s3Bucket, s3Key)
 
   // Validate file type
-  if (!ALLOWED_CONTENT_TYPES.includes(metadata.contentType)) {
+  if (!ALLOWED_CONTENT_TYPES.has(metadata.contentType)) {
     logger.warn(`${logSystem}: File type validation failed`)
 
     throw Boom.unsupportedMediaType('File must be an ODT or DOCX document')
