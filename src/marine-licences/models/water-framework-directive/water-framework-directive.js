@@ -5,10 +5,16 @@ import { fileUploadValidationSchema } from './file-upload.js'
 const waterFrameworkDirectiveDetails = {
   assessmentChanged: joi.when('nauticalMile', {
     is: 'yes',
-    then: joi.string().valid('yes', 'no').required().messages({
-      'string.empty': 'ASSESSMENT_CHANGED_REQUIRED',
-      'any.only': 'ASSESSMENT_CHANGED_REQUIRED',
-      'any.required': 'ASSESSMENT_CHANGED_REQUIRED'
+    then: joi.when('previousAssessment', {
+      is: 'no',
+      then: joi.string().valid('yes', 'no').allow(null).messages({
+        'any.only': 'ASSESSMENT_CHANGED_REQUIRED'
+      }),
+      otherwise: joi.string().valid('yes', 'no').required().messages({
+        'string.empty': 'ASSESSMENT_CHANGED_REQUIRED',
+        'any.only': 'ASSESSMENT_CHANGED_REQUIRED',
+        'any.required': 'ASSESSMENT_CHANGED_REQUIRED'
+      })
     }),
     otherwise: joi.forbidden().messages({
       'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'

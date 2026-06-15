@@ -176,6 +176,32 @@ describe('waterFrameworkDirective', () => {
       expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
     })
 
+    test('should pass if assessmentChanged is null when previousAssessment is no', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          previousAssessment: 'no',
+          assessmentChanged: null
+        }
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should fail if assessmentChanged is null when previousAssessment is yes', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          previousAssessment: 'yes',
+          assessmentChanged: null
+        }
+      })
+      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
+    })
+
     test('should fail if empty for file upload or s3 data', () => {
       const { error: fileError } = waterFrameworkDirectiveSchema.validate({
         id: validId,
