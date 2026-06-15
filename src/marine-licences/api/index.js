@@ -5,6 +5,7 @@ import { deleteMarineLicenceController } from './controllers/delete-marine-licen
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
+import { updatePreferredDatesController } from './controllers/update-preferred-dates.js'
 import { updatePublicConsultationController } from './controllers/update-public-consultation.js'
 import { updateOtherAuthoritiesController } from './controllers/update-other-authorities.js'
 import { updateProjectBackgroundController } from './controllers/update-project-background.js'
@@ -12,6 +13,8 @@ import { updateSiteDetailsController } from './controllers/update-site-details.j
 import { addActivityDetailsController } from './controllers/add-activity-details.js'
 import { deleteActivityDetailsController } from './controllers/delete-activity-details.js'
 import { updateSiteController } from './controllers/update-site.js'
+import { generateCoordinatesCsvController } from './controllers/generate-coordinates-csv.js'
+import { updateWaterFrameworkDirectiveController } from './controllers/update-water-framework-directive.js'
 
 export const marineLicences = [
   {
@@ -86,7 +89,22 @@ export const marineLicences = [
   },
   {
     method: 'PATCH',
+    path: '/marine-licence/preferred-dates',
+    ...updatePreferredDatesController
+  },
+  {
+    method: 'PATCH',
     path: '/marine-licence/public-consultation',
     ...updatePublicConsultationController
+  },
+  {
+    method: 'GET',
+    path: '/marine-licence/{id}/generate-coordinates-csv',
+    ...generateCoordinatesCsvController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/water-framework-directive',
+    ...updateWaterFrameworkDirectiveController
   }
 ]

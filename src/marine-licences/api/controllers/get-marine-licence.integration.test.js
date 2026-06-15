@@ -40,19 +40,22 @@ describe('Get marine licence - integration tests', async () => {
     })
     expect(statusCode).toBe(200)
 
-    const { _id, ...rest } = marineLicence
+    const { _id, preferredDates, ...rest } = marineLicence
     expect(body).toEqual({
       ...rest,
       id: _id.toString(),
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
+      preferredDates,
       taskList: {
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
+        preferredDates: 'COMPLETED',
         projectBackground: 'INCOMPLETE',
         publicConsultation: 'INCOMPLETE',
         publicRegister: 'COMPLETED',
-        siteDetails: 'INCOMPLETE'
+        siteDetails: 'INCOMPLETE',
+        waterFrameworkDirective: 'INCOMPLETE'
       }
     })
 
@@ -80,20 +83,23 @@ describe('Get marine licence - integration tests', async () => {
     })
     expect(statusCode).toBe(200)
 
-    const { _id, ...rest } = marineLicence
+    const { _id, preferredDates, ...rest } = marineLicence
     expect(body).toEqual({
       ...rest,
       id: _id.toString(),
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
+      preferredDates,
       whoMarineLicenceIsFor: 'Dave Barnett',
       taskList: {
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
+        preferredDates: 'COMPLETED',
         projectBackground: 'INCOMPLETE',
         siteDetails: 'INCOMPLETE',
         publicRegister: 'COMPLETED',
-        publicConsultation: 'INCOMPLETE'
+        publicConsultation: 'INCOMPLETE',
+        waterFrameworkDirective: 'INCOMPLETE'
       }
     })
   })

@@ -1,7 +1,11 @@
 import { getMarineLicenceController } from './get-marine-licence.js'
 import { vi } from 'vitest'
-import { requestFromApplicantUser } from '../../../../.vite/mocks.js'
+import {
+  requestFromApplicantUser,
+  requestFromInternalUser
+} from '../../../../.vite/mocks.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import { preferredDates } from '../../models/test-fixtures.js'
 
 describe('GET /marine-licence', () => {
   const authenticatedController = getMarineLicenceController({
@@ -89,6 +93,7 @@ describe('GET /marine-licence', () => {
           consent: 'yes',
           reason: 'Test public register reason'
         },
+        preferredDates,
         publicConsultation: {
           consulted: 'yes',
           details: 'Public consultation details'
@@ -117,6 +122,7 @@ describe('GET /marine-licence', () => {
               consent: 'yes',
               reason: 'Test public register reason'
             },
+            preferredDates,
             publicConsultation: {
               consulted: 'yes',
               details: 'Public consultation details'
@@ -124,15 +130,36 @@ describe('GET /marine-licence', () => {
             otherAuthorities: 'Test authority',
             projectBackground: 'Test project background',
             taskList: {
+              preferredDates: 'COMPLETED',
               projectName: 'COMPLETED',
               otherAuthorities: 'COMPLETED',
               projectBackground: 'COMPLETED',
               publicRegister: 'COMPLETED',
               publicConsultation: 'COMPLETED',
-              siteDetails: 'INCOMPLETE'
+              siteDetails: 'INCOMPLETE',
+              waterFrameworkDirective: 'INCOMPLETE'
             }
           }
         })
+      )
+    })
+
+    it('should allow an internal (Entra ID) user to access any marine licence', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: 'someone-elses-id'
+      })
+
+      await authenticatedController.handler(
+        requestFromInternalUser({ params: { id: mockId } }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'success' })
       )
     })
 

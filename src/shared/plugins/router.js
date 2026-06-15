@@ -3,7 +3,8 @@ import { exemptions } from '../../exemptions/api/index.js'
 import { projects } from '../api/projects/index.js'
 import { geoParser } from '../api/geo-parser/index.js'
 import { marineLicences } from '../../marine-licences/api/index.js'
-import { iatAnswers } from '../../iat-answers/api/index.js'
+import { iatContexts } from '../../iat-contexts/api/index.js'
+import { iatOutcomeDocuments } from '../../iat-outcome-documents/api/index.js'
 
 const router = {
   plugin: {
@@ -15,7 +16,8 @@ const router = {
           .concat(projects)
           .concat(geoParser)
           .concat(marineLicences)
-          .concat(iatAnswers)
+          .concat(iatContexts)
+          .concat(iatOutcomeDocuments)
       )
     }
   }

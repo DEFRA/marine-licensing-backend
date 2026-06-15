@@ -11,6 +11,8 @@ import {
 } from '../../../../tests/test.fixture.js'
 import { createActivityDetails } from './create-empty-activity-details.js'
 
+const mockWaterFrameworkDirectiveWithNoNauticalMile = { nauticalMile: 'no' }
+
 const completedActivityDetails = [
   {
     activityType: 'Construction',
@@ -36,12 +38,17 @@ describe('createTaskList', () => {
       siteDetails: [mockCompleteSite],
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       projectBackground: 'Some background',
       publicRegister: 'Public Register Info',
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
-      }
+      },
+      waterFrameworkDirective: mockWaterFrameworkDirectiveWithNoNauticalMile
     }
 
     expect(createTaskList(marineLicence)).toEqual({
@@ -49,9 +56,11 @@ describe('createTaskList', () => {
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED,
-      publicRegister: COMPLETED
+      publicRegister: COMPLETED,
+      waterFrameworkDirective: COMPLETED
     })
   })
 
@@ -62,11 +71,16 @@ describe('createTaskList', () => {
       otherAuthorities: 'Some authorities',
       projectBackground: 'Some background',
       siteDetails: [mockFileUploadSite],
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       publicRegister: 'Public Register Info',
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
-      }
+      },
+      waterFrameworkDirective: mockWaterFrameworkDirectiveWithNoNauticalMile
     }
 
     expect(createTaskList(marineLicence, true)).toEqual({
@@ -74,8 +88,10 @@ describe('createTaskList', () => {
       publicRegister: COMPLETED,
       siteDetails: IN_PROGRESS,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
-      publicConsultation: COMPLETED
+      publicConsultation: COMPLETED,
+      waterFrameworkDirective: COMPLETED
     })
   })
 
@@ -88,7 +104,12 @@ describe('createTaskList', () => {
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
       siteDetails: [siteWithoutSiteName],
-      projectBackground: 'Test project background'
+      projectBackground: 'Test project background',
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
+      waterFrameworkDirective: mockWaterFrameworkDirectiveWithNoNauticalMile
     }
 
     expect(createTaskList(marineLicence)).toEqual({
@@ -96,9 +117,11 @@ describe('createTaskList', () => {
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicConsultation: INCOMPLETE,
-      publicRegister: INCOMPLETE
+      publicRegister: INCOMPLETE,
+      waterFrameworkDirective: COMPLETED
     })
   })
 
@@ -342,10 +365,12 @@ describe('createTaskList', () => {
       projectName: INCOMPLETE,
       specialLegalPowers: INCOMPLETE,
       otherAuthorities: INCOMPLETE,
+      preferredDates: INCOMPLETE,
       projectBackground: INCOMPLETE,
       publicRegister: INCOMPLETE,
       publicConsultation: INCOMPLETE,
-      siteDetails: INCOMPLETE
+      siteDetails: INCOMPLETE,
+      waterFrameworkDirective: INCOMPLETE
     })
   })
 
@@ -355,12 +380,17 @@ describe('createTaskList', () => {
       specialLegalPowers: 'some powers',
       publicRegister: 'Public Register Info',
       otherAuthorities: 'Some authorities',
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
       projectBackground: 'Some background',
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
       },
-      siteDetails: [mockFileUploadSite]
+      siteDetails: [mockFileUploadSite],
+      waterFrameworkDirective: mockWaterFrameworkDirectiveWithNoNauticalMile
     }
 
     const result = createTaskList(marineLicence)
@@ -369,10 +399,12 @@ describe('createTaskList', () => {
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
+      preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicRegister: COMPLETED,
       publicConsultation: COMPLETED,
-      siteDetails: IN_PROGRESS
+      siteDetails: IN_PROGRESS,
+      waterFrameworkDirective: COMPLETED
     })
   })
 })

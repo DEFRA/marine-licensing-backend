@@ -104,6 +104,31 @@ export const mockMultipleSite = {
   ]
 }
 
+export const mockWaterFrameworkDirective = {
+  nauticalMile: 'yes',
+  assessmentChanged: 'no',
+  excludedActivities: 'no',
+  previousAssessment: 'no'
+}
+
+const completedActivityDetails = [
+  {
+    activityType: 'Construction',
+    activitySubType: 'construction-type-1',
+    activities: { selections: ['CON1'] },
+    activityDescription: 'Building a pier',
+    activityDuration: '6 months',
+    activityMonths: { months: 'yes', details: 'Jan, Feb' },
+    completionDate: { date: 'yes', reason: 'test' },
+    workingHours: '08:00-17:00'
+  }
+]
+
+export const mockCompleteSite = {
+  ...mockFileUploadSite,
+  activityDetails: completedActivityDetails
+}
+
 export const createCompleteMarineLicence = (overrides = {}) => {
   const marineLicenceId = overrides._id || new ObjectId()
   const contactId =
@@ -126,6 +151,10 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       consent: 'no',
       reason: 'Test public register details'
     },
+    preferredDates: {
+      start: { month: '01', year: '2027' },
+      end: { month: '12', year: '2027' }
+    },
     publicConsultation: {
       consulted: 'yes',
       details: 'Public consultation details'
@@ -133,7 +162,8 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     status: MARINE_LICENCE_STATUS.DRAFT,
     createdAt: new Date('2026-12-01'),
     updatedAt: new Date('2026-12-01'),
-    siteDetails: [mockFileUploadSite],
+    siteDetails: [mockCompleteSite],
+    waterFrameworkDirective: mockWaterFrameworkDirective,
     ...overrides
   }
 }
