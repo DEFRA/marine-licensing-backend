@@ -2,7 +2,7 @@ import joi from 'joi'
 import {
   s3LocationFieldSchema,
   uploadedFileFieldSchema
-} from '../../../shared/models/site-details/file-upload'
+} from '../../../shared/models/site-details/file-upload.js'
 
 export const fileUploadValidationSchema = {
   uploadedFile: joi.when('nauticalMile', {
