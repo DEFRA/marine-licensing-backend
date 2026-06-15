@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb'
 import { updateSiteDetailsController } from './update-site-details.js'
 import Boom from '@hapi/boom'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
-import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job-hash.js'
+import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job.js'
 
 describe('PATCH /marine-licences/site-details', () => {
   const payloadValidator = updateSiteDetailsController.options.validate.payload

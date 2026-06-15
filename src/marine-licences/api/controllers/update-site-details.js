@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { tenMegaBytes } from '../../../shared/constants/site-details.js'
-import { buildPolicyResetFields } from '../helpers/marine-plan-policies/policy-reset.js'
+import { buildPolicyResetFields } from '../helpers/marine-plan-policies/policy-job.js'
 
 export const updateSiteDetailsController = {
   options: {

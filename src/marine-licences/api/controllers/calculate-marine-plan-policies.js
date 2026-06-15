@@ -6,7 +6,7 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
-import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job-hash.js'
+import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job.js'
 import { sendPolicyJob } from '../helpers/marine-plan-policies/sqs-client.js'
 
 const IN_FLIGHT_OR_READY = new Set([

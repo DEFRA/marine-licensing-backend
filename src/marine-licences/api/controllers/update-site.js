@@ -4,7 +4,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { buildPolicyResetFields } from '../helpers/marine-plan-policies/policy-reset.js'
+import { buildPolicyResetFields } from '../helpers/marine-plan-policies/policy-job.js'
 
 export const updateSiteController = {
   options: {

@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { calculateMarinePlanPoliciesController } from './calculate-marine-plan-policies.js'
-import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job-hash.js'
+import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job.js'
 import { sendPolicyJob } from '../helpers/marine-plan-policies/sqs-client.js'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 
