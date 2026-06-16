@@ -4,7 +4,7 @@ import { blobService } from '../../../shared/services/data-service/blob-service.
 import { createLogger } from '../../../shared/common/helpers/logging/logger.js'
 
 const logger = createLogger()
-const logSystem = 'WaterFrameworkDirective:Update Controller'
+const logSystem = 'WaterFrameworkDirective:Upload Validation'
 
 const ALLOWED_CONTENT_TYPES = new Set([
   'application/vnd.oasis.opendocument.text',
