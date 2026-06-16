@@ -154,14 +154,22 @@ const getSiteDetailsStatus = (siteDetails) => {
 
 const checkWaterFrameworkDirective = (wfd) => {
   const requiredValues = [
-    'assessmentChanged',
+    'nauticalMile',
     'previousAssessment',
     'excludedActivities',
     'uploadedFile',
     's3Location'
   ]
 
-  const siteStatus = getStatusFromRequiredFields(wfd, requiredValues)
+  if (wfd.previousAssessment === 'yes') {
+    requiredValues.push('assessmentChanged')
+  }
+
+  const parsedWfd = Object.fromEntries(
+    Object.entries(wfd).filter(([_, value]) => value != null)
+  )
+
+  const siteStatus = getStatusFromRequiredFields(parsedWfd, requiredValues)
 
   if ([siteStatus].every((s) => s === COMPLETED)) {
     return COMPLETED
