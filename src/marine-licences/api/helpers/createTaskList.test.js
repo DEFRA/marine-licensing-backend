@@ -266,6 +266,20 @@ describe('createTaskList', () => {
     )
   })
 
+  it('should set waterFrameworkDirective to COMPLETED when nauticalMile is yes and excludedActivities is yes', () => {
+    const marineLicence = {
+      siteDetails: [{ ...mockFileUploadSite, activityDetails: null }],
+      waterFrameworkDirective: {
+        nauticalMile: 'yes',
+        excludedActivities: 'yes'
+      }
+    }
+
+    expect(createTaskList(marineLicence).waterFrameworkDirective).toBe(
+      COMPLETED
+    )
+  })
+
   it('should set waterFrameworkDirective to INCOMPLETE when previousAssessment is yes and assessmentChanged is missing', () => {
     const marineLicence = {
       siteDetails: [{ ...mockFileUploadSite, activityDetails: null }],

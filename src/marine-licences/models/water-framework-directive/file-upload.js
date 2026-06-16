@@ -7,14 +7,26 @@ import {
 export const fileUploadValidationSchema = {
   uploadedFile: joi.when('nauticalMile', {
     is: 'yes',
-    then: uploadedFileFieldSchema,
+    then: joi.when('excludedActivities', {
+      is: 'yes',
+      then: joi.forbidden().messages({
+        'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
+      }),
+      otherwise: uploadedFileFieldSchema
+    }),
     otherwise: joi.forbidden().messages({
       'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
     })
   }),
   s3Location: joi.when('nauticalMile', {
     is: 'yes',
-    then: s3LocationFieldSchema,
+    then: joi.when('excludedActivities', {
+      is: 'yes',
+      then: joi.forbidden().messages({
+        'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
+      }),
+      otherwise: s3LocationFieldSchema
+    }),
     otherwise: joi.forbidden().messages({
       'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
     })

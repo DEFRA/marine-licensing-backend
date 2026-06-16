@@ -6,6 +6,18 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { validateWfdUpload } from '../helpers/validateWfdUpload.js'
 
+const hasUpload = (waterFrameworkDirective) => {
+  if (waterFrameworkDirective.nauticalMile !== 'yes') {
+    return false
+  }
+
+  if (waterFrameworkDirective.excludedActivities === 'yes') {
+    return false
+  }
+
+  return true
+}
+
 export const updateWaterFrameworkDirectiveController = {
   options: {
     payload: {
@@ -24,7 +36,7 @@ export const updateWaterFrameworkDirectiveController = {
 
       const { waterFrameworkDirective, id, updatedAt, updatedBy } = payload
 
-      if (waterFrameworkDirective.nauticalMile !== 'no') {
+      if (hasUpload(waterFrameworkDirective)) {
         await validateWfdUpload(waterFrameworkDirective)
       }
 

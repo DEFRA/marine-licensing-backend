@@ -110,7 +110,7 @@ describe('waterFrameworkDirective', () => {
         waterFrameworkDirective: {
           nauticalMile: 'yes',
           assessmentChanged: 'yes',
-          excludedActivities: 'yes'
+          excludedActivities: 'no'
         }
       })
       expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
@@ -122,7 +122,7 @@ describe('waterFrameworkDirective', () => {
         waterFrameworkDirective: {
           nauticalMile: 'yes',
           assessmentChanged: 'yes',
-          excludedActivities: 'yes',
+          excludedActivities: 'no',
           previousAssessment: 'maybe'
         }
       })
@@ -145,7 +145,7 @@ describe('waterFrameworkDirective', () => {
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'yes',
-          excludedActivities: 'yes',
+          excludedActivities: 'no',
           previousAssessment: 'yes'
         }
       })
@@ -246,6 +246,31 @@ describe('waterFrameworkDirective', () => {
         }
       })
       expect(error.message).toContain('S3_BUCKET_REQUIRED')
+    })
+  })
+
+  describe('nauticalMile yes and excludedActivities yes', () => {
+    test('should pass with only nauticalMile yes and excludedActivities yes', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'yes'
+        }
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should fail if another value is provided', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'yes',
+          previousAssessment: 'yes'
+        }
+      })
+      expect(error.message).toContain('WATER_FRAMEWORK_DIRECTIVE_INVALID')
     })
   })
 

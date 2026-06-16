@@ -82,6 +82,44 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
     })
   })
 
+  test('successfully updates water framework directive with nauticalMile yes and excludedActivities yes', async () => {
+    const marineLicence = createCompleteMarineLicence({
+      _id: marineLicenceId,
+      contactId,
+      waterFrameworkDirective: { nauticalMile: 'no' }
+    })
+    await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .insertOne(marineLicence)
+
+    const payload = {
+      id: marineLicenceId.toString(),
+      waterFrameworkDirective: {
+        nauticalMile: 'yes',
+        excludedActivities: 'yes'
+      }
+    }
+
+    const { statusCode, body } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/water-framework-directive',
+      contactId,
+      payload
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body).toEqual({ message: 'success' })
+
+    const updatedLicence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(updatedLicence.waterFrameworkDirective).toEqual({
+      nauticalMile: 'yes',
+      excludedActivities: 'yes'
+    })
+  })
+
   test('returns 404 when marine licence does not exist', async () => {
     const nonExistentId = new ObjectId()
 

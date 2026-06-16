@@ -37,4 +37,27 @@ describe('PATCH /marine-licence/water-framework-directive', () => {
       mockPayload.waterFrameworkDirective
     )
   })
+
+  it('should not call validateWfdUpload when excludedActivities is yes', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      waterFrameworkDirective: {
+        nauticalMile: 'yes',
+        excludedActivities: 'yes'
+      },
+      ...mockAuditPayload
+    }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+      updateOne: vi.fn().mockResolvedValueOnce({})
+    }))
+
+    await updateWaterFrameworkDirectiveController.handler(
+      { db: mockMongo, payload: mockPayload },
+      mockHandler
+    )
+
+    expect(validateWfdUpload).not.toHaveBeenCalled()
+  })
 })

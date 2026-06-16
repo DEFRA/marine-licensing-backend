@@ -187,6 +187,10 @@ const getWaterFrameworkDirectiveStatus = (wfd) => {
     return COMPLETED
   }
 
+  if (wfd.excludedActivities === 'yes') {
+    return COMPLETED
+  }
+
   return checkWaterFrameworkDirective(wfd)
 }
 
