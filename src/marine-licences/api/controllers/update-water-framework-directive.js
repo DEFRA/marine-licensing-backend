@@ -4,6 +4,19 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { validateWfdUpload } from '../helpers/validateWfdUpload.js'
+
+const hasUpload = (waterFrameworkDirective) => {
+  if (waterFrameworkDirective.nauticalMile !== 'yes') {
+    return false
+  }
+
+  if (waterFrameworkDirective.excludedActivities === 'yes') {
+    return false
+  }
+
+  return true
+}
 
 export const updateWaterFrameworkDirectiveController = {
   options: {
@@ -20,7 +33,13 @@ export const updateWaterFrameworkDirectiveController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
+
       const { waterFrameworkDirective, id, updatedAt, updatedBy } = payload
+
+      if (hasUpload(waterFrameworkDirective)) {
+        await validateWfdUpload(waterFrameworkDirective)
+      }
+
       await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {

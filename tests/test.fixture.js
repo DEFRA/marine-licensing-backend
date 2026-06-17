@@ -108,7 +108,16 @@ export const mockWaterFrameworkDirective = {
   nauticalMile: 'yes',
   assessmentChanged: 'no',
   excludedActivities: 'no',
-  previousAssessment: 'no'
+  previousAssessment: 'no',
+  uploadedFile: {
+    filename: 'Suffolk MMO shapefiles.zip'
+  },
+  s3Location: {
+    s3Bucket: 'mmo-uploads',
+    s3Key:
+      'exemptions/697ff02d-e5e7-4e42-ba47-c36fc116af47/45265950-72fb-4bb7-ab1c-2fb722ab15ec',
+    checksumSha256: 'V3nR8yISvb6pfVp1g1eUdFo5Cer80JpGlqkGAJb/O8k='
+  }
 }
 
 const completedActivityDetails = [
