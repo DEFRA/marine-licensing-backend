@@ -72,9 +72,7 @@ describe('waterFrameworkDirective', () => {
       const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          assessmentChanged: 'yes',
-          previousAssessment: 'yes'
+          nauticalMile: 'yes'
         }
       })
       expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
@@ -102,104 +100,6 @@ describe('waterFrameworkDirective', () => {
         }
       })
       expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
-    })
-
-    test('should fail if missing previousAssessment', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          assessmentChanged: 'yes',
-          excludedActivities: 'no'
-        }
-      })
-      expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
-    })
-
-    test('should fail if not a valid value for previousAssessment', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          assessmentChanged: 'yes',
-          excludedActivities: 'no',
-          previousAssessment: 'maybe'
-        }
-      })
-      expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
-    })
-
-    test('should fail if empty string for previousAssessment', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          previousAssessment: ''
-        }
-      })
-      expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
-    })
-
-    test('should fail if missing assessmentChanged', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          excludedActivities: 'no',
-          previousAssessment: 'yes'
-        }
-      })
-      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
-    })
-
-    test('should fail if not a valid value for assessmentChanged', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          nauticalMile: 'yes',
-          assessmentChanged: 'maybe'
-        }
-      })
-      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
-    })
-
-    test('should fail if empty string for assessmentChanged', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          nauticalMile: 'yes',
-          assessmentChanged: ''
-        }
-      })
-      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
-    })
-
-    test('should pass if assessmentChanged is null when previousAssessment is no', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          nauticalMile: 'yes',
-          previousAssessment: 'no',
-          assessmentChanged: null
-        }
-      })
-      expect(error).toBeUndefined()
-    })
-
-    test('should fail if assessmentChanged is null when previousAssessment is yes', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          nauticalMile: 'yes',
-          previousAssessment: 'yes',
-          assessmentChanged: null
-        }
-      })
-      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
     })
 
     test('should fail if empty for file upload or s3 data', () => {
@@ -266,8 +166,7 @@ describe('waterFrameworkDirective', () => {
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'yes',
-          excludedActivities: 'yes',
-          previousAssessment: 'yes'
+          excludedActivities: 'yes'
         }
       })
       expect(error.message).toContain('WATER_FRAMEWORK_DIRECTIVE_INVALID')
@@ -280,8 +179,7 @@ describe('waterFrameworkDirective', () => {
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'no',
-          excludedActivities: 'yes',
-          previousAssessment: 'yes'
+          excludedActivities: 'yes'
         }
       })
       expect(error.message).toContain('WATER_FRAMEWORK_DIRECTIVE_INVALID')
