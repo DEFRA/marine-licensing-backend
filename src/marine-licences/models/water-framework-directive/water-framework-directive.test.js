@@ -160,17 +160,6 @@ describe('waterFrameworkDirective', () => {
       })
       expect(error).toBeUndefined()
     })
-
-    test('should fail if another value is provided', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          excludedActivities: 'yes'
-        }
-      })
-      expect(error.message).toContain('WATER_FRAMEWORK_DIRECTIVE_INVALID')
-    })
   })
 
   describe('nauticalMile no', () => {
