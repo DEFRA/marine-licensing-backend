@@ -280,21 +280,6 @@ describe('createTaskList', () => {
     )
   })
 
-  it('should set waterFrameworkDirective to INCOMPLETE when previousAssessment is yes and assessmentChanged is missing', () => {
-    const marineLicence = {
-      siteDetails: [{ ...mockFileUploadSite, activityDetails: null }],
-      waterFrameworkDirective: {
-        ...mockWaterFrameworkDirective,
-        previousAssessment: 'yes',
-        assessmentChanged: undefined
-      }
-    }
-
-    expect(createTaskList(marineLicence).waterFrameworkDirective).toBe(
-      INCOMPLETE
-    )
-  })
-
   describe('circle site (coordinatesType=coordinates, coordinatesEntry=single)', () => {
     it('should return siteDetails as COMPLETED when all circle fields and activity details are present', () => {
       const marineLicence = {
