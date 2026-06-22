@@ -185,7 +185,10 @@ export class GeoParser {
       }
 
       if (geoJSON.features.length === 0) {
-        logger.warn(`${this.logSystem}: GeoJSON contains no features`)
+        logger.warn(
+          `${this.logSystem}: Validation failed - GeoJSON contains no features`
+        )
+        throw new Error(GEO_PARSER_ERROR_CODES.NO_SITE_BOUNDARIES)
       }
     }
 
