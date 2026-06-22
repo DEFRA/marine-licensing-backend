@@ -1,6 +1,9 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateWaterFrameworkDirectiveController } from './update-water-framework-directive.js'
+import { validateWfdUpload } from '../helpers/validateWfdUpload.js'
+
+vi.mock('../helpers/validateWfdUpload.js')
 
 describe('PATCH /marine-licence/water-framework-directive', () => {
   const mockAuditPayload = {
@@ -29,5 +32,32 @@ describe('PATCH /marine-licence/water-framework-directive', () => {
         mockHandler
       )
     ).rejects.toThrow(`Error updating water framework directive: ${mockError}`)
+
+    expect(validateWfdUpload).toHaveBeenCalledWith(
+      mockPayload.waterFrameworkDirective
+    )
+  })
+
+  it('should not call validateWfdUpload when excludedActivities is yes', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      waterFrameworkDirective: {
+        nauticalMile: 'yes',
+        excludedActivities: 'yes'
+      },
+      ...mockAuditPayload
+    }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+      updateOne: vi.fn().mockResolvedValueOnce({})
+    }))
+
+    await updateWaterFrameworkDirectiveController.handler(
+      { db: mockMongo, payload: mockPayload },
+      mockHandler
+    )
+
+    expect(validateWfdUpload).not.toHaveBeenCalled()
   })
 })

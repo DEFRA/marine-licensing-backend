@@ -1,18 +1,8 @@
 import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
+import { fileUploadValidationSchema } from './file-upload.js'
 
 const waterFrameworkDirectiveDetails = {
-  assessmentChanged: joi.when('nauticalMile', {
-    is: 'yes',
-    then: joi.string().valid('yes', 'no').required().messages({
-      'string.empty': 'ASSESSMENT_CHANGED_REQUIRED',
-      'any.only': 'ASSESSMENT_CHANGED_REQUIRED',
-      'any.required': 'ASSESSMENT_CHANGED_REQUIRED'
-    }),
-    otherwise: joi.forbidden().messages({
-      'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
-    })
-  }),
   excludedActivities: joi.when('nauticalMile', {
     is: 'yes',
     then: joi.string().valid('yes', 'no').required().messages({
@@ -24,17 +14,7 @@ const waterFrameworkDirectiveDetails = {
       'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
     })
   }),
-  previousAssessment: joi.when('nauticalMile', {
-    is: 'yes',
-    then: joi.string().valid('yes', 'no').required().messages({
-      'string.empty': 'PREVIOUS_ASSESSMENT_REQUIRED',
-      'any.only': 'PREVIOUS_ASSESSMENT_REQUIRED',
-      'any.required': 'PREVIOUS_ASSESSMENT_REQUIRED'
-    }),
-    otherwise: joi.forbidden().messages({
-      'any.unknown': 'WATER_FRAMEWORK_DIRECTIVE_INVALID'
-    })
-  })
+  ...fileUploadValidationSchema
 }
 
 export const waterFrameworkDirectiveSchema = joi

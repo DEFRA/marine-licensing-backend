@@ -72,9 +72,7 @@ describe('waterFrameworkDirective', () => {
       const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          assessmentChanged: 'yes',
-          previousAssessment: 'yes'
+          nauticalMile: 'yes'
         }
       })
       expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
@@ -104,76 +102,63 @@ describe('waterFrameworkDirective', () => {
       expect(error.message).toContain('EXCLUDED_ACTIVITIES_REQUIRED')
     })
 
-    test('should fail if missing previousAssessment', () => {
+    test('should fail if empty for file upload or s3 data', () => {
+      const { error: fileError } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          uploadedFile: ''
+        }
+      })
+      expect(fileError.message).toContain('UPLOADED_FILE_INVALID')
+
+      const { error: s3Error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          s3Location: ''
+        }
+      })
+      expect(s3Error.message).toContain('S3_LOCATION_INVALID')
+    })
+
+    test('should fail if invalid value for file upload', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          uploadedFile: { invalidValue: 'test' }
+        }
+      })
+      expect(error.message).toContain('UPLOADED_FILE_FILENAME_REQUIRED')
+    })
+
+    test('should fail if invalid value for s3', () => {
+      const { error } = waterFrameworkDirectiveSchema.validate({
+        id: validId,
+        waterFrameworkDirective: {
+          ...mockWaterFrameworkDirective,
+          nauticalMile: 'yes',
+          s3Location: { invalidValue: 'test' }
+        }
+      })
+      expect(error.message).toContain('S3_BUCKET_REQUIRED')
+    })
+  })
+
+  describe('nauticalMile yes and excludedActivities yes', () => {
+    test('should pass with only nauticalMile yes and excludedActivities yes', () => {
       const { error } = waterFrameworkDirectiveSchema.validate({
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'yes',
-          assessmentChanged: 'yes',
           excludedActivities: 'yes'
         }
       })
-      expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
-    })
-
-    test('should fail if not a valid value for previousAssessment', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          assessmentChanged: 'yes',
-          excludedActivities: 'yes',
-          previousAssessment: 'maybe'
-        }
-      })
-      expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
-    })
-
-    test('should fail if empty string for previousAssessment', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          previousAssessment: ''
-        }
-      })
-      expect(error.message).toContain('PREVIOUS_ASSESSMENT_REQUIRED')
-    })
-
-    test('should fail if missing assessmentChanged', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          nauticalMile: 'yes',
-          excludedActivities: 'yes',
-          previousAssessment: 'yes'
-        }
-      })
-      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
-    })
-
-    test('should fail if not a valid value for assessmentChanged', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          nauticalMile: 'yes',
-          assessmentChanged: 'maybe'
-        }
-      })
-      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
-    })
-
-    test('should fail if empty string for assessmentChanged', () => {
-      const { error } = waterFrameworkDirectiveSchema.validate({
-        id: validId,
-        waterFrameworkDirective: {
-          ...mockWaterFrameworkDirective,
-          nauticalMile: 'yes',
-          assessmentChanged: ''
-        }
-      })
-      expect(error.message).toContain('ASSESSMENT_CHANGED_REQUIRED')
+      expect(error).toBeUndefined()
     })
   })
 
@@ -183,8 +168,7 @@ describe('waterFrameworkDirective', () => {
         id: validId,
         waterFrameworkDirective: {
           nauticalMile: 'no',
-          excludedActivities: 'yes',
-          previousAssessment: 'yes'
+          excludedActivities: 'yes'
         }
       })
       expect(error.message).toContain('WATER_FRAMEWORK_DIRECTIVE_INVALID')
