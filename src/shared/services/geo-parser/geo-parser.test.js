@@ -234,6 +234,20 @@ describe('GeoParser', () => {
       )
     })
 
+    it('should throw Boom.badRequest when geoJSON contains no features', async () => {
+      geoParser.validateGeoJSON.mockImplementation(() => {
+        throw new Error(GEO_PARSER_ERROR_CODES.NO_SITE_BOUNDARIES)
+      })
+
+      await expect(
+        geoParser.extract(s3Bucket, s3Key, fileType)
+      ).rejects.toThrow(
+        Boom.badRequest(GEO_PARSER_ERROR_CODES.NO_SITE_BOUNDARIES)
+      )
+
+      expect(geoParser.validateGeoJSON).toHaveBeenCalledWith(mockGeoJSON)
+    })
+
     it('should call validateSingleSite when singleSiteOnly is true', async () => {
       vi.spyOn(geoParser, 'validateSingleSite').mockReturnValue(true)
 
@@ -437,15 +451,15 @@ describe('GeoParser', () => {
       expect(result).toBe(true)
     })
 
-    it('should validate FeatureCollection with empty features', () => {
+    it('should throw NO_SITE_BOUNDARIES when FeatureCollection has empty features', () => {
       const geoJSON = {
         type: 'FeatureCollection',
         features: []
       }
 
-      const result = geoParser.validateGeoJSON(geoJSON)
-
-      expect(result).toBe(true)
+      expect(() => geoParser.validateGeoJSON(geoJSON)).toThrow(
+        GEO_PARSER_ERROR_CODES.NO_SITE_BOUNDARIES
+      )
     })
 
     it('should throw error for null GeoJSON', () => {
