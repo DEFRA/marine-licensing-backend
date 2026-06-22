@@ -7,6 +7,8 @@ import {
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
+vi.mock('../helpers/validateWfdUpload.js')
+
 describe('PATCH /marine-licence/water-framework-directive - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
@@ -42,12 +44,9 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(updatedLicence.waterFrameworkDirective).toEqual({
-      assessmentChanged: 'no',
-      excludedActivities: 'no',
-      nauticalMile: 'yes',
-      previousAssessment: 'no'
-    })
+    expect(updatedLicence.waterFrameworkDirective).toEqual(
+      mockWaterFrameworkDirective
+    )
   })
 
   test('successfully updates water framework directive with nauticalMile no', async () => {
@@ -80,6 +79,44 @@ describe('PATCH /marine-licence/water-framework-directive - integration tests', 
 
     expect(updatedLicence.waterFrameworkDirective).toEqual({
       nauticalMile: 'no'
+    })
+  })
+
+  test('successfully updates water framework directive with nauticalMile yes and excludedActivities yes', async () => {
+    const marineLicence = createCompleteMarineLicence({
+      _id: marineLicenceId,
+      contactId,
+      waterFrameworkDirective: { nauticalMile: 'no' }
+    })
+    await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .insertOne(marineLicence)
+
+    const payload = {
+      id: marineLicenceId.toString(),
+      waterFrameworkDirective: {
+        nauticalMile: 'yes',
+        excludedActivities: 'yes'
+      }
+    }
+
+    const { statusCode, body } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/water-framework-directive',
+      contactId,
+      payload
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body).toEqual({ message: 'success' })
+
+    const updatedLicence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(updatedLicence.waterFrameworkDirective).toEqual({
+      nauticalMile: 'yes',
+      excludedActivities: 'yes'
     })
   })
 
