@@ -106,9 +106,7 @@ export const mockMultipleSite = {
 
 export const mockWaterFrameworkDirective = {
   nauticalMile: 'yes',
-  assessmentChanged: 'no',
   excludedActivities: 'no',
-  previousAssessment: 'no',
   uploadedFile: {
     filename: 'Suffolk MMO shapefiles.zip'
   },
