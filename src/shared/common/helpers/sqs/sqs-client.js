@@ -30,9 +30,11 @@ const resolveQueueUrl = async (queueName) => {
   if (urlCache.has(queueName)) {
     return urlCache.get(queueName)
   }
-  const { QueueUrl } = await getSqsClient().send(
-    new GetQueueUrlCommand({ QueueName: queueName })
-  )
+
+  const command = new GetQueueUrlCommand({ QueueName: queueName })
+
+  const { QueueUrl } = await getSqsClient().send(command)
+
   urlCache.set(queueName, QueueUrl)
   return QueueUrl
 }
