@@ -5,21 +5,23 @@ const receiveErrorBackoffMs = 5000
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const processMessages = async (server, state, messages, processMessage) => {
-  for (const message of messages) {
-    if (!state.running) {
-      return
-    }
-    await processMessage(server, message)
-  }
-}
+const processMessages = (server, messages, processMessage) =>
+  Promise.all(messages.map((message) => processMessage(server, message)))
 
 const runLoop = async (server, state, { receiveMessages, processMessage }) => {
   while (state.running) {
     try {
       const messages = await receiveMessages()
-      await processMessages(server, state, messages, processMessage)
+      await processMessages(server, messages, processMessage)
     } catch (error) {
+      if (error.name === 'QueueDoesNotExist') {
+        server.logger.error(
+          structureErrorForECS(error),
+          `${state.name} queue does not exist — restart LocalStack and ensure start-localstack.sh has run`
+        )
+        state.running = false
+        return
+      }
       server.logger.error(
         structureErrorForECS(error),
         `${state.name} receive loop failed; retrying`

@@ -95,14 +95,16 @@ describe('buildPolicyResetFields', () => {
 
   it('should return no fields when the geometry is unchanged', () => {
     const existing = {
-      marinePlanPolicyJobId: computePolicyJobId(licenceId, [site])
+      marinePlanPolicyJobId: 'job-1',
+      siteDetails: [site]
     }
     expect(buildPolicyResetFields(licenceId, existing, [site])).toEqual({})
   })
 
   it('should reset the policy state when the geometry changes', () => {
     const existing = {
-      marinePlanPolicyJobId: computePolicyJobId(licenceId, [site])
+      marinePlanPolicyJobId: 'job-1',
+      siteDetails: [site]
     }
     const movedSite = {
       ...site,
@@ -112,13 +114,12 @@ describe('buildPolicyResetFields', () => {
     expect(buildPolicyResetFields(licenceId, existing, [movedSite])).toEqual({
       marinePlanPolicyJob: null,
       marinePlanPolicyJobId: null,
-      marinePlanPolicyJobQueuedAt: null,
       marinePlanPolicies: []
     })
   })
 
   it('should never reset marinePlanPolicyResponses', () => {
-    const existing = { marinePlanPolicyJobId: 'a-stale-hash' }
+    const existing = { marinePlanPolicyJobId: 'job-1', siteDetails: [] }
     expect(
       buildPolicyResetFields(licenceId, existing, [site])
     ).not.toHaveProperty('marinePlanPolicyResponses')

@@ -15,25 +15,26 @@ vi.mock('./sqs-client.js', () => ({
   deletePolicyJob: vi.fn()
 }))
 
-const queueUrl =
-  'http://localhost:4566/000000000000/marine_licensing_policies.fifo'
-const dlqUrl =
-  'http://localhost:4566/000000000000/marine_licensing_policies-deadletter.fifo'
+const queueName = 'marine_licensing_policies'
+const dlqName = 'marine_licensing_policies-deadletter'
 
 describe('policies-worker-processor', () => {
   const licenceId = new ObjectId().toHexString()
   const policyJobId = 'a'.repeat(64)
   const receiptHandle = 'receipt-1'
 
-  const buildMessage = (body = { licenceId, policyJobId }) => ({
+  const buildMessage = (
+    body = { licenceId, policyJobId },
+    receiveCount = '1'
+  ) => ({
     Body: typeof body === 'string' ? body : JSON.stringify(body),
-    ReceiptHandle: receiptHandle
+    ReceiptHandle: receiptHandle,
+    Attributes: { ApproximateReceiveCount: receiveCount }
   })
 
   const buildLicence = (overrides = {}) => ({
     _id: ObjectId.createFromHexString(licenceId),
     marinePlanPolicyJobId: policyJobId,
-    marinePlanPolicyJobQueuedAt: new Date(),
     siteDetails: [{ coordinatesType: 'coordinates' }],
     ...overrides
   })
@@ -59,7 +60,7 @@ describe('policies-worker-processor', () => {
 
       await processPolicyJob(server, buildMessage('not json'))
 
-      expect(deletePolicyJob).toHaveBeenCalledWith(queueUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(queueName, receiptHandle)
       expect(mockUpdateOne).not.toHaveBeenCalled()
       expect(server.logger.error).toHaveBeenCalled()
     })
@@ -69,7 +70,7 @@ describe('policies-worker-processor', () => {
 
       await processPolicyJob(server, buildMessage())
 
-      expect(deletePolicyJob).toHaveBeenCalledWith(queueUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(queueName, receiptHandle)
       expect(mockUpdateOne).not.toHaveBeenCalled()
     })
 
@@ -80,7 +81,7 @@ describe('policies-worker-processor', () => {
 
       await processPolicyJob(server, buildMessage())
 
-      expect(deletePolicyJob).toHaveBeenCalledWith(queueUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(queueName, receiptHandle)
       expect(mockUpdateOne).not.toHaveBeenCalled()
       expect(queryArcGISPolicies).not.toHaveBeenCalled()
     })
@@ -138,7 +139,7 @@ describe('policies-worker-processor', () => {
           }
         }
       )
-      expect(deletePolicyJob).toHaveBeenCalledWith(queueUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(queueName, receiptHandle)
     })
 
     it('should still delete the message when the result write finds the job stale', async () => {
@@ -151,18 +152,21 @@ describe('policies-worker-processor', () => {
 
       await processPolicyJob(server, buildMessage())
 
-      expect(deletePolicyJob).toHaveBeenCalledWith(queueUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(queueName, receiptHandle)
     })
 
-    it('should keep the message and leave the status as computing on transient errors', async () => {
+    it('should keep the message and leave the status as computing on transient errors (non-final attempt)', async () => {
       const { server, mockUpdateOne } = setupMocks(buildLicence())
       vi.mocked(queryArcGISPolicies).mockRejectedValue(
         new Error('ArcGIS timed out')
       )
 
-      await processPolicyJob(server, buildMessage())
+      await processPolicyJob(
+        server,
+        buildMessage({ licenceId, policyJobId }, '1')
+      )
 
-      // only the computing write — failed is owned by the DLQ worker
+      // only the computing write — not the final attempt so no failed write
       expect(mockUpdateOne).toHaveBeenCalledTimes(1)
       expect(mockUpdateOne).toHaveBeenCalledWith(
         {
@@ -173,6 +177,29 @@ describe('policies-worker-processor', () => {
       )
       expect(deletePolicyJob).not.toHaveBeenCalled()
       expect(server.logger.error).toHaveBeenCalled()
+    })
+
+    it('should write failed on the final delivery attempt and leave the message to dead-letter naturally', async () => {
+      const { server, mockUpdateOne } = setupMocks(buildLicence())
+      vi.mocked(queryArcGISPolicies).mockRejectedValue(
+        new Error('ArcGIS timed out')
+      )
+
+      await processPolicyJob(
+        server,
+        buildMessage({ licenceId, policyJobId }, '5')
+      )
+
+      expect(mockUpdateOne).toHaveBeenCalledTimes(2)
+      expect(mockUpdateOne).toHaveBeenNthCalledWith(
+        2,
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId
+        },
+        { $set: { marinePlanPolicyJob: 'failed' } }
+      )
+      expect(deletePolicyJob).not.toHaveBeenCalled()
     })
   })
 
@@ -189,27 +216,8 @@ describe('policies-worker-processor', () => {
         },
         { $set: { marinePlanPolicyJob: 'failed' } }
       )
-      expect(deletePolicyJob).toHaveBeenCalledWith(dlqUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(dlqName, receiptHandle)
       expect(server.logger.warn).toHaveBeenCalled()
-    })
-
-    it('should guard the failed write on queuedAt when the message carries it', async () => {
-      const queuedAt = new Date('2026-06-11T10:00:00.000Z')
-      const { server, mockUpdateOne } = setupMocks(null)
-
-      await processDlqJob(
-        server,
-        buildMessage({ licenceId, policyJobId, queuedAt })
-      )
-
-      expect(mockUpdateOne).toHaveBeenCalledWith(
-        {
-          _id: ObjectId.createFromHexString(licenceId),
-          marinePlanPolicyJobId: policyJobId,
-          marinePlanPolicyJobQueuedAt: queuedAt
-        },
-        { $set: { marinePlanPolicyJob: 'failed' } }
-      )
     })
 
     it('should not fail a re-triggered job when the dead-lettered message is stale', async () => {
@@ -219,7 +227,7 @@ describe('policies-worker-processor', () => {
       await processDlqJob(server, buildMessage())
 
       expect(server.logger.warn).not.toHaveBeenCalled()
-      expect(deletePolicyJob).toHaveBeenCalledWith(dlqUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(dlqName, receiptHandle)
     })
 
     it('should delete malformed dead-lettered messages without touching the database', async () => {
@@ -228,7 +236,7 @@ describe('policies-worker-processor', () => {
       await processDlqJob(server, buildMessage('not json'))
 
       expect(mockUpdateOne).not.toHaveBeenCalled()
-      expect(deletePolicyJob).toHaveBeenCalledWith(dlqUrl, receiptHandle)
+      expect(deletePolicyJob).toHaveBeenCalledWith(dlqName, receiptHandle)
     })
   })
 })

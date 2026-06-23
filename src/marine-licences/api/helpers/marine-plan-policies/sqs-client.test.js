@@ -1,90 +1,65 @@
 import { vi } from 'vitest'
 import {
-  SQSClient,
-  SendMessageCommand,
-  ReceiveMessageCommand,
-  DeleteMessageCommand
-} from '@aws-sdk/client-sqs'
-import {
   sendPolicyJob,
   receivePolicyJobs,
   receiveDlqJobs,
   deletePolicyJob,
-  resetSqsClient
+  resetSqsClient,
+  MPP_RECEIVE_OPTIONS
 } from './sqs-client.js'
 
-const queueUrl =
-  'http://localhost:4566/000000000000/marine_licensing_policies.fifo'
-const dlqUrl =
-  'http://localhost:4566/000000000000/marine_licensing_policies-deadletter.fifo'
+vi.mock('../../../../shared/common/helpers/sqs/sqs-client.js', () => ({
+  sendMessage: vi.fn().mockResolvedValue({}),
+  receiveMessages: vi.fn().mockResolvedValue([]),
+  deleteMessage: vi.fn().mockResolvedValue({}),
+  resetSqsClient: vi.fn()
+}))
+
+import {
+  sendMessage,
+  receiveMessages,
+  deleteMessage
+} from '../../../../shared/common/helpers/sqs/sqs-client.js'
+
+const sqsQueueName = 'marine_licensing_policies'
+const sqsDlqName = 'marine_licensing_policies-deadletter'
 
 describe('policies-sqs-client', () => {
-  let mockSend
+  it('sendPolicyJob calls sendMessage with the queue name and serialised ids', async () => {
+    await sendPolicyJob({ licenceId: 'licence-1', policyJobId: 'job-1' })
 
-  beforeEach(() => {
-    resetSqsClient()
-    mockSend = vi.spyOn(SQSClient.prototype, 'send').mockResolvedValue({})
+    expect(sendMessage).toHaveBeenCalledWith(
+      sqsQueueName,
+      JSON.stringify({ licenceId: 'licence-1', policyJobId: 'job-1' })
+    )
   })
 
-  it('should send a policy job as a FIFO message grouped by licence and deduped by job id', async () => {
-    const queuedAt = new Date('2026-06-11T10:00:00.000Z')
-    await sendPolicyJob({
-      licenceId: 'licence-1',
-      policyJobId: 'hash-1',
-      queuedAt
-    })
+  it('receivePolicyJobs calls receiveMessages with the main queue and MPP options', async () => {
+    await receivePolicyJobs()
 
-    const command = mockSend.mock.calls[0][0]
-    expect(command).toBeInstanceOf(SendMessageCommand)
-    expect(command.input).toEqual({
-      QueueUrl: queueUrl,
-      MessageGroupId: 'licence-1',
-      MessageDeduplicationId: 'hash-1',
-      MessageBody: JSON.stringify({
-        licenceId: 'licence-1',
-        policyJobId: 'hash-1',
-        queuedAt
-      })
-    })
+    expect(receiveMessages).toHaveBeenCalledWith(
+      sqsQueueName,
+      MPP_RECEIVE_OPTIONS
+    )
   })
 
-  it('should long-poll the main queue and return messages', async () => {
-    const messages = [{ MessageId: '1' }]
-    mockSend.mockResolvedValueOnce({ Messages: messages })
-
-    const received = await receivePolicyJobs()
-
-    const command = mockSend.mock.calls[0][0]
-    expect(command).toBeInstanceOf(ReceiveMessageCommand)
-    expect(command.input).toEqual({
-      QueueUrl: queueUrl,
-      MaxNumberOfMessages: 10,
-      WaitTimeSeconds: 20
-    })
-    expect(received).toEqual(messages)
-  })
-
-  it('should return an empty array when the queue has no messages', async () => {
-    mockSend.mockResolvedValueOnce({})
-    expect(await receivePolicyJobs()).toEqual([])
-  })
-
-  it('should long-poll the dead-letter queue', async () => {
-    mockSend.mockResolvedValueOnce({})
-
+  it('receiveDlqJobs calls receiveMessages with the DLQ and MPP options', async () => {
     await receiveDlqJobs()
 
-    expect(mockSend.mock.calls[0][0].input.QueueUrl).toBe(dlqUrl)
+    expect(receiveMessages).toHaveBeenCalledWith(
+      sqsDlqName,
+      MPP_RECEIVE_OPTIONS
+    )
   })
 
-  it('should delete a message from the given queue', async () => {
-    await deletePolicyJob(queueUrl, 'receipt-1')
+  it('deletePolicyJob calls deleteMessage with the given queue name and receipt handle', async () => {
+    await deletePolicyJob(sqsQueueName, 'receipt-1')
 
-    const command = mockSend.mock.calls[0][0]
-    expect(command).toBeInstanceOf(DeleteMessageCommand)
-    expect(command.input).toEqual({
-      QueueUrl: queueUrl,
-      ReceiptHandle: 'receipt-1'
-    })
+    expect(deleteMessage).toHaveBeenCalledWith(sqsQueueName, 'receipt-1')
+  })
+
+  it('re-exports resetSqsClient from the generic helper', () => {
+    resetSqsClient()
+    expect(resetSqsClient).toHaveBeenCalled()
   })
 })

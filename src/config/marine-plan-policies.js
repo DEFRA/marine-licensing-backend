@@ -1,5 +1,3 @@
-import { requiredFromEnvInCdp } from '../shared/common/helpers/convict/required-from-env-in-cdp.js'
-
 export const marinePlanPoliciesSchema = {
   isEnabled: {
     doc: 'Enable the marine plan policy calculation workers',
@@ -7,25 +5,23 @@ export const marinePlanPoliciesSchema = {
     default: true,
     env: 'MARINE_PLAN_POLICIES_ENABLED'
   },
-  sqsEndpoint: {
-    doc: 'SQS endpoint (LocalStack locally, AWS default in CDP)',
-    format: requiredFromEnvInCdp,
-    default: 'http://localhost:4566',
-    env: 'SQS_ENDPOINT'
+  sqsMaxReceiveCount: {
+    doc: 'Number of delivery attempts before a policy job message is dead-lettered; must match the queue RedrivePolicy',
+    format: Number,
+    default: 5,
+    env: 'MARINE_PLAN_POLICIES_SQS_MAX_RECEIVE_COUNT'
   },
-  sqsQueueUrl: {
-    doc: 'URL of the marine plan policies FIFO queue',
-    format: requiredFromEnvInCdp,
-    default:
-      'http://localhost:4566/000000000000/marine_licensing_policies.fifo',
-    env: 'MARINE_PLAN_POLICIES_SQS_QUEUE_URL'
+  sqsQueueName: {
+    doc: 'Name of the marine plan policies SQS queue',
+    format: String,
+    default: 'marine_licensing_policies',
+    env: 'MARINE_PLAN_POLICIES_SQS_QUEUE_NAME'
   },
-  sqsDlqUrl: {
-    doc: 'URL of the marine plan policies FIFO dead-letter queue',
-    format: requiredFromEnvInCdp,
-    default:
-      'http://localhost:4566/000000000000/marine_licensing_policies-deadletter.fifo',
-    env: 'MARINE_PLAN_POLICIES_SQS_DLQ_URL'
+  sqsDlqName: {
+    doc: 'Name of the marine plan policies dead-letter queue',
+    format: String,
+    default: 'marine_licensing_policies-deadletter',
+    env: 'MARINE_PLAN_POLICIES_SQS_DLQ_NAME'
   },
   arcgisUrl: {
     doc: 'URL of the DEFRA ArcGIS FeatureServer layer used to find applicable marine plan policies (public; same value in all environments)',

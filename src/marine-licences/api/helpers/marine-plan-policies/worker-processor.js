@@ -12,11 +12,11 @@ import { deletePolicyJob } from './sqs-client.js'
 
 const parseMessageBody = (message, logger) => {
   try {
-    const { licenceId, policyJobId, queuedAt } = JSON.parse(message.Body)
+    const { licenceId, policyJobId } = JSON.parse(message.Body)
     if (!licenceId || !policyJobId) {
       throw new Error('licenceId and policyJobId are required')
     }
-    return { licenceId, policyJobId, queuedAt }
+    return { licenceId, policyJobId }
   } catch (error) {
     logger.error(
       structureErrorForECS(error),
@@ -28,16 +28,16 @@ const parseMessageBody = (message, logger) => {
 
 const fetchPolicies = async ({ siteDetails, db, logger }) => {
   const policies = await queryArcGISPolicies({ siteDetails, logger })
-  const marinePlanPolicies = []
-  for (const policy of policies) {
-    const content = await getPolicyContent({
-      policyCode: policy.policyCode,
-      db,
-      logger
+  return Promise.all(
+    policies.map(async (policy) => {
+      const content = await getPolicyContent({
+        policyCode: policy.policyCode,
+        db,
+        logger
+      })
+      return { ...policy, ...content }
     })
-    marinePlanPolicies.push({ ...policy, ...content })
-  }
-  return marinePlanPolicies
+  )
 }
 
 // Conditional on marinePlanPolicyJobId so a site edit mid-flight is never overwritten
@@ -47,12 +47,11 @@ const setJobStatus = ({ collection, _id, policyJobId }, status, extra = {}) =>
     { $set: { marinePlanPolicyJob: status, ...extra } }
   )
 
-const logStaleJob = ({ logger }, detail) =>
+const logDiscardedJob = ({ logger }, detail) =>
   logger.info(
     {
       event: {
-        action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_STALE,
-        outcome: 'success'
+        action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_STALE
       }
     },
     detail
@@ -80,7 +79,7 @@ const computeAndStorePolicies = async (job, licence, db) => {
       `Policy job complete for licence ${licenceId}: ${marinePlanPolicies.length} applicable policies`
     )
   } else {
-    logStaleJob(
+    logDiscardedJob(
       job,
       `Discarding policy job result computed for stale sites on licence ${licenceId}`
     )
@@ -101,11 +100,11 @@ const handleJobFailure = (job, error) => {
 // On transient failure the message is left on the queue; the DLQ worker marks it failed after maxReceiveCount is spent.
 export const processPolicyJob = async (server, message) => {
   const { db, logger } = server
-  const { sqsQueueUrl } = config.get('marinePlanPolicies')
+  const { sqsQueueName } = config.get('marinePlanPolicies')
 
   const body = parseMessageBody(message, logger)
   if (!body) {
-    await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
+    await deletePolicyJob(sqsQueueName, message.ReceiptHandle)
     return
   }
   const { licenceId, policyJobId } = body
@@ -119,8 +118,8 @@ export const processPolicyJob = async (server, message) => {
 
   const licence = await job.collection.findOne({ _id: job._id })
   if (!licence || licence.marinePlanPolicyJobId !== policyJobId) {
-    logStaleJob(job, `Discarding stale policy job for licence ${licenceId}`)
-    await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
+    logDiscardedJob(job, `Discarding stale policy job for licence ${licenceId}`)
+    await deletePolicyJob(sqsQueueName, message.ReceiptHandle)
     return
   }
 
@@ -128,20 +127,33 @@ export const processPolicyJob = async (server, message) => {
 
   try {
     await computeAndStorePolicies(job, licence, db)
-    await deletePolicyJob(sqsQueueUrl, message.ReceiptHandle)
+    await deletePolicyJob(sqsQueueName, message.ReceiptHandle)
   } catch (error) {
     handleJobFailure(job, error)
+    const receiveCount = Number(
+      message.Attributes?.ApproximateReceiveCount ?? 0
+    )
+    const { sqsMaxReceiveCount } = config.get('marinePlanPolicies')
+    if (receiveCount >= sqsMaxReceiveCount) {
+      await setJobStatus(job, MARINE_PLAN_POLICY_JOB_STATUS.FAILED)
+      // Message is not deleted — SQS dead-letters it naturally.
+      // The DLQ worker will encounter a no-op and clean up.
+    }
   }
 }
 
-// queuedAt guards against a lingering dead-letter failing a retried job that reuses the same policyJobId (same geometry hash).
+// On the final delivery attempt the main worker already sets 'failed'.
+// processDlqJob acts as a safety net for edge cases (e.g. process crash
+// before the DB write on the last attempt) and always cleans up the DLQ.
+// The per-click policyJobId match ensures a lingering dead-letter never
+// overwrites a newer job the user has since re-triggered.
 export const processDlqJob = async (server, message) => {
   const { db, logger } = server
-  const { sqsDlqUrl } = config.get('marinePlanPolicies')
+  const { sqsDlqName } = config.get('marinePlanPolicies')
 
   const body = parseMessageBody(message, logger)
   if (body) {
-    const { licenceId, policyJobId, queuedAt } = body
+    const { licenceId, policyJobId } = body
     const job = {
       collection: db.collection(collectionMarineLicences),
       _id: ObjectId.createFromHexString(licenceId),
@@ -152,8 +164,7 @@ export const processDlqJob = async (server, message) => {
     const result = await job.collection.updateOne(
       {
         _id: job._id,
-        marinePlanPolicyJobId: policyJobId,
-        ...(queuedAt && { marinePlanPolicyJobQueuedAt: new Date(queuedAt) })
+        marinePlanPolicyJobId: policyJobId
       },
       { $set: { marinePlanPolicyJob: MARINE_PLAN_POLICY_JOB_STATUS.FAILED } }
     )
@@ -168,11 +179,11 @@ export const processDlqJob = async (server, message) => {
         `Policy job dead-lettered and marked failed for licence ${licenceId}`
       )
     } else {
-      logStaleJob(
+      logDiscardedJob(
         job,
         `Discarding stale dead-lettered policy job for licence ${licenceId}`
       )
     }
   }
-  await deletePolicyJob(sqsDlqUrl, message.ReceiptHandle)
+  await deletePolicyJob(sqsDlqName, message.ReceiptHandle)
 }

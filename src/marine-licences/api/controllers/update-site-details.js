@@ -38,7 +38,7 @@ export const updateSiteDetailsController = {
 
       const existing = await collection.findOne(
         { _id },
-        { projection: { marinePlanPolicyJobId: 1 } }
+        { projection: { marinePlanPolicyJobId: 1, siteDetails: 1 } }
       )
 
       const result = await collection.updateOne(

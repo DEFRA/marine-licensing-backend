@@ -3,7 +3,6 @@ import { ObjectId } from 'mongodb'
 import { updateSiteDetailsController } from './update-site-details.js'
 import Boom from '@hapi/boom'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
-import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job.js'
 
 describe('PATCH /marine-licences/site-details', () => {
   const payloadValidator = updateSiteDetailsController.options.validate.payload
@@ -45,7 +44,7 @@ describe('PATCH /marine-licences/site-details', () => {
     ).rejects.toThrow(`Error updating site details: ${mockError}`)
   })
 
-  it('should return a  404 if id is not correct', async () => {
+  it('should return a 404 if id is not correct', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
@@ -110,7 +109,13 @@ describe('PATCH /marine-licences/site-details', () => {
       const mockPayload = buildPayload()
       const mockUpdateOne = setupMocks({
         _id: mockPayload.id,
-        marinePlanPolicyJobId: 'hash-of-the-previous-geometry'
+        marinePlanPolicyJobId: 'job-1',
+        siteDetails: [
+          {
+            ...mockFileUploadSite,
+            coordinates: { latitude: '99', longitude: '99' }
+          }
+        ]
       })
 
       await updateSiteDetailsController.handler(
@@ -122,9 +127,9 @@ describe('PATCH /marine-licences/site-details', () => {
       expect(setFields).toMatchObject({
         marinePlanPolicyJob: null,
         marinePlanPolicyJobId: null,
-        marinePlanPolicyJobQueuedAt: null,
         marinePlanPolicies: []
       })
+      expect(setFields).not.toHaveProperty('marinePlanPolicyJobQueuedAt')
       expect(setFields).not.toHaveProperty('marinePlanPolicyResponses')
     })
 
@@ -133,9 +138,8 @@ describe('PATCH /marine-licences/site-details', () => {
       const mockPayload = buildPayload()
       const mockUpdateOne = setupMocks({
         _id: mockPayload.id,
-        marinePlanPolicyJobId: computePolicyJobId(mockPayload.id, [
-          mockFileUploadSite
-        ])
+        marinePlanPolicyJobId: 'job-1',
+        siteDetails: [mockFileUploadSite]
       })
 
       await updateSiteDetailsController.handler(

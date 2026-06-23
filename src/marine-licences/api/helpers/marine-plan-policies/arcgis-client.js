@@ -19,43 +19,48 @@ const extractPolicy = (attributes = {}) => {
 export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
   const { arcgisUrl, arcgisTimeoutMs } = config.get('marinePlanPolicies')
   const geometries = buildEmpGeometries(siteDetails)
-  const policiesByCode = new Map()
 
-  for (const geometry of geometries) {
-    const json = await timedJsonFetch({
-      url: `${arcgisUrl}/query`,
-      options: {
-        method: 'POST',
-        body: new URLSearchParams({
-          f: 'json',
-          geometry: JSON.stringify(geometry),
-          geometryType: 'esriGeometryPolygon',
-          inSR: '4326',
-          spatialRel: 'esriSpatialRelIntersects',
-          outFields: 'PolicyCode,Sector,isSpatial',
-          returnGeometry: 'false'
-        })
-      },
-      timeoutMs: arcgisTimeoutMs,
-      eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.ARCGIS_QUERY,
-      upstreamName: 'ArcGIS feature-server query',
-      logger
-    })
+  if (!geometries.length) return []
 
-    // ArcGIS reports failures inside a 200 response body
-    if (json.error) {
-      throw new Error(
-        `ArcGIS feature-server query returned error ${json.error.code}: ${json.error.message}`
-      )
-    }
-
-    for (const feature of json.features ?? []) {
-      const policy = extractPolicy(feature.attributes)
-      if (policy) {
-        policiesByCode.set(policy.policyCode, policy)
-      }
-    }
+  const combinedGeometry = {
+    rings: geometries.flatMap((g) => g.rings),
+    spatialReference: geometries[0].spatialReference
   }
 
+  const json = await timedJsonFetch({
+    url: `${arcgisUrl}/query`,
+    options: {
+      method: 'POST',
+      body: new URLSearchParams({
+        f: 'json',
+        geometry: JSON.stringify(combinedGeometry),
+        geometryType: 'esriGeometryPolygon',
+        inSR: '4326',
+        spatialRel: 'esriSpatialRelIntersects',
+        outFields: 'PolicyCode,Sector,isSpatial',
+        returnGeometry: 'false'
+      }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' }
+    },
+    timeoutMs: arcgisTimeoutMs,
+    eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.ARCGIS_QUERY,
+    upstreamName: 'ArcGIS feature-server query',
+    logger
+  })
+
+  // ArcGIS reports failures inside a 200 response body
+  if (json.error) {
+    throw new Error(
+      `ArcGIS feature-server query returned error ${json.error.code}: ${json.error.message}`
+    )
+  }
+
+  const policiesByCode = new Map()
+  for (const feature of json.features ?? []) {
+    const policy = extractPolicy(feature.attributes)
+    if (policy) {
+      policiesByCode.set(policy.policyCode, policy)
+    }
+  }
   return [...policiesByCode.values()]
 }

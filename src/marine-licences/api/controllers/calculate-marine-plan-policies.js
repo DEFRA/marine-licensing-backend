@@ -6,14 +6,13 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
-import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job.js'
 import { sendPolicyJob } from '../helpers/marine-plan-policies/sqs-client.js'
 
-const IN_FLIGHT_OR_READY = new Set([
+const ACTIVE_OR_READY = [
   MARINE_PLAN_POLICY_JOB_STATUS.PENDING,
   MARINE_PLAN_POLICY_JOB_STATUS.COMPUTING,
   MARINE_PLAN_POLICY_JOB_STATUS.READY
-])
+]
 
 export const calculateMarinePlanPoliciesController = {
   options: {
@@ -42,15 +41,28 @@ export const calculateMarinePlanPoliciesController = {
         throw Boom.badRequest('Marine licence has no site details')
       }
 
-      const policyJobId = computePolicyJobId(id, marineLicence.siteDetails)
+      // Atomically create a job ONLY if there isn't an active/ready one.
+      // $nin also matches when the field is absent (new licence) or null (reset
+      // after a geometry edit) and 'failed' (a retry) — i.e. exactly the
+      // "no job in flight" states. Two racing clicks: the first flips the status
+      // to 'pending', so the second no longer matches the filter and returns null.
+      // jobId is a fresh per-click id, so every Retry is its own message.
+      const jobId = new ObjectId().toHexString()
+      const claim = await collection.findOneAndUpdate(
+        { _id, marinePlanPolicyJob: { $nin: ACTIVE_OR_READY } },
+        {
+          $set: {
+            marinePlanPolicyJob: MARINE_PLAN_POLICY_JOB_STATUS.PENDING,
+            marinePlanPolicyJobId: jobId,
+            updatedAt,
+            updatedBy
+          }
+        },
+        { returnDocument: 'after' }
+      )
 
-      // Same geometries and a job already queued, running, or complete:
-      // nothing to do. SQS FIFO dedupe only covers a 5-minute window, so this
-      // guard is what actually makes repeated clicks idempotent.
-      if (
-        marineLicence.marinePlanPolicyJobId === policyJobId &&
-        IN_FLIGHT_OR_READY.has(marineLicence.marinePlanPolicyJob)
-      ) {
+      if (!claim) {
+        // A job is already queued, running, or complete: nothing to do.
         return h
           .response({
             message: 'success',
@@ -59,24 +71,8 @@ export const calculateMarinePlanPoliciesController = {
           .code(StatusCodes.ACCEPTED)
       }
 
-      const queuedAt = new Date()
-      await collection.updateOne(
-        { _id },
-        {
-          $set: {
-            marinePlanPolicyJob: MARINE_PLAN_POLICY_JOB_STATUS.PENDING,
-            marinePlanPolicyJobId: policyJobId,
-            marinePlanPolicyJobQueuedAt: queuedAt,
-            updatedAt,
-            updatedBy
-          }
-        }
-      )
-
       try {
-        // queuedAt rides in the message so the DLQ worker can tell a stale
-        // dead-letter from a retried job that reuses the same policyJobId
-        await sendPolicyJob({ licenceId: id, policyJobId, queuedAt })
+        await sendPolicyJob({ licenceId: id, policyJobId: jobId })
       } catch (error) {
         // Roll back so the document is not stuck in 'pending' with no
         // message in flight (the idempotency guard would block retries)
@@ -85,8 +81,7 @@ export const calculateMarinePlanPoliciesController = {
           {
             $set: {
               marinePlanPolicyJob: null,
-              marinePlanPolicyJobId: null,
-              marinePlanPolicyJobQueuedAt: null
+              marinePlanPolicyJobId: null
             }
           }
         )

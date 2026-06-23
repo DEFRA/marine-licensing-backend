@@ -1,13 +1,14 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { calculateMarinePlanPoliciesController } from './calculate-marine-plan-policies.js'
-import { computePolicyJobId } from '../helpers/marine-plan-policies/policy-job.js'
 import { sendPolicyJob } from '../helpers/marine-plan-policies/sqs-client.js'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
 
 vi.mock('../helpers/marine-plan-policies/sqs-client.js', () => ({
   sendPolicyJob: vi.fn()
 }))
+
+const hexJobId = expect.stringMatching(/^[a-f0-9]{24}$/)
 
 describe('POST /marine-licence/calculate-marine-plan-policies', () => {
   const payloadValidator =
@@ -23,20 +24,26 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
     ...overrides
   })
 
-  const setupMocks = (licence) => {
+  const setupMocks = (licence, { claimWins = true } = {}) => {
     const { mockMongo } = global
     const mockFindOne = vi.fn().mockResolvedValue(licence)
     const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+    // findOneAndUpdate returns the claimed doc when no active job blocks it,
+    // or null when one is already in flight.
+    const mockFindOneAndUpdate = vi
+      .fn()
+      .mockResolvedValue(claimWins ? { _id: licence?._id } : null)
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
       findOne: mockFindOne,
-      updateOne: mockUpdateOne
+      updateOne: mockUpdateOne,
+      findOneAndUpdate: mockFindOneAndUpdate
     }))
     const request = {
       db: mockMongo,
       payload: buildPayload({ id: licence?._id?.toHexString() }),
       logger: { info: vi.fn(), error: vi.fn() }
     }
-    return { request, mockFindOne, mockUpdateOne }
+    return { request, mockFindOne, mockUpdateOne, mockFindOneAndUpdate }
   }
 
   describe('validation', () => {
@@ -84,35 +91,39 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
       ).rejects.toThrow('Marine licence has no site details')
     })
 
-    it('should queue the job, set pending state, and return 202', async () => {
+    it('should atomically claim the job with a fresh per-click id, queue it, and return 202', async () => {
       const _id = new ObjectId()
-      const { request, mockUpdateOne } = setupMocks({
+      const { request, mockFindOneAndUpdate } = setupMocks({
         _id,
         siteDetails: [mockFileUploadSite]
       })
       const id = _id.toHexString()
-      const expectedJobId = computePolicyJobId(id, [mockFileUploadSite])
 
       await calculateMarinePlanPoliciesController.handler(
         request,
         global.mockHandler
       )
 
-      expect(mockUpdateOne).toHaveBeenCalledWith(
-        { _id },
+      expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
+        {
+          _id,
+          marinePlanPolicyJob: { $nin: ['pending', 'computing', 'ready'] }
+        },
         {
           $set: {
             marinePlanPolicyJob: 'pending',
-            marinePlanPolicyJobId: expectedJobId,
-            marinePlanPolicyJobQueuedAt: expect.any(Date),
+            marinePlanPolicyJobId: hexJobId,
             ...mockAuditPayload
           }
-        }
+        },
+        { returnDocument: 'after' }
       )
+      // the same per-click id that was claimed is the one put on the queue
+      const claimedJobId =
+        mockFindOneAndUpdate.mock.calls[0][1].$set.marinePlanPolicyJobId
       expect(sendPolicyJob).toHaveBeenCalledWith({
         licenceId: id,
-        policyJobId: expectedJobId,
-        queuedAt: expect.any(Date)
+        policyJobId: claimedJobId
       })
       expect(global.mockHandler.response).toHaveBeenCalledWith({
         message: 'success',
@@ -121,16 +132,16 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
       expect(global.mockHandler.code).toHaveBeenCalledWith(202)
     })
 
-    it('should be idempotent when the same geometry already has a job in flight', async () => {
+    it('should be idempotent when a job is already in flight', async () => {
       const _id = new ObjectId()
-      const id = _id.toHexString()
-      const policyJobId = computePolicyJobId(id, [mockFileUploadSite])
-      const { request, mockUpdateOne } = setupMocks({
-        _id,
-        siteDetails: [mockFileUploadSite],
-        marinePlanPolicyJobId: policyJobId,
-        marinePlanPolicyJob: 'ready'
-      })
+      const { request, mockUpdateOne } = setupMocks(
+        {
+          _id,
+          siteDetails: [mockFileUploadSite],
+          marinePlanPolicyJob: 'ready'
+        },
+        { claimWins: false }
+      )
 
       await calculateMarinePlanPoliciesController.handler(
         request,
@@ -146,14 +157,11 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
       expect(global.mockHandler.code).toHaveBeenCalledWith(202)
     })
 
-    it('should re-queue when the same geometry previously failed', async () => {
+    it('should re-queue when the previous job failed (retry)', async () => {
       const _id = new ObjectId()
-      const id = _id.toHexString()
-      const policyJobId = computePolicyJobId(id, [mockFileUploadSite])
       const { request } = setupMocks({
         _id,
         siteDetails: [mockFileUploadSite],
-        marinePlanPolicyJobId: policyJobId,
         marinePlanPolicyJob: 'failed'
       })
 
@@ -185,8 +193,7 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
         {
           $set: {
             marinePlanPolicyJob: null,
-            marinePlanPolicyJobId: null,
-            marinePlanPolicyJobQueuedAt: null
+            marinePlanPolicyJobId: null
           }
         }
       )

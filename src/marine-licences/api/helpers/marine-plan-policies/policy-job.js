@@ -24,7 +24,7 @@ const stableStringify = (value) => {
       .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
       .join(',')}}`
   }
-  return JSON.stringify(value) ?? 'null'
+  return JSON.stringify(value)
 }
 
 const extractSiteGeometry = (site) =>
@@ -46,18 +46,22 @@ export const computePolicyJobId = (licenceId, siteDetails = []) => {
 }
 
 // marinePlanPolicyResponses are deliberately never reset — only policy job state is discarded on geometry change.
+// marinePlanPolicyJobId is now a per-click id, so geometry change is detected by
+// hashing the existing vs new site geometry (a job only exists for the geometry
+// currently stored, since any edit resets it).
 export const buildPolicyResetFields = (id, existing, newSiteDetails) => {
   if (!existing?.marinePlanPolicyJobId) {
     return {}
   }
-  const newPolicyJobId = computePolicyJobId(id, newSiteDetails)
-  if (existing.marinePlanPolicyJobId === newPolicyJobId) {
+  if (
+    computePolicyJobId(id, existing.siteDetails) ===
+    computePolicyJobId(id, newSiteDetails)
+  ) {
     return {}
   }
   return {
     marinePlanPolicyJob: null,
     marinePlanPolicyJobId: null,
-    marinePlanPolicyJobQueuedAt: null,
     marinePlanPolicies: []
   }
 }

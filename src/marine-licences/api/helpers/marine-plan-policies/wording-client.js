@@ -26,6 +26,12 @@ const toContent = (cached) =>
     return content
   }, {})
 
+const toEmptyContent = () =>
+  CONTENT_FIELDS.reduce((content, field) => {
+    content[field] = ''
+    return content
+  }, {})
+
 const refreshPolicyDataset = async (collection, logger) => {
   const { govukPoliciesUrl, wordingTimeoutMs } =
     config.get('marinePlanPolicies')
@@ -70,9 +76,16 @@ export const getPolicyContent = async ({ policyCode, db, logger }) => {
 
   const refreshed = await collection.findOne({ _id: policyCode })
   if (!refreshed) {
-    throw new Error(
-      `Policy ${policyCode} not present in the GOV.UK policies dataset`
+    logger.warn(
+      {
+        event: {
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
+          outcome: 'failure'
+        }
+      },
+      `Policy ${policyCode} not present in the GOV.UK policies dataset; substituting empty wording`
     )
+    return toEmptyContent()
   }
   return toContent(refreshed)
 }

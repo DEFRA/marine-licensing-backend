@@ -166,7 +166,7 @@ const checkWaterFrameworkDirective = (wfd) => {
 
   const siteStatus = getStatusFromRequiredFields(parsedWfd, requiredValues)
 
-  if ([siteStatus].every((s) => s === COMPLETED)) {
+  if (siteStatus === COMPLETED) {
     return COMPLETED
   }
 

@@ -1,62 +1,34 @@
-import {
-  SQSClient,
-  SendMessageCommand,
-  ReceiveMessageCommand,
-  DeleteMessageCommand
-} from '@aws-sdk/client-sqs'
 import { config } from '../../../../config.js'
+import {
+  sendMessage,
+  receiveMessages,
+  deleteMessage
+} from '../../../../shared/common/helpers/sqs/sqs-client.js'
 
-let sqsClientInstance = null
+export { resetSqsClient } from '../../../../shared/common/helpers/sqs/sqs-client.js'
 
-export const getSqsClient = () => {
-  if (!sqsClientInstance) {
-    const awsConfig = config.get('aws')
-    const policiesConfig = config.get('marinePlanPolicies')
-    sqsClientInstance = new SQSClient({
-      region: awsConfig.region,
-      endpoint: policiesConfig.sqsEndpoint
-    })
-  }
-  return sqsClientInstance
+export const MPP_RECEIVE_OPTIONS = {
+  MaxNumberOfMessages: 10,
+  WaitTimeSeconds: 20,
+  AttributeNames: ['ApproximateReceiveCount']
 }
 
-export const resetSqsClient = () => {
-  sqsClientInstance = null
-}
-
-export const sendPolicyJob = async ({ licenceId, policyJobId, queuedAt }) => {
-  const { sqsQueueUrl } = config.get('marinePlanPolicies')
-  return getSqsClient().send(
-    new SendMessageCommand({
-      QueueUrl: sqsQueueUrl,
-      MessageGroupId: licenceId,
-      MessageDeduplicationId: policyJobId,
-      MessageBody: JSON.stringify({ licenceId, policyJobId, queuedAt })
-    })
-  )
-}
-
-const receiveMessages = async (queueUrl) => {
-  const { Messages } = await getSqsClient().send(
-    new ReceiveMessageCommand({
-      QueueUrl: queueUrl,
-      MaxNumberOfMessages: 10,
-      WaitTimeSeconds: 20
-    })
-  )
-  return Messages ?? []
+export const sendPolicyJob = async ({ licenceId, policyJobId }) => {
+  const { sqsQueueName } = config.get('marinePlanPolicies')
+  return sendMessage(sqsQueueName, JSON.stringify({ licenceId, policyJobId }))
 }
 
 export const receivePolicyJobs = async () =>
-  receiveMessages(config.get('marinePlanPolicies').sqsQueueUrl)
+  receiveMessages(
+    config.get('marinePlanPolicies').sqsQueueName,
+    MPP_RECEIVE_OPTIONS
+  )
 
 export const receiveDlqJobs = async () =>
-  receiveMessages(config.get('marinePlanPolicies').sqsDlqUrl)
-
-export const deletePolicyJob = async (queueUrl, receiptHandle) =>
-  getSqsClient().send(
-    new DeleteMessageCommand({
-      QueueUrl: queueUrl,
-      ReceiptHandle: receiptHandle
-    })
+  receiveMessages(
+    config.get('marinePlanPolicies').sqsDlqName,
+    MPP_RECEIVE_OPTIONS
   )
+
+export const deletePolicyJob = async (queueName, receiptHandle) =>
+  deleteMessage(queueName, receiptHandle)

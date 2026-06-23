@@ -8,13 +8,6 @@ import {
 
 const fetchMock = createFetchMock(vi)
 
-// vitest-fetch-mock only replaces globalThis.fetch; route undici's fetch
-// through it too so no unit test can silently hit the real network.
-vi.mock('undici', async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual, fetch: (...args) => globalThis.fetch(...args) }
-})
-
 let client
 
 beforeAll(async () => {

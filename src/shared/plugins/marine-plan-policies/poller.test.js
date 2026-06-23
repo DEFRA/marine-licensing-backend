@@ -98,7 +98,7 @@ describe('createMarinePlanPoliciesPollerPlugin', () => {
     }
   })
 
-  it('should stop draining a batch once stopped', async () => {
+  it('should process all messages in a batch even after stop is signalled', async () => {
     const server = buildServer()
     const processMessage = vi.fn()
 
@@ -121,6 +121,6 @@ describe('createMarinePlanPoliciesPollerPlugin', () => {
     hooks.onPostStart()
     await server.app['test-poller'].loopPromise
 
-    expect(processMessage).not.toHaveBeenCalled()
+    expect(processMessage).toHaveBeenCalledTimes(2)
   })
 })

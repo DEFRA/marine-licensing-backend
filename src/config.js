@@ -198,6 +198,14 @@ const config = convict({
         default: 30_000,
         env: 'AWS_S3_TIMEOUT'
       }
+    },
+    sqs: {
+      endpoint: {
+        doc: 'AWS SQS Endpoint',
+        format: requiredFromEnvInCdp,
+        default: 'http://localhost:4566',
+        env: 'SQS_ENDPOINT' // defined globally in CDP
+      }
     }
   },
   cdp: {

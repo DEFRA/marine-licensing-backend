@@ -1,14 +1,11 @@
 import { vi } from 'vitest'
+import Wreck from '@hapi/wreck'
 import { getPolicyContent } from './wording-client.js'
 
-let fetchMock
-
-beforeEach(() => {
-  fetchMock = globalThis.fetchMock
-})
+vi.mock('@hapi/wreck')
 
 describe('getPolicyContent', () => {
-  const logger = { info: vi.fn(), error: vi.fn() }
+  const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
 
   const policyEntry = (code, overrides = {}) => ({
     _id: 'mongo-id',
@@ -57,7 +54,7 @@ describe('getPolicyContent', () => {
     })
 
     expect(content).toEqual(expectedContent('E-AGG-1'))
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(Wreck.get).not.toHaveBeenCalled()
     expect(mockBulkWrite).not.toHaveBeenCalled()
   })
 
@@ -65,9 +62,10 @@ describe('getPolicyContent', () => {
     const { mockBulkWrite } = setupMocks({
       refreshed: { _id: 'E-AGG-1', ...expectedContent('E-AGG-1') }
     })
-    fetchMock.mockResponseOnce(
-      JSON.stringify([policyEntry('E-AGG-1'), policyEntry('SE-AQ-1')])
-    )
+    Wreck.get.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: [policyEntry('E-AGG-1'), policyEntry('SE-AQ-1')]
+    })
 
     const content = await getPolicyContent({
       policyCode: 'E-AGG-1',
@@ -105,12 +103,13 @@ describe('getPolicyContent', () => {
     const { mockBulkWrite } = setupMocks({
       refreshed: { _id: 'E-AGG-1' }
     })
-    fetchMock.mockResponseOnce(
-      JSON.stringify([
+    Wreck.get.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: [
         { title: 'no code here' },
         { code: 'E-AGG-1', policy: '<p>only policy</p>' }
-      ])
-    )
+      ]
+    })
 
     await getPolicyContent({
       policyCode: 'E-AGG-1',
@@ -140,7 +139,10 @@ describe('getPolicyContent', () => {
 
   it('should throw when the API does not return an array', async () => {
     setupMocks()
-    fetchMock.mockResponseOnce(JSON.stringify({ message: 'oops' }))
+    Wreck.get.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: { message: 'oops' }
+    })
 
     await expect(
       getPolicyContent({
@@ -151,18 +153,31 @@ describe('getPolicyContent', () => {
     ).rejects.toThrow('GOV.UK policies API returned no policies')
   })
 
-  it('should throw when the requested code is missing from the refreshed dataset', async () => {
+  it('should log a warning and return blank wording when the requested code is missing from the dataset', async () => {
     setupMocks({ refreshed: null })
-    fetchMock.mockResponseOnce(JSON.stringify([policyEntry('SE-AQ-1')]))
+    Wreck.get.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: [policyEntry('SE-AQ-1')]
+    })
 
-    await expect(
-      getPolicyContent({
-        policyCode: 'E-AGG-99',
-        db: global.mockMongo,
-        logger
-      })
-    ).rejects.toThrow(
-      'Policy E-AGG-99 not present in the GOV.UK policies dataset'
+    const content = await getPolicyContent({
+      policyCode: 'E-AGG-99',
+      db: global.mockMongo,
+      logger
+    })
+
+    expect(content).toEqual({
+      policy: '',
+      policyAim: '',
+      whatIsIt: '',
+      whyIsItImportant: '',
+      howWillThisBeImplemented: ''
+    })
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({ outcome: 'failure' })
+      }),
+      expect.stringContaining('E-AGG-99')
     )
   })
 })
