@@ -50,7 +50,7 @@ export const marinePlanPoliciesSchema = {
     env: 'MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS'
   },
   userAgent: {
-    doc: 'User-Agent header sent on outbound policy-calculation HTTP calls',
+    doc: 'Defra / MMO / Get permission for marine work',
     format: String,
     default: 'marine-licensing-backend/1.0',
     env: 'MARINE_PLAN_POLICIES_USER_AGENT'
