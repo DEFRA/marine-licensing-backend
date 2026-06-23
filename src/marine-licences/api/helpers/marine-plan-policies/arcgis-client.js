@@ -20,7 +20,9 @@ export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
   const { arcgisUrl, arcgisTimeoutMs } = config.get('marinePlanPolicies')
   const geometries = buildEmpGeometries(siteDetails)
 
-  if (!geometries.length) return []
+  if (!geometries.length) {
+    return []
+  }
 
   const combinedGeometry = {
     rings: geometries.flatMap((g) => g.rings),

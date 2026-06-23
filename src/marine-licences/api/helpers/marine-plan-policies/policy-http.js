@@ -1,4 +1,5 @@
 import Wreck from '@hapi/wreck'
+import { StatusCodes } from 'http-status-codes'
 import { config } from '../../../../config.js'
 
 const nanosecondsPerMillisecond = 1_000_000
@@ -31,7 +32,10 @@ export const timedJsonFetch = async ({
       ? Wreck.post(url, wreckOptions)
       : Wreck.get(url, wreckOptions))
 
-    if (res.statusCode < 200 || res.statusCode >= 300) {
+    if (
+      res.statusCode < StatusCodes.OK ||
+      res.statusCode >= StatusCodes.MULTIPLE_CHOICES
+    ) {
       const error = new Error(
         `${upstreamName} responded with status ${res.statusCode}`
       )
