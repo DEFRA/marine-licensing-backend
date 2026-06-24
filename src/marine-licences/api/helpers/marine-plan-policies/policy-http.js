@@ -55,7 +55,7 @@ export const timedJsonFetch = async ({
     )
     return payload
   } catch (error) {
-    logger.info(
+    logger.warn(
       {
         event: {
           action: eventAction,

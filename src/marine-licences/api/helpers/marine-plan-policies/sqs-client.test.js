@@ -4,15 +4,13 @@ import {
   receivePolicyJobs,
   receiveDlqJobs,
   deletePolicyJob,
-  resetSqsClient,
   MPP_RECEIVE_OPTIONS
 } from './sqs-client.js'
 
 vi.mock('../../../../shared/common/helpers/sqs/sqs-client.js', () => ({
   sendMessage: vi.fn().mockResolvedValue({}),
   receiveMessages: vi.fn().mockResolvedValue([]),
-  deleteMessage: vi.fn().mockResolvedValue({}),
-  resetSqsClient: vi.fn()
+  deleteMessage: vi.fn().mockResolvedValue({})
 }))
 
 import {
@@ -56,10 +54,5 @@ describe('policies-sqs-client', () => {
     await deletePolicyJob(sqsQueueName, 'receipt-1')
 
     expect(deleteMessage).toHaveBeenCalledWith(sqsQueueName, 'receipt-1')
-  })
-
-  it('re-exports resetSqsClient from the generic helper', () => {
-    resetSqsClient()
-    expect(resetSqsClient).toHaveBeenCalled()
   })
 })

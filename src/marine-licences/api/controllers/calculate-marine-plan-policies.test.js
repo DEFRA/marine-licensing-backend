@@ -134,7 +134,7 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
 
     it('should be idempotent when a job is already in flight', async () => {
       const _id = new ObjectId()
-      const { request, mockUpdateOne } = setupMocks(
+      const { request, mockUpdateOne, mockFindOne } = setupMocks(
         {
           _id,
           siteDetails: [mockFileUploadSite],
@@ -150,6 +150,7 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
 
       expect(mockUpdateOne).not.toHaveBeenCalled()
       expect(sendPolicyJob).not.toHaveBeenCalled()
+      expect(mockFindOne).toHaveBeenCalledTimes(1)
       expect(global.mockHandler.response).toHaveBeenCalledWith({
         message: 'success',
         value: { marinePlanPolicyJob: 'ready' }

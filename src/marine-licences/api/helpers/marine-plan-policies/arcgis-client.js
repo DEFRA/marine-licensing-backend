@@ -39,7 +39,7 @@ export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
         geometryType: 'esriGeometryPolygon',
         inSR: '4326',
         spatialRel: 'esriSpatialRelIntersects',
-        outFields: 'PolicyCode,Sector,isSpatial',
+        outFields: 'PolicyCode,Sector',
         returnGeometry: 'false'
       }).toString(),
       headers: { 'content-type': 'application/x-www-form-urlencoded' }

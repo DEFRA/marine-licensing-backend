@@ -5,8 +5,11 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
-    // Server-startup beforeAll hooks take 10-20s when all workers run in
-    // parallel; the 10s default intermittently fails whole suites.
+    // threads: false was removed to allow parallel test workers (faster runs).
+    // Integration tests that share the in-memory MongoDB instance are isolated
+    // per-file, so parallel execution is safe. hookTimeout is raised because
+    // server-startup beforeAll hooks can take 10-20s under parallel load,
+    // which intermittently hit the 10s default and failed whole suites.
     hookTimeout: 60_000,
     coverage: {
       provider: 'v8',

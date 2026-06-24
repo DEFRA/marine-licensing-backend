@@ -14,14 +14,6 @@ const runLoop = async (server, state, { receiveMessages, processMessage }) => {
       const messages = await receiveMessages()
       await processMessages(server, messages, processMessage)
     } catch (error) {
-      if (error.name === 'QueueDoesNotExist') {
-        server.logger.error(
-          structureErrorForECS(error),
-          `${state.name} queue does not exist — restart LocalStack and ensure start-localstack.sh has run`
-        )
-        state.running = false
-        return
-      }
       server.logger.error(
         structureErrorForECS(error),
         `${state.name} receive loop failed; retrying`
@@ -62,8 +54,9 @@ export const createMarinePlanPoliciesPollerPlugin = ({
         })
       })
 
-      server.ext('onPreStop', () => {
+      server.ext('onPreStop', async () => {
         state.running = false
+        await state.loopPromise
       })
 
       server.logger.info(`${name} plugin registered`)

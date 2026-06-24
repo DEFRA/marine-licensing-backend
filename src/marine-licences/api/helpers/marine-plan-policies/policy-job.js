@@ -46,7 +46,7 @@ export const computePolicyJobId = (licenceId, siteDetails = []) => {
 }
 
 // marinePlanPolicyResponses are deliberately never reset — only policy job state is discarded on geometry change.
-// marinePlanPolicyJobId is now a per-click id, so geometry change is detected by
+// marinePlanPolicyJobId is now a per-request ID, so geometry change is detected by
 // hashing the existing vs new site geometry (a job only exists for the geometry
 // currently stored, since any edit resets it).
 export const buildPolicyResetFields = (id, existing, newSiteDetails) => {

@@ -80,7 +80,7 @@ describe('queryArcGISPolicies', () => {
       spatialReference: geometryA.spatialReference
     })
     expect(params.get('spatialRel')).toBe('esriSpatialRelIntersects')
-    expect(params.get('outFields')).toBe('PolicyCode,Sector,isSpatial')
+    expect(params.get('outFields')).toBe('PolicyCode,Sector')
     expect(params.get('returnGeometry')).toBe('false')
     expect(options.headers['content-type']).toBe(
       'application/x-www-form-urlencoded'

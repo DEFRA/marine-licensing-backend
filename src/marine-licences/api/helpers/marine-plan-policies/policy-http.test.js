@@ -5,7 +5,7 @@ import { timedJsonFetch } from './policy-http.js'
 vi.mock('@hapi/wreck')
 
 describe('timedJsonFetch', () => {
-  const setupLogger = () => ({ info: vi.fn(), error: vi.fn() })
+  const setupLogger = () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 
   const callOptions = (logger, overrides = {}) => ({
     url: 'https://upstream.example/query',
@@ -57,7 +57,7 @@ describe('timedJsonFetch', () => {
 
     expect(error.message).toContain('responded with status 500')
     expect(error.statusCode).toBe(500)
-    expect(logger.info).toHaveBeenCalledWith(
+    expect(logger.warn).toHaveBeenCalledWith(
       {
         event: expect.objectContaining({
           action: 'mp-policies:arcgis-query',
@@ -76,7 +76,7 @@ describe('timedJsonFetch', () => {
     await expect(timedJsonFetch(callOptions(logger))).rejects.toThrow(
       'socket hang up'
     )
-    expect(logger.info).toHaveBeenCalledWith(
+    expect(logger.warn).toHaveBeenCalledWith(
       {
         event: expect.objectContaining({ outcome: 'failure' })
       },

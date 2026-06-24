@@ -2,7 +2,6 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateSiteController } from './update-site.js'
 import { mockFileUploadSite } from '../../../../tests/test.fixture.js'
-import Boom from '@hapi/boom'
 
 describe('PATCH /marine-licence/site', () => {
   const mockAuditPayload = {
@@ -49,21 +48,35 @@ describe('PATCH /marine-licence/site', () => {
       )
     })
 
-    it('should throw 404 when marine licence not found or site index is invalid', async () => {
+    it('should throw 404 when the site index is out of bounds', async () => {
       const { mockMongo, mockHandler } = global
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
         findOne: vi
           .fn()
           .mockResolvedValue({ siteDetails: [mockFileUploadSite] }),
-        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
+        updateOne: vi.fn()
       }))
-
-      vi.spyOn(Boom, 'notFound')
 
       await expect(() =>
         updateSiteController.handler(
           { db: mockMongo, payload: buildPayload({ siteIndex: 99 }) },
+          mockHandler
+        )
+      ).rejects.toThrow('Marine licence not found or invalid site index')
+    })
+
+    it('should throw 404 when the marine licence does not exist', async () => {
+      const { mockMongo, mockHandler } = global
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi.fn().mockResolvedValue(null),
+        updateOne: vi.fn()
+      }))
+
+      await expect(() =>
+        updateSiteController.handler(
+          { db: mockMongo, payload: buildPayload() },
           mockHandler
         )
       ).rejects.toThrow('Marine licence not found or invalid site index')

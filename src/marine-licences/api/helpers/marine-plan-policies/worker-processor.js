@@ -7,7 +7,7 @@ import {
   MARINE_PLAN_POLICY_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
-import { getPolicyContent } from './wording-client.js'
+import { getPolicyContent } from './policy-content-client.js'
 import { deletePolicyJob } from './sqs-client.js'
 
 const parseMessageBody = (message, logger) => {
@@ -47,7 +47,7 @@ const setJobStatus = ({ collection, _id, policyJobId }, status, extra = {}) =>
     { $set: { marinePlanPolicyJob: status, ...extra } }
   )
 
-const logDiscardedJob = ({ logger }, detail) =>
+const logDiscardedJob = (logger, detail) =>
   logger.info(
     {
       event: {
@@ -80,7 +80,7 @@ const computeAndStorePolicies = async (job, licence, db) => {
     )
   } else {
     logDiscardedJob(
-      job,
+      logger,
       `Discarding policy job result computed for stale sites on licence ${licenceId}`
     )
   }
@@ -118,7 +118,10 @@ export const processPolicyJob = async (server, message) => {
 
   const licence = await job.collection.findOne({ _id: job._id })
   if (!licence || licence.marinePlanPolicyJobId !== policyJobId) {
-    logDiscardedJob(job, `Discarding stale policy job for licence ${licenceId}`)
+    logDiscardedJob(
+      logger,
+      `Discarding stale policy job for licence ${licenceId}`
+    )
     await deletePolicyJob(sqsQueueName, message.ReceiptHandle)
     return
   }
@@ -145,7 +148,7 @@ export const processPolicyJob = async (server, message) => {
 // On the final delivery attempt the main worker already sets 'failed'.
 // processDlqJob acts as a safety net for edge cases (e.g. process crash
 // before the DB write on the last attempt) and always cleans up the DLQ.
-// The per-click policyJobId match ensures a lingering dead-letter never
+// The per-request policyJobId match ensures a lingering dead-letter never
 // overwrites a newer job the user has since re-triggered.
 export const processDlqJob = async (server, message) => {
   const { db, logger } = server
@@ -180,7 +183,7 @@ export const processDlqJob = async (server, message) => {
       )
     } else {
       logDiscardedJob(
-        job,
+        logger,
         `Discarding stale dead-lettered policy job for licence ${licenceId}`
       )
     }

@@ -44,9 +44,10 @@ export const calculateMarinePlanPoliciesController = {
       // Atomically create a job ONLY if there isn't an active/ready one.
       // $nin also matches when the field is absent (new licence) or null (reset
       // after a geometry edit) and 'failed' (a retry) — i.e. exactly the
-      // "no job in flight" states. Two racing clicks: the first flips the status
-      // to 'pending', so the second no longer matches the filter and returns null.
-      // jobId is a fresh per-click id, so every Retry is its own message.
+      // "no job in flight" states. Two concurrent requests: the first flips the
+      // status to 'pending', so the second no longer matches the filter and
+      // returns null. jobId is a fresh per-request ID, so every retry is its
+      // own message.
       const jobId = new ObjectId().toHexString()
       const claim = await collection.findOneAndUpdate(
         { _id, marinePlanPolicyJob: { $nin: ACTIVE_OR_READY } },
@@ -62,11 +63,12 @@ export const calculateMarinePlanPoliciesController = {
       )
 
       if (!claim) {
-        // A job is already queued, running, or complete: nothing to do.
         return h
           .response({
             message: 'success',
-            value: { marinePlanPolicyJob: marineLicence.marinePlanPolicyJob }
+            value: {
+              marinePlanPolicyJob: marineLicence.marinePlanPolicyJob ?? null
+            }
           })
           .code(StatusCodes.ACCEPTED)
       }

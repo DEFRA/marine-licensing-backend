@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
-import { getPolicyContent } from './wording-client.js'
+import { getPolicyContent } from './policy-content-client.js'
 
 vi.mock('@hapi/wreck')
 

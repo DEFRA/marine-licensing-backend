@@ -50,7 +50,7 @@ export const marinePlanPoliciesSchema = {
     env: 'MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS'
   },
   userAgent: {
-    doc: 'Defra / MMO / Get permission for marine work',
+    doc: 'User-Agent header sent with requests to the ArcGIS and GOV.UK policy APIs',
     format: String,
     default: 'marine-licensing-backend/1.0',
     env: 'MARINE_PLAN_POLICIES_USER_AGENT'

@@ -2,13 +2,13 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { processPolicyJob, processDlqJob } from './worker-processor.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
-import { getPolicyContent } from './wording-client.js'
+import { getPolicyContent } from './policy-content-client.js'
 import { deletePolicyJob } from './sqs-client.js'
 
 vi.mock('./arcgis-client.js', () => ({
   queryArcGISPolicies: vi.fn()
 }))
-vi.mock('./wording-client.js', () => ({
+vi.mock('./policy-content-client.js', () => ({
   getPolicyContent: vi.fn()
 }))
 vi.mock('./sqs-client.js', () => ({
