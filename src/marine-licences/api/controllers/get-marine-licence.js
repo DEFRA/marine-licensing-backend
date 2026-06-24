@@ -46,7 +46,7 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
         ...rest,
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],
-        marinePlanPolicyResponses: rest.marinePlanPolicyResponses ?? [],
+        marinePlanPolicyResponses: rest.marinePlanPolicyResponses ?? {},
         taskList
       }
 

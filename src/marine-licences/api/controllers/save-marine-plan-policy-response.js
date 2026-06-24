@@ -24,30 +24,19 @@ export const saveMarinePlanPolicyResponseController = {
       const _id = ObjectId.createFromHexString(id)
       const collection = db.collection(collectionMarineLicences)
 
-      // Update in place when a response for this policy already exists…
-      const updateResult = await collection.updateOne(
-        { _id, 'marinePlanPolicyResponses.policyCode': policyCode },
+      const result = await collection.updateOne(
+        { _id },
         {
           $set: {
-            'marinePlanPolicyResponses.$.response': response,
+            [`marinePlanPolicyResponses.${policyCode}`]: response,
             updatedAt,
             updatedBy
           }
         }
       )
 
-      // …otherwise append a new entry
-      if (updateResult.matchedCount === 0) {
-        const pushResult = await collection.updateOne(
-          { _id },
-          {
-            $push: { marinePlanPolicyResponses: { policyCode, response } },
-            $set: { updatedAt, updatedBy }
-          }
-        )
-        if (pushResult.matchedCount === 0) {
-          throw Boom.notFound('Marine licence not found')
-        }
+      if (result.matchedCount === 0) {
+        throw Boom.notFound('Marine licence not found')
       }
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)

@@ -131,7 +131,7 @@ describe('GET /marine-licence', () => {
             projectBackground: 'Test project background',
             marinePlanPolicyJob: null,
             marinePlanPolicies: [],
-            marinePlanPolicyResponses: [],
+            marinePlanPolicyResponses: {},
             taskList: {
               preferredDates: 'COMPLETED',
               projectName: 'COMPLETED',

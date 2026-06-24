@@ -18,12 +18,9 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
     ...overrides
   })
 
-  const setupMocks = (updateResults) => {
+  const setupMocks = (result) => {
     const { mockMongo } = global
-    const mockUpdateOne = vi.fn()
-    for (const result of updateResults) {
-      mockUpdateOne.mockResolvedValueOnce(result)
-    }
+    const mockUpdateOne = vi.fn().mockResolvedValue(result)
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
       updateOne: mockUpdateOne
     }))
@@ -68,10 +65,10 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
   })
 
   describe('handler', () => {
-    it('should update an existing response in place', async () => {
+    it('should save a policy response using a single update operation', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = buildPayload()
-      const mockUpdateOne = setupMocks([{ matchedCount: 1 }])
+      const mockUpdateOne = setupMocks({ matchedCount: 1 })
 
       await saveMarinePlanPolicyResponseController.handler(
         { db: mockMongo, payload: mockPayload },
@@ -80,13 +77,10 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
 
       expect(mockUpdateOne).toHaveBeenCalledTimes(1)
       expect(mockUpdateOne).toHaveBeenCalledWith(
-        {
-          _id: ObjectId.createFromHexString(mockPayload.id),
-          'marinePlanPolicyResponses.policyCode': 'S-FISH-1'
-        },
+        { _id: ObjectId.createFromHexString(mockPayload.id) },
         {
           $set: {
-            'marinePlanPolicyResponses.$.response': mockPayload.response,
+            'marinePlanPolicyResponses.S-FISH-1': mockPayload.response,
             ...mockAuditPayload
           }
         }
@@ -94,38 +88,9 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
       expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
     })
 
-    it('should append a new response when none exists for the policy', async () => {
-      const { mockMongo, mockHandler } = global
-      const mockPayload = buildPayload()
-      const mockUpdateOne = setupMocks([
-        { matchedCount: 0 },
-        { matchedCount: 1 }
-      ])
-
-      await saveMarinePlanPolicyResponseController.handler(
-        { db: mockMongo, payload: mockPayload },
-        mockHandler
-      )
-
-      expect(mockUpdateOne).toHaveBeenNthCalledWith(
-        2,
-        { _id: ObjectId.createFromHexString(mockPayload.id) },
-        {
-          $push: {
-            marinePlanPolicyResponses: {
-              policyCode: 'S-FISH-1',
-              response: mockPayload.response
-            }
-          },
-          $set: mockAuditPayload
-        }
-      )
-      expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
-    })
-
     it('should throw 404 when the marine licence does not exist', async () => {
       const { mockMongo, mockHandler } = global
-      setupMocks([{ matchedCount: 0 }, { matchedCount: 0 }])
+      setupMocks({ matchedCount: 0 })
 
       await expect(() =>
         saveMarinePlanPolicyResponseController.handler(
