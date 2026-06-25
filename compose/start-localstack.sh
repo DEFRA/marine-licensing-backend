@@ -40,7 +40,7 @@ aws --endpoint-url=http://localhost:4566 s3api put-bucket-notification-configura
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploader-download-requests
 
 # DLQ first so the main queue's redrive
-# policy can reference it. A job gets maxReceiveCount (5) delivery attempts;
+# policy can reference it. A job gets maxReceiveCount (3) delivery attempts;
 # after that the message dead-letters and the DLQ worker marks the job failed
 # so the user can trigger a fresh calculation from the UI.
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies-deadletter

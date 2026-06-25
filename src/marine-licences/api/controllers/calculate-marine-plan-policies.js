@@ -41,13 +41,12 @@ export const calculateMarinePlanPoliciesController = {
         throw Boom.badRequest('Marine licence has no site details')
       }
 
-      // Atomically create a job ONLY if there isn't an active/ready one.
-      // $nin also matches when the field is absent (new licence) or null (reset
-      // after a geometry edit) and 'failed' (a retry) — i.e. exactly the
-      // "no job in flight" states. Two concurrent requests: the first flips the
-      // status to 'pending', so the second no longer matches the filter and
-      // returns null. jobId is a fresh per-request ID, so every retry is its
-      // own message.
+      // Only create a new job if there isn't already an active one.
+      // We allow a new job when the status is missing, null, or 'failed'.
+      // This update is atomic, so only one request can create a job. If two
+      // requests happen at the same time, the first sets the status to
+      // 'pending'. The second sees that a job already exists and does nothing.
+      // Every retry uses a new jobId.
       const jobId = new ObjectId().toHexString()
       const claim = await collection.findOneAndUpdate(
         { _id, marinePlanPolicyJob: { $nin: ACTIVE_OR_READY } },

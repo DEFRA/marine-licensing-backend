@@ -97,7 +97,6 @@ const handleJobFailure = (job, error) => {
   )
 }
 
-// On transient failure the message is left on the queue; the DLQ worker marks it failed after maxReceiveCount is spent.
 export const processPolicyJob = async (server, message) => {
   const { db, logger } = server
   const { sqsQueueName } = config.get('marinePlanPolicies')
