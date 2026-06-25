@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
+import Boom from '@hapi/boom'
 import { timedJsonFetch } from './policy-http.js'
 
 vi.mock('@hapi/wreck')
@@ -45,18 +46,19 @@ describe('timedJsonFetch', () => {
     await timedJsonFetch(callOptions(logger))
 
     const [, options] = Wreck.get.mock.calls[0]
-    expect(options.headers['user-agent']).toBe('marine-licensing-backend/1.0')
+    expect(options.headers['user-agent']).toBe(
+      'Defra / MMO / Get permission for marine work'
+    )
     expect(options.timeout).toBe(1000)
   })
 
   it('should throw and log failure duration on error statuses', async () => {
     const logger = setupLogger()
-    Wreck.get.mockResolvedValue({ res: { statusCode: 500 }, payload: '' })
+    Wreck.get.mockRejectedValue(Boom.internal('Internal Server Error'))
 
-    const error = await timedJsonFetch(callOptions(logger)).catch((e) => e)
-
-    expect(error.message).toContain('responded with status 500')
-    expect(error.statusCode).toBe(500)
+    await expect(timedJsonFetch(callOptions(logger))).rejects.toThrow(
+      'Internal Server Error'
+    )
     expect(logger.warn).toHaveBeenCalledWith(
       {
         event: expect.objectContaining({

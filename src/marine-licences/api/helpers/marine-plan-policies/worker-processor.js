@@ -28,16 +28,16 @@ const parseMessageBody = (message, logger) => {
 
 const fetchPolicies = async ({ siteDetails, db, logger }) => {
   const policies = await queryArcGISPolicies({ siteDetails, logger })
-  return Promise.all(
-    policies.map(async (policy) => {
-      const content = await getPolicyContent({
-        policyCode: policy.policyCode,
-        db,
-        logger
-      })
-      return { ...policy, ...content }
+  const results = []
+  for (const policy of policies) {
+    const content = await getPolicyContent({
+      policyCode: policy.policyCode,
+      db,
+      logger
     })
-  )
+    results.push({ ...policy, ...content })
+  }
+  return results
 }
 
 // Conditional on marinePlanPolicyJobId so a site edit mid-flight is never overwritten

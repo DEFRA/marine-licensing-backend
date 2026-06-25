@@ -10,7 +10,7 @@ export { resetSqsClient } from '../../../../shared/common/helpers/sqs/sqs-client
 export const MPP_RECEIVE_OPTIONS = {
   MaxNumberOfMessages: 10,
   WaitTimeSeconds: 20,
-  AttributeNames: ['ApproximateReceiveCount']
+  MessageSystemAttributeNames: ['ApproximateReceiveCount']
 }
 
 export const sendPolicyJob = async ({ licenceId, policyJobId }) => {

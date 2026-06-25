@@ -42,7 +42,7 @@ const refreshPolicyDataset = async (collection, logger) => {
     url: govukPoliciesUrl,
     timeoutMs: wordingTimeoutMs,
     eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
-    upstreamName: 'GOV.UK marine plan policies fetch',
+    upstreamName: 'marine plan policy wording',
     logger
   })
 
@@ -69,6 +69,18 @@ export const getPolicyContent = async ({ policyCode, db, logger }) => {
 
   const cached = await collection.findOne({ _id: policyCode })
   if (cached) {
+    if (cached.notFound) {
+      logger.info(
+        {
+          event: {
+            action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
+            outcome: 'success'
+          }
+        },
+        `Policy ${policyCode} served from sentinel cache (absent from GOV.UK dataset)`
+      )
+      return toEmptyContent()
+    }
     return toContent(cached)
   }
 
@@ -84,6 +96,11 @@ export const getPolicyContent = async ({ policyCode, db, logger }) => {
         }
       },
       `Policy ${policyCode} not present in the GOV.UK policies dataset; substituting empty wording`
+    )
+    await collection.updateOne(
+      { _id: policyCode },
+      { $set: { notFound: true, fetchedAt: new Date() } },
+      { upsert: true }
     )
     return toEmptyContent()
   }

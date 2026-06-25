@@ -52,7 +52,7 @@ export const marinePlanPoliciesSchema = {
   userAgent: {
     doc: 'User-Agent header sent with requests to the ArcGIS and GOV.UK policy APIs',
     format: String,
-    default: 'marine-licensing-backend/1.0',
+    default: 'Defra / MMO / Get permission for marine work',
     env: 'MARINE_PLAN_POLICIES_USER_AGENT'
   }
 }

@@ -35,11 +35,13 @@ describe('getPolicyContent', () => {
       .mockResolvedValueOnce(cached)
       .mockResolvedValueOnce(refreshed)
     const mockBulkWrite = vi.fn().mockResolvedValue({})
+    const mockUpdateOne = vi.fn().mockResolvedValue({})
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
       findOne: mockFindOne,
-      bulkWrite: mockBulkWrite
+      bulkWrite: mockBulkWrite,
+      updateOne: mockUpdateOne
     }))
-    return { mockFindOne, mockBulkWrite }
+    return { mockFindOne, mockBulkWrite, mockUpdateOne }
   }
 
   it('should return cached content without calling the GOV.UK API', async () => {
@@ -153,8 +155,8 @@ describe('getPolicyContent', () => {
     ).rejects.toThrow('GOV.UK policies API returned no policies')
   })
 
-  it('should log a warning and return blank wording when the requested code is missing from the dataset', async () => {
-    setupMocks({ refreshed: null })
+  it('should log a warning, write a sentinel, and return blank wording when the requested code is missing from the dataset', async () => {
+    const { mockUpdateOne } = setupMocks({ refreshed: null })
     Wreck.get.mockResolvedValue({
       res: { statusCode: 200 },
       payload: [policyEntry('SE-AQ-1')]
@@ -176,6 +178,39 @@ describe('getPolicyContent', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({ outcome: 'failure' })
+      }),
+      expect.stringContaining('E-AGG-99')
+    )
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: 'E-AGG-99' },
+      { $set: { notFound: true, fetchedAt: expect.any(Date) } },
+      { upsert: true }
+    )
+  })
+
+  it('should return blank wording without re-fetching when a sentinel is cached for an unknown code', async () => {
+    const { mockUpdateOne } = setupMocks({
+      cached: { _id: 'E-AGG-99', notFound: true, fetchedAt: new Date() }
+    })
+
+    const content = await getPolicyContent({
+      policyCode: 'E-AGG-99',
+      db: global.mockMongo,
+      logger
+    })
+
+    expect(content).toEqual({
+      policy: '',
+      policyAim: '',
+      whatIsIt: '',
+      whyIsItImportant: '',
+      howWillThisBeImplemented: ''
+    })
+    expect(Wreck.get).not.toHaveBeenCalled()
+    expect(mockUpdateOne).not.toHaveBeenCalled()
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({ outcome: 'success' })
       }),
       expect.stringContaining('E-AGG-99')
     )
