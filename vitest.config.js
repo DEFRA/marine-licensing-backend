@@ -5,9 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
-    // threads: false removed — per-file MongoDB isolation makes parallel workers safe.
-    // hookTimeout raised to 60s: server-startup beforeAll hooks can take 10-20s under parallel load.
-    hookTimeout: 60_000,
+    threads: false,
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',
