@@ -8,7 +8,7 @@ export const marinePlanPoliciesSchema = {
   sqsMaxReceiveCount: {
     doc: 'Number of delivery attempts before a policy job message is dead-lettered; must match the queue RedrivePolicy',
     format: Number,
-    default: 5,
+    default: 3,
     env: 'MARINE_PLAN_POLICIES_SQS_MAX_RECEIVE_COUNT'
   },
   sqsQueueName: {
@@ -38,15 +38,15 @@ export const marinePlanPoliciesSchema = {
     env: 'GOVUK_MARINE_POLICIES_API_URL'
   },
   arcgisTimeoutMs: {
-    doc: 'Per-request timeout for ArcGIS feature-server queries',
+    doc: 'Per-request timeout for ArcGIS feature-server queries. Must satisfy: arcgisTimeoutMs + wordingTimeoutMs << SQS VisibilityTimeout (60 s CDP default)',
     format: Number,
-    default: 90_000,
+    default: 20_000,
     env: 'MARINE_PLAN_POLICIES_ARCGIS_TIMEOUT_MS'
   },
   wordingTimeoutMs: {
-    doc: 'Per-request timeout for GOV.UK policy wording fetches',
+    doc: 'Per-request timeout for GOV.UK policy wording fetches. Must satisfy: arcgisTimeoutMs + wordingTimeoutMs << SQS VisibilityTimeout (60 s CDP default)',
     format: Number,
-    default: 30_000,
+    default: 10_000,
     env: 'MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS'
   },
   userAgent: {
