@@ -23,13 +23,8 @@ const runLoop = async (server, state, { receiveMessages, processMessage }) => {
   }
 }
 
-/**
- * Builds a Hapi plugin that long-polls an SQS queue for as long as the server
- * is running. Unlike the dynamics plugin's setInterval, SQS long-polling wants
- * a continuous receive loop (ReceiveMessage already waits up to 20s
- * server-side). The loop starts onPostStart and is signalled to stop
- * onPreStop; in-flight work completes before the loop exits.
- */
+// SQS long-polling needs a continuous receive loop — ReceiveMessage blocks up to 20s server-side.
+// Loop starts onPostStart and stops onPreStop; in-flight work completes before exit.
 export const createMarinePlanPoliciesPollerPlugin = ({
   name,
   receiveMessages,

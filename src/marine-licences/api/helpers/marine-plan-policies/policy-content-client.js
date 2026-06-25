@@ -36,8 +36,7 @@ const refreshPolicyDataset = async (collection, logger) => {
   const { govukPoliciesUrl, wordingTimeoutMs } =
     config.get('marinePlanPolicies')
 
-  // The API has no per-code route — it returns every policy in one array,
-  // so a single fetch refreshes the whole 24h cache for all codes.
+  // The API returns all policies in one response, so one fetch refreshes the full cache.
   const policies = await timedJsonFetch({
     url: govukPoliciesUrl,
     timeoutMs: wordingTimeoutMs,

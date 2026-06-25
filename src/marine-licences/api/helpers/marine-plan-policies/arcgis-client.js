@@ -3,8 +3,7 @@ import { buildEmpGeometries } from '../../../../shared/common/helpers/emp/transf
 import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import { timedJsonFetch } from './policy-http.js'
 
-// Field names match the PolicyData_MDP layer schema exactly
-// (PolicyCode, Sector, isSpatial)
+// Field names come from the PolicyData_MDP ArcGIS layer schema.
 const extractPolicy = (attributes = {}) => {
   const { PolicyCode, Sector } = attributes
   if (!PolicyCode) {

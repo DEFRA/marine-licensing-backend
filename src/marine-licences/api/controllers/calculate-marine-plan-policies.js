@@ -41,12 +41,7 @@ export const calculateMarinePlanPoliciesController = {
         throw Boom.badRequest('Marine licence has no site details')
       }
 
-      // Only create a new job if there isn't already an active one.
-      // We allow a new job when the status is missing, null, or 'failed'.
-      // This update is atomic, so only one request can create a job. If two
-      // requests happen at the same time, the first sets the status to
-      // 'pending'. The second sees that a job already exists and does nothing.
-      // Every retry uses a new jobId.
+      // Atomic claim: creates a job only when none is active. Concurrent requests and retries each get a new jobId.
       const jobId = new ObjectId().toHexString()
       const claim = await collection.findOneAndUpdate(
         { _id, marinePlanPolicyJob: { $nin: ACTIVE_OR_READY } },
@@ -75,8 +70,7 @@ export const calculateMarinePlanPoliciesController = {
       try {
         await sendPolicyJob({ licenceId: id, policyJobId: jobId })
       } catch (error) {
-        // Roll back so the document is not stuck in 'pending' with no
-        // message in flight (the idempotency guard would block retries)
+        // Roll back pending status so the idempotency guard doesn't block retries.
         await collection.updateOne(
           { _id },
           {

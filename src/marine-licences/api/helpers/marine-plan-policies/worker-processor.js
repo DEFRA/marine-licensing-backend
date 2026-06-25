@@ -86,10 +86,8 @@ const computeAndStorePolicies = async (job, licence, db) => {
   }
 }
 
-// Status deliberately stays 'computing' between attempts so the front end
-// keeps showing the calculating view; 'failed' is terminal and only set when
-// the message dead-letters after the queue's retry budget is spent.
-// Message deliberately not deleted — SQS redelivers after the visibility timeout.
+// Status stays 'computing' on transient errors so the front end keeps showing a calculating view.
+// Message is not deleted — SQS redelivers it after the visibility timeout expires.
 const handleJobFailure = (job, error) => {
   job.logger.error(
     structureErrorForECS(error),
@@ -138,17 +136,14 @@ export const processPolicyJob = async (server, message) => {
     const { sqsMaxReceiveCount } = config.get('marinePlanPolicies')
     if (receiveCount >= sqsMaxReceiveCount) {
       await setJobStatus(job, MARINE_PLAN_POLICY_JOB_STATUS.FAILED)
-      // Message is not deleted — SQS dead-letters it naturally.
-      // The DLQ worker will encounter a no-op and clean up.
+      // Leave undeleted — SQS dead-letters it naturally and the DLQ worker will clean up.
     }
   }
 }
 
-// On the final delivery attempt the main worker already sets 'failed'.
-// processDlqJob acts as a safety net for edge cases (e.g. process crash
-// before the DB write on the last attempt) and always cleans up the DLQ.
-// The per-request policyJobId match ensures a lingering dead-letter never
-// overwrites a newer job the user has since re-triggered.
+// Safety net: the main worker usually sets 'failed' before dead-lettering, but this handles
+// edge cases (e.g. a crash before the DB write). The policyJobId match prevents a stale
+// dead-letter from overwriting a newer job.
 export const processDlqJob = async (server, message) => {
   const { db, logger } = server
   const { sqsDlqName } = config.get('marinePlanPolicies')

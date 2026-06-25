@@ -28,8 +28,7 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
     const { mockMongo } = global
     const mockFindOne = vi.fn().mockResolvedValue(licence)
     const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
-    // findOneAndUpdate returns the claimed doc when no active job blocks it,
-    // or null when one is already in flight.
+    // claimWins: true → returns the claimed doc; false → null (job already active)
     const mockFindOneAndUpdate = vi
       .fn()
       .mockResolvedValue(claimWins ? { _id: licence?._id } : null)
@@ -118,7 +117,6 @@ describe('POST /marine-licence/calculate-marine-plan-policies', () => {
         },
         { returnDocument: 'after' }
       )
-      // the same per-click id that was claimed is the one put on the queue
       const claimedJobId =
         mockFindOneAndUpdate.mock.calls[0][1].$set.marinePlanPolicyJobId
       expect(sendPolicyJob).toHaveBeenCalledWith({

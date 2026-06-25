@@ -348,9 +348,8 @@ describe('retryAsyncOperation', () => {
 
       expect(result).toBe('success on retry')
       expect(mockOperation).toHaveBeenCalledTimes(2)
-      // Verify that approximately 1000ms passed for the default interval
       expect(endTime - startTime).toBeGreaterThanOrEqual(950)
-      expect(endTime - startTime).toBeLessThan(3000) // Allow some tolerance
+      expect(endTime - startTime).toBeLessThan(3000)
     })
 
     it('should use both default parameters when neither retries nor intervalMs are provided', async () => {
@@ -365,11 +364,9 @@ describe('retryAsyncOperation', () => {
       ).rejects.toThrow('Default params failure')
       const endTime = Date.now()
 
-      // Should use default retries (3)
       expect(mockOperation).toHaveBeenCalledTimes(3)
-      // Should use default intervalMs (1000ms), so roughly 2000ms total (2 intervals)
       expect(endTime - startTime).toBeGreaterThanOrEqual(1900)
-      expect(endTime - startTime).toBeLessThan(2200) // Allow some tolerance
+      expect(endTime - startTime).toBeLessThan(2200)
     })
 
     it('should succeed immediately with defaults when operation succeeds on first attempt', async () => {
@@ -397,7 +394,6 @@ describe('retryAsyncOperation', () => {
 
       expect(result).toBe('success with defaults')
       expect(mockOperation).toHaveBeenCalledTimes(2)
-      // Should wait default interval (1000ms) between attempts
       expect(endTime - startTime).toBeGreaterThanOrEqual(950)
       // Generous upper bound: under full-suite load the event loop can lag
       // well past the 1000ms timer; the lower bound is the real assertion.

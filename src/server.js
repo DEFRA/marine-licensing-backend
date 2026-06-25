@@ -58,8 +58,8 @@ async function createServer() {
   // router         - routes used in the app
   // processDynamicsQueuePlugin - polls exemption queue and syncs to Dynamics 365
   // processEmpQueuePlugin - polls exemption queue and syncs to "Explore Marine Planning"
-  // marinePlanPoliciesWorkerPlugin - long-polls the marine plan policies SQS queue and computes applicable policies
-  // marinePlanPoliciesDlqWorkerPlugin - long-polls the policies dead-letter queue and marks dead-lettered jobs failed
+  // marinePlanPoliciesWorkerPlugin - processes marine plan policy SQS jobs
+  // marinePlanPoliciesDlqWorkerPlugin - marks dead-lettered policy jobs as failed
   await server.register([
     requestTracing,
     requestLogger,

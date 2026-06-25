@@ -1,8 +1,6 @@
 import { createHash } from 'node:crypto'
 
-// Only fields that affect which marine plan policies apply. Renaming a site or
-// editing activity details must not change the hash, so the policy job is only
-// re-triggered when the geometry genuinely changes.
+// Only geometry fields — renaming a site or editing activity details must not re-trigger the policy job.
 const GEOMETRY_FIELDS = [
   'coordinatesType',
   'coordinatesEntry',
@@ -45,10 +43,7 @@ export const computePolicyJobId = (licenceId, siteDetails = []) => {
     .digest('hex')
 }
 
-// marinePlanPolicyResponses are deliberately never reset — only policy job state is discarded on geometry change.
-// marinePlanPolicyJobId is now a per-request ID, so geometry change is detected by
-// hashing the existing vs new site geometry (a job only exists for the geometry
-// currently stored, since any edit resets it).
+// Responses are never reset — only job state is cleared on geometry change, so existing results survive a re-trigger.
 export const buildPolicyResetFields = (id, existing, newSiteDetails) => {
   if (!existing?.marinePlanPolicyJobId) {
     return {}
