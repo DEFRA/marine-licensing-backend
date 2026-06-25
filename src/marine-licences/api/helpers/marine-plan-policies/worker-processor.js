@@ -158,13 +158,7 @@ export const processDlqJob = async (server, message) => {
       policyJobId,
       logger
     }
-    const result = await job.collection.updateOne(
-      {
-        _id: job._id,
-        marinePlanPolicyJobId: policyJobId
-      },
-      { $set: { marinePlanPolicyJob: MARINE_PLAN_POLICY_JOB_STATUS.FAILED } }
-    )
+    const result = await setJobStatus(job, MARINE_PLAN_POLICY_JOB_STATUS.FAILED)
     if (result.matchedCount > 0) {
       logger.warn(
         {
