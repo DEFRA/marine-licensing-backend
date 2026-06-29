@@ -64,7 +64,9 @@ const refreshPolicyDataset = async (collection, logger) => {
 }
 
 export const getPoliciesContent = async ({ policies, db, logger }) => {
-  if (policies.length === 0) return []
+  if (policies.length === 0) {
+    return []
+  }
 
   const collection = db.collection(collectionMarinePlanPolicyWording)
   const codes = policies.map((p) => p.policyCode)
