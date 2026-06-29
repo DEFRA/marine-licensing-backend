@@ -98,7 +98,7 @@ describe('sqs-client', () => {
       const options = {
         MaxNumberOfMessages: 10,
         WaitTimeSeconds: 20,
-        AttributeNames: ['ApproximateReceiveCount']
+        MessageSystemAttributeNames: ['ApproximateReceiveCount']
       }
       const result = await receiveMessages(queueName, options)
 

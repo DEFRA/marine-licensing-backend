@@ -2,14 +2,14 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { processPolicyJob, processDlqJob } from './worker-processor.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
-import { getPolicyContent } from './policy-content-client.js'
+import { getPoliciesContent } from './policy-content-client.js'
 import { deletePolicyJob } from './sqs-client.js'
 
 vi.mock('./arcgis-client.js', () => ({
   queryArcGISPolicies: vi.fn()
 }))
 vi.mock('./policy-content-client.js', () => ({
-  getPolicyContent: vi.fn()
+  getPoliciesContent: vi.fn()
 }))
 vi.mock('./sqs-client.js', () => ({
   deletePolicyJob: vi.fn()
@@ -89,17 +89,20 @@ describe('policies-worker-processor', () => {
     it('should compute policies, store them with their content, mark ready and delete the message', async () => {
       const licence = buildLicence()
       const { server, mockUpdateOne } = setupMocks(licence)
-      const policyContent = {
-        policy: '<p>statement</p>',
-        policyAim: '<p>aim</p>',
-        whatIsIt: '<p>what</p>',
-        whyIsItImportant: '<p>why</p>',
-        howWillThisBeImplemented: '<p>how</p>'
-      }
-      vi.mocked(queryArcGISPolicies).mockResolvedValue([
-        { policyCode: 'S-FISH-1', sector: 'Fishing' }
-      ])
-      vi.mocked(getPolicyContent).mockResolvedValue(policyContent)
+      const arcgisPolicies = [{ policyCode: 'S-FISH-1', sector: 'Fishing' }]
+      const mergedPolicies = [
+        {
+          policyCode: 'S-FISH-1',
+          sector: 'Fishing',
+          policy: '<p>statement</p>',
+          policyAim: '<p>aim</p>',
+          whatIsIt: '<p>what</p>',
+          whyIsItImportant: '<p>why</p>',
+          howWillThisBeImplemented: '<p>how</p>'
+        }
+      ]
+      vi.mocked(queryArcGISPolicies).mockResolvedValue(arcgisPolicies)
+      vi.mocked(getPoliciesContent).mockResolvedValue(mergedPolicies)
 
       await processPolicyJob(server, buildMessage())
 
@@ -107,8 +110,8 @@ describe('policies-worker-processor', () => {
         siteDetails: licence.siteDetails,
         logger: server.logger
       })
-      expect(getPolicyContent).toHaveBeenCalledWith({
-        policyCode: 'S-FISH-1',
+      expect(getPoliciesContent).toHaveBeenCalledWith({
+        policies: arcgisPolicies,
         db: server.db,
         logger: server.logger
       })
@@ -128,13 +131,7 @@ describe('policies-worker-processor', () => {
         },
         {
           $set: {
-            marinePlanPolicies: [
-              {
-                policyCode: 'S-FISH-1',
-                sector: 'Fishing',
-                ...policyContent
-              }
-            ],
+            marinePlanPolicies: mergedPolicies,
             marinePlanPolicyJob: 'ready'
           }
         }

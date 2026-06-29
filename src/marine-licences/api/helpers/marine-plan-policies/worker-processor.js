@@ -7,7 +7,7 @@ import {
   MARINE_PLAN_POLICY_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
-import { getPolicyContent } from './policy-content-client.js'
+import { getPoliciesContent } from './policy-content-client.js'
 import { deletePolicyJob } from './sqs-client.js'
 
 const parseMessageBody = (message, logger) => {
@@ -28,16 +28,7 @@ const parseMessageBody = (message, logger) => {
 
 const fetchPolicies = async ({ siteDetails, db, logger }) => {
   const policies = await queryArcGISPolicies({ siteDetails, logger })
-  const results = []
-  for (const policy of policies) {
-    const content = await getPolicyContent({
-      policyCode: policy.policyCode,
-      db,
-      logger
-    })
-    results.push({ ...policy, ...content })
-  }
-  return results
+  return getPoliciesContent({ policies, db, logger })
 }
 
 // Conditional on marinePlanPolicyJobId so a site edit mid-flight is never overwritten
@@ -47,11 +38,13 @@ const setJobStatus = ({ collection, _id, policyJobId }, status, extra = {}) =>
     { $set: { marinePlanPolicyJob: status, ...extra } }
   )
 
-const logDiscardedJob = (logger, detail) =>
+const logDiscardedJob = (logger, detail, licenceId) =>
   logger.info(
     {
       event: {
-        action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_STALE
+        action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_STALE,
+        outcome: 'success',
+        reference: licenceId
       }
     },
     detail
@@ -73,7 +66,8 @@ const computeAndStorePolicies = async (job, licence, db) => {
       {
         event: {
           action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_COMPLETE,
-          outcome: 'success'
+          outcome: 'success',
+          reference: licenceId
         }
       },
       `Policy job complete for licence ${licenceId}: ${marinePlanPolicies.length} applicable policies`
@@ -81,7 +75,8 @@ const computeAndStorePolicies = async (job, licence, db) => {
   } else {
     logDiscardedJob(
       logger,
-      `Discarding policy job result computed for stale sites on licence ${licenceId}`
+      `Discarding policy job result computed for stale sites on licence ${licenceId}`,
+      licenceId
     )
   }
 }
@@ -117,7 +112,8 @@ export const processPolicyJob = async (server, message) => {
   if (!licence || licence.marinePlanPolicyJobId !== policyJobId) {
     logDiscardedJob(
       logger,
-      `Discarding stale policy job for licence ${licenceId}`
+      `Discarding stale policy job for licence ${licenceId}`,
+      licenceId
     )
     await deletePolicyJob(sqsQueueName, message.ReceiptHandle)
     return
@@ -164,7 +160,8 @@ export const processDlqJob = async (server, message) => {
         {
           event: {
             action: MARINE_PLAN_POLICY_EVENT_ACTION.JOB_FAILED,
-            outcome: 'failure'
+            outcome: 'failure',
+            reference: licenceId
           }
         },
         `Policy job dead-lettered and marked failed for licence ${licenceId}`
@@ -172,7 +169,8 @@ export const processDlqJob = async (server, message) => {
     } else {
       logDiscardedJob(
         logger,
-        `Discarding stale dead-lettered policy job for licence ${licenceId}`
+        `Discarding stale dead-lettered policy job for licence ${licenceId}`,
+        licenceId
       )
     }
   }

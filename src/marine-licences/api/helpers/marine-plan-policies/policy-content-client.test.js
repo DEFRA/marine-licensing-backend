@@ -1,10 +1,10 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
-import { getPolicyContent } from './policy-content-client.js'
+import { getPoliciesContent } from './policy-content-client.js'
 
 vi.mock('@hapi/wreck')
 
-describe('getPolicyContent', () => {
+describe('getPoliciesContent', () => {
   const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
 
   const policyEntry = (code, overrides = {}) => ({
@@ -20,7 +20,8 @@ describe('getPolicyContent', () => {
     ...overrides
   })
 
-  const expectedContent = (code) => ({
+  const cachedDoc = (code) => ({
+    _id: code,
     policy: `<p>${code} policy statement</p>`,
     policyAim: `<p>${code} aim</p>`,
     whatIsIt: `<p>${code} what</p>`,
@@ -28,191 +29,183 @@ describe('getPolicyContent', () => {
     howWillThisBeImplemented: `<p>${code} how</p>`
   })
 
-  const setupMocks = ({ cached = null, refreshed = null } = {}) => {
-    const { mockMongo } = global
-    const mockFindOne = vi
-      .fn()
-      .mockResolvedValueOnce(cached)
-      .mockResolvedValueOnce(refreshed)
-    const mockBulkWrite = vi.fn().mockResolvedValue({})
-    const mockUpdateOne = vi.fn().mockResolvedValue({})
-    vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
-      findOne: mockFindOne,
-      bulkWrite: mockBulkWrite,
-      updateOne: mockUpdateOne
-    }))
-    return { mockFindOne, mockBulkWrite, mockUpdateOne }
+  const expectedMerged = (code, extra = {}) => ({
+    policyCode: code,
+    ...extra,
+    policy: `<p>${code} policy statement</p>`,
+    policyAim: `<p>${code} aim</p>`,
+    whatIsIt: `<p>${code} what</p>`,
+    whyIsItImportant: `<p>${code} why</p>`,
+    howWillThisBeImplemented: `<p>${code} how</p>`
+  })
+
+  const emptyContent = {
+    policy: '',
+    policyAim: '',
+    whatIsIt: '',
+    whyIsItImportant: '',
+    howWillThisBeImplemented: ''
   }
 
-  it('should return cached content without calling the GOV.UK API', async () => {
-    const { mockBulkWrite } = setupMocks({
-      cached: { _id: 'E-AGG-1', ...expectedContent('E-AGG-1') }
+  const setupMocks = ({ initialDocs = [], refreshedDocs = [] } = {}) => {
+    const { mockMongo } = global
+    const mockToArray = vi
+      .fn()
+      .mockResolvedValueOnce(initialDocs)
+      .mockResolvedValueOnce(refreshedDocs)
+    const mockFind = vi.fn().mockReturnValue({ toArray: mockToArray })
+    const mockBulkWrite = vi.fn().mockResolvedValue({})
+    vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+      find: mockFind,
+      bulkWrite: mockBulkWrite
+    }))
+    return { mockFind, mockToArray, mockBulkWrite }
+  }
+
+  it('should return an empty array immediately without touching the database', async () => {
+    const { mockMongo } = global
+    vi.spyOn(mockMongo, 'collection')
+
+    const result = await getPoliciesContent({
+      policies: [],
+      db: mockMongo,
+      logger
     })
 
-    const content = await getPolicyContent({
-      policyCode: 'E-AGG-1',
+    expect(result).toEqual([])
+    expect(mockMongo.collection).not.toHaveBeenCalled()
+  })
+
+  it('should return merged results in one query when all codes are cached', async () => {
+    const { mockFind, mockBulkWrite } = setupMocks({
+      initialDocs: [cachedDoc('E-AGG-1'), cachedDoc('SE-AQ-1')]
+    })
+
+    const result = await getPoliciesContent({
+      policies: [
+        { policyCode: 'E-AGG-1', sector: 'Aggregates' },
+        { policyCode: 'SE-AQ-1', sector: 'Aquaculture' }
+      ],
       db: global.mockMongo,
       logger
     })
 
-    expect(content).toEqual(expectedContent('E-AGG-1'))
+    expect(mockFind).toHaveBeenCalledTimes(1)
+    expect(mockFind).toHaveBeenCalledWith({
+      _id: { $in: ['E-AGG-1', 'SE-AQ-1'] }
+    })
     expect(Wreck.get).not.toHaveBeenCalled()
     expect(mockBulkWrite).not.toHaveBeenCalled()
+    expect(result).toEqual([
+      expectedMerged('E-AGG-1', { sector: 'Aggregates' }),
+      expectedMerged('SE-AQ-1', { sector: 'Aquaculture' })
+    ])
   })
 
-  it('should fetch the whole dataset, upsert every policy, and return the requested code on a cache miss', async () => {
-    const { mockBulkWrite } = setupMocks({
-      refreshed: { _id: 'E-AGG-1', ...expectedContent('E-AGG-1') }
+  it('should refresh the dataset once and re-query missing codes on a cache miss', async () => {
+    const { mockFind, mockBulkWrite } = setupMocks({
+      initialDocs: [cachedDoc('E-AGG-1')],
+      refreshedDocs: [cachedDoc('SE-AQ-1')]
     })
     Wreck.get.mockResolvedValue({
       res: { statusCode: 200 },
       payload: [policyEntry('E-AGG-1'), policyEntry('SE-AQ-1')]
     })
 
-    const content = await getPolicyContent({
-      policyCode: 'E-AGG-1',
+    const result = await getPoliciesContent({
+      policies: [
+        { policyCode: 'E-AGG-1', sector: 'Aggregates' },
+        { policyCode: 'SE-AQ-1', sector: 'Aquaculture' }
+      ],
       db: global.mockMongo,
       logger
     })
 
-    expect(content).toEqual(expectedContent('E-AGG-1'))
-    expect(global.mockMongo.collection).toHaveBeenCalledWith(
-      'marine-plan-policy-wording'
-    )
-    expect(mockBulkWrite).toHaveBeenCalledWith([
-      {
-        updateOne: {
-          filter: { _id: 'E-AGG-1' },
-          update: {
-            $set: { ...expectedContent('E-AGG-1'), fetchedAt: expect.any(Date) }
-          },
-          upsert: true
-        }
-      },
-      {
-        updateOne: {
-          filter: { _id: 'SE-AQ-1' },
-          update: {
-            $set: { ...expectedContent('SE-AQ-1'), fetchedAt: expect.any(Date) }
-          },
-          upsert: true
-        }
-      }
+    expect(mockFind).toHaveBeenCalledTimes(2)
+    expect(mockFind).toHaveBeenNthCalledWith(1, {
+      _id: { $in: ['E-AGG-1', 'SE-AQ-1'] }
+    })
+    expect(mockFind).toHaveBeenNthCalledWith(2, { _id: { $in: ['SE-AQ-1'] } })
+    expect(Wreck.get).toHaveBeenCalledTimes(1)
+    expect(mockBulkWrite).toHaveBeenCalledTimes(1)
+    expect(result).toEqual([
+      expectedMerged('E-AGG-1', { sector: 'Aggregates' }),
+      expectedMerged('SE-AQ-1', { sector: 'Aquaculture' })
     ])
   })
 
-  it('should skip dataset entries without a code and store missing fields as null', async () => {
+  it('should write not found policy codes in one bulkWrite and return empty wording for codes absent from the dataset', async () => {
     const { mockBulkWrite } = setupMocks({
-      refreshed: { _id: 'E-AGG-1' }
+      initialDocs: [],
+      refreshedDocs: []
     })
     Wreck.get.mockResolvedValue({
       res: { statusCode: 200 },
-      payload: [
-        { title: 'no code here' },
-        { code: 'E-AGG-1', policy: '<p>only policy</p>' }
-      ]
+      payload: [policyEntry('OTHER-1')]
     })
 
-    await getPolicyContent({
-      policyCode: 'E-AGG-1',
+    const result = await getPoliciesContent({
+      policies: [{ policyCode: 'E-AGG-99', sector: 'Unknown' }],
       db: global.mockMongo,
       logger
     })
 
-    expect(mockBulkWrite).toHaveBeenCalledWith([
-      {
-        updateOne: {
-          filter: { _id: 'E-AGG-1' },
-          update: {
-            $set: {
-              policy: '<p>only policy</p>',
-              policyAim: null,
-              whatIsIt: null,
-              whyIsItImportant: null,
-              howWillThisBeImplemented: null,
-              fetchedAt: expect.any(Date)
-            }
-          },
-          upsert: true
-        }
-      }
+    expect(result).toEqual([
+      { policyCode: 'E-AGG-99', sector: 'Unknown', ...emptyContent }
     ])
-  })
-
-  it('should throw when the API does not return an array', async () => {
-    setupMocks()
-    Wreck.get.mockResolvedValue({
-      res: { statusCode: 200 },
-      payload: { message: 'oops' }
-    })
-
-    await expect(
-      getPolicyContent({
-        policyCode: 'E-AGG-1',
-        db: global.mockMongo,
-        logger
-      })
-    ).rejects.toThrow('GOV.UK policies API returned no policies')
-  })
-
-  it('should log a warning, write a sentinel, and return blank wording when the requested code is missing from the dataset', async () => {
-    const { mockUpdateOne } = setupMocks({ refreshed: null })
-    Wreck.get.mockResolvedValue({
-      res: { statusCode: 200 },
-      payload: [policyEntry('SE-AQ-1')]
-    })
-
-    const content = await getPolicyContent({
-      policyCode: 'E-AGG-99',
-      db: global.mockMongo,
-      logger
-    })
-
-    expect(content).toEqual({
-      policy: '',
-      policyAim: '',
-      whatIsIt: '',
-      whyIsItImportant: '',
-      howWillThisBeImplemented: ''
-    })
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({ outcome: 'failure' })
       }),
       expect.stringContaining('E-AGG-99')
     )
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: 'E-AGG-99' },
-      { $set: { notFound: true, fetchedAt: expect.any(Date) } },
-      { upsert: true }
-    )
+    expect(mockBulkWrite).toHaveBeenCalledWith([
+      {
+        updateOne: {
+          filter: { _id: 'E-AGG-99' },
+          update: { $set: { notFound: true, fetchedAt: expect.any(Date) } },
+          upsert: true
+        }
+      }
+    ])
   })
 
-  it('should return blank wording without re-fetching when a sentinel is cached for an unknown code', async () => {
-    const { mockUpdateOne } = setupMocks({
-      cached: { _id: 'E-AGG-99', notFound: true, fetchedAt: new Date() }
+  it('should return empty wording and log info for codes already cached as notFound', async () => {
+    setupMocks({
+      initialDocs: [{ _id: 'E-AGG-99', notFound: true, fetchedAt: new Date() }]
     })
 
-    const content = await getPolicyContent({
-      policyCode: 'E-AGG-99',
+    const result = await getPoliciesContent({
+      policies: [{ policyCode: 'E-AGG-99', sector: 'Unknown' }],
       db: global.mockMongo,
       logger
     })
 
-    expect(content).toEqual({
-      policy: '',
-      policyAim: '',
-      whatIsIt: '',
-      whyIsItImportant: '',
-      howWillThisBeImplemented: ''
-    })
+    expect(result).toEqual([
+      { policyCode: 'E-AGG-99', sector: 'Unknown', ...emptyContent }
+    ])
     expect(Wreck.get).not.toHaveBeenCalled()
-    expect(mockUpdateOne).not.toHaveBeenCalled()
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({ outcome: 'success' })
       }),
       expect.stringContaining('E-AGG-99')
     )
+  })
+
+  it('should throw when the GOV.UK API does not return an array', async () => {
+    setupMocks({ initialDocs: [], refreshedDocs: [] })
+    Wreck.get.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: { message: 'oops' }
+    })
+
+    await expect(
+      getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+    ).rejects.toThrow('GOV.UK policies API returned no policies')
   })
 })

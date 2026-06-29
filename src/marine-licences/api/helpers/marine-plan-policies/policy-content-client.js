@@ -63,45 +63,78 @@ const refreshPolicyDataset = async (collection, logger) => {
   )
 }
 
-export const getPolicyContent = async ({ policyCode, db, logger }) => {
+export const getPoliciesContent = async ({ policies, db, logger }) => {
+  if (policies.length === 0) return []
+
   const collection = db.collection(collectionMarinePlanPolicyWording)
+  const codes = policies.map((p) => p.policyCode)
 
-  const cached = await collection.findOne({ _id: policyCode })
-  if (cached) {
-    if (cached.notFound) {
-      logger.info(
-        {
-          event: {
-            action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
-            outcome: 'success'
+  const cachedPlanPolicyWording = await collection
+    .find({ _id: { $in: codes } })
+    .toArray()
+  const cachedPlanPolicyWordingAsMap = new Map(
+    cachedPlanPolicyWording.map((doc) => [doc._id, doc])
+  )
+
+  const missingCodes = codes.filter(
+    (code) => !cachedPlanPolicyWordingAsMap.has(code)
+  )
+
+  if (missingCodes.length > 0) {
+    await refreshPolicyDataset(collection, logger)
+
+    const refreshedDocs = await collection
+      .find({ _id: { $in: missingCodes } })
+      .toArray()
+    refreshedDocs.forEach((doc) =>
+      cachedPlanPolicyWordingAsMap.set(doc._id, doc)
+    )
+
+    const stillMissing = missingCodes.filter(
+      (code) => !cachedPlanPolicyWordingAsMap.has(code)
+    )
+    if (stillMissing.length > 0) {
+      const fetchedAt = new Date()
+      await collection.bulkWrite(
+        stillMissing.map((code) => ({
+          updateOne: {
+            filter: { _id: code },
+            update: { $set: { notFound: true, fetchedAt } },
+            upsert: true
           }
-        },
-        `Policy ${policyCode} served from sentinel cache (absent from GOV.UK dataset)`
+        }))
       )
-      return toEmptyContent()
+      stillMissing.forEach((code) => {
+        logger.warn(
+          {
+            event: {
+              action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
+              outcome: 'failure'
+            }
+          },
+          `Policy ${code} not present in the GOV.UK policies dataset; substituting empty wording`
+        )
+        cachedPlanPolicyWordingAsMap.set(code, { _id: code, notFound: true })
+      })
     }
-    return toContent(cached)
   }
 
-  await refreshPolicyDataset(collection, logger)
-
-  const refreshed = await collection.findOne({ _id: policyCode })
-  if (!refreshed) {
-    logger.warn(
-      {
-        event: {
-          action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
-          outcome: 'failure'
-        }
-      },
-      `Policy ${policyCode} not present in the GOV.UK policies dataset; substituting empty wording`
-    )
-    await collection.updateOne(
-      { _id: policyCode },
-      { $set: { notFound: true, fetchedAt: new Date() } },
-      { upsert: true }
-    )
-    return toEmptyContent()
-  }
-  return toContent(refreshed)
+  return policies.map((policy) => {
+    const doc = cachedPlanPolicyWordingAsMap.get(policy.policyCode)
+    if (!doc || doc.notFound) {
+      if (doc?.notFound) {
+        logger.info(
+          {
+            event: {
+              action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
+              outcome: 'success'
+            }
+          },
+          `Policy ${policy.policyCode} served from cache of not found policy codes (absent from GOV.UK dataset)`
+        )
+      }
+      return { ...policy, ...toEmptyContent() }
+    }
+    return { ...policy, ...toContent(doc) }
+  })
 }
