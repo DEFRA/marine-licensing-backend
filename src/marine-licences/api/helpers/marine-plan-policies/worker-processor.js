@@ -59,7 +59,8 @@ const computeAndStorePolicies = async (job, licence, db) => {
   })
 
   const result = await setJobStatus(job, MARINE_PLAN_POLICY_JOB_STATUS.READY, {
-    marinePlanPolicies
+    marinePlanPolicies,
+    marinePlanPoliciesCount: marinePlanPolicies.length
   })
   if (result.matchedCount > 0) {
     logger.info(
