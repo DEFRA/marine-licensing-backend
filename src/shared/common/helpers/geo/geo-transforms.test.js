@@ -87,7 +87,7 @@ describe('geo-transforms', () => {
       )
     })
 
-    test('correctly errors on lng coordinate values below minimum', () => {
+    test('correctly errors on lng coordinate values above maximum', () => {
       expect(() => coordinatesToDegreesDecimalMinutes(190, false)).toThrow(
         'Longitude out of range: 190'
       )
@@ -99,7 +99,7 @@ describe('geo-transforms', () => {
       )
     })
 
-    test('correctly errors on lat coordinate values below minimum', () => {
+    test('correctly errors on lat coordinate values above maximum', () => {
       expect(() => coordinatesToDegreesDecimalMinutes(190, true)).toThrow(
         'Latitude out of range: 190'
       )
