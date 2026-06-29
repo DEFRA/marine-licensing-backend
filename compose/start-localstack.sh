@@ -38,3 +38,10 @@ aws --endpoint-url=http://localhost:4566 s3api put-bucket-notification-configura
 # Fix multiple errors per second - this is probably the cdp-uploader test harness leakage.
 # We can add this in here - as compose is only used for local dev.
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploader-download-requests
+
+# DLQ first so the main queue's redrive
+# policy can reference it. A job gets maxReceiveCount (3) delivery attempts;
+# after that the message dead-letters and the DLQ worker marks the job failed
+# so the user can trigger a fresh calculation from the UI.
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies-deadletter
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies --attributes "{\"VisibilityTimeout\":\"60\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_policies-deadletter\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}"

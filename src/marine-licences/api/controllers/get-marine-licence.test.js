@@ -129,6 +129,9 @@ describe('GET /marine-licence', () => {
             },
             otherAuthorities: 'Test authority',
             projectBackground: 'Test project background',
+            marinePlanPolicyJob: null,
+            marinePlanPolicies: [],
+            marinePlanPolicyResponses: {},
             taskList: {
               preferredDates: 'COMPLETED',
               projectName: 'COMPLETED',
