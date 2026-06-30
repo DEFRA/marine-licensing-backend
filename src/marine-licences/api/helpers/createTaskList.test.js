@@ -27,6 +27,8 @@ const completedActivityDetails = [
   }
 ]
 
+const feeEstimate = { accept: 'yes', termsAndConditions: true }
+
 const mockCompleteSite = {
   ...mockFileUploadSite,
   activityDetails: completedActivityDetails
@@ -35,6 +37,7 @@ const mockCompleteSite = {
 describe('createTaskList', () => {
   it('should mark siteDetails as COMPLETED when all site and activity fields are present', () => {
     const marineLicence = {
+      feeEstimate,
       projectName: 'Test Project',
       siteDetails: [mockCompleteSite],
       specialLegalPowers: 'Some powers',
@@ -53,6 +56,7 @@ describe('createTaskList', () => {
     }
 
     expect(createTaskList(marineLicence)).toEqual({
+      feeEstimate: COMPLETED,
       projectName: COMPLETED,
       siteDetails: COMPLETED,
       specialLegalPowers: COMPLETED,
@@ -81,10 +85,12 @@ describe('createTaskList', () => {
         consulted: 'yes',
         details: 'Public consultation details'
       },
+      feeEstimate,
       waterFrameworkDirective: mockWaterFrameworkDirectiveWithNoNauticalMile
     }
 
     expect(createTaskList(marineLicence, true)).toEqual({
+      feeEstimate: COMPLETED,
       projectName: COMPLETED,
       publicRegister: COMPLETED,
       siteDetails: IN_PROGRESS,
@@ -101,6 +107,7 @@ describe('createTaskList', () => {
     delete siteWithoutSiteName.siteName
 
     const marineLicence = {
+      feeEstimate,
       projectName: 'Test Project',
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
@@ -114,6 +121,7 @@ describe('createTaskList', () => {
     }
 
     expect(createTaskList(marineLicence)).toEqual({
+      feeEstimate: COMPLETED,
       projectName: COMPLETED,
       siteDetails: IN_PROGRESS,
       specialLegalPowers: COMPLETED,
@@ -415,6 +423,7 @@ describe('createTaskList', () => {
 
   it('should return all tasks as INCOMPLETE when marineLicence has no properties', () => {
     expect(createTaskList({})).toEqual({
+      feeEstimate: INCOMPLETE,
       projectName: INCOMPLETE,
       specialLegalPowers: INCOMPLETE,
       otherAuthorities: INCOMPLETE,
@@ -442,6 +451,7 @@ describe('createTaskList', () => {
         consulted: 'yes',
         details: 'Public consultation details'
       },
+      feeEstimate,
       siteDetails: [mockFileUploadSite],
       waterFrameworkDirective: mockWaterFrameworkDirectiveWithNoNauticalMile
     }
@@ -449,6 +459,7 @@ describe('createTaskList', () => {
     const result = createTaskList(marineLicence)
 
     expect(result).toEqual({
+      feeEstimate: COMPLETED,
       projectName: COMPLETED,
       specialLegalPowers: COMPLETED,
       otherAuthorities: COMPLETED,
