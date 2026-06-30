@@ -2,9 +2,20 @@ import convict from 'convict'
 import convictFormatWithValidator from 'convict-format-with-validator'
 
 import { convictValidateMongoUri } from './shared/common/helpers/convict/validate-mongo-uri.js'
+import {
+  convictRequiredFromEnvInCdp,
+  requiredFromEnvInCdp
+} from './shared/common/helpers/convict/required-from-env-in-cdp.js'
+import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
 import { configDotenv } from 'dotenv'
 
+export {
+  isCdpProductionLikeEnvironment,
+  isNotCdpProductionLikeEnvironment
+} from './shared/common/helpers/convict/required-from-env-in-cdp.js'
+
 convict.addFormat(convictValidateMongoUri)
+convict.addFormat(convictRequiredFromEnvInCdp)
 convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -20,44 +31,6 @@ const oneMinuteInMS = 60 * 1000
 
 /** Default minutes before a stuck `in_progress` Dynamics queue item may be reclaimed. */
 const dynamicsQueueClaimStaleDefaultMinutes = 30
-
-// Custom convict format that requires an env var override for vars that have non-prod default values set.
-// Applied to sensitive configs like API URLs, credentials, and service endpoints.
-const requiredFromEnvInCdp = 'required-from-env-in-cdp'
-
-export const isCdpProductionLikeEnvironment = (env) =>
-  ['prod', 'perf-test', 'test'].includes(env)
-
-export const isNotCdpProductionLikeEnvironment = (env) =>
-  !isCdpProductionLikeEnvironment(env)
-
-/**
- * 'required-from-env-in-cdp' format: When you must have an env var override the default value.
- * This is used for sensitive vars that take local-config default values and the prod values MUST come from the
- * environment.
- *
- * This is concerned with cdpEnvironments: prod (which is production), and perf-test (which is the equivalent of
- * pre-production), and test.
- */
-convict.addFormat({
-  name: requiredFromEnvInCdp,
-  validate: function (val, schema) {
-    const env = process.env.ENVIRONMENT ?? 'local'
-    // Validate that `requiredFromEnvInCdp` env vars are set from the environment on these CDP environments
-    if (isNotCdpProductionLikeEnvironment(env)) {
-      return
-    }
-
-    const invalidValues = schema.default === undefined ? [] : [schema.default] // never allow the default
-    invalidValues.push('') // dont allow empty strings
-
-    if (invalidValues.includes(val)) {
-      throw new Error(
-        `${schema.env || 'Configuration value'} must be set for ${env} environment (current value is invalid for production)`
-      )
-    }
-  }
-})
 
 const config = convict({
   serviceVersion: {
@@ -224,6 +197,14 @@ const config = convict({
         format: Number,
         default: 30_000,
         env: 'AWS_S3_TIMEOUT'
+      }
+    },
+    sqs: {
+      endpoint: {
+        doc: 'AWS SQS Endpoint',
+        format: requiredFromEnvInCdp,
+        default: 'http://localhost:4566',
+        env: 'SQS_ENDPOINT' // defined globally in CDP
       }
     }
   },
@@ -476,6 +457,7 @@ const config = convict({
       }
     }
   },
+  marinePlanPolicies: marinePlanPoliciesSchema,
   iat: {
     inFlightTtlMs: {
       doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',
