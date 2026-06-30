@@ -57,6 +57,7 @@ export const buildPolicyResetFields = (id, existing, newSiteDetails) => {
   return {
     marinePlanPolicyJob: null,
     marinePlanPolicyJobId: null,
-    marinePlanPolicies: []
+    marinePlanPolicies: [],
+    marinePlanPoliciesCount: 0
   }
 }

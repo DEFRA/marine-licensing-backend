@@ -114,7 +114,8 @@ describe('buildPolicyResetFields', () => {
     expect(buildPolicyResetFields(licenceId, existing, [movedSite])).toEqual({
       marinePlanPolicyJob: null,
       marinePlanPolicyJobId: null,
-      marinePlanPolicies: []
+      marinePlanPolicies: [],
+      marinePlanPoliciesCount: 0
     })
   })
 

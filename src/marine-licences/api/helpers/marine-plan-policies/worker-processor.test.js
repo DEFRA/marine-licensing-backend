@@ -132,6 +132,7 @@ describe('policies-worker-processor', () => {
         {
           $set: {
             marinePlanPolicies: mergedPolicies,
+            marinePlanPoliciesCount: mergedPolicies.length,
             marinePlanPolicyJob: 'ready'
           }
         }
