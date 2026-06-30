@@ -2,7 +2,8 @@ import { createTaskList } from './createTaskList'
 import {
   INCOMPLETE,
   IN_PROGRESS,
-  COMPLETED
+  COMPLETED,
+  NOT_ACCEPTED
 } from '../../../shared/helpers/task-list-utils.js'
 import {
   mockFileUploadSite,
@@ -418,6 +419,24 @@ describe('createTaskList', () => {
       }
 
       expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+  })
+
+  describe('feeEstimate', () => {
+    it('should return INCOMPLETE when feeEstimate is missing', () => {
+      expect(createTaskList({}).feeEstimate).toBe(INCOMPLETE)
+    })
+
+    it('should return NOT_ACCEPTED when accept is no', () => {
+      const marineLicence = { feeEstimate: { accept: 'no' } }
+      expect(createTaskList(marineLicence).feeEstimate).toBe(NOT_ACCEPTED)
+    })
+
+    it('should return COMPLETED when accept is yes', () => {
+      const marineLicence = {
+        feeEstimate: { accept: 'yes', termsAndConditions: true }
+      }
+      expect(createTaskList(marineLicence).feeEstimate).toBe(COMPLETED)
     })
   })
 
