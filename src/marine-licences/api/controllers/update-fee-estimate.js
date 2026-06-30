@@ -21,13 +21,14 @@ export const updateFeeEstimateController = {
     try {
       const { payload, db } = request
 
-      const { accept, termsAndConditions, id, updatedAt, updatedBy } = payload
+      const { accept, termsAndConditions, feeBand, id, updatedAt, updatedBy } =
+        payload
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            feeEstimate: { accept, termsAndConditions },
+            feeEstimate: { accept, termsAndConditions, feeBand },
             updatedAt,
             updatedBy
           }

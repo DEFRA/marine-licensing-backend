@@ -23,7 +23,8 @@ describe('PATCH /marine-licence/fee-estimate - integration tests', async () => {
     const payload = {
       id: marineLicenceId.toString(),
       accept: 'yes',
-      termsAndConditions: true
+      termsAndConditions: true,
+      feeBand: '2A'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -42,7 +43,8 @@ describe('PATCH /marine-licence/fee-estimate - integration tests', async () => {
 
     expect(updatedLicence.feeEstimate).toEqual({
       accept: 'yes',
-      termsAndConditions: true
+      termsAndConditions: true,
+      feeBand: '2A'
     })
   })
 
@@ -52,7 +54,8 @@ describe('PATCH /marine-licence/fee-estimate - integration tests', async () => {
     const payload = {
       id: nonExistentId.toString(),
       accept: 'yes',
-      termsAndConditions: true
+      termsAndConditions: true,
+      feeBand: '2A'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -79,7 +82,8 @@ describe('PATCH /marine-licence/fee-estimate - integration tests', async () => {
     const payload = {
       id: marineLicenceId.toString(),
       accept: 'yes',
-      termsAndConditions: true
+      termsAndConditions: true,
+      feeBand: '2A'
     }
 
     const { statusCode, body } = await makePatchRequest({

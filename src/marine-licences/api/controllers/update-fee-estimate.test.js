@@ -14,6 +14,7 @@ describe('PATCH /marine-licence/fee-estimate', () => {
       id: new ObjectId().toHexString(),
       agree: 'yes',
       termsAndConditions: true,
+      feeBand: '2A',
       ...mockAuditPayload
     }
 
@@ -43,7 +44,8 @@ describe('PATCH /marine-licence/fee-estimate', () => {
         $set: {
           feeEstimate: {
             accept: mockPayload.accept,
-            termsAndConditions: mockPayload.termsAndConditions
+            termsAndConditions: mockPayload.termsAndConditions,
+            feeBand: mockPayload.feeBand
           },
           ...mockAuditPayload
         }

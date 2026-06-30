@@ -144,7 +144,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
   return {
     _id: marineLicenceId,
     contactId,
-    feeEstimate: { accept: 'yes', termsAndConditions: true },
+    feeEstimate: { accept: 'yes', termsAndConditions: true, feeBand: '2A' },
     projectName: 'Test Marine Licence Project',
     projectBackground: 'Test project background',
     otherAuthorities: {
