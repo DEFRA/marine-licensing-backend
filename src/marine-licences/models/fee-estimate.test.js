@@ -34,11 +34,19 @@ describe('feeEstimateSchema', () => {
   test('should pass when feeBand is provided and accept is no', () => {
     const { error } = feeEstimateSchema.validate({
       accept: 'no',
-      feeBand: 'Band B',
+      feeBand: '2A',
       termsAndConditions: true,
       id: mockMarineLicence._id.toHexString()
     })
     expect(error).toBeUndefined()
+  })
+
+  test('should error when feeBand is not a valid value', () => {
+    const { error } = feeEstimateSchema.validate({
+      ...validPayload,
+      feeBand: 'Band B'
+    })
+    expect(error.message).toContain('FEE_ESTIMATE_FEE_BAND_REQUIRED')
   })
 
   test('should error when accept is missing', () => {

@@ -12,7 +12,7 @@ describe('PATCH /marine-licence/fee-estimate', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      agree: 'yes',
+      accept: 'yes',
       termsAndConditions: true,
       feeBand: '2A',
       ...mockAuditPayload
@@ -57,7 +57,7 @@ describe('PATCH /marine-licence/fee-estimate', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      agree: 'yes',
+      accept: 'yes',
       termsAndConditions: true,
       ...mockAuditPayload
     }
@@ -85,7 +85,7 @@ describe('PATCH /marine-licence/fee-estimate', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      agree: 'yes',
+      accept: 'yes',
       termsAndConditions: true,
       ...mockAuditPayload
     }

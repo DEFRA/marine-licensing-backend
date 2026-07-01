@@ -10,11 +10,12 @@ export const feeEstimateSchema = joi
     }),
     feeBand: joi.when('accept', {
       is: 'yes',
-      then: joi.string().required().messages({
+      then: joi.string().valid('2A').required().messages({
         'string.empty': 'FEE_ESTIMATE_FEE_BAND_REQUIRED',
+        'any.only': 'FEE_ESTIMATE_FEE_BAND_REQUIRED',
         'any.required': 'FEE_ESTIMATE_FEE_BAND_REQUIRED'
       }),
-      otherwise: joi.string().optional()
+      otherwise: joi.string().valid('2A').optional()
     }),
     termsAndConditions: joi.boolean().valid(true).required().messages({
       'any.only': 'FEE_ESTIMATE_TERMS_AND_CONDITIONS_REQUIRED',
