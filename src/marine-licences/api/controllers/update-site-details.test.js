@@ -28,6 +28,7 @@ describe('PATCH /marine-licences/site-details', () => {
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
+        findOne: vi.fn().mockResolvedValue(null),
         updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
@@ -43,7 +44,7 @@ describe('PATCH /marine-licences/site-details', () => {
     ).rejects.toThrow(`Error updating site details: ${mockError}`)
   })
 
-  it('should return a  404 if id is not correct', async () => {
+  it('should return a 404 if id is not correct', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
@@ -53,6 +54,7 @@ describe('PATCH /marine-licences/site-details', () => {
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
+        findOne: vi.fn().mockResolvedValue(null),
         updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }
     })
@@ -68,5 +70,86 @@ describe('PATCH /marine-licences/site-details', () => {
         mockHandler
       )
     ).rejects.toThrow(`Marine licence not found`)
+  })
+
+  describe('policy state reset', () => {
+    const buildPayload = () => ({
+      id: new ObjectId().toHexString(),
+      siteDetails: [mockFileUploadSite],
+      ...mockAuditPayload
+    })
+
+    const setupMocks = (existingDoc) => {
+      const { mockMongo } = global
+      const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi.fn().mockResolvedValue(existingDoc),
+        updateOne: mockUpdateOne
+      }))
+      return mockUpdateOne
+    }
+
+    it('should not touch policy state when no policy job exists', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = buildPayload()
+      const mockUpdateOne = setupMocks({ _id: mockPayload.id })
+
+      await updateSiteDetailsController.handler(
+        { db: mockMongo, payload: mockPayload },
+        mockHandler
+      )
+
+      const setFields = mockUpdateOne.mock.calls[0][1].$set
+      expect(setFields).not.toHaveProperty('marinePlanPolicyJob')
+      expect(setFields).not.toHaveProperty('marinePlanPolicies')
+    })
+
+    it('should discard computed policies when the geometry changes', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = buildPayload()
+      const mockUpdateOne = setupMocks({
+        _id: mockPayload.id,
+        marinePlanPolicyJobId: 'job-1',
+        siteDetails: [
+          {
+            ...mockFileUploadSite,
+            coordinates: { latitude: '99', longitude: '99' }
+          }
+        ]
+      })
+
+      await updateSiteDetailsController.handler(
+        { db: mockMongo, payload: mockPayload },
+        mockHandler
+      )
+
+      const setFields = mockUpdateOne.mock.calls[0][1].$set
+      expect(setFields).toMatchObject({
+        marinePlanPolicyJob: null,
+        marinePlanPolicyJobId: null,
+        marinePlanPolicies: []
+      })
+      expect(setFields).not.toHaveProperty('marinePlanPolicyJobQueuedAt')
+      expect(setFields).not.toHaveProperty('marinePlanPolicyResponses')
+    })
+
+    it('should keep computed policies when the geometry is unchanged', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = buildPayload()
+      const mockUpdateOne = setupMocks({
+        _id: mockPayload.id,
+        marinePlanPolicyJobId: 'job-1',
+        siteDetails: [mockFileUploadSite]
+      })
+
+      await updateSiteDetailsController.handler(
+        { db: mockMongo, payload: mockPayload },
+        mockHandler
+      )
+
+      const setFields = mockUpdateOne.mock.calls[0][1].$set
+      expect(setFields).not.toHaveProperty('marinePlanPolicyJob')
+      expect(setFields).not.toHaveProperty('marinePlanPolicies')
+    })
   })
 })

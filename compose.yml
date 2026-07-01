@@ -85,6 +85,8 @@ services:
       PORT: 3001
       NODE_ENV: development
       LOCALSTACK_ENDPOINT: http://localstack:4566
+      SQS_ENDPOINT: http://localstack:4566
+      MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS: 60000
       MONGO_URI: mongodb://mongodb:27017/
       DEFRA_ID_ENABLED: true
     networks:

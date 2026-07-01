@@ -5,6 +5,8 @@ import { router } from './shared/plugins/router.js'
 import { auth } from './shared/plugins/auth.js'
 import { processDynamicsQueuePlugin } from './shared/plugins/dynamics.js'
 import { processEmpQueuePlugin } from './shared/plugins/emp.js'
+import { marinePlanPoliciesWorkerPlugin } from './shared/plugins/marine-plan-policies/worker.js'
+import { marinePlanPoliciesDlqWorkerPlugin } from './shared/plugins/marine-plan-policies/dlq-worker.js'
 import { populateCoastalOperationsAreasPlugin } from './shared/plugins/geo-areas/populate-coastal-operations-areas.js'
 import { populateMarinePlanAreasPlugin } from './shared/plugins/geo-areas/populate-marine-plan-areas.js'
 import { requestLogger } from './shared/common/helpers/logging/request-logger.js'
@@ -56,6 +58,8 @@ async function createServer() {
   // router         - routes used in the app
   // processDynamicsQueuePlugin - polls exemption queue and syncs to Dynamics 365
   // processEmpQueuePlugin - polls exemption queue and syncs to "Explore Marine Planning"
+  // marinePlanPoliciesWorkerPlugin - processes marine plan policy SQS jobs
+  // marinePlanPoliciesDlqWorkerPlugin - marks dead-lettered policy jobs as failed
   await server.register([
     requestTracing,
     requestLogger,
@@ -71,7 +75,9 @@ async function createServer() {
     auth,
     router,
     processDynamicsQueuePlugin,
-    processEmpQueuePlugin
+    processEmpQueuePlugin,
+    marinePlanPoliciesWorkerPlugin,
+    marinePlanPoliciesDlqWorkerPlugin
   ])
 
   return server
