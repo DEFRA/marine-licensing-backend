@@ -50,6 +50,7 @@ describe('Get marine licence - integration tests', async () => {
       marinePlanPolicyJob: null,
       marinePlanPolicies: [],
       marinePlanPolicyResponses: {},
+      marinePlanPolicyResponseCount: 0,
       taskList: {
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
@@ -97,6 +98,7 @@ describe('Get marine licence - integration tests', async () => {
       marinePlanPolicyJob: null,
       marinePlanPolicies: [],
       marinePlanPolicyResponses: {},
+      marinePlanPolicyResponseCount: 0,
       taskList: {
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
