@@ -22,7 +22,7 @@ describe('PATCH /marine-licence/harbour-authority - integration tests', async ()
 
     const payload = {
       id: marineLicenceId.toString(),
-      harbourArea: 'yes',
+      area: 'yes',
       details: 'Harbour authority details'
     }
 
@@ -41,7 +41,7 @@ describe('PATCH /marine-licence/harbour-authority - integration tests', async ()
       .findOne({ _id: marineLicenceId })
 
     expect(updatedLicence.harbourAuthority).toEqual({
-      harbourArea: 'yes',
+      area: 'yes',
       details: 'Harbour authority details'
     })
   })
@@ -51,7 +51,7 @@ describe('PATCH /marine-licence/harbour-authority - integration tests', async ()
 
     const payload = {
       id: nonExistentId.toString(),
-      harbourArea: 'yes',
+      area: 'yes',
       details: 'Harbour authority details'
     }
 
@@ -78,7 +78,7 @@ describe('PATCH /marine-licence/harbour-authority - integration tests', async ()
 
     const payload = {
       id: marineLicenceId.toString(),
-      harbourArea: 'yes',
+      area: 'yes',
       details: 'Harbour authority details'
     }
 
@@ -93,7 +93,7 @@ describe('PATCH /marine-licence/harbour-authority - integration tests', async ()
     expect(body.message).toBe('Not authorised to request this resource')
   })
 
-  test('returns 400 when harbourArea is missing', async () => {
+  test('returns 400 when area is missing', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId
@@ -129,7 +129,7 @@ describe('PATCH /marine-licence/harbour-authority - integration tests', async ()
 
     const payload = {
       id: marineLicenceId.toString(),
-      harbourArea: 'yes'
+      area: 'yes'
     }
 
     const { statusCode, body } = await makePatchRequest({

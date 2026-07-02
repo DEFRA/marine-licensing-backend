@@ -3,7 +3,7 @@ import { mockMarineLicence } from './test-fixtures.js'
 
 describe('harbourAuthoritySchema', () => {
   const validPayload = {
-    harbourArea: 'yes',
+    area: 'yes',
     details: 'Harbour authority details',
     id: mockMarineLicence._id.toHexString()
   }
@@ -16,7 +16,7 @@ describe('harbourAuthoritySchema', () => {
   test('should error when no selection provided', () => {
     const { error } = harbourAuthoritySchema.validate({
       ...validPayload,
-      harbourArea: undefined
+      area: undefined
     })
     expect(error.message).toContain('HARBOUR_AUTHORITY_REQUIRED')
   })
@@ -32,7 +32,7 @@ describe('harbourAuthoritySchema', () => {
   test('should not error when no is selected and details is not provided', () => {
     const { error } = harbourAuthoritySchema.validate({
       ...validPayload,
-      harbourArea: 'no',
+      area: 'no',
       details: undefined
     })
     expect(error).toBeUndefined()
@@ -41,7 +41,7 @@ describe('harbourAuthoritySchema', () => {
   test('should error when no is selected but details is provided', () => {
     const { error } = harbourAuthoritySchema.validate({
       ...validPayload,
-      harbourArea: 'no'
+      area: 'no'
     })
     expect(error.message).toContain('HARBOUR_AUTHORITY_DETAILS_NOT_ALLOWED')
   })

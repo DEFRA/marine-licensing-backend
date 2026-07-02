@@ -21,13 +21,13 @@ export const updateHarbourAuthorityController = {
     try {
       const { payload, db } = request
 
-      const { harbourArea, details, id, updatedAt, updatedBy } = payload
+      const { area, details, id, updatedAt, updatedBy } = payload
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            harbourAuthority: { harbourArea, details },
+            harbourAuthority: { area, details },
             updatedAt,
             updatedBy
           }

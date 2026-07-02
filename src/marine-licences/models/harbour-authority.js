@@ -5,12 +5,12 @@ const HARBOUR_AUTHORITY_DETAILS_MAX_TEXT_LENGTH = 1000
 
 export const harbourAuthoritySchema = joi
   .object({
-    harbourArea: joi.string().valid('yes', 'no').required().messages({
+    area: joi.string().valid('yes', 'no').required().messages({
       'string.empty': 'HARBOUR_AUTHORITY_REQUIRED',
       'any.only': 'HARBOUR_AUTHORITY_REQUIRED',
       'any.required': 'HARBOUR_AUTHORITY_REQUIRED'
     }),
-    details: joi.when('harbourArea', {
+    details: joi.when('area', {
       is: 'yes',
       then: joi
         .string()

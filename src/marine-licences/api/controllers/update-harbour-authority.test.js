@@ -12,7 +12,7 @@ describe('PATCH /marine-licence/harbour-authority', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      harbourArea: 'yes',
+      area: 'yes',
       details: 'Harbour authority details',
       ...mockAuditPayload
     }
@@ -42,7 +42,7 @@ describe('PATCH /marine-licence/harbour-authority', () => {
       {
         $set: {
           harbourAuthority: {
-            harbourArea: 'yes',
+            area: 'yes',
             details: 'Harbour authority details'
           },
           ...mockAuditPayload
@@ -55,7 +55,7 @@ describe('PATCH /marine-licence/harbour-authority', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      harbourArea: 'yes',
+      area: 'yes',
       details: 'Harbour authority details',
       ...mockAuditPayload
     }
@@ -83,7 +83,7 @@ describe('PATCH /marine-licence/harbour-authority', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      harbourArea: 'yes',
+      area: 'yes',
       details: 'Harbour authority details',
       ...mockAuditPayload
     }

@@ -90,7 +90,7 @@ describe('GET /marine-licence', () => {
         _id: mockId,
         feeEstimate: { accept: 'yes', termsAndConditions: true, feeBand: '2A' },
         harbourAuthority: {
-          harbourArea: 'yes',
+          area: 'yes',
           details: 'Harbour authority details'
         },
         projectName: 'Test project',
@@ -128,7 +128,7 @@ describe('GET /marine-licence', () => {
               feeBand: '2A'
             },
             harbourAuthority: {
-              harbourArea: 'yes',
+              area: 'yes',
               details: 'Harbour authority details'
             },
             projectName: 'Test project',
