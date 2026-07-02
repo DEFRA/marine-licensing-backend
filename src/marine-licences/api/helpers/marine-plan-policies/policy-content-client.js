@@ -3,7 +3,7 @@ import { collectionMarinePlanPolicyWording } from '../../../../shared/common/con
 import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import { timedJsonFetch } from './policy-http.js'
 
-const normalisePolicyCode = (code) => code.replace(/[\s-]/g, '').toUpperCase()
+const normalisePolicyCode = (code) => code.replace(/\s/g, '')
 
 const CONTENT_FIELDS = [
   'policy',
@@ -71,7 +71,7 @@ export const getPoliciesContent = async ({ policies, db, logger }) => {
   }
 
   const collection = db.collection(collectionMarinePlanPolicyWording)
-  const codes = policies.map((p) => normalisePolicyCode(p.policyCode))
+  const codes = policies.map((p) => p.policyCode)
 
   const cachedPlanPolicyWording = await collection
     .find({ _id: { $in: codes } })
@@ -124,9 +124,7 @@ export const getPoliciesContent = async ({ policies, db, logger }) => {
   }
 
   return policies.map((policy) => {
-    const doc = cachedPlanPolicyWordingAsMap.get(
-      normalisePolicyCode(policy.policyCode)
-    )
+    const doc = cachedPlanPolicyWordingAsMap.get(policy.policyCode)
     if (!doc || doc.notFound) {
       if (doc?.notFound) {
         logger.info(
