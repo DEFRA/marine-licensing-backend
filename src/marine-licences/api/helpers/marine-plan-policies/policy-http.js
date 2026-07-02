@@ -9,7 +9,8 @@ export const timedJsonFetch = async ({
   timeoutMs,
   eventAction,
   upstreamName,
-  logger
+  logger,
+  reference
 }) => {
   const startedAt = process.hrtime.bigint()
   const durationNs = () => Number(process.hrtime.bigint() - startedAt)
@@ -36,7 +37,8 @@ export const timedJsonFetch = async ({
         event: {
           action: eventAction,
           outcome: 'success',
-          duration: durationNs()
+          duration: durationNs(),
+          ...(reference && { reference })
         }
       },
       `${upstreamName} completed in ${durationMs()}ms`
@@ -48,7 +50,8 @@ export const timedJsonFetch = async ({
         event: {
           action: eventAction,
           outcome: 'failure',
-          duration: durationNs()
+          duration: durationNs(),
+          ...(reference && { reference })
         }
       },
       `${upstreamName} failed after ${durationMs()}ms: ${error.message}`

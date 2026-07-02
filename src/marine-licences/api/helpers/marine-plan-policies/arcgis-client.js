@@ -15,7 +15,11 @@ const extractPolicy = (attributes = {}) => {
   }
 }
 
-export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
+export const queryArcGISPolicies = async ({
+  siteDetails,
+  licenceId,
+  logger
+}) => {
   const { arcgisUrl, arcgisTimeoutMs } = config.get('marinePlanPolicies')
   const geometries = buildEmpGeometries(siteDetails)
 
@@ -46,7 +50,8 @@ export const queryArcGISPolicies = async ({ siteDetails, logger }) => {
     timeoutMs: arcgisTimeoutMs,
     eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.ARCGIS_QUERY,
     upstreamName: 'ArcGIS feature-server query',
-    logger
+    logger,
+    reference: licenceId
   })
 
   // ArcGIS reports failures inside a 200 response body
