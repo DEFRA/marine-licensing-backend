@@ -7,7 +7,7 @@ export const harbourAuthoritySchema = joi
   .object({
     harbourArea: joi.string().valid('yes', 'no').required().messages({
       'string.empty': 'HARBOUR_AUTHORITY_REQUIRED',
-      'any.only': '√',
+      'any.only': 'HARBOUR_AUTHORITY_REQUIRED',
       'any.required': 'HARBOUR_AUTHORITY_REQUIRED'
     }),
     details: joi.when('harbourArea', {

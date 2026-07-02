@@ -210,6 +210,7 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     }),
     feeEstimate: (value) => getFeeEstimateStatus(value),
     otherAuthorities: (value) => (value ? COMPLETED : INCOMPLETE),
+    harbourAuthority: (value) => (value ? COMPLETED : INCOMPLETE),
     projectBackground: (value) => (value ? COMPLETED : INCOMPLETE),
     siteDetails: (value) => getSiteDetailsStatus(value),
     preferredDates: (value) => (value ? COMPLETED : INCOMPLETE),

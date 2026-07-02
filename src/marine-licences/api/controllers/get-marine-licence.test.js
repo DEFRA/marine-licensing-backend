@@ -89,6 +89,10 @@ describe('GET /marine-licence', () => {
       mockedFindOne.mockResolvedValue({
         _id: mockId,
         feeEstimate: { accept: 'yes', termsAndConditions: true, feeBand: '2A' },
+        harbourAuthority: {
+          harbourArea: 'yes',
+          details: 'Harbour authority details'
+        },
         projectName: 'Test project',
         publicRegister: {
           consent: 'yes',
@@ -123,6 +127,10 @@ describe('GET /marine-licence', () => {
               termsAndConditions: true,
               feeBand: '2A'
             },
+            harbourAuthority: {
+              harbourArea: 'yes',
+              details: 'Harbour authority details'
+            },
             projectName: 'Test project',
             publicRegister: {
               consent: 'yes',
@@ -140,6 +148,7 @@ describe('GET /marine-licence', () => {
             marinePlanPolicyResponses: {},
             taskList: {
               feeEstimate: 'COMPLETED',
+              harbourAuthority: 'COMPLETED',
               preferredDates: 'COMPLETED',
               projectName: 'COMPLETED',
               otherAuthorities: 'COMPLETED',
