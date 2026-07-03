@@ -3,6 +3,7 @@ import {
   COMPLETED,
   IN_PROGRESS,
   INCOMPLETE,
+  NOT_ACCEPTED,
   buildTaskList,
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
@@ -189,12 +190,25 @@ const getWaterFrameworkDirectiveStatus = (wfd) => {
   return checkWaterFrameworkDirective(wfd)
 }
 
+const getFeeEstimateStatus = (feeEstimate) => {
+  if (!feeEstimate) {
+    return INCOMPLETE
+  }
+
+  if (feeEstimate.accept === 'no') {
+    return NOT_ACCEPTED
+  }
+
+  return COMPLETED
+}
+
 export const createTaskList = (marineLicence, isCitizen = false) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
     ...(!isCitizen && {
       specialLegalPowers: (value) => (value ? COMPLETED : INCOMPLETE)
     }),
+    feeEstimate: (value) => getFeeEstimateStatus(value),
     otherAuthorities: (value) => (value ? COMPLETED : INCOMPLETE),
     projectBackground: (value) => (value ? COMPLETED : INCOMPLETE),
     siteDetails: (value) => getSiteDetailsStatus(value),
