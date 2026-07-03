@@ -402,7 +402,8 @@ describe('Dynamics Client', () => {
       _id: 'ml-123',
       contactId: 'test-contact-id',
       projectName: 'Test Marine Project',
-      organisation: { id: 'test-org-id' }
+      organisation: { id: 'test-org-id' },
+      feeEstimate: { feeBand: '2A' }
     }
 
     const mockAccessToken = 'test-access-token'
@@ -430,6 +431,40 @@ describe('Dynamics Client', () => {
         expect.objectContaining({
           payload: {
             contactid: 'test-contact-id',
+            feeBand: '2A',
+            projectName: 'Test Marine Project',
+            reference: 'MLA/2025/00001',
+            applicantOrganisationId: 'test-org-id',
+            applicationUrl:
+              'http://localhost/view-marine-licence-details/ml-123',
+            status: 'SUBMITTED'
+          },
+          headers: {
+            Authorization: 'Bearer test-access-token',
+            'Content-Type': 'application/json'
+          }
+        })
+      )
+    })
+
+    it('should send marine licence with fallback for feeband', async () => {
+      mockServer.db.collection().findOne.mockResolvedValueOnce({
+        ...mockMarineLicence,
+        feeEstimate: {}
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/marine-licences',
+        expect.objectContaining({
+          payload: {
+            contactid: 'test-contact-id',
+            feeBand: '2A',
             projectName: 'Test Marine Project',
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',

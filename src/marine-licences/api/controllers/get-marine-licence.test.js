@@ -88,6 +88,7 @@ describe('GET /marine-licence', () => {
       const userContactId = 'abc'
       mockedFindOne.mockResolvedValue({
         _id: mockId,
+        feeEstimate: { accept: 'yes', termsAndConditions: true, feeBand: '2A' },
         projectName: 'Test project',
         publicRegister: {
           consent: 'yes',
@@ -117,6 +118,11 @@ describe('GET /marine-licence', () => {
           value: {
             id: mockId,
             contactId: userContactId,
+            feeEstimate: {
+              accept: 'yes',
+              termsAndConditions: true,
+              feeBand: '2A'
+            },
             projectName: 'Test project',
             publicRegister: {
               consent: 'yes',
@@ -133,6 +139,7 @@ describe('GET /marine-licence', () => {
             marinePlanPolicies: [],
             marinePlanPolicyResponses: {},
             taskList: {
+              feeEstimate: 'COMPLETED',
               preferredDates: 'COMPLETED',
               projectName: 'COMPLETED',
               otherAuthorities: 'COMPLETED',
