@@ -302,10 +302,15 @@ export const sendMarineLicenceToDynamics = async (
     applicationReferenceNumber
   )
 
+  const { feeEstimate = {} } = marineLicence
+
+  const feeBand = feeEstimate.feeBand ?? '2A'
+
   const payload = {
     contactid: marineLicence.contactId,
     projectName: marineLicence.projectName,
     reference: applicationReferenceNumber,
+    feeBand,
     applicationUrl: `${frontEndBaseUrl}/view-marine-licence-details/${marineLicence._id}`,
     ...(marineLicence.organisation?.id
       ? { applicantOrganisationId: marineLicence.organisation.id }
