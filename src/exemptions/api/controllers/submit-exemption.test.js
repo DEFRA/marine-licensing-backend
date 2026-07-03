@@ -227,7 +227,8 @@ describe('POST /exemption/submit', () => {
         mockDb,
         {
           updatedAt: mockAuditPayload.updatedAt,
-          updatedBy: mockAuditPayload.updatedBy
+          updatedBy: mockAuditPayload.updatedBy,
+          collectionName: 'exemptions'
         }
       )
 
@@ -236,7 +237,8 @@ describe('POST /exemption/submit', () => {
         mockDb,
         {
           updatedAt: mockAuditPayload.updatedAt,
-          updatedBy: mockAuditPayload.updatedBy
+          updatedBy: mockAuditPayload.updatedBy,
+          collectionName: 'exemptions'
         }
       )
 

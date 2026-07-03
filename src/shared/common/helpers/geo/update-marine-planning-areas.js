@@ -1,14 +1,11 @@
 import { parseGeoAreas } from './geo-parse.js'
 import { createLogger } from '../logging/logger.js'
-import {
-  collectionExemptions,
-  collectionMarinePlanAreas
-} from '../../constants/db-collections.js'
+import { collectionMarinePlanAreas } from '../../constants/db-collections.js'
 
 export const updateMarinePlanningAreas = async (
-  exemption,
+  project,
   db,
-  { updatedAt, updatedBy }
+  { updatedAt, updatedBy, collectionName }
 ) => {
   const logger = createLogger()
 
@@ -24,13 +21,13 @@ export const updateMarinePlanningAreas = async (
 
   const result =
     marinePlanAreasCount > 0
-      ? await parseGeoAreas(exemption, db, collectionMarinePlanAreas, {
+      ? await parseGeoAreas(project, db, collectionMarinePlanAreas, {
           displayName: 'Marine Plan Areas'
         })
       : []
 
-  await db.collection(collectionExemptions).updateOne(
-    { _id: exemption._id },
+  await db.collection(collectionName).updateOne(
+    { _id: project._id },
     {
       $set: { marinePlanAreas: result, updatedAt, updatedBy }
     }
