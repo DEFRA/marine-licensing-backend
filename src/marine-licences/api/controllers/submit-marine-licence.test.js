@@ -12,12 +12,20 @@ import {
 } from '../../../shared/common/constants/request-queue.js'
 import { config } from '../../../config.js'
 import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
+import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
+import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
+
+// Flush all pending microtasks and macrotasks so the fire-and-forget geo
+// background work completes before asserting.
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 vi.mock('../../../shared/helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
 vi.mock('../../../shared/common/helpers/dynamics/dynamics-processor.js')
 vi.mock('../../../config.js')
 vi.mock('../../../shared/helpers/send-email-confirmation.js')
+vi.mock('../../../shared/common/helpers/geo/update-coastal-operations-areas.js')
+vi.mock('../../../shared/common/helpers/geo/update-marine-planning-areas.js')
 
 describe('POST /marine-licence/submit', () => {
   let mockDb
@@ -102,6 +110,8 @@ describe('POST /marine-licence/submit', () => {
     })
     vi.mocked(addToDynamicsQueue).mockResolvedValue(undefined)
     vi.mocked(sendEmailConfirmation).mockResolvedValue(undefined)
+    vi.mocked(updateCoastalOperationsAreas).mockResolvedValue([])
+    vi.mocked(updateMarinePlanningAreas).mockResolvedValue([])
   })
 
   describe('Payload Validation', () => {
@@ -531,6 +541,123 @@ describe('POST /marine-licence/submit', () => {
       ).rejects.toThrow(
         Boom.internal(
           'Error submitting marine licence: Database connection failed'
+        )
+      )
+    })
+  })
+
+  describe('Geo Area Background Work', () => {
+    it('should update coastal operations areas and marine plan areas against the marine-licences collection', async () => {
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project'
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+
+      await submitMarineLicenceController.handler(
+        {
+          payload: { id: mockMarineLicenceId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(updateCoastalOperationsAreas).toHaveBeenCalledWith(
+        mockMarineLicence,
+        mockDb,
+        {
+          updatedAt: mockAuditPayload.updatedAt,
+          updatedBy: mockAuditPayload.updatedBy,
+          collectionName: 'marine-licences'
+        }
+      )
+
+      expect(updateMarinePlanningAreas).toHaveBeenCalledWith(
+        mockMarineLicence,
+        mockDb,
+        {
+          updatedAt: mockAuditPayload.updatedAt,
+          updatedBy: mockAuditPayload.updatedBy,
+          collectionName: 'marine-licences'
+        }
+      )
+    })
+
+    it('should log and not throw when updating coastal operations areas fails', async () => {
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project'
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+      vi.mocked(updateCoastalOperationsAreas).mockRejectedValueOnce(
+        new Error('Coastal areas lookup failed')
+      )
+
+      await submitMarineLicenceController.handler(
+        {
+          payload: { id: mockMarineLicenceId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining(
+          'Failed to update coastal operations areas for MLA/2025/10001'
+        )
+      )
+    })
+
+    it('should log and not throw when updating marine plan areas fails', async () => {
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project'
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+      vi.mocked(updateMarinePlanningAreas).mockRejectedValueOnce(
+        new Error('Marine plan areas lookup failed')
+      )
+
+      await submitMarineLicenceController.handler(
+        {
+          payload: { id: mockMarineLicenceId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining(
+          'Failed to update marine plan areas for MLA/2025/10001'
         )
       )
     })
