@@ -15,6 +15,7 @@ import { deleteActivityDetailsController } from './controllers/delete-activity-d
 import { updateSiteController } from './controllers/update-site.js'
 import { generateCoordinatesCsvController } from './controllers/generate-coordinates-csv.js'
 import { updateWaterFrameworkDirectiveController } from './controllers/update-water-framework-directive.js'
+import { updateFeeEstimateController } from './controllers/update-fee-estimate.js'
 import { calculateMarinePlanPoliciesController } from './controllers/calculate-marine-plan-policies.js'
 import { saveMarinePlanPolicyResponseController } from './controllers/save-marine-plan-policy-response.js'
 
@@ -108,6 +109,11 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/water-framework-directive',
     ...updateWaterFrameworkDirectiveController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/fee-estimate',
+    ...updateFeeEstimateController
   },
   {
     method: 'POST',
