@@ -39,6 +39,52 @@ describe('timedJsonFetch', () => {
     )
   })
 
+  it('should include the reference in the logged event when provided', async () => {
+    const logger = setupLogger()
+    Wreck.get.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: { features: [] }
+    })
+
+    await timedJsonFetch(callOptions(logger, { reference: 'licence-123' }))
+
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        event: expect.objectContaining({ reference: 'licence-123' })
+      },
+      expect.stringContaining('Test upstream completed in')
+    )
+  })
+
+  it('should omit the reference from the logged event when not provided', async () => {
+    const logger = setupLogger()
+    Wreck.get.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: { features: [] }
+    })
+
+    await timedJsonFetch(callOptions(logger))
+
+    const [event] = logger.info.mock.calls[0]
+    expect(event.event).not.toHaveProperty('reference')
+  })
+
+  it('should include the reference in the logged event on failure when provided', async () => {
+    const logger = setupLogger()
+    Wreck.get.mockRejectedValue(new Error('socket hang up'))
+
+    await expect(
+      timedJsonFetch(callOptions(logger, { reference: 'licence-123' }))
+    ).rejects.toThrow('socket hang up')
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      {
+        event: expect.objectContaining({ reference: 'licence-123' })
+      },
+      expect.stringContaining('socket hang up')
+    )
+  })
+
   it('should send the configured User-Agent and timeout', async () => {
     const logger = setupLogger()
     Wreck.get.mockResolvedValue({ res: { statusCode: 200 }, payload: {} })
