@@ -1,3 +1,4 @@
+import Boom from '@hapi/boom'
 import { parseGeoAreas } from './geo-parse.js'
 import { createLogger } from '../logging/logger.js'
 import { collectionMarinePlanAreas } from '../../constants/db-collections.js'
@@ -7,6 +8,12 @@ export const updateMarinePlanningAreas = async (
   db,
   { updatedAt, updatedBy, collectionName }
 ) => {
+  if (!collectionName) {
+    throw Boom.badImplementation(
+      'A collection name is required to update Marine Plan Areas'
+    )
+  }
+
   const logger = createLogger()
 
   const marinePlanAreasCount = await db

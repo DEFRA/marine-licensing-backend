@@ -14,10 +14,7 @@ import { config } from '../../../config.js'
 import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
-
-// Flush all pending microtasks and macrotasks so the fire-and-forget geo
-// background work completes before asserting.
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+import { flushPromises } from '../../../../tests/test-helpers.js'
 
 vi.mock('../../../shared/helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
@@ -693,6 +690,7 @@ describe('POST /marine-licence/submit', () => {
       }
 
       await submitMarineLicenceController.handler(mockRequest, mockHandler)
+      await flushPromises()
 
       expect(addToDynamicsQueue).toHaveBeenCalledWith({
         request: mockRequest,

@@ -9,10 +9,7 @@ import { REQUEST_QUEUE_STATUS } from '../../../shared/common/constants/request-q
 import { config } from '../../../config.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
-
-// Flush all pending microtasks and macrotasks so fire-and-forget background
-// promise chains (geo writes → queue inserts) complete before asserting.
-const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+import { flushPromises } from '../../../../tests/test-helpers.js'
 
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn().mockImplementation(function () {

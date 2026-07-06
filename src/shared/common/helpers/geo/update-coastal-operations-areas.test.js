@@ -108,4 +108,22 @@ describe('updateCoastalOperationsAreas', () => {
 
     expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
   })
+
+  test('should throw when collectionName is not provided', async () => {
+    const mockExemption = {
+      _id: 'test-exemption-id',
+      location: { coordinates: [1, 2] }
+    }
+
+    await expect(
+      updateCoastalOperationsAreas(mockExemption, mockDb, {
+        updatedAt: mockUpdatedAt,
+        updatedBy: mockUpdatedBy
+      })
+    ).rejects.toThrow(
+      'A collection name is required to update Coastal Operations Areas'
+    )
+
+    expect(mockDb.collection).not.toHaveBeenCalled()
+  })
 })

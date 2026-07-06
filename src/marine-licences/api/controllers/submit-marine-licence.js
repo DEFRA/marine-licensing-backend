@@ -84,10 +84,11 @@ const runPostSubmitBackgroundWork = ({
   updatedAt,
   updatedBy,
   applicationReference,
-  request
+  request,
+  isDynamicsEnabled
 }) => {
   // Each geo operation catches its own errors so a failure in one does
-  // not block the other.
+  // not block the other or the Dynamics queue insert — geo areas can be
   Promise.all([
     updateCoastalOperationsAreas(marineLicence, db, {
       updatedAt,
@@ -110,6 +111,22 @@ const runPostSubmitBackgroundWork = ({
       )
     })
   ])
+    .then(async () => {
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+        })
+      }
+    })
+    .catch((err) => {
+      request.logger.error(
+        structureErrorForECS(err),
+        `Failed to insert Dynamics queue entry for ${applicationReference}`
+      )
+    })
 }
 
 export const submitMarineLicenceController = {
@@ -164,17 +181,9 @@ export const submitMarineLicenceController = {
         updatedAt,
         updatedBy,
         applicationReference,
-        request
+        request,
+        isDynamicsEnabled
       })
-
-      if (isDynamicsEnabled) {
-        await addToDynamicsQueue({
-          request,
-          applicationReference,
-          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
-          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
-        })
-      }
 
       const { organisation } = marineLicence
       // async; don't wait for this to complete
