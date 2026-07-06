@@ -3,6 +3,8 @@ import { collectionMarinePlanPolicyWording } from '../../../../shared/common/con
 import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import { timedJsonFetch } from './policy-http.js'
 
+const normalisePolicyCode = (code) => code.replace(/\s/g, '')
+
 const CONTENT_FIELDS = [
   'policy',
   'policyAim',
@@ -55,7 +57,7 @@ const refreshPolicyDataset = async (collection, logger) => {
       .filter((entry) => entry.code)
       .map((entry) => ({
         updateOne: {
-          filter: { _id: entry.code },
+          filter: { _id: normalisePolicyCode(entry.code) },
           update: { $set: toCacheDocument(entry, fetchedAt) },
           upsert: true
         }
