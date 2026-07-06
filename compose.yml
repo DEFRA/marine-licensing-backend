@@ -42,6 +42,24 @@ services:
 
   ################################################################################
 
+  marine-licensing-api-stub:
+    build:
+      context: ../marine-licensing-api-stub
+      target: production
+    restart: unless-stopped
+    environment:
+      PORT: 3002
+      NODE_ENV: development
+    ports:
+      - '3002:3002'
+    networks:
+      - cdp-tenant
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3002/health']
+      interval: 10s
+      start_period: 30s
+      retries: 5
+
   # frontend:
   #   image: defradigital/frontend:${FRONTEND_VERSION:-latest}
   #   ports:
@@ -79,6 +97,8 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_started
+      marine-licensing-api-stub:
+        condition: service_healthy
     env_file:
       - 'compose/aws.env'
     environment:
@@ -89,6 +109,7 @@ services:
       MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS: 60000
       MONGO_URI: mongodb://mongodb:27017/
       DEFRA_ID_ENABLED: true
+      ARCGIS_FEATURE_SERVER_URL: http://marine-licensing-api-stub:3002/ArcGIS/rest/services/PolicyData_MDP/FeatureServer/0
     networks:
       - cdp-tenant
     volumes:
