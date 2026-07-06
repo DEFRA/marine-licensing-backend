@@ -727,6 +727,49 @@ describe('POST /marine-licence/submit', () => {
 
       expect(addToDynamicsQueue).not.toHaveBeenCalled()
     })
+
+    it('should log and not throw when inserting the Dynamics queue entry fails', async () => {
+      config.get.mockImplementation((key) => {
+        if (key === 'dynamics') return { isDynamicsEnabled: true }
+        if (key === 'frontEndBaseUrl') {
+          return 'https://marine-licensing.defra.gov.uk'
+        }
+        return {}
+      })
+
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project'
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+      vi.mocked(addToDynamicsQueue).mockRejectedValueOnce(
+        new Error('Dynamics queue insert failed')
+      )
+
+      await submitMarineLicenceController.handler(
+        {
+          payload: { id: mockMarineLicenceId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining(
+          'Failed to insert Dynamics queue entry for MLA/2025/10001'
+        )
+      )
+    })
   })
 
   describe('Error Handling - Database Operations', () => {
