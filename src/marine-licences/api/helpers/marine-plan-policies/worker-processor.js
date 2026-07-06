@@ -26,8 +26,8 @@ const parseMessageBody = (message, logger) => {
   }
 }
 
-const fetchPolicies = async ({ siteDetails, db, logger }) => {
-  const policies = await queryArcGISPolicies({ siteDetails, logger })
+const fetchPolicies = async ({ siteDetails, licenceId, db, logger }) => {
+  const policies = await queryArcGISPolicies({ siteDetails, licenceId, logger })
   return getPoliciesContent({ policies, db, logger })
 }
 
@@ -54,6 +54,7 @@ const computeAndStorePolicies = async (job, licence, db) => {
   const { licenceId, logger } = job
   const marinePlanPolicies = await fetchPolicies({
     siteDetails: licence.siteDetails,
+    licenceId,
     db,
     logger
   })

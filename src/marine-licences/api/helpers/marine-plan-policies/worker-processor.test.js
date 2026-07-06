@@ -108,6 +108,7 @@ describe('policies-worker-processor', () => {
 
       expect(queryArcGISPolicies).toHaveBeenCalledWith({
         siteDetails: licence.siteDetails,
+        licenceId,
         logger: server.logger
       })
       expect(getPoliciesContent).toHaveBeenCalledWith({
