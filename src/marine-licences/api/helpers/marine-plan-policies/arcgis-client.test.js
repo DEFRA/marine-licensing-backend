@@ -144,6 +144,19 @@ describe('queryArcGISPolicies', () => {
     expect(Wreck.post).not.toHaveBeenCalled()
   })
 
+  it('should include the licence id as the log event reference', async () => {
+    Wreck.post.mockResolvedValue(arcgisSuccess([]))
+
+    await queryArcGISPolicies({ siteDetails, licenceId: 'licence-123', logger })
+
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        event: expect.objectContaining({ reference: 'licence-123' })
+      },
+      expect.stringContaining('ArcGIS feature-server query completed in')
+    )
+  })
+
   it('should throw when ArcGIS reports an error inside a 200 response', async () => {
     Wreck.post.mockResolvedValue({
       res: { statusCode: 200 },
