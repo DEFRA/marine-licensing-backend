@@ -69,12 +69,20 @@ describe('POST /exemption/backfill-areas', () => {
     expect(updateCoastalOperationsAreas).toHaveBeenCalledWith(
       activeExemption,
       mockDb,
-      { updatedAt: undefined, updatedBy: undefined }
+      {
+        updatedAt: undefined,
+        updatedBy: undefined,
+        collectionName: 'exemptions'
+      }
     )
     expect(updateMarinePlanningAreas).toHaveBeenCalledWith(
       activeExemption,
       mockDb,
-      { updatedAt: undefined, updatedBy: undefined }
+      {
+        updatedAt: undefined,
+        updatedBy: undefined,
+        collectionName: 'exemptions'
+      }
     )
 
     expect(mockDb.collection().updateOne).toHaveBeenCalledWith(
