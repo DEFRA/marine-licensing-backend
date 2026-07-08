@@ -38,7 +38,8 @@ describe('updateCoastalOperationsAreas', () => {
 
     await updateCoastalOperationsAreas(mockExemption, mockDb, {
       updatedAt: mockUpdatedAt,
-      updatedBy: mockUpdatedBy
+      updatedBy: mockUpdatedBy,
+      collectionName: 'exemptions'
     })
 
     expect(parseGeoAreas).toHaveBeenCalledWith(
@@ -58,6 +59,8 @@ describe('updateCoastalOperationsAreas', () => {
         }
       }
     )
+
+    expect(mockDb.collection).toHaveBeenCalledWith('exemptions')
   })
 
   test('should update exemption but skip parsing when no Coastal Operations Areas exist in collection', async () => {
@@ -71,7 +74,8 @@ describe('updateCoastalOperationsAreas', () => {
 
     await updateCoastalOperationsAreas(mockExemption, mockDb, {
       updatedAt: mockUpdatedAt,
-      updatedBy: mockUpdatedBy
+      updatedBy: mockUpdatedBy,
+      collectionName: 'exemptions'
     })
 
     expect(parseMock).not.toHaveBeenCalled()
@@ -86,5 +90,40 @@ describe('updateCoastalOperationsAreas', () => {
         }
       }
     )
+  })
+
+  test('should write result to the provided collection (e.g. marine licences)', async () => {
+    const mockMarineLicence = {
+      _id: 'test-marine-licence-id',
+      location: { coordinates: [1, 2] }
+    }
+
+    vi.mocked(parseGeoAreas).mockResolvedValue(mockCoastalAreas)
+
+    await updateCoastalOperationsAreas(mockMarineLicence, mockDb, {
+      updatedAt: mockUpdatedAt,
+      updatedBy: mockUpdatedBy,
+      collectionName: 'marine-licences'
+    })
+
+    expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
+  })
+
+  test('should throw when collectionName is not provided', async () => {
+    const mockExemption = {
+      _id: 'test-exemption-id',
+      location: { coordinates: [1, 2] }
+    }
+
+    await expect(
+      updateCoastalOperationsAreas(mockExemption, mockDb, {
+        updatedAt: mockUpdatedAt,
+        updatedBy: mockUpdatedBy
+      })
+    ).rejects.toThrow(
+      'A collection name is required to update Coastal Operations Areas'
+    )
+
+    expect(mockDb.collection).not.toHaveBeenCalled()
   })
 })

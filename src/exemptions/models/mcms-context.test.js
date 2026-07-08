@@ -167,35 +167,15 @@ describe('mcmsContext validation schema', () => {
         expect(result.error).toBeDefined()
       })
 
-      it('should fail with an unknown host', () => {
+      it.each([
+        'https://evil.example.com/journey/self-service/outcome-document/BBBBBBBBBBBBBBBBBBBBBB',
+        'http://localhost:3000/not-a-document/123',
+        'https://test.com/test.pdf',
+        'not-a-valid-url'
+      ])('should fail with an invalid pdfDownloadUrl: %s', (pdfDownloadUrl) => {
         const result = mcmsContext.validate({
           ...validMcmsContext,
-          pdfDownloadUrl: `https://evil.example.com/journey/self-service/outcome-document/${'B'.repeat(22)}`
-        })
-        expect(result.error).toBeDefined()
-      })
-
-      it('rejects the app host with a non-outcome-document path', () => {
-        const result = mcmsContext.validate({
-          ...validMcmsContext,
-          pdfDownloadUrl: 'http://localhost:3000/not-a-document/123'
-        })
-        expect(result.error).toBeDefined()
-      })
-
-      it('should fail with a non-outcome-document URL', () => {
-        const contextWithInvalidUrl = {
-          ...validMcmsContext,
-          pdfDownloadUrl: 'https://test.com/test.pdf'
-        }
-        const result = mcmsContext.validate(contextWithInvalidUrl)
-        expect(result.error).toBeDefined()
-      })
-
-      it('should fail when pdfDownloadUrl is not a parseable URL', () => {
-        const result = mcmsContext.validate({
-          ...validMcmsContext,
-          pdfDownloadUrl: 'not-a-valid-url'
+          pdfDownloadUrl
         })
         expect(result.error).toBeDefined()
       })
