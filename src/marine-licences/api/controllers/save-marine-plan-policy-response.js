@@ -24,16 +24,33 @@ export const saveMarinePlanPolicyResponseController = {
       const _id = ObjectId.createFromHexString(id)
       const collection = db.collection(collectionMarineLicences)
 
-      const result = await collection.updateOne(
-        { _id },
+      const result = await collection.updateOne({ _id }, [
         {
           $set: {
-            [`marinePlanPolicyResponses.${policyCode}`]: response,
+            marinePlanPolicyResponses: {
+              $mergeObjects: [
+                '$marinePlanPolicyResponses',
+                { [policyCode]: response }
+              ]
+            },
             updatedAt,
             updatedBy
           }
+        },
+        {
+          $set: {
+            marinePlanPolicyResponseCount: {
+              $size: {
+                $filter: {
+                  input: { $objectToArray: '$marinePlanPolicyResponses' },
+                  as: 'r',
+                  cond: { $ne: ['$$r.v', ''] }
+                }
+              }
+            }
+          }
         }
-      )
+      ])
 
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
