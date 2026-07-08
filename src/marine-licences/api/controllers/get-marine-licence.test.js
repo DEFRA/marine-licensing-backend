@@ -146,6 +146,7 @@ describe('GET /marine-licence', () => {
             marinePlanPolicyJob: null,
             marinePlanPolicies: [],
             marinePlanPolicyResponses: {},
+            marinePlanPolicyResponseCount: 0,
             taskList: {
               feeEstimate: 'COMPLETED',
               harbourAuthority: 'COMPLETED',
