@@ -41,12 +41,14 @@ export const backfillAreasController = {
 
       await updateCoastalOperationsAreas(exemption, db, {
         updatedAt,
-        updatedBy
+        updatedBy,
+        collectionName: collectionExemptions
       })
 
       await updateMarinePlanningAreas(exemption, db, {
         updatedAt,
-        updatedBy
+        updatedBy,
+        collectionName: collectionExemptions
       })
 
       await db

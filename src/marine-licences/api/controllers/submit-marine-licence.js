@@ -17,6 +17,9 @@ import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/dyna
 import { config } from '../../../config.js'
 import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
+import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
+import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
+import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 
 const checkForIncompleteTasks = (marineLicence, isCitizen) => {
   const taskList = createTaskList(marineLicence, isCitizen)
@@ -75,6 +78,57 @@ const updateMarineLicenceRecord = async ({
   }
 }
 
+const runPostSubmitBackgroundWork = ({
+  marineLicence,
+  db,
+  updatedAt,
+  updatedBy,
+  applicationReference,
+  request,
+  isDynamicsEnabled
+}) => {
+  // Each geo operation catches its own errors so a failure in one does
+  // not block the other or the Dynamics queue insert — geo areas can be
+  Promise.all([
+    updateCoastalOperationsAreas(marineLicence, db, {
+      updatedAt,
+      updatedBy,
+      collectionName: collectionMarineLicences
+    }).catch((err) => {
+      request.logger.error(
+        structureErrorForECS(err),
+        `Failed to update coastal operations areas for ${applicationReference}`
+      )
+    }),
+    updateMarinePlanningAreas(marineLicence, db, {
+      updatedAt,
+      updatedBy,
+      collectionName: collectionMarineLicences
+    }).catch((err) => {
+      request.logger.error(
+        structureErrorForECS(err),
+        `Failed to update marine plan areas for ${applicationReference}`
+      )
+    })
+  ])
+    .then(async () => {
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+        })
+      }
+    })
+    .catch((err) => {
+      request.logger.error(
+        structureErrorForECS(err),
+        `Failed to insert Dynamics queue entry for ${applicationReference}`
+      )
+    })
+}
+
 export const submitMarineLicenceController = {
   options: {
     payload: {
@@ -117,14 +171,19 @@ export const submitMarineLicenceController = {
         submittedAt
       })
 
-      if (isDynamicsEnabled) {
-        await addToDynamicsQueue({
-          request,
-          applicationReference,
-          action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
-          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
-        })
-      }
+      const { updatedAt, updatedBy } = payload
+
+      // Run geo lookups in the background so the user receives
+      // applicationReference and submittedAt immediately.
+      runPostSubmitBackgroundWork({
+        marineLicence,
+        db,
+        updatedAt,
+        updatedBy,
+        applicationReference,
+        request,
+        isDynamicsEnabled
+      })
 
       const { organisation } = marineLicence
       // async; don't wait for this to complete
