@@ -155,6 +155,10 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       agree: 'yes',
       details: 'Test special legal powers details'
     },
+    harbourAuthority: {
+      area: 'yes',
+      details: 'Harbour authority details'
+    },
     publicRegister: {
       consent: 'no',
       reason: 'Test public register details'
