@@ -102,22 +102,26 @@ const runPostSubmitBackgroundWork = ({
   // not block the other or the Dynamics/EMP queue inserts — geo areas
   // can be backfilled independently via the backfill-areas endpoint.
   Promise.all([
-    updateCoastalOperationsAreas(exemption, db, { updatedAt, updatedBy }).catch(
-      (err) => {
-        request.logger.error(
-          structureErrorForECS(err),
-          `Failed to update coastal operations areas for ${applicationReference}`
-        )
-      }
-    ),
-    updateMarinePlanningAreas(exemption, db, { updatedAt, updatedBy }).catch(
-      (err) => {
-        request.logger.error(
-          structureErrorForECS(err),
-          `Failed to update marine plan areas for ${applicationReference}`
-        )
-      }
-    )
+    updateCoastalOperationsAreas(exemption, db, {
+      updatedAt,
+      updatedBy,
+      collectionName: collectionExemptions
+    }).catch((err) => {
+      request.logger.error(
+        structureErrorForECS(err),
+        `Failed to update coastal operations areas for ${applicationReference}`
+      )
+    }),
+    updateMarinePlanningAreas(exemption, db, {
+      updatedAt,
+      updatedBy,
+      collectionName: collectionExemptions
+    }).catch((err) => {
+      request.logger.error(
+        structureErrorForECS(err),
+        `Failed to update marine plan areas for ${applicationReference}`
+      )
+    })
   ])
     .then(async () => {
       if (isDynamicsEnabled) {

@@ -437,6 +437,8 @@ describe('Dynamics Client', () => {
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
               'http://localhost/view-marine-licence-details/ml-123',
+            marinePlanAreas: [],
+            coastalOperationsAreas: [],
             status: 'SUBMITTED'
           },
           headers: {
@@ -470,12 +472,35 @@ describe('Dynamics Client', () => {
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
               'http://localhost/view-marine-licence-details/ml-123',
+            marinePlanAreas: [],
+            coastalOperationsAreas: [],
             status: 'SUBMITTED'
           },
           headers: {
             Authorization: 'Bearer test-access-token',
             'Content-Type': 'application/json'
           }
+        })
+      )
+    })
+
+    it('should include marinePlanAreas and coastalOperationsAreas when present on the marine licence', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        marinePlanAreas: [{ name: 'South Marine Plan Area' }],
+        coastalOperationsAreas: [{ name: 'Coastal Ops Area 1' }]
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1].payload).toEqual(
+        expect.objectContaining({
+          marinePlanAreas: [{ name: 'South Marine Plan Area' }],
+          coastalOperationsAreas: [{ name: 'Coastal Ops Area 1' }]
         })
       )
     })
