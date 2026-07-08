@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb'
 import { processPolicyJob, processDlqJob } from './worker-processor.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
 import { getPoliciesContent } from './policy-content-client.js'
+import { computeWordingRef } from './wording-snapshots.js'
 import { deletePolicyJob } from './sqs-client.js'
 
 vi.mock('./arcgis-client.js', () => ({
@@ -43,15 +44,17 @@ describe('policies-worker-processor', () => {
     const { mockMongo } = global
     const mockFindOne = vi.fn().mockResolvedValue(licence)
     const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+    const mockBulkWrite = vi.fn().mockResolvedValue({})
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
       findOne: mockFindOne,
-      updateOne: mockUpdateOne
+      updateOne: mockUpdateOne,
+      bulkWrite: mockBulkWrite
     }))
     const server = {
       db: mockMongo,
       logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
     }
-    return { server, mockFindOne, mockUpdateOne }
+    return { server, mockFindOne, mockUpdateOne, mockBulkWrite }
   }
 
   describe('processPolicyJob', () => {
@@ -86,21 +89,21 @@ describe('policies-worker-processor', () => {
       expect(queryArcGISPolicies).not.toHaveBeenCalled()
     })
 
-    it('should compute policies, store them with their content, mark ready and delete the message', async () => {
+    it('should compute policies, pin their wording as snapshots, store pointers, mark ready and delete the message', async () => {
       const licence = buildLicence()
-      const { server, mockUpdateOne } = setupMocks(licence)
+      const { server, mockUpdateOne, mockBulkWrite } = setupMocks(licence)
       const arcgisPolicies = [{ policyCode: 'S-FISH-1', sector: 'Fishing' }]
+      const wording = {
+        policy: '<p>statement</p>',
+        policyAim: '<p>aim</p>',
+        whatIsIt: '<p>what</p>',
+        whyIsItImportant: '<p>why</p>',
+        howWillThisBeImplemented: '<p>how</p>'
+      }
       const mergedPolicies = [
-        {
-          policyCode: 'S-FISH-1',
-          sector: 'Fishing',
-          policy: '<p>statement</p>',
-          policyAim: '<p>aim</p>',
-          whatIsIt: '<p>what</p>',
-          whyIsItImportant: '<p>why</p>',
-          howWillThisBeImplemented: '<p>how</p>'
-        }
+        { policyCode: 'S-FISH-1', sector: 'Fishing', ...wording }
       ]
+      const { wordingRef } = computeWordingRef('S-FISH-1', wording)
       vi.mocked(queryArcGISPolicies).mockResolvedValue(arcgisPolicies)
       vi.mocked(getPoliciesContent).mockResolvedValue(mergedPolicies)
 
@@ -124,6 +127,17 @@ describe('policies-worker-processor', () => {
         },
         { $set: { marinePlanPolicyJob: 'computing' } }
       )
+      expect(mockBulkWrite).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            updateOne: expect.objectContaining({
+              filter: { _id: wordingRef },
+              upsert: true
+            })
+          })
+        ],
+        { ordered: false }
+      )
       expect(mockUpdateOne).toHaveBeenNthCalledWith(
         2,
         {
@@ -132,8 +146,10 @@ describe('policies-worker-processor', () => {
         },
         {
           $set: {
-            marinePlanPolicies: mergedPolicies,
-            marinePlanPoliciesCount: mergedPolicies.length,
+            marinePlanPolicies: [
+              { policyCode: 'S-FISH-1', sector: 'Fishing', wordingRef }
+            ],
+            marinePlanPoliciesCount: 1,
             marinePlanPolicyJob: 'ready'
           }
         }
@@ -144,6 +160,7 @@ describe('policies-worker-processor', () => {
     it('should still delete the message when the result write finds the job stale', async () => {
       const { server, mockUpdateOne } = setupMocks(buildLicence())
       vi.mocked(queryArcGISPolicies).mockResolvedValue([])
+      vi.mocked(getPoliciesContent).mockResolvedValue([])
       // computing update matches, ready update does not (site edited mid-flight)
       mockUpdateOne
         .mockResolvedValueOnce({ matchedCount: 1 })

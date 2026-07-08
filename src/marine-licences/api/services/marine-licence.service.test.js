@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { MarineLicenceService } from './marine-licence.service.js'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import { collectionMarinePlanPolicyWordingSnapshots } from '../../../shared/common/constants/db-collections.js'
 
 vi.mock(
   '../../../shared/common/helpers/dynamics/get-contact-details.js',
@@ -162,6 +163,125 @@ describe('MarineLicenceService', () => {
       ).rejects.toThrow('Not authorised to request this resource')
 
       expect(getContactNameById).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('marine plan policy hydration', () => {
+    const wording = {
+      policy: '<p>statement</p>',
+      policyAim: '<p>aim</p>',
+      whatIsIt: '<p>what</p>',
+      whyIsItImportant: null,
+      howWillThisBeImplemented: '<p>how</p>'
+    }
+    const wordingRef = 'E-AGG-1@a1b2c3d4e5f6'
+
+    const createServiceWithSnapshots = (licence, snapshotRows) => {
+      const mockSnapshotFind = vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue(snapshotRows)
+      })
+      vi.spyOn(global.mockMongo, 'collection').mockImplementation((name) => {
+        if (name === collectionMarinePlanPolicyWordingSnapshots) {
+          return { find: mockSnapshotFind }
+        }
+        return { findOne: vi.fn().mockResolvedValue(licence) }
+      })
+      const service = new MarineLicenceService({
+        db: global.mockMongo,
+        logger
+      })
+      return { service, mockSnapshotFind }
+    }
+
+    it('should rehydrate pointer policies to the full legacy shape, wording fields verbatim', async () => {
+      const licence = {
+        ...marineLicence,
+        marinePlanPolicies: [
+          { policyCode: 'E-AGG-1', sector: 'Aggregates', wordingRef }
+        ]
+      }
+      const { service, mockSnapshotFind } = createServiceWithSnapshots(
+        licence,
+        [{ _id: wordingRef, policyCode: 'E-AGG-1', ...wording }]
+      )
+
+      const result = await service.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(mockSnapshotFind).toHaveBeenCalledWith({
+        _id: { $in: [wordingRef] }
+      })
+      expect(result.marinePlanPolicies).toEqual([
+        { policyCode: 'E-AGG-1', sector: 'Aggregates', ...wording }
+      ])
+    })
+
+    it('should pass legacy embedded policies through unchanged without querying snapshots', async () => {
+      const embedded = {
+        policyCode: 'E-AGG-1',
+        sector: 'Aggregates',
+        ...wording
+      }
+      const licence = { ...marineLicence, marinePlanPolicies: [embedded] }
+      const { service, mockSnapshotFind } = createServiceWithSnapshots(
+        licence,
+        []
+      )
+
+      const result = await service.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(mockSnapshotFind).not.toHaveBeenCalled()
+      expect(result.marinePlanPolicies).toEqual([embedded])
+    })
+
+    it('should degrade a dangling wordingRef to empty wording instead of failing', async () => {
+      const licence = {
+        ...marineLicence,
+        marinePlanPolicies: [
+          { policyCode: 'E-AGG-1', sector: 'Aggregates', wordingRef }
+        ]
+      }
+      const { service } = createServiceWithSnapshots(licence, [])
+
+      const result = await service.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(result.marinePlanPolicies).toEqual([
+        {
+          policyCode: 'E-AGG-1',
+          sector: 'Aggregates',
+          policy: '',
+          policyAim: '',
+          whatIsIt: '',
+          whyIsItImportant: '',
+          howWillThisBeImplemented: ''
+        }
+      ])
+    })
+
+    it('should hydrate on the public read path too', async () => {
+      const licence = {
+        ...marineLicence,
+        marinePlanPolicies: [
+          { policyCode: 'E-AGG-1', sector: 'Aggregates', wordingRef }
+        ]
+      }
+      const { service } = createServiceWithSnapshots(licence, [
+        { _id: wordingRef, policyCode: 'E-AGG-1', ...wording }
+      ])
+
+      const result = await service.getPublicMarineLicenceById(marineLicence._id)
+
+      expect(result.marinePlanPolicies).toEqual([
+        { policyCode: 'E-AGG-1', sector: 'Aggregates', ...wording }
+      ])
     })
   })
 })
