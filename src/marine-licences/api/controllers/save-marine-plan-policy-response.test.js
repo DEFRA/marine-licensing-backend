@@ -78,12 +78,32 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
       expect(mockUpdateOne).toHaveBeenCalledTimes(1)
       expect(mockUpdateOne).toHaveBeenCalledWith(
         { _id: ObjectId.createFromHexString(mockPayload.id) },
-        {
-          $set: {
-            'marinePlanPolicyResponses.S-FISH-1': mockPayload.response,
-            ...mockAuditPayload
+        [
+          {
+            $set: {
+              marinePlanPolicyResponses: {
+                $mergeObjects: [
+                  '$marinePlanPolicyResponses',
+                  { 'S-FISH-1': mockPayload.response }
+                ]
+              },
+              ...mockAuditPayload
+            }
+          },
+          {
+            $set: {
+              marinePlanPolicyResponseCount: {
+                $size: {
+                  $filter: {
+                    input: { $objectToArray: '$marinePlanPolicyResponses' },
+                    as: 'r',
+                    cond: { $ne: ['$$r.v', ''] }
+                  }
+                }
+              }
+            }
           }
-        }
+        ]
       )
       expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
     })
