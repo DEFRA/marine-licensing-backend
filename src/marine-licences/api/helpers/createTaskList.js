@@ -7,6 +7,7 @@ import {
   buildTaskList,
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
+import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
 
 const ACTIVITY_DETAILS_FIELDS = [
   'activities',
@@ -202,6 +203,39 @@ const getFeeEstimateStatus = (feeEstimate) => {
   return COMPLETED
 }
 
+const isPolicyAnswered = (responses, policyCode) => {
+  const response = responses?.[policyCode]
+  return typeof response === 'string' && response.trim().length > 0
+}
+
+const getMarinePlanPolicyStatus = (marineLicence) => {
+  if (
+    marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
+  ) {
+    return INCOMPLETE
+  }
+
+  const policies = marineLicence.marinePlanPolicies ?? []
+  if (policies.length === 0) {
+    return COMPLETED
+  }
+
+  const responses = marineLicence.marinePlanPolicyResponses ?? {}
+  const answeredCount = policies.filter((policy) =>
+    isPolicyAnswered(responses, policy.policyCode)
+  ).length
+
+  if (answeredCount === policies.length) {
+    return COMPLETED
+  }
+
+  if (answeredCount === 0) {
+    return INCOMPLETE
+  }
+
+  return IN_PROGRESS
+}
+
 export const createTaskList = (marineLicence, isCitizen = false) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
@@ -219,5 +253,7 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value)
   }
 
-  return buildTaskList(marineLicence, tasks)
+  const taskList = buildTaskList(marineLicence, tasks)
+  taskList.marinePlanPolicies = getMarinePlanPolicyStatus(marineLicence)
+  return taskList
 }

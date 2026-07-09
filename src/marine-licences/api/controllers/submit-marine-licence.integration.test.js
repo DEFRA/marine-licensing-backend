@@ -31,7 +31,8 @@ describe('POST /marine-licence/submit', async () => {
 
     const completeMarineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
-      contactId: mockCredentials.contactId
+      contactId: mockCredentials.contactId,
+      marinePlanPolicyJob: 'ready'
     })
 
     await db
@@ -144,7 +145,8 @@ describe('POST /marine-licence/submit', async () => {
       await db.collection(collectionMarineLicences).insertOne(
         createCompleteMarineLicence({
           _id: draftMarineLicenceId,
-          contactId: mockCredentials.contactId
+          contactId: mockCredentials.contactId,
+          marinePlanPolicyJob: 'ready'
         })
       )
     }

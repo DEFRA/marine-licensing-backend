@@ -71,7 +71,8 @@ describe('createTaskList', () => {
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED,
       publicRegister: COMPLETED,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -106,7 +107,8 @@ describe('createTaskList', () => {
       preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -140,7 +142,8 @@ describe('createTaskList', () => {
       projectBackground: COMPLETED,
       publicConsultation: INCOMPLETE,
       publicRegister: INCOMPLETE,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -461,7 +464,8 @@ describe('createTaskList', () => {
       publicRegister: INCOMPLETE,
       publicConsultation: INCOMPLETE,
       siteDetails: INCOMPLETE,
-      waterFrameworkDirective: INCOMPLETE
+      waterFrameworkDirective: INCOMPLETE,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -499,7 +503,76 @@ describe('createTaskList', () => {
       publicRegister: COMPLETED,
       publicConsultation: COMPLETED,
       siteDetails: IN_PROGRESS,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
+    })
+  })
+
+  describe('marinePlanPolicies status', () => {
+    const statusFor = (overrides) =>
+      createTaskList(overrides).marinePlanPolicies
+
+    it('is INCOMPLETE before the ArcGIS policy query has completed', () => {
+      expect(statusFor({ marinePlanPolicyJob: null })).toBe(INCOMPLETE)
+      expect(statusFor({ marinePlanPolicyJob: 'pending' })).toBe(INCOMPLETE)
+      expect(statusFor({ marinePlanPolicyJob: 'computing' })).toBe(INCOMPLETE)
+      expect(statusFor({ marinePlanPolicyJob: 'failed' })).toBe(INCOMPLETE)
+    })
+
+    it('is COMPLETED when the query is ready and no policies apply', () => {
+      expect(
+        statusFor({ marinePlanPolicyJob: 'ready', marinePlanPolicies: [] })
+      ).toBe(COMPLETED)
+    })
+
+    it('is INCOMPLETE when ready with policies but none answered', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPolicies: [{ policyCode: 'A' }, { policyCode: 'B' }],
+          marinePlanPolicyResponses: {}
+        })
+      ).toBe(INCOMPLETE)
+    })
+
+    it('is IN_PROGRESS when ready with some but not all policies answered', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPolicies: [{ policyCode: 'A' }, { policyCode: 'B' }],
+          marinePlanPolicyResponses: { A: 'An answer' }
+        })
+      ).toBe(IN_PROGRESS)
+    })
+
+    it('is COMPLETED when ready with every policy answered', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPolicies: [{ policyCode: 'A' }, { policyCode: 'B' }],
+          marinePlanPolicyResponses: { A: 'a', B: 'b' }
+        })
+      ).toBe(COMPLETED)
+    })
+
+    it('ignores stale responses for policies that no longer apply after a site change', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPolicies: [{ policyCode: 'B' }],
+          marinePlanPolicyResponses: { A: 'stale answer' }
+        })
+      ).toBe(INCOMPLETE)
+    })
+
+    it('treats a whitespace-only response as unanswered', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPolicies: [{ policyCode: 'A' }],
+          marinePlanPolicyResponses: { A: '   ' }
+        })
+      ).toBe(INCOMPLETE)
     })
   })
 })
