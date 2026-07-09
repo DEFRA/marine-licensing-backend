@@ -1,18 +1,34 @@
 import { createHash } from 'node:crypto'
-import { collectionMarinePlanPolicyWordingSnapshots } from '../../../../shared/common/constants/db-collections.js'
-import { MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS } from '../../../constants/marine-licence.js'
+
+// Frozen copy of src/marine-licences/api/helpers/marine-plan-policies/wording-snapshots.js
+// (and the constants it relies on) as of migration 20260708000000. Migrations must not
+// import evolving src modules: they are immutable snapshots, and a src import is also
+// loaded natively by migrate-mongo outside Vitest's instrumentation, which corrupts the
+// module's merged V8 coverage in integration-test runs.
+
+export const collectionMarineLicences = 'marine-licences'
+export const collectionMarinePlanPolicyWordingSnapshots =
+  'marine-plan-policy-wording-snapshots'
+
+export const MARINE_PLAN_POLICY_CONTENT_FIELDS = [
+  'policy',
+  'policyAim',
+  'whatIsIt',
+  'whyIsItImportant',
+  'howWillThisBeImplemented'
+]
 
 const WORDING_REF_HASH_LENGTH = 12
 const DUPLICATE_KEY_ERROR_CODE = 11000
 
 // Fixed field order, values verbatim. JSON.stringify keeps null ('null') distinct
 // from empty wording ('""') so the two hash to different snapshots.
-export const canonicaliseWording = (wording) =>
-  CONTENT_FIELDS.map((field) => JSON.stringify(wording[field] ?? null)).join(
-    '|'
-  )
+const canonicaliseWording = (wording) =>
+  MARINE_PLAN_POLICY_CONTENT_FIELDS.map((field) =>
+    JSON.stringify(wording[field] ?? null)
+  ).join('|')
 
-export const computeWordingRef = (policyCode, wording) => {
+const computeWordingRef = (policyCode, wording) => {
   const contentHash = createHash('sha256')
     .update(canonicaliseWording(wording))
     .digest('hex')
@@ -30,7 +46,7 @@ const isOnlyDuplicateKeyErrors = (error) =>
     error.writeErrors.every((e) => e.code === DUPLICATE_KEY_ERROR_CODE))
 
 const toWordingFields = (wording) =>
-  CONTENT_FIELDS.reduce((fields, field) => {
+  MARINE_PLAN_POLICY_CONTENT_FIELDS.reduce((fields, field) => {
     fields[field] = wording[field] ?? null
     return fields
   }, {})

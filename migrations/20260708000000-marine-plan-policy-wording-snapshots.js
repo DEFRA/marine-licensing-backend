@@ -1,10 +1,10 @@
 import { createLogger } from '../src/shared/common/helpers/logging/logger.js'
 import {
   collectionMarineLicences,
-  collectionMarinePlanPolicyWordingSnapshots
-} from '../src/shared/common/constants/db-collections.js'
-import { pinWordingSnapshots } from '../src/marine-licences/api/helpers/marine-plan-policies/wording-snapshots.js'
-import { MARINE_PLAN_POLICY_CONTENT_FIELDS } from '../src/marine-licences/constants/marine-licence.js'
+  collectionMarinePlanPolicyWordingSnapshots,
+  MARINE_PLAN_POLICY_CONTENT_FIELDS,
+  pinWordingSnapshots
+} from './helpers/wording-snapshots.js'
 
 const logger = createLogger()
 const logSystem =
