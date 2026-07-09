@@ -7,10 +7,11 @@ const DUPLICATE_KEY_ERROR_CODE = 11000
 
 // Fixed field order, values verbatim. JSON.stringify keeps null ('null') distinct
 // from empty wording ('""') so the two hash to different snapshots.
-export const canonicaliseWording = (wording) =>
-  CONTENT_FIELDS.map((field) => JSON.stringify(wording[field] ?? null)).join(
-    '|'
-  )
+export const canonicaliseWording = (wording) => {
+  return CONTENT_FIELDS.map((field) =>
+    JSON.stringify(wording[field] ?? null)
+  ).join('|')
+}
 
 export const computeWordingRef = (policyCode, wording) => {
   const contentHash = createHash('sha256')
@@ -24,16 +25,20 @@ export const computeWordingRef = (policyCode, wording) => {
 
 // Concurrent workers can race the same upsert and still hit a duplicate-key
 // error; the row already holds identical content, so that is a success.
-const isOnlyDuplicateKeyErrors = (error) =>
-  error.code === DUPLICATE_KEY_ERROR_CODE ||
-  (error.writeErrors?.length > 0 &&
-    error.writeErrors.every((e) => e.code === DUPLICATE_KEY_ERROR_CODE))
+const isOnlyDuplicateKeyErrors = (error) => {
+  return (
+    error.code === DUPLICATE_KEY_ERROR_CODE ||
+    (error.writeErrors?.length > 0 &&
+      error.writeErrors.every((e) => e.code === DUPLICATE_KEY_ERROR_CODE))
+  )
+}
 
-const toWordingFields = (wording) =>
-  CONTENT_FIELDS.reduce((fields, field) => {
+const toWordingFields = (wording) => {
+  return CONTENT_FIELDS.reduce((fields, field) => {
     fields[field] = wording[field] ?? null
     return fields
   }, {})
+}
 
 // Captures each distinct wording once (write-once via $setOnInsert — an existing
 // snapshot is never rewritten, so a wordingRef always resolves to the exact
