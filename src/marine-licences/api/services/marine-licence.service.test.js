@@ -239,6 +239,38 @@ describe('MarineLicenceService', () => {
       expect(result.marinePlanPolicies).toEqual([embedded])
     })
 
+    it('should hydrate pointer policies while passing mixed-in legacy embedded policies through unchanged', async () => {
+      const embedded = {
+        policyCode: 'E-FISH-1',
+        sector: 'Fishing',
+        ...wording
+      }
+      const licence = {
+        ...marineLicence,
+        marinePlanPolicies: [
+          embedded,
+          { policyCode: 'E-AGG-1', sector: 'Aggregates', wordingRef }
+        ]
+      }
+      const { service, mockSnapshotFind } = createServiceWithSnapshots(
+        licence,
+        [{ _id: wordingRef, policyCode: 'E-AGG-1', ...wording }]
+      )
+
+      const result = await service.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(mockSnapshotFind).toHaveBeenCalledWith({
+        _id: { $in: [wordingRef] }
+      })
+      expect(result.marinePlanPolicies).toEqual([
+        embedded,
+        { policyCode: 'E-AGG-1', sector: 'Aggregates', ...wording }
+      ])
+    })
+
     it('should degrade a dangling wordingRef to empty wording instead of failing', async () => {
       const licence = {
         ...marineLicence,
