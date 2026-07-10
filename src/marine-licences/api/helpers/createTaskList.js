@@ -238,10 +238,9 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     preferredDates: (value) => (value ? COMPLETED : INCOMPLETE),
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
-    waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value)
+    waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
+    marinePlanPolicies: () => getMarinePlanPolicyStatus(marineLicence)
   }
 
-  const taskList = buildTaskList(marineLicence, tasks)
-  taskList.marinePlanPolicies = getMarinePlanPolicyStatus(marineLicence)
-  return taskList
+  return buildTaskList(marineLicence, tasks)
 }

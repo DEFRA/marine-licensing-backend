@@ -512,12 +512,12 @@ describe('createTaskList', () => {
     const statusFor = (overrides) =>
       createTaskList(overrides).marinePlanPolicies
 
-    it('is INCOMPLETE before the ArcGIS policy query has completed', () => {
-      expect(statusFor({ marinePlanPolicyJob: null })).toBe(INCOMPLETE)
-      expect(statusFor({ marinePlanPolicyJob: 'pending' })).toBe(INCOMPLETE)
-      expect(statusFor({ marinePlanPolicyJob: 'computing' })).toBe(INCOMPLETE)
-      expect(statusFor({ marinePlanPolicyJob: 'failed' })).toBe(INCOMPLETE)
-    })
+    it.each([null, 'pending', 'computing', 'failed'])(
+      'is INCOMPLETE before the ArcGIS policy query is ready (job=%s)',
+      (marinePlanPolicyJob) => {
+        expect(statusFor({ marinePlanPolicyJob })).toBe(INCOMPLETE)
+      }
+    )
 
     it('is COMPLETED when the query is ready and no policies apply', () => {
       expect(
