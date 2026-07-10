@@ -203,11 +203,6 @@ const getFeeEstimateStatus = (feeEstimate) => {
   return COMPLETED
 }
 
-const isPolicyAnswered = (responses, policyCode) => {
-  const response = responses?.[policyCode]
-  return typeof response === 'string' && response.trim().length > 0
-}
-
 const getMarinePlanPolicyStatus = (marineLicence) => {
   if (
     marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
@@ -215,21 +210,14 @@ const getMarinePlanPolicyStatus = (marineLicence) => {
     return INCOMPLETE
   }
 
-  const policies = marineLicence.marinePlanPolicies ?? []
-  if (policies.length === 0) {
+  const total = marineLicence.marinePlanPoliciesCount ?? 0
+  const completed = marineLicence.marinePlanPolicyResponseCount ?? 0
+
+  if (completed >= total) {
     return COMPLETED
   }
 
-  const responses = marineLicence.marinePlanPolicyResponses ?? {}
-  const answeredCount = policies.filter((policy) =>
-    isPolicyAnswered(responses, policy.policyCode)
-  ).length
-
-  if (answeredCount === policies.length) {
-    return COMPLETED
-  }
-
-  if (answeredCount === 0) {
+  if (completed === 0) {
     return INCOMPLETE
   }
 

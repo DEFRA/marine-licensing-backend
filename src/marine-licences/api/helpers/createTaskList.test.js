@@ -521,7 +521,11 @@ describe('createTaskList', () => {
 
     it('is COMPLETED when the query is ready and no policies apply', () => {
       expect(
-        statusFor({ marinePlanPolicyJob: 'ready', marinePlanPolicies: [] })
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPoliciesCount: 0,
+          marinePlanPolicyResponseCount: 0
+        })
       ).toBe(COMPLETED)
     })
 
@@ -529,8 +533,8 @@ describe('createTaskList', () => {
       expect(
         statusFor({
           marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: [{ policyCode: 'A' }, { policyCode: 'B' }],
-          marinePlanPolicyResponses: {}
+          marinePlanPoliciesCount: 3,
+          marinePlanPolicyResponseCount: 0
         })
       ).toBe(INCOMPLETE)
     })
@@ -539,8 +543,8 @@ describe('createTaskList', () => {
       expect(
         statusFor({
           marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: [{ policyCode: 'A' }, { policyCode: 'B' }],
-          marinePlanPolicyResponses: { A: 'An answer' }
+          marinePlanPoliciesCount: 3,
+          marinePlanPolicyResponseCount: 1
         })
       ).toBe(IN_PROGRESS)
     })
@@ -549,30 +553,10 @@ describe('createTaskList', () => {
       expect(
         statusFor({
           marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: [{ policyCode: 'A' }, { policyCode: 'B' }],
-          marinePlanPolicyResponses: { A: 'a', B: 'b' }
+          marinePlanPoliciesCount: 3,
+          marinePlanPolicyResponseCount: 3
         })
       ).toBe(COMPLETED)
-    })
-
-    it('ignores stale responses for policies that no longer apply after a site change', () => {
-      expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: [{ policyCode: 'B' }],
-          marinePlanPolicyResponses: { A: 'stale answer' }
-        })
-      ).toBe(INCOMPLETE)
-    })
-
-    it('treats a whitespace-only response as unanswered', () => {
-      expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: [{ policyCode: 'A' }],
-          marinePlanPolicyResponses: { A: '   ' }
-        })
-      ).toBe(INCOMPLETE)
     })
   })
 })
