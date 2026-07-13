@@ -43,35 +43,37 @@ export const pinWordingSnapshots = async ({ db, policies, now }) => {
     return []
   }
 
-  const pinned = []
-  const ops = policies.map(({ policyCode, sector, ...wording }) => {
+  const results = policies.map(({ policyCode, sector, ...wording }) => {
     const { contentHash, wordingRef } = computeWordingRef(policyCode, wording)
-    pinned.push({ policyCode, sector, wordingRef })
     return {
-      updateOne: {
-        filter: { _id: wordingRef },
-        update: {
-          $setOnInsert: {
-            policyCode,
-            contentHash,
-            capturedAt: now,
-            ...toWordingFields(wording)
-          }
-        },
-        upsert: true
+      pointer: { policyCode, sector, wordingRef },
+      op: {
+        updateOne: {
+          filter: { _id: wordingRef },
+          update: {
+            $setOnInsert: {
+              policyCode,
+              contentHash,
+              capturedAt: now,
+              ...toWordingFields(wording)
+            }
+          },
+          upsert: true
+        }
       }
     }
   })
 
   try {
-    await db
-      .collection(collectionMarinePlanPolicyWordingSnapshots)
-      .bulkWrite(ops, { ordered: false })
+    await db.collection(collectionMarinePlanPolicyWordingSnapshots).bulkWrite(
+      results.map((r) => r.op),
+      { ordered: false }
+    )
   } catch (error) {
     if (!isOnlyDuplicateKeyErrors(error)) {
       throw error
     }
   }
 
-  return pinned
+  return results.map((r) => r.pointer)
 }

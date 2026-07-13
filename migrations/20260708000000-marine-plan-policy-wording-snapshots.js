@@ -33,9 +33,11 @@ export const up = async (db) => {
       now: licence.updatedAt ?? migrationTime
     })
 
-    let nextPinned = 0
+    const pinnedByKey = new Map(
+      pinned.map((p) => [`${p.policyCode}::${p.sector}`, p])
+    )
     const migrated = licence.marinePlanPolicies.map((p) =>
-      p.wordingRef ? p : pinned[nextPinned++]
+      p.wordingRef ? p : pinnedByKey.get(`${p.policyCode}::${p.sector}`)
     )
 
     await licences.updateOne(

@@ -95,6 +95,40 @@ describe('20260708000000-marine-plan-policy-wording-snapshots', () => {
     expect(rows).toEqual([firstRow])
   })
 
+  it('should pin each policy to its own pointer when the same policyCode appears twice with different sectors', async () => {
+    const licence = {
+      _id: new ObjectId(),
+      marinePlanPolicies: [
+        embeddedPolicy('E-AGG-1', { policy: '<p>Aggregates wording</p>' }),
+        {
+          ...embeddedPolicy('E-AGG-1', { policy: '<p>Fishing wording</p>' }),
+          sector: 'Fishing'
+        }
+      ]
+    }
+    await licences().insertOne(licence)
+
+    await up(global.mockMongo)
+
+    const migrated = await licences().findOne({ _id: licence._id })
+    const { wordingRef: aggregatesRef } = computeWordingRef('E-AGG-1', {
+      ...wording('E-AGG-1'),
+      policy: '<p>Aggregates wording</p>'
+    })
+    const { wordingRef: fishingRef } = computeWordingRef('E-AGG-1', {
+      ...wording('E-AGG-1'),
+      policy: '<p>Fishing wording</p>'
+    })
+    expect(migrated.marinePlanPolicies).toEqual([
+      {
+        policyCode: 'E-AGG-1',
+        sector: 'Aggregates',
+        wordingRef: aggregatesRef
+      },
+      { policyCode: 'E-AGG-1', sector: 'Fishing', wordingRef: fishingRef }
+    ])
+  })
+
   it('should skip licences with no policies and those already fully migrated', async () => {
     const untouched = { _id: new ObjectId(), marinePlanPolicies: [] }
     const pointerOnly = {

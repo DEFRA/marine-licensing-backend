@@ -38,6 +38,11 @@ export class MarineLicenceService {
     const snapshots = await this.db
       .collection(collectionMarinePlanPolicyWordingSnapshots)
       .find({ _id: { $in: refs } })
+      .project(
+        Object.fromEntries(
+          MARINE_PLAN_POLICY_CONTENT_FIELDS.map((field) => [field, 1])
+        )
+      )
       .toArray()
     const snapshotsByRef = new Map(snapshots.map((s) => [s._id, s]))
 

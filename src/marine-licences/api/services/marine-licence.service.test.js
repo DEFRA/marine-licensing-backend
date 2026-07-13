@@ -178,7 +178,9 @@ describe('MarineLicenceService', () => {
 
     const createServiceWithSnapshots = (licence, snapshotRows) => {
       const mockSnapshotFind = vi.fn().mockReturnValue({
-        toArray: vi.fn().mockResolvedValue(snapshotRows)
+        project: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue(snapshotRows)
+        })
       })
       vi.spyOn(global.mockMongo, 'collection').mockImplementation((name) => {
         if (name === collectionMarinePlanPolicyWordingSnapshots) {
