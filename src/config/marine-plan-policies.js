@@ -1,4 +1,5 @@
 const oneHundredKilobytesInBytes = 102_400
+const thirtyMegabytesInBytes = 30_000_000
 
 export const marinePlanPoliciesSchema = {
   isEnabled: {
@@ -56,6 +57,12 @@ export const marinePlanPoliciesSchema = {
     format: Number,
     default: oneHundredKilobytesInBytes,
     env: 'MARINE_PLAN_POLICIES_WORDING_MAX_FIELD_BYTES'
+  },
+  wordingMaxResponseBytes: {
+    doc: 'Maximum allowed response size in bytes when fetching the GOV.UK policies dataset (current live payload is ~6MB)',
+    format: Number,
+    default: thirtyMegabytesInBytes,
+    env: 'MARINE_PLAN_POLICIES_WORDING_MAX_RESPONSE_BYTES'
   },
   userAgent: {
     doc: 'User-Agent header sent with requests to the ArcGIS and GOV.UK policy APIs',

@@ -75,7 +75,7 @@ const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) =>
   )
 
 const keepValidEntries = (policies, logger) =>
-  policies.filter((entry) => {
+  policies.filter((entry, index) => {
     if (isValidCode(entry?.code)) {
       return true
     }
@@ -84,11 +84,12 @@ const keepValidEntries = (policies, logger) =>
         event: {
           action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_ENTRY_SKIPPED,
           outcome: 'failure',
+          reference: `entry-index/${index}`,
           reason:
             'Entry in the GOV.UK policies API response has a missing or non-string code; raise a data-quality issue with the marine plans explorer team'
         }
       },
-      'Skipped a GOV.UK policies API entry with a missing or non-string code'
+      `Skipped GOV.UK policies API entry at index ${index}: missing or non-string code`
     )
     return false
   })

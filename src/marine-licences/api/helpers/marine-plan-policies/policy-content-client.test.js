@@ -278,6 +278,23 @@ describe('getPoliciesContent', () => {
   })
 
   describe('sanitisation and validation at ingest', () => {
+    it('should fetch the dataset with the configured maxBytes cap', async () => {
+      setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1')]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [, options] = Wreck.get.mock.calls[0]
+      expect(options.maxBytes).toBe(30_000_000)
+    })
+
     it('should sanitise wording fields before caching them', async () => {
       const { mockBulkWrite } = setupMocks({
         initialDocs: [],
@@ -331,6 +348,30 @@ describe('getPoliciesContent', () => {
         },
         expect.stringContaining('E-AGG-1')
       )
+      expect(operations[0].updateOne.update.$set.policy).toBe(
+        '<p>E-AGG-1 policy statement</p>'
+      )
+    })
+
+    it('should store null without warning when a wording field is null', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1', { whatIsIt: null })]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set.whatIsIt).toBeNull()
+      expect(logger.warn).not.toHaveBeenCalled()
     })
 
     it('should store null and warn when a sanitised wording field exceeds the size cap', async () => {
