@@ -109,7 +109,9 @@ describe('sanitisePolicyWording', () => {
 
   describe('text cleanup', () => {
     it('should replace entity and literal non-breaking spaces with normal spaces', () => {
-      expect(sanitisePolicyWording('<p>a&nbsp;b c</p>')).toBe('<p>a b c</p>')
+      expect(sanitisePolicyWording('<p>a&nbsp;b\u00A0c\u00A0d</p>')).toBe(
+        '<p>a b c d</p>'
+      )
     })
 
     it('should strip zero-width spaces, byte order marks and soft hyphens', () => {
