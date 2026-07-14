@@ -136,6 +136,17 @@ export const mockCompleteSite = {
   activityDetails: completedActivityDetails
 }
 
+export const mockInvoicing = {
+  invoiceAddressType: 'uk',
+  invoiceAddress: {
+    addressLine1: '123 Example Street',
+    addressLine2: 'Flat 2',
+    addressTown: 'Example town',
+    addressCounty: 'Example country',
+    addressPostcode: 'AA1 1AA'
+  }
+}
+
 export const createCompleteMarineLicence = (overrides = {}) => {
   const marineLicenceId = overrides._id || new ObjectId()
   const contactId =
@@ -145,6 +156,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     _id: marineLicenceId,
     contactId,
     feeEstimate: { accept: 'yes', termsAndConditions: true, feeBand: '2A' },
+    invoicing: mockInvoicing,
     projectName: 'Test Marine Licence Project',
     projectBackground: 'Test project background',
     otherAuthorities: {
