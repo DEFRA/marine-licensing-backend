@@ -136,15 +136,17 @@ export const mockCompleteSite = {
   activityDetails: completedActivityDetails
 }
 
+export const mockUkInvoicingAddress = {
+  addressLine1: '123 Example Street',
+  addressLine2: 'Flat 2',
+  addressTown: 'Example town',
+  addressCounty: 'Example country',
+  addressPostcode: 'AA1 1AA'
+}
+
 export const mockInvoicing = {
   invoiceAddressType: 'uk',
-  invoiceAddress: {
-    addressLine1: '123 Example Street',
-    addressLine2: 'Flat 2',
-    addressTown: 'Example town',
-    addressCounty: 'Example country',
-    addressPostcode: 'AA1 1AA'
-  }
+  invoiceAddress: mockUkInvoicingAddress
 }
 
 export const createCompleteMarineLicence = (overrides = {}) => {

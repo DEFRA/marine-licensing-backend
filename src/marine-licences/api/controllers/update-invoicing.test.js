@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateInvoicingController } from './update-invoicing.js'
+import { mockUkInvoicingAddress } from '../../../../tests/test.fixture.js'
 
 describe('PATCH /marine-licence/invoicing', () => {
   const mockAuditPayload = {
@@ -13,6 +14,7 @@ describe('PATCH /marine-licence/invoicing', () => {
     const mockPayload = {
       id: new ObjectId().toHexString(),
       invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress,
       ...mockAuditPayload
     }
 
@@ -41,7 +43,8 @@ describe('PATCH /marine-licence/invoicing', () => {
       {
         $set: {
           invoicing: {
-            invoiceAddressType: mockPayload.invoiceAddressType
+            invoiceAddressType: mockPayload.invoiceAddressType,
+            invoiceAddress: mockPayload.invoiceAddress
           },
           ...mockAuditPayload
         }
@@ -54,6 +57,7 @@ describe('PATCH /marine-licence/invoicing', () => {
     const mockPayload = {
       id: new ObjectId().toHexString(),
       invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress,
       ...mockAuditPayload
     }
 
@@ -75,6 +79,4 @@ describe('PATCH /marine-licence/invoicing', () => {
       )
     ).rejects.toThrow(`Error updating invoicing: ${mockError}`)
   })
-
-
 })

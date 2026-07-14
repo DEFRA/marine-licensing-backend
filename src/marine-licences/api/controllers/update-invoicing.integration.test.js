@@ -1,6 +1,6 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import { createCompleteMarineLicence, mockUkInvoicingAddress } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
@@ -11,7 +11,10 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
   const marineLicenceId = new ObjectId()
 
-  test('successfully updates invoicing', async () => {
+
+
+
+  test('successfully updates invoicing for a uk address', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId
@@ -22,7 +25,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
     const payload = {
       id: marineLicenceId.toString(),
-      invoiceAddressType: 'uk'
+      invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -40,7 +44,43 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
       .findOne({ _id: marineLicenceId })
 
     expect(updatedLicence.invoicing).toEqual({
-      invoiceAddressType: 'uk'
+      invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress
+    })
+  })
+
+  test('successfully updates invoicing for an international address', async () => {
+    const marineLicence = createCompleteMarineLicence({
+      _id: marineLicenceId,
+      contactId
+    })
+    await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .insertOne(marineLicence)
+
+    const payload = {
+      id: marineLicenceId.toString(),
+      invoiceAddressType: 'international',
+      invoiceAddress: { addressLine1: 'test address' }
+    }
+
+    const { statusCode, body } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/invoicing',
+      contactId,
+      payload
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body).toEqual({ message: 'success' })
+
+    const updatedLicence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(updatedLicence.invoicing).toEqual({
+      invoiceAddressType: 'international',
+      invoiceAddress: { addressLine1: 'test address' }
     })
   })
 
@@ -49,7 +89,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
     const payload = {
       id: nonExistentId.toString(),
-      invoiceAddressType: 'uk'
+      invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -75,7 +116,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
     const payload = {
       id: marineLicenceId.toString(),
-      invoiceAddressType: 'uk'
+      invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -136,5 +178,55 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
     expect(statusCode).toBe(400)
     expect(body.message).toContain('INVOICE_ADDRESS_TYPE_REQUIRED')
+  })
+
+  test('returns 400 when invoiceAddressType is uk and invoiceAddress is missing', async () => {
+    const marineLicence = createCompleteMarineLicence({
+      _id: marineLicenceId,
+      contactId
+    })
+    await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .insertOne(marineLicence)
+
+    const payload = {
+      id: marineLicenceId.toString(),
+      invoiceAddressType: 'uk'
+    }
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/invoicing',
+      contactId,
+      payload
+    })
+
+    expect(statusCode).toBe(400)
+  })
+
+  test('returns 400 when invoiceAddressType is uk and postcode is missing', async () => {
+    const marineLicence = createCompleteMarineLicence({
+      _id: marineLicenceId,
+      contactId
+    })
+    await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .insertOne(marineLicence)
+
+    const payload = {
+      id: marineLicenceId.toString(),
+      invoiceAddressType: 'uk',
+      invoiceAddress: { ...mockUkInvoicingAddress, addressPostcode: undefined }
+    }
+
+    const { statusCode, body } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/invoicing',
+      contactId,
+      payload
+    })
+
+    expect(statusCode).toBe(400)
+    expect(body.message).toContain('ADDRESS_POSTCODE_REQUIRED')
   })
 })

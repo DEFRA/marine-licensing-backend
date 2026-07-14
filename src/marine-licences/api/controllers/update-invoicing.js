@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { invoicingSchema } from '../../models/invoicing.js'
+import { invoicingSchema } from '../../models/invoicing/invoicing.js'
 
 export const updateInvoicingController = {
   options: {
@@ -21,13 +21,14 @@ export const updateInvoicingController = {
     try {
       const { payload, db } = request
 
-      const { id, invoiceAddressType, updatedAt, updatedBy } = payload
+      const { id, invoiceAddressType, invoiceAddress, updatedAt, updatedBy } =
+        payload
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            invoicing: { invoiceAddressType },
+            invoicing: { invoiceAddressType, invoiceAddress },
             updatedAt,
             updatedBy
           }
