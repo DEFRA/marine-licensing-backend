@@ -1,6 +1,9 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
-import { createCompleteMarineLicence, mockUkInvoicingAddress } from '../../../../tests/test.fixture.js'
+import {
+  createCompleteMarineLicence,
+  mockUkInvoicingAddress
+} from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
@@ -10,9 +13,6 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
   const differentContactId = '987e6543-e21b-12d3-a456-426614174000'
 
   const marineLicenceId = new ObjectId()
-
-
-
 
   test('successfully updates invoicing for a uk address', async () => {
     const marineLicence = createCompleteMarineLicence({
