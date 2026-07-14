@@ -1,16 +1,17 @@
+import { ObjectId } from 'mongodb'
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
-import { buildCoordinatesCsvPathByReference } from '../../constants/coordinates-csv.js'
+import { buildCoordinatesCsvPathById } from '../../constants/coordinates-csv.js'
 
-describe('Generate coordinates CSV by reference - integration tests', async () => {
+describe('Generate coordinates CSV by id - public integration tests', async () => {
   const getServer = await setupTestServer()
-  const applicationReference = 'MLA/2025/10001'
+  const marineLicenceId = new ObjectId()
 
   const insertSubmittedMarineLicence = async (overrides = {}) => {
     await globalThis.mockMongo.collection('marine-licences').insertOne({
       ...mockMarineLicence,
-      applicationReference,
+      _id: marineLicenceId,
       status: MARINE_LICENCE_STATUS.SUBMITTED,
       siteDetails: [
         {
@@ -32,7 +33,7 @@ describe('Generate coordinates CSV by reference - integration tests', async () =
 
     const response = await getServer().inject({
       method: 'GET',
-      url: buildCoordinatesCsvPathByReference(applicationReference)
+      url: buildCoordinatesCsvPathById(marineLicenceId.toHexString())
     })
 
     expect(response.statusCode).toBe(200)
@@ -52,7 +53,7 @@ describe('Generate coordinates CSV by reference - integration tests', async () =
 
     const response = await getServer().inject({
       method: 'GET',
-      url: buildCoordinatesCsvPathByReference(applicationReference)
+      url: buildCoordinatesCsvPathById(marineLicenceId.toHexString())
     })
 
     expect(response.statusCode).toBe(200)
@@ -64,19 +65,19 @@ describe('Generate coordinates CSV by reference - integration tests', async () =
     expect(lines[3]).toBe('51,30,0,6,1')
   })
 
-  test('returns 404 when the application reference is not found', async () => {
+  test('returns 404 when the marine licence id is not found', async () => {
     const response = await getServer().inject({
       method: 'GET',
-      url: buildCoordinatesCsvPathByReference('MLA/2025/99999')
+      url: buildCoordinatesCsvPathById(new ObjectId().toHexString())
     })
 
     expect(response.statusCode).toBe(404)
   })
 
-  test('returns 400 when the application reference format is invalid', async () => {
+  test('returns 400 when the marine licence id format is invalid', async () => {
     const response = await getServer().inject({
       method: 'GET',
-      url: '/public/marine-licence/not-a-valid-reference/generate-coordinates-csv'
+      url: '/public/marine-licence/not-a-valid-id/generate-coordinates-csv'
     })
 
     expect(response.statusCode).toBe(400)
@@ -89,7 +90,7 @@ describe('Generate coordinates CSV by reference - integration tests', async () =
 
     const response = await getServer().inject({
       method: 'GET',
-      url: buildCoordinatesCsvPathByReference(applicationReference)
+      url: buildCoordinatesCsvPathById(marineLicenceId.toHexString())
     })
 
     expect(response.statusCode).toBe(403)
@@ -102,7 +103,7 @@ describe('Generate coordinates CSV by reference - integration tests', async () =
 
     const response = await getServer().inject({
       method: 'GET',
-      url: buildCoordinatesCsvPathByReference(applicationReference)
+      url: buildCoordinatesCsvPathById(marineLicenceId.toHexString())
     })
 
     expect(response.statusCode).toBe(200)

@@ -442,7 +442,7 @@ describe('Dynamics Client', () => {
             applicationUrl:
               'http://localhost/view-marine-licence-details/ml-123',
             coordinatesCsvUrl:
-              'http://localhost:3001/public/marine-licence/MLA%2F2025%2F00001/generate-coordinates-csv',
+              'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             marinePlanAreas: [],
             coastalOperationsAreas: [],
             status: 'SUBMITTED'
@@ -479,7 +479,7 @@ describe('Dynamics Client', () => {
             applicationUrl:
               'http://localhost/view-marine-licence-details/ml-123',
             coordinatesCsvUrl:
-              'http://localhost:3001/public/marine-licence/MLA%2F2025%2F00001/generate-coordinates-csv',
+              'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             marinePlanAreas: [],
             coastalOperationsAreas: [],
             status: 'SUBMITTED'

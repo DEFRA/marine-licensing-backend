@@ -1,23 +1,23 @@
 import {
-  buildCoordinatesCsvPathByReference,
-  buildCoordinatesCsvUrlByReference
+  buildCoordinatesCsvPathById,
+  buildCoordinatesCsvUrlById
 } from './coordinates-csv.js'
 
 describe('coordinates-csv constants', () => {
-  it('builds a path with an encoded application reference', () => {
-    expect(buildCoordinatesCsvPathByReference('MLA/2025/10001')).toBe(
-      '/public/marine-licence/MLA%2F2025%2F10001/generate-coordinates-csv'
+  it('builds a path with the marine licence id', () => {
+    expect(buildCoordinatesCsvPathById('507f1f77bcf86cd799439011')).toBe(
+      '/public/marine-licence/507f1f77bcf86cd799439011/generate-coordinates-csv'
     )
   })
 
   it('builds an absolute coordinates CSV URL', () => {
     expect(
-      buildCoordinatesCsvUrlByReference(
+      buildCoordinatesCsvUrlById(
         'https://api.example.com',
-        'MLA/2025/10001'
+        '507f1f77bcf86cd799439011'
       )
     ).toBe(
-      'https://api.example.com/public/marine-licence/MLA%2F2025%2F10001/generate-coordinates-csv'
+      'https://api.example.com/public/marine-licence/507f1f77bcf86cd799439011/generate-coordinates-csv'
     )
   })
 })

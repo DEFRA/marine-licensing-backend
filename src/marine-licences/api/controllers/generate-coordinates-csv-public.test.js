@@ -1,11 +1,12 @@
 import { vi } from 'vitest'
-import { generateCoordinatesCsvByReferenceController } from './generate-coordinates-csv-by-reference.js'
+import { ObjectId } from 'mongodb'
+import { generateCoordinatesCsvPublicController } from './generate-coordinates-csv-public.js'
 import * as siteDetailsModule from '../csv/site-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 
-describe('GET /public/marine-licence/{applicationReference}/generate-coordinates-csv', () => {
-  const applicationReference = 'MLA/2025/10001'
+describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
+  const mockId = new ObjectId().toHexString()
 
   const mockSite = {
     coordinatesType: 'coordinates',
@@ -33,7 +34,7 @@ describe('GET /public/marine-licence/{applicationReference}/generate-coordinates
     const mockCollection = vi.fn().mockReturnValue({ findOne: mockFindOne })
 
     mockRequest = {
-      params: { applicationReference },
+      params: { id: mockId },
       db: { collection: mockCollection }
     }
 
@@ -48,7 +49,7 @@ describe('GET /public/marine-licence/{applicationReference}/generate-coordinates
     mockFindOne.mockResolvedValue(null)
 
     await expect(
-      generateCoordinatesCsvByReferenceController.handler(mockRequest, mockH)
+      generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
     ).rejects.toThrow('Marine licence not found')
   })
 
@@ -59,7 +60,7 @@ describe('GET /public/marine-licence/{applicationReference}/generate-coordinates
     })
 
     await expect(
-      generateCoordinatesCsvByReferenceController.handler(mockRequest, mockH)
+      generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
     ).rejects.toThrow(notAuthorisedMessage)
   })
 
@@ -69,22 +70,16 @@ describe('GET /public/marine-licence/{applicationReference}/generate-coordinates
       status: MARINE_LICENCE_STATUS.ACTIVE
     })
 
-    await generateCoordinatesCsvByReferenceController.handler(
-      mockRequest,
-      mockH
-    )
+    await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
     expect(mockH.type).toHaveBeenCalledWith('text/csv')
   })
 
-  it('should look up the marine licence by application reference', async () => {
-    await generateCoordinatesCsvByReferenceController.handler(
-      mockRequest,
-      mockH
-    )
+  it('should look up the marine licence by id', async () => {
+    await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
     expect(mockFindOne).toHaveBeenCalledWith(
-      { applicationReference },
+      { _id: ObjectId.createFromHexString(mockId) },
       { projection: { siteDetails: 1, status: 1 } }
     )
   })
@@ -95,20 +90,14 @@ describe('GET /public/marine-licence/{applicationReference}/generate-coordinates
       'getSiteCoordinates'
     )
 
-    await generateCoordinatesCsvByReferenceController.handler(
-      mockRequest,
-      mockH
-    )
+    await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
     expect(getSiteCoordinatesSpy).toHaveBeenCalledTimes(1)
     expect(getSiteCoordinatesSpy).toHaveBeenCalledWith([mockSite])
   })
 
   it('should return the stream with csv content-type and content-disposition headers', async () => {
-    await generateCoordinatesCsvByReferenceController.handler(
-      mockRequest,
-      mockH
-    )
+    await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
     expect(mockH.type).toHaveBeenCalledWith('text/csv')
     expect(mockH.header).toHaveBeenCalledWith(

@@ -1,4 +1,4 @@
-import { generateCoordinatesCsvByReferenceController } from './controllers/generate-coordinates-csv-by-reference.js'
+import { generateCoordinatesCsvPublicController } from './controllers/generate-coordinates-csv-public.js'
 
 /**
  * Gateway / external consumer routes (auth: false).
@@ -7,7 +7,7 @@ import { generateCoordinatesCsvByReferenceController } from './controllers/gener
 export const marineLicenceGatewayRoutes = [
   {
     method: 'GET',
-    path: '/public/marine-licence/{applicationReference}/generate-coordinates-csv',
-    ...generateCoordinatesCsvByReferenceController
+    path: '/public/marine-licence/{id}/generate-coordinates-csv',
+    ...generateCoordinatesCsvPublicController
   }
 ]

@@ -16,7 +16,7 @@ import {
 } from '../../constants/db-collections.js'
 import { createLogger } from '../../helpers/logging/logger.js'
 import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
-import { buildCoordinatesCsvUrlByReference } from '../../../../marine-licences/constants/coordinates-csv.js'
+import { buildCoordinatesCsvUrlById } from '../../../../marine-licences/constants/coordinates-csv.js'
 
 const logger = createLogger()
 
@@ -314,9 +314,9 @@ export const sendMarineLicenceToDynamics = async (
     reference: applicationReferenceNumber,
     feeBand,
     applicationUrl: `${frontEndBaseUrl}/view-marine-licence-details/${marineLicence._id}`,
-    coordinatesCsvUrl: buildCoordinatesCsvUrlByReference(
+    coordinatesCsvUrl: buildCoordinatesCsvUrlById(
       backendBaseUrl,
-      applicationReferenceNumber
+      marineLicence._id
     ),
     marinePlanAreas: marineLicence.marinePlanAreas ?? [],
     coastalOperationsAreas: marineLicence.coastalOperationsAreas ?? [],
