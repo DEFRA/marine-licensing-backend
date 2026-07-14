@@ -59,7 +59,7 @@ export const marinePlanPoliciesSchema = {
     env: 'MARINE_PLAN_POLICIES_WORDING_MAX_FIELD_BYTES'
   },
   wordingMaxResponseBytes: {
-    doc: 'Maximum allowed response size in bytes when fetching the GOV.UK policies dataset (current live payload is ~6MB)',
+    doc: 'Maximum allowed response size in bytes when fetching the GOV.UK policies dataset (current live payload is ~6MB); 0 disables the cap',
     format: Number,
     default: thirtyMegabytesInBytes,
     env: 'MARINE_PLAN_POLICIES_WORDING_MAX_RESPONSE_BYTES'

@@ -438,10 +438,11 @@ describe('getPoliciesContent', () => {
         {
           event: expect.objectContaining({
             action: 'mp-policies:wording-entry-skipped',
-            outcome: 'failure'
+            outcome: 'failure',
+            reference: 'entry-index/1'
           })
         },
-        expect.any(String)
+        expect.stringContaining('index 1')
       )
     })
 
