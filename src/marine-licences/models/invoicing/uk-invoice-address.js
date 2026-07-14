@@ -1,5 +1,5 @@
 import joi from 'joi'
-import { UK_POSTCODE_PATTERN } from '../../constants/address'
+import { UK_POSTCODE_PATTERN } from '../../constants/address.js'
 
 const ADDRESS_LINE_MAX_LENGTH = 100
 const ADDRESS_TOWN_MAX_LENGTH = 30
