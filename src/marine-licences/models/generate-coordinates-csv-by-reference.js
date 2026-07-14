@@ -2,19 +2,22 @@ import joi from 'joi'
 
 const applicationReferencePattern = /^MLA\/\d{4}\/\d{5}$/
 
+const decodeApplicationReference = (value) => {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 export const generateCoordinatesCsvByReferenceParams = joi.object({
   applicationReference: joi
     .string()
     .required()
-    .custom((value, helpers) => {
-      const decoded = decodeURIComponent(value)
-      if (!applicationReferencePattern.test(decoded)) {
-        return helpers.error('any.invalid')
-      }
-      return decoded
-    })
+    .custom(decodeApplicationReference)
+    .pattern(applicationReferencePattern)
     .messages({
-      'any.invalid': 'APPLICATION_REFERENCE_INVALID',
+      'string.pattern.base': 'APPLICATION_REFERENCE_INVALID',
       'any.required': 'APPLICATION_REFERENCE_REQUIRED',
       'string.empty': 'APPLICATION_REFERENCE_REQUIRED'
     })
