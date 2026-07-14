@@ -16,6 +16,7 @@ import {
 } from '../../constants/db-collections.js'
 import { createLogger } from '../../helpers/logging/logger.js'
 import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
+import { buildCoordinatesCsvUrlByReference } from '../../../../marine-licences/constants/coordinates-csv.js'
 
 const logger = createLogger()
 
@@ -296,6 +297,7 @@ export const sendMarineLicenceToDynamics = async (
   const { applicationReferenceNumber } = queueItem
 
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
+  const backendBaseUrl = config.get('backendBaseUrl')
 
   const marineLicence = await fetchMarineLicence(
     server.db,
@@ -312,6 +314,10 @@ export const sendMarineLicenceToDynamics = async (
     reference: applicationReferenceNumber,
     feeBand,
     applicationUrl: `${frontEndBaseUrl}/view-marine-licence-details/${marineLicence._id}`,
+    coordinatesCsvUrl: buildCoordinatesCsvUrlByReference(
+      backendBaseUrl,
+      applicationReferenceNumber
+    ),
     marinePlanAreas: marineLicence.marinePlanAreas ?? [],
     coastalOperationsAreas: marineLicence.coastalOperationsAreas ?? [],
     ...(marineLicence.organisation?.id
