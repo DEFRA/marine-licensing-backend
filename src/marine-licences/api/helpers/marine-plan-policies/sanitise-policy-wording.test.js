@@ -50,6 +50,10 @@ describe('sanitisePolicyWording', () => {
       expect(sanitisePolicyWording(['<p>x</p>'])).toBeNull()
       expect(sanitisePolicyWording({ policy: '<p>x</p>' })).toBeNull()
     })
+
+    it('should return an empty string for empty-string input', () => {
+      expect(sanitisePolicyWording('')).toBe('')
+    })
   })
 
   describe('links', () => {
@@ -115,7 +119,9 @@ describe('sanitisePolicyWording', () => {
     })
 
     it('should strip zero-width spaces, byte order marks and soft hyphens', () => {
-      expect(sanitisePolicyWording('<p>a​b﻿c­d</p>')).toBe('<p>abcd</p>')
+      expect(sanitisePolicyWording('<p>a\u200Bb\uFEFFc\u00ADd</p>')).toBe(
+        '<p>abcd</p>'
+      )
     })
 
     it('should preserve escaped angle brackets in prose', () => {
@@ -157,7 +163,7 @@ describe('sanitisePolicyWording', () => {
     it('should remove list items that contain only a br or invisible characters', () => {
       expect(
         sanitisePolicyWording(
-          '<ul><li>real</li><li><br></li><li>​</li><li>­</li></ul>'
+          '<ul><li>real</li><li><br></li><li>\u200B</li><li>\u00AD</li></ul>'
         )
       ).toBe('<ul><li>real</li></ul>')
     })
@@ -166,7 +172,7 @@ describe('sanitisePolicyWording', () => {
       expect(sanitisePolicyWording('<p>kept</p><ul><li><br></li></ul>')).toBe(
         '<p>kept</p>'
       )
-      expect(sanitisePolicyWording('<ol><li>​</li></ol>')).toBe('')
+      expect(sanitisePolicyWording('<ol><li>\u200B</li></ol>')).toBe('')
     })
 
     it('should keep a br that sits inside real content', () => {
@@ -246,7 +252,7 @@ describe('sanitisePolicyWording', () => {
       '<p><span style="color: black;">Text</span> and <u>underlined</u></p>',
       '<p>first</p><p><br></p><ol><li>one</li><li class="ql-indent-1"><br></li></ol>',
       '<p>The <a href="about:blank" target="_blank">Act</a> and <a href="https://www.gov.uk/x" rel="x" target="_blank">GOV.UK</a></p>',
-      '<p>a&nbsp;b​c</p>',
+      '<p>a&nbsp;b\u200Bc</p>',
       '<p>projects &lt;100MW &amp; &gt;100MW</p>'
     ]
 

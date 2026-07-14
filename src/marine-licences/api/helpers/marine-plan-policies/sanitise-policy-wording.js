@@ -71,6 +71,7 @@ const SANITISE_OPTIONS = {
       // sanitize-html returns before propagating frame.text to the parent
       // when excludeTag is used, so a parent block left with only a dead
       // anchor would otherwise be wrongly seen as empty; propagate manually.
+      // (internal sanitize-html API — verified against pinned 2.17.5; re-verify on upgrade)
       frame.updateParentNodeText()
       return 'excludeTag'
     }
