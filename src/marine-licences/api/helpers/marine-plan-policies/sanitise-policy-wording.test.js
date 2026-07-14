@@ -244,6 +244,18 @@ describe('sanitisePolicyWording', () => {
       ).not.toThrow()
       expect(() => sanitisePolicyWording('<'.repeat(10000))).not.toThrow()
     })
+
+    it('should survive deeply nested balanced markup without throwing', () => {
+      const depth = 5000
+      const input = '<ul><li>'.repeat(depth) + 'x' + '</li></ul>'.repeat(depth)
+
+      let result
+      expect(() => {
+        result = sanitisePolicyWording(input)
+      }).not.toThrow()
+      expect(typeof result).toBe('string')
+      expect(result).toContain('x')
+    })
   })
 
   describe('idempotency', () => {

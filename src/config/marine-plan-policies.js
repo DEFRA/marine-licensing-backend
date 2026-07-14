@@ -53,7 +53,7 @@ export const marinePlanPoliciesSchema = {
     env: 'MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS'
   },
   wordingMaxFieldBytes: {
-    doc: 'Maximum size in bytes of a single sanitised policy wording field; larger fields are stored as null and logged',
+    doc: 'Maximum size in bytes of a single sanitised policy wording field; larger fields are stored as null and logged; must be positive',
     format: Number,
     default: oneHundredKilobytesInBytes,
     env: 'MARINE_PLAN_POLICIES_WORDING_MAX_FIELD_BYTES'
