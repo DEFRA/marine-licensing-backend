@@ -1,17 +1,12 @@
 import { config } from '../../../../config.js'
 import { collectionMarinePlanPolicyWording } from '../../../../shared/common/constants/db-collections.js'
-import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import {
+  MARINE_PLAN_POLICY_EVENT_ACTION,
+  MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS
+} from '../../../constants/marine-licence.js'
 import { timedJsonFetch } from './policy-http.js'
 
 const normalisePolicyCode = (code) => code.replace(/\s/g, '')
-
-const CONTENT_FIELDS = [
-  'policy',
-  'policyAim',
-  'whatIsIt',
-  'whyIsItImportant',
-  'howWillThisBeImplemented'
-]
 
 const toCacheDocument = (entry, fetchedAt) =>
   CONTENT_FIELDS.reduce(
