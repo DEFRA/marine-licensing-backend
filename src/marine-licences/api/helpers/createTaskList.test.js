@@ -71,7 +71,8 @@ describe('createTaskList', () => {
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED,
       publicRegister: COMPLETED,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -106,7 +107,8 @@ describe('createTaskList', () => {
       preferredDates: COMPLETED,
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -140,7 +142,8 @@ describe('createTaskList', () => {
       projectBackground: COMPLETED,
       publicConsultation: INCOMPLETE,
       publicRegister: INCOMPLETE,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -461,7 +464,8 @@ describe('createTaskList', () => {
       publicRegister: INCOMPLETE,
       publicConsultation: INCOMPLETE,
       siteDetails: INCOMPLETE,
-      waterFrameworkDirective: INCOMPLETE
+      waterFrameworkDirective: INCOMPLETE,
+      marinePlanPolicies: INCOMPLETE
     })
   })
 
@@ -499,7 +503,60 @@ describe('createTaskList', () => {
       publicRegister: COMPLETED,
       publicConsultation: COMPLETED,
       siteDetails: IN_PROGRESS,
-      waterFrameworkDirective: COMPLETED
+      waterFrameworkDirective: COMPLETED,
+      marinePlanPolicies: INCOMPLETE
+    })
+  })
+
+  describe('marinePlanPolicies status', () => {
+    const statusFor = (overrides) =>
+      createTaskList(overrides).marinePlanPolicies
+
+    it.each([null, 'pending', 'computing', 'failed'])(
+      'is INCOMPLETE before the ArcGIS policy query is ready (job=%s)',
+      (marinePlanPolicyJob) => {
+        expect(statusFor({ marinePlanPolicyJob })).toBe(INCOMPLETE)
+      }
+    )
+
+    it('is COMPLETED when the query is ready and no policies apply', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPoliciesCount: 0,
+          marinePlanPolicyResponseCount: 0
+        })
+      ).toBe(COMPLETED)
+    })
+
+    it('is INCOMPLETE when ready with policies but none answered', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPoliciesCount: 3,
+          marinePlanPolicyResponseCount: 0
+        })
+      ).toBe(INCOMPLETE)
+    })
+
+    it('is IN_PROGRESS when ready with some but not all policies answered', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPoliciesCount: 3,
+          marinePlanPolicyResponseCount: 1
+        })
+      ).toBe(IN_PROGRESS)
+    })
+
+    it('is COMPLETED when ready with every policy answered', () => {
+      expect(
+        statusFor({
+          marinePlanPolicyJob: 'ready',
+          marinePlanPoliciesCount: 3,
+          marinePlanPolicyResponseCount: 3
+        })
+      ).toBe(COMPLETED)
     })
   })
 })

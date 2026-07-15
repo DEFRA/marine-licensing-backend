@@ -17,6 +17,15 @@ export const MARINE_PLAN_POLICY_JOB_STATUS = {
   FAILED: 'failed'
 }
 
+// The five wording fields of a marine plan policy, in canonical order.
+export const MARINE_PLAN_POLICY_CONTENT_FIELDS = [
+  'policy',
+  'policyAim',
+  'whatIsIt',
+  'whyIsItImportant',
+  'howWillThisBeImplemented'
+]
+
 export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   JOB_STALE: 'mp-policies:job-stale',
   JOB_FAILED: 'mp-policies:job-failed',
