@@ -81,7 +81,9 @@ const EMPTY_BLOCK_OPTIONS = {
 // Empty-block removal is a separate second pass because, within a single
 // pass, text unwrapped from an excluded tag is not part of the parent
 // frame's text yet — a block whose only child was a dead anchor would be
-// wrongly judged empty and removed along with its text.
+// wrongly judged empty and removed along with its text. Pinned by
+// 'should unwrap fragment-only, relative and missing hrefs to plain text'
+// in ./sanitise-policy-wording.test.js, which fails if the passes are merged.
 export const sanitisePolicyWording = (html) => {
   if (typeof html !== 'string') {
     return null
