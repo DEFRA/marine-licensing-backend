@@ -58,7 +58,7 @@ describe('PATCH /marine-licence/delete-activity-details', () => {
         },
         {
           $unset: { 'siteDetails.0.activityDetails.0': 1 },
-          $set: mockAuditPayload
+          $set: { siteDetailsConfirmed: false, ...mockAuditPayload }
         }
       )
       expect(mockUpdateOne).toHaveBeenNthCalledWith(
