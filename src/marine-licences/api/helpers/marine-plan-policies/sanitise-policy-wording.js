@@ -54,7 +54,7 @@ const isEmptyBlock = (frame) =>
   BLOCK_TAGS_REMOVED_WHEN_EMPTY.includes(frame.tag) &&
   cleanText(frame.text ?? '').trim() === ''
 
-const SANITISE_OPTIONS = {
+const STRUCTURE_OPTIONS = {
   allowedTags: ALLOWED_TAGS,
   allowedAttributes: { a: ['href', 'target', 'rel'] },
   allowedSchemes: ['http', 'https'],
@@ -66,22 +66,28 @@ const SANITISE_OPTIONS = {
     i: renameTo('em')
   },
   textFilter: cleanText,
-  exclusiveFilter: (frame) => {
-    if (isDeadAnchor(frame)) {
-      // sanitize-html returns before propagating frame.text to the parent
-      // when excludeTag is used, so a parent block left with only a dead
-      // anchor would otherwise be wrongly seen as empty; propagate manually.
-      // (internal sanitize-html API — verified against pinned 2.17.5; re-verify on upgrade)
-      frame.updateParentNodeText()
-      return 'excludeTag'
-    }
-    return isEmptyBlock(frame)
-  }
+  exclusiveFilter: (frame) => (isDeadAnchor(frame) ? 'excludeTag' : false)
 }
 
+const EMPTY_BLOCK_OPTIONS = {
+  allowedTags: ALLOWED_TAGS,
+  allowedAttributes: { a: ['href', 'target', 'rel'] },
+  allowedSchemes: ['http', 'https'],
+  allowProtocolRelative: false,
+  nonTextTags: NON_TEXT_TAGS,
+  exclusiveFilter: isEmptyBlock
+}
+
+// Empty-block removal is a separate second pass because, within a single
+// pass, text unwrapped from an excluded tag is not part of the parent
+// frame's text yet — a block whose only child was a dead anchor would be
+// wrongly judged empty and removed along with its text.
 export const sanitisePolicyWording = (html) => {
   if (typeof html !== 'string') {
     return null
   }
-  return sanitizeHtml(html, SANITISE_OPTIONS)
+  return sanitizeHtml(
+    sanitizeHtml(html, STRUCTURE_OPTIONS),
+    EMPTY_BLOCK_OPTIONS
+  )
 }
