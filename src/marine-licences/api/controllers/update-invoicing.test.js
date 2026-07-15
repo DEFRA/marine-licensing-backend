@@ -79,4 +79,30 @@ describe('PATCH /marine-licence/invoicing', () => {
       )
     ).rejects.toThrow(`Error updating invoicing: ${mockError}`)
   })
+
+  test('should return a 404 if id is not correct', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress,
+      ...mockAuditPayload
+    }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
+      }
+    })
+
+    await expect(() =>
+      updateInvoicingController.handler(
+        {
+          db: mockMongo,
+          payload: mockPayload
+        },
+        mockHandler
+      )
+    ).rejects.toThrow('Marine licence not found')
+  })
 })
