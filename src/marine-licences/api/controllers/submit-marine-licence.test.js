@@ -432,6 +432,42 @@ describe('POST /marine-licence/submit', () => {
 
       expect(generateApplicationReference).not.toHaveBeenCalled()
     })
+
+    it('should prevent submission when marine plan policy considerations are incomplete', async () => {
+      const mockIncompleteMarineLicence = {
+        _id: mockMarineLicenceId,
+        contactId: 'test-contact-id',
+        projectName: 'Test Project'
+      }
+
+      createTaskList.mockReturnValue({
+        projectName: 'COMPLETED',
+        marinePlanPolicies: 'IN_PROGRESS'
+      })
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(
+        mockIncompleteMarineLicence
+      )
+
+      await expect(
+        submitMarineLicenceController.handler(
+          {
+            payload: { id: mockMarineLicenceId },
+            db: mockDb,
+            locker: mockLocker,
+            auth: mockAuth,
+            logger: mockLogger
+          },
+          mockHandler
+        )
+      ).rejects.toThrow(
+        Boom.badRequest(
+          'Marine licence is incomplete. Missing sections: marinePlanPolicies'
+        )
+      )
+
+      expect(generateApplicationReference).not.toHaveBeenCalled()
+    })
   })
 
   describe('Error Handling - Not Found', () => {

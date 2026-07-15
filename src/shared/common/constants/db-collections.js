@@ -20,5 +20,8 @@ export const collectionMarineLicences = 'marine-licences'
 
 export const collectionMarinePlanPolicyWording = 'marine-plan-policy-wording'
 
+export const collectionMarinePlanPolicyWordingSnapshots =
+  'marine-plan-policy-wording-snapshots'
+
 export const collectionIatContexts = 'iat-contexts'
 export const collectionIatOutcomeDocuments = 'iat-outcome-documents'

@@ -19,6 +19,7 @@ import { updateFeeEstimateController } from './controllers/update-fee-estimate.j
 import { updateHarbourAuthorityController } from './controllers/update-harbour-authority.js'
 import { calculateMarinePlanPoliciesController } from './controllers/calculate-marine-plan-policies.js'
 import { saveMarinePlanPolicyResponseController } from './controllers/save-marine-plan-policy-response.js'
+import { updateInvoicingController } from './controllers/update-invoicing.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -133,5 +134,10 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/marine-plan-policy-response',
     ...saveMarinePlanPolicyResponseController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/invoicing',
+    ...updateInvoicingController
   }
 ]

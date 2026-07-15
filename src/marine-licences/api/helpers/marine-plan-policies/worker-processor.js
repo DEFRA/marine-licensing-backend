@@ -8,6 +8,7 @@ import {
 } from '../../../constants/marine-licence.js'
 import { queryArcGISPolicies } from './arcgis-client.js'
 import { getPoliciesContent } from './policy-content-client.js'
+import { pinWordingSnapshots } from './wording-snapshots.js'
 import { deletePolicyJob } from './sqs-client.js'
 
 const parseMessageBody = (message, logger) => {
@@ -52,11 +53,19 @@ const logDiscardedJob = (logger, detail, licenceId) =>
 
 const computeAndStorePolicies = async (job, licence, db) => {
   const { licenceId, logger } = job
-  const marinePlanPolicies = await fetchPolicies({
+  const enrichedPolicies = await fetchPolicies({
     siteDetails: licence.siteDetails,
     licenceId,
     db,
     logger
+  })
+
+  // The licence stores pointers only; the wording itself is pinned once,
+  // immutably, in the snapshot store and rehydrated on read.
+  const marinePlanPolicies = await pinWordingSnapshots({
+    db,
+    policies: enrichedPolicies,
+    now: new Date()
   })
 
   const result = await setJobStatus(job, MARINE_PLAN_POLICY_JOB_STATUS.READY, {
