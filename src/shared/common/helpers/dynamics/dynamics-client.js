@@ -297,7 +297,7 @@ export const sendMarineLicenceToDynamics = async (
   const { applicationReferenceNumber } = queueItem
 
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
-  const backendBaseUrl = config.get('backendBaseUrl')
+  const backendGatewayUrl = config.get('backendGatewayUrl')
 
   const marineLicence = await fetchMarineLicence(
     server.db,
@@ -315,7 +315,7 @@ export const sendMarineLicenceToDynamics = async (
     feeBand,
     applicationUrl: `${frontEndBaseUrl}/view-marine-licence-details/${marineLicence._id}`,
     coordinatesCsvUrl: buildCoordinatesCsvUrlById(
-      backendBaseUrl,
+      backendGatewayUrl,
       marineLicence._id
     ),
     marinePlanAreas: marineLicence.marinePlanAreas ?? [],

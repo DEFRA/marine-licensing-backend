@@ -64,7 +64,7 @@ describe('Dynamics Client', () => {
           tokenUrl: 'https://localhost/oauth2/token'
         }
       }
-      if (value === 'backendBaseUrl') {
+      if (value === 'backendGatewayUrl') {
         return 'http://localhost:3001'
       }
       return 'http://localhost'

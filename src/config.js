@@ -63,11 +63,11 @@ const config = convict({
     default: 'http://localhost:3000',
     env: 'FRONTEND_BASE_URL'
   },
-  backendBaseUrl: {
-    doc: 'Base URL for the backend API exposed via the CDP gateway',
+  backendGatewayUrl: {
+    doc: 'Gateway URL for the backend API exposed via the CDP gateway',
     format: requiredFromEnvInCdp,
     default: 'http://localhost:3001',
-    env: 'BACKEND_BASE_URL'
+    env: 'BACKEND_GATEWAY_URL'
   },
   cdpEnvironment: {
     doc: 'The CDP environment the app is running in. With the addition of "local" for local development',
