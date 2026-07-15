@@ -61,7 +61,7 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
     const payload = {
       id: marineLicenceId.toString(),
       invoiceAddressType: 'international',
-      invoiceAddress: { addressLine1: 'test address' }
+      invoiceAddress: { country: 'France', address: 'test address' }
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -80,7 +80,7 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
     expect(updatedLicence.invoicing).toEqual({
       invoiceAddressType: 'international',
-      invoiceAddress: { addressLine1: 'test address' }
+      invoiceAddress: { country: 'France', address: 'test address' }
     })
   })
 
