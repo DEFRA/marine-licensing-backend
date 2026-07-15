@@ -38,5 +38,6 @@ beforeEach(async () => {
 
 afterAll(async () => {
   fetchMock.disableMocks()
-  await client.close()
+  // Guard: if mongo beforeAll timed out, client was never assigned
+  await client?.close()
 })
