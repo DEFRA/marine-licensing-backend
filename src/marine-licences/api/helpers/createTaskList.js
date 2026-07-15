@@ -7,6 +7,7 @@ import {
   buildTaskList,
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
+import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
 
 const ACTIVITY_DETAILS_FIELDS = [
   'activities',
@@ -202,6 +203,27 @@ const getFeeEstimateStatus = (feeEstimate) => {
   return COMPLETED
 }
 
+const getMarinePlanPolicyStatus = (marineLicence) => {
+  if (
+    marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
+  ) {
+    return INCOMPLETE
+  }
+
+  const total = marineLicence.marinePlanPoliciesCount ?? 0
+  const completed = marineLicence.marinePlanPolicyResponseCount ?? 0
+
+  if (completed >= total) {
+    return COMPLETED
+  }
+
+  if (completed === 0) {
+    return INCOMPLETE
+  }
+
+  return IN_PROGRESS
+}
+
 export const createTaskList = (marineLicence, isCitizen = false) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
@@ -216,7 +238,8 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     preferredDates: (value) => (value ? COMPLETED : INCOMPLETE),
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
-    waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value)
+    waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
+    marinePlanPolicies: () => getMarinePlanPolicyStatus(marineLicence)
   }
 
   return buildTaskList(marineLicence, tasks)
