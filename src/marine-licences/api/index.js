@@ -20,6 +20,7 @@ import { updateHarbourAuthorityController } from './controllers/update-harbour-a
 import { calculateMarinePlanPoliciesController } from './controllers/calculate-marine-plan-policies.js'
 import { saveMarinePlanPolicyResponseController } from './controllers/save-marine-plan-policy-response.js'
 import { confirmSiteDetailsController } from './controllers/confirm-site-details.js'
+import { updateInvoicingController } from './controllers/update-invoicing.js'
 
 export const marineLicences = [
   {
@@ -131,6 +132,11 @@ export const marineLicences = [
     method: 'PATCH',
     path: '/marine-licence/marine-plan-policy-response',
     ...saveMarinePlanPolicyResponseController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/invoicing',
+    ...updateInvoicingController
   },
   {
     method: 'PATCH',
