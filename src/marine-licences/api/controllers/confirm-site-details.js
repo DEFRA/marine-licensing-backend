@@ -1,5 +1,5 @@
 import Boom from '@hapi/boom'
-import { confirmSiteDetails } from '../../models/site-details-confirmed.js'
+import { confirmSiteDetails } from '../../models/confirm-site-details.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'

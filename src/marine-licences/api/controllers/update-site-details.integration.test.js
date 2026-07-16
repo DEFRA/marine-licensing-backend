@@ -95,7 +95,8 @@ describe('PATCH /marine-licence/site-details - payload size limits', async () =>
       contactId: mockCredentials.contactId,
       siteDetails: {
         coordinatesType: 'file'
-      }
+      },
+      siteDetailsConfirmed: true
     }
 
     await globalThis.mockMongo
@@ -122,6 +123,7 @@ describe('PATCH /marine-licence/site-details - payload size limits', async () =>
     expect(updated.siteDetails[0].activityDetails[0].activityType).toEqual(
       'construction'
     )
+    expect(updated.siteDetailsConfirmed).toBe(false)
   })
 
   it('should automatically update site details and populate activity details', async () => {

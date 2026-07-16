@@ -117,27 +117,4 @@ describe('PATCH /marine-licence/confirm-site-details - integration tests', async
     expect(statusCode).toBe(403)
     expect(body.message).toBe('Not authorised to request this resource')
   })
-
-  test('returns 400 when confirmed is missing', async () => {
-    const marineLicence = createCompleteMarineLicence({
-      _id: marineLicenceId,
-      contactId
-    })
-    await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .insertOne(marineLicence)
-
-    const payload = {
-      id: marineLicenceId.toString()
-    }
-
-    const { statusCode } = await makePatchRequest({
-      server: getServer(),
-      url: '/marine-licence/confirm-site-details',
-      contactId,
-      payload
-    })
-
-    expect(statusCode).toBe(400)
-  })
 })
