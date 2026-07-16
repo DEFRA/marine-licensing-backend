@@ -109,22 +109,63 @@ describe('invoicingSchema', () => {
   })
 
   describe('international', () => {
-    test('should pass when invoiceAddress is not provided', () => {
+    const validInternationalInvoiceAddress = {
+      country: 'France',
+      address: '1 Rue de Test'
+    }
+
+    test('should pass with valid data', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceAddressType: 'international',
+        invoiceAddress: validInternationalInvoiceAddress
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should error when invoiceAddress is missing', () => {
       const { error } = invoicingSchema.validate({
         ...validPayload,
         invoiceAddressType: 'international',
         invoiceAddress: undefined
       })
-      expect(error).toBeUndefined()
+      expect(error.message).toContain('"invoiceAddress" is required')
     })
 
-    test('should pass when invoiceAddress is any object', () => {
+    test('should error when country is missing', () => {
       const { error } = invoicingSchema.validate({
         ...validPayload,
         invoiceAddressType: 'international',
-        invoiceAddress: { anything: 'goes', for: 'now' }
+        invoiceAddress: {
+          ...validInternationalInvoiceAddress,
+          country: undefined
+        }
       })
-      expect(error).toBeUndefined()
+      expect(error.message).toContain('INVOICING_COUNTRY_REQUIRED')
+    })
+
+    test('should error when address is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceAddressType: 'international',
+        invoiceAddress: {
+          ...validInternationalInvoiceAddress,
+          address: undefined
+        }
+      })
+      expect(error.message).toContain('INVOICING_ADDRESS_REQUIRED')
+    })
+
+    test('should error when address is too long', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceAddressType: 'international',
+        invoiceAddress: {
+          ...validInternationalInvoiceAddress,
+          address: 'a'.repeat(301)
+        }
+      })
+      expect(error.message).toContain('INVOICING_ADDRESS_MAX_LENGTH')
     })
   })
 })

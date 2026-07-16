@@ -1,6 +1,7 @@
 import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
 import { ukInvoiceAddressSchema } from './uk-invoice-address.js'
+import { internationalInvoiceAddressSchema } from './international-invoice-address.js'
 
 export const invoicingSchema = joi
   .object({
@@ -16,7 +17,7 @@ export const invoicingSchema = joi
     invoiceAddress: joi.when('invoiceAddressType', {
       is: 'uk',
       then: ukInvoiceAddressSchema.required(),
-      otherwise: joi.object().unknown(true).optional()
+      otherwise: internationalInvoiceAddressSchema.required()
     })
   })
   .append(marineLicenceId)
