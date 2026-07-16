@@ -25,14 +25,14 @@ const NON_TEXT_TAGS = [
   'embed'
 ]
 
-const BLOCK_TAGS_REMOVED_WHEN_EMPTY = ['p', 'li', 'ul', 'ol']
+const BLOCK_TAGS_REMOVED_WHEN_EMPTY = new Set(['p', 'li', 'ul', 'ol'])
 
 const VALID_HREF = /^https?:\/\//i
 const NON_BREAKING_SPACES = /\u00A0/g
 const INVISIBLE_CHARACTERS = /[\u200B\uFEFF\u00AD]/g
 
 const cleanText = (text) =>
-  text.replace(NON_BREAKING_SPACES, ' ').replace(INVISIBLE_CHARACTERS, '')
+  text.replaceAll(NON_BREAKING_SPACES, ' ').replaceAll(INVISIBLE_CHARACTERS, '')
 
 const renameTo = (tagName) => () => ({ tagName, attribs: {} })
 
@@ -51,7 +51,7 @@ const isDeadAnchor = (frame) =>
   frame.tag === 'a' && !VALID_HREF.test(frame.attribs?.href ?? '')
 
 const isEmptyBlock = (frame) =>
-  BLOCK_TAGS_REMOVED_WHEN_EMPTY.includes(frame.tag) &&
+  BLOCK_TAGS_REMOVED_WHEN_EMPTY.has(frame.tag) &&
   cleanText(frame.text ?? '').trim() === ''
 
 const STRUCTURE_OPTIONS = {
