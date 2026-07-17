@@ -31,5 +31,8 @@ export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   JOB_FAILED: 'mp-policies:job-failed',
   JOB_COMPLETE: 'mp-policies:job-complete',
   ARCGIS_QUERY: 'mp-policies:arcgis-query',
-  WORDING_FETCH: 'mp-policies:wording-fetch'
+  WORDING_FETCH: 'mp-policies:wording-fetch',
+  WORDING_ENTRY_SKIPPED: 'mp-policies:wording-entry-skipped',
+  WORDING_FIELD_INVALID: 'mp-policies:wording-field-invalid',
+  WORDING_FIELD_TOO_LARGE: 'mp-policies:wording-field-too-large'
 }
