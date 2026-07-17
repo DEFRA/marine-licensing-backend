@@ -8,9 +8,17 @@ describe('invoicingSchema', () => {
     addressPostcode: 'TE1 1ST'
   }
 
+  const validInvoiceContactDetails = {
+    fullName: 'Test Person',
+    organisationName: 'Test Organisation',
+    phoneNumber: '01234 567890',
+    emailAddress: 'test@example.com'
+  }
+
   const validPayload = {
     invoiceAddressType: 'uk',
     invoiceAddress: validUkInvoiceAddress,
+    invoiceContactDetails: validInvoiceContactDetails,
     id: mockMarineLicence._id.toHexString()
   }
 
@@ -38,7 +46,8 @@ describe('invoicingSchema', () => {
   test('should error when id is missing', () => {
     const { error } = invoicingSchema.validate({
       invoiceAddressType: 'uk',
-      invoiceAddress: validUkInvoiceAddress
+      invoiceAddress: validUkInvoiceAddress,
+      invoiceContactDetails: validInvoiceContactDetails
     })
     expect(error.message).toContain('MARINE_LICENCE_ID_REQUIRED')
   })
@@ -105,6 +114,66 @@ describe('invoicingSchema', () => {
         }
       })
       expect(error).toBeUndefined()
+    })
+  })
+
+  describe('invoiceContactDetails', () => {
+    test('should error when invoiceContactDetails is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: undefined
+      })
+      expect(error.message).toContain('INVOICING_CONTACT_DETAILS_REQUIRED')
+    })
+
+    test('should error when fullName is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          fullName: undefined
+        }
+      })
+      expect(error.message).toContain('INVOICING_CONTACT_FULL_NAME_REQUIRED')
+    })
+
+    test('should error when organisationName is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          organisationName: undefined
+        }
+      })
+      expect(error.message).toContain(
+        'INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED'
+      )
+    })
+
+    test('should error when phoneNumber is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          phoneNumber: undefined
+        }
+      })
+      expect(error.message).toContain(
+        'INVOICING_CONTACT_PHONE_NUMBER_REQUIRED'
+      )
+    })
+
+    test('should error when emailAddress is invalid', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          emailAddress: 'not-an-email'
+        }
+      })
+      expect(error.message).toContain(
+        'INVOICING_CONTACT_EMAIL_ADDRESS_INVALID'
+      )
     })
   })
 

@@ -2,6 +2,7 @@ import joi from 'joi'
 import { marineLicenceId } from '../shared-models.js'
 import { ukInvoiceAddressSchema } from './uk-invoice-address.js'
 import { internationalInvoiceAddressSchema } from './international-invoice-address.js'
+import { invoiceContactDetailsSchema } from './invoice-contact-details.js'
 
 export const invoicingSchema = joi
   .object({
@@ -18,6 +19,9 @@ export const invoicingSchema = joi
       is: 'uk',
       then: ukInvoiceAddressSchema.required(),
       otherwise: internationalInvoiceAddressSchema.required()
+    }),
+    invoiceContactDetails: invoiceContactDetailsSchema.required().messages({
+      'any.required': 'INVOICING_CONTACT_DETAILS_REQUIRED'
     })
   })
   .append(marineLicenceId)
