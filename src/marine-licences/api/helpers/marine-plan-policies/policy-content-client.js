@@ -5,17 +5,94 @@ import {
   MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS
 } from '../../../constants/marine-licence.js'
 import { timedJsonFetch } from './policy-http.js'
+import { sanitisePolicyWording } from './sanitise-policy-wording.js'
 
 const normalisePolicyCode = (code) => code.replace(/\s/g, '')
 
-const toCacheDocument = (entry, fetchedAt) =>
+const isValidCode = (code) => typeof code === 'string' && code.trim() !== ''
+
+const logFieldRejected = ({ logger, action, code, field, reason }) =>
+  logger.warn(
+    {
+      event: {
+        action,
+        outcome: 'failure',
+        reference: `${code}/${field}`,
+        reason
+      }
+    },
+    `Policy ${code} field ${field} rejected at ingest; stored as null`
+  )
+
+const sanitiseWordingField = ({
+  value,
+  code,
+  field,
+  maxFieldBytes,
+  logger
+}) => {
+  if (value == null) {
+    return null
+  }
+  if (typeof value !== 'string') {
+    logFieldRejected({
+      logger,
+      action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FIELD_INVALID,
+      code,
+      field,
+      reason:
+        'Non-string wording value received from the GOV.UK policies API; raise a data-quality issue with the marine plans explorer team'
+    })
+    return null
+  }
+  const sanitised = sanitisePolicyWording(value)
+  if (Buffer.byteLength(sanitised, 'utf8') > maxFieldBytes) {
+    logFieldRejected({
+      logger,
+      action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FIELD_TOO_LARGE,
+      code,
+      field,
+      reason: `Sanitised wording exceeds the ${maxFieldBytes} byte cap; refusing to store rather than truncate`
+    })
+    return null
+  }
+  return sanitised
+}
+
+const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) =>
   CONTENT_FIELDS.reduce(
     (doc, field) => {
-      doc[field] = entry[field] ?? null
+      doc[field] = sanitiseWordingField({
+        value: entry[field],
+        code: entry.code,
+        field,
+        maxFieldBytes,
+        logger
+      })
       return doc
     },
     { fetchedAt }
   )
+
+const keepValidEntries = (policies, logger) =>
+  policies.filter((entry, index) => {
+    if (isValidCode(entry?.code)) {
+      return true
+    }
+    logger.warn(
+      {
+        event: {
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_ENTRY_SKIPPED,
+          outcome: 'failure',
+          reference: `entry-index/${index}`,
+          reason:
+            'Entry in the GOV.UK policies API response has a missing or non-string code; raise a data-quality issue with the marine plans explorer team'
+        }
+      },
+      `Skipped GOV.UK policies API entry at index ${index}: missing or non-string code`
+    )
+    return false
+  })
 
 const toContent = (cached) =>
   CONTENT_FIELDS.reduce((content, field) => {
@@ -30,13 +107,18 @@ const toEmptyContent = () =>
   }, {})
 
 const refreshPolicyDataset = async (collection, logger) => {
-  const { govukPoliciesUrl, wordingTimeoutMs } =
-    config.get('marinePlanPolicies')
+  const {
+    govukPoliciesUrl,
+    wordingTimeoutMs,
+    wordingMaxResponseBytes,
+    wordingMaxFieldBytes
+  } = config.get('marinePlanPolicies')
 
   // The API returns all policies in one response, so one fetch refreshes the full cache.
   const policies = await timedJsonFetch({
     url: govukPoliciesUrl,
     timeoutMs: wordingTimeoutMs,
+    maxBytes: wordingMaxResponseBytes,
     eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
     upstreamName: 'marine plan policy wording',
     logger
@@ -46,17 +128,27 @@ const refreshPolicyDataset = async (collection, logger) => {
     throw new Error('GOV.UK policies API returned no policies')
   }
 
+  const validPolicies = keepValidEntries(policies, logger)
+  if (validPolicies.length === 0) {
+    throw new Error('GOV.UK policies API returned no valid policies')
+  }
+
   const fetchedAt = new Date()
   await collection.bulkWrite(
-    policies
-      .filter((entry) => entry.code)
-      .map((entry) => ({
-        updateOne: {
-          filter: { _id: normalisePolicyCode(entry.code) },
-          update: { $set: toCacheDocument(entry, fetchedAt) },
-          upsert: true
-        }
-      }))
+    validPolicies.map((entry) => ({
+      updateOne: {
+        filter: { _id: normalisePolicyCode(entry.code) },
+        update: {
+          $set: toCacheDocument({
+            entry,
+            fetchedAt,
+            maxFieldBytes: wordingMaxFieldBytes,
+            logger
+          })
+        },
+        upsert: true
+      }
+    }))
   )
 }
 
