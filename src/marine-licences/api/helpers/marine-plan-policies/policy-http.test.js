@@ -132,6 +132,26 @@ describe('timedJsonFetch', () => {
     )
   })
 
+  it('should pass maxBytes to Wreck when provided', async () => {
+    const logger = setupLogger()
+    Wreck.get.mockResolvedValue({ res: { statusCode: 200 }, payload: {} })
+
+    await timedJsonFetch(callOptions(logger, { maxBytes: 1234 }))
+
+    const [, options] = Wreck.get.mock.calls[0]
+    expect(options.maxBytes).toBe(1234)
+  })
+
+  it('should omit maxBytes from the Wreck options when not provided', async () => {
+    const logger = setupLogger()
+    Wreck.get.mockResolvedValue({ res: { statusCode: 200 }, payload: {} })
+
+    await timedJsonFetch(callOptions(logger))
+
+    const [, options] = Wreck.get.mock.calls[0]
+    expect(options).not.toHaveProperty('maxBytes')
+  })
+
   it('should use Wreck.post when method is POST', async () => {
     const logger = setupLogger()
     Wreck.post.mockResolvedValue({ res: { statusCode: 200 }, payload: {} })

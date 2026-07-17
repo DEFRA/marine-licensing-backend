@@ -7,6 +7,7 @@ export const timedJsonFetch = async ({
   url,
   options = {},
   timeoutMs,
+  maxBytes,
   eventAction,
   upstreamName,
   logger,
@@ -26,6 +27,7 @@ export const timedJsonFetch = async ({
       },
       payload: options.body,
       timeout: timeoutMs,
+      ...(maxBytes && { maxBytes }),
       json: true
     }
     const { payload } = await (method === 'POST'
