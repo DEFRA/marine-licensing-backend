@@ -14,10 +14,9 @@ export const invoiceContactDetailsSchema = joi.object({
     .string()
     .trim()
     .max(ORGANISATION_MAX_LENGTH)
-    .required()
+    .allow('')
+    .optional()
     .messages({
-      'string.empty': 'INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED',
-      'any.required': 'INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED',
       'string.max': 'INVOICING_CONTACT_ORGANISATION_NAME_MAX_LENGTH'
     }),
   phoneNumber: joi.string().trim().required().messages({

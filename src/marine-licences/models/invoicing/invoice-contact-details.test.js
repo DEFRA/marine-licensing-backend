@@ -29,14 +29,20 @@ describe('invoiceContactDetailsSchema', () => {
     expect(error.message).toContain('INVOICING_CONTACT_FULL_NAME_MAX_LENGTH')
   })
 
-  test('should error when organisationName is missing', () => {
+  test('should pass when organisationName is omitted', () => {
     const { error } = invoiceContactDetailsSchema.validate({
       ...validPayload,
       organisationName: undefined
     })
-    expect(error.message).toContain(
-      'INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED'
-    )
+    expect(error).toBeUndefined()
+  })
+
+  test('should pass when organisationName is an empty string', () => {
+    const { error } = invoiceContactDetailsSchema.validate({
+      ...validPayload,
+      organisationName: ''
+    })
+    expect(error).toBeUndefined()
   })
 
   test('should error when organisationName is too long', () => {

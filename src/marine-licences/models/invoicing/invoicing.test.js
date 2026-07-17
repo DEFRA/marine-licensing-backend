@@ -137,7 +137,7 @@ describe('invoicingSchema', () => {
       expect(error.message).toContain('INVOICING_CONTACT_FULL_NAME_REQUIRED')
     })
 
-    test('should error when organisationName is missing', () => {
+    test('should pass when organisationName is omitted', () => {
       const { error } = invoicingSchema.validate({
         ...validPayload,
         invoiceContactDetails: {
@@ -145,9 +145,7 @@ describe('invoicingSchema', () => {
           organisationName: undefined
         }
       })
-      expect(error.message).toContain(
-        'INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED'
-      )
+      expect(error).toBeUndefined()
     })
 
     test('should error when phoneNumber is missing', () => {
