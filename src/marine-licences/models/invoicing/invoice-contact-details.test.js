@@ -70,9 +70,7 @@ describe('invoiceContactDetailsSchema', () => {
       ...validPayload,
       emailAddress: undefined
     })
-    expect(error.message).toContain(
-      'INVOICING_CONTACT_EMAIL_ADDRESS_REQUIRED'
-    )
+    expect(error.message).toContain('INVOICING_CONTACT_EMAIL_ADDRESS_REQUIRED')
   })
 
   test('should error when emailAddress is invalid', () => {

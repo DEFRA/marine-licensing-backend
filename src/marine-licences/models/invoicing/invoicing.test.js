@@ -158,9 +158,7 @@ describe('invoicingSchema', () => {
           phoneNumber: undefined
         }
       })
-      expect(error.message).toContain(
-        'INVOICING_CONTACT_PHONE_NUMBER_REQUIRED'
-      )
+      expect(error.message).toContain('INVOICING_CONTACT_PHONE_NUMBER_REQUIRED')
     })
 
     test('should error when emailAddress is invalid', () => {
@@ -171,9 +169,7 @@ describe('invoicingSchema', () => {
           emailAddress: 'not-an-email'
         }
       })
-      expect(error.message).toContain(
-        'INVOICING_CONTACT_EMAIL_ADDRESS_INVALID'
-      )
+      expect(error.message).toContain('INVOICING_CONTACT_EMAIL_ADDRESS_INVALID')
     })
   })
 
