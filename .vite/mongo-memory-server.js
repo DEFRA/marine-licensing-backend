@@ -1,10 +1,10 @@
 import { setup, teardown } from 'vitest-mongodb'
 
 beforeAll(async () => {
-  // Setup mongo mock — pin version to avoid slow/unstable "latest" downloads on CI
+  // Setup mongo mock
   await setup({
     binary: {
-      version: '7.0.24'
+      version: 'latest'
     },
     serverOptions: {},
     autoStart: false
