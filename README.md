@@ -197,12 +197,27 @@ A local environment with:
 - Localstack for AWS services (S3, SQS)
 - Redis
 - MongoDB
+- [marine-licensing-api-stub](https://github.com/DEFRA/marine-licensing-api-stub) (must be
+  checked out as a sibling directory) — stubs the ArcGIS marine-plan-policy lookup only. Policy
+  _wording_ still comes from the real GOV.UK marine-plans-explorer API.
 - This service.
 - A commented out frontend example.
 
 ```bash
 docker compose up --build -d
 ```
+
+#### Switching to the real ArcGIS API
+
+By default the backend's marine-plan-policy lookup is pointed at the local stub. To hit the real
+DEFRA ArcGIS FeatureServer instead, uncomment `ARCGIS_FEATURE_SERVER_URL` in your local `.env`
+(see `.env.template`), then recreate the backend container:
+
+```bash
+docker compose up -d marine-licensing-backend
+```
+
+Remove/blank the line and recreate again to switch back to the stub.
 
 ### SonarCloud
 

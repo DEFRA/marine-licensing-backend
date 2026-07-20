@@ -8,6 +8,7 @@ import {
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
 import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
+import { filterCurrentPolicyResponses } from './marine-plan-policies/filter-policy-responses.js'
 
 const ACTIVITY_DETAILS_FIELDS = [
   'activities',
@@ -211,7 +212,10 @@ const getMarinePlanPolicyStatus = (marineLicence) => {
   }
 
   const total = marineLicence.marinePlanPoliciesCount ?? 0
-  const completed = marineLicence.marinePlanPolicyResponseCount ?? 0
+  const { count: completed } = filterCurrentPolicyResponses(
+    marineLicence.marinePlanPolicies,
+    marineLicence.marinePlanPolicyResponses
+  )
 
   if (completed >= total) {
     return COMPLETED
