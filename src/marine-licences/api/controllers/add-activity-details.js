@@ -34,7 +34,7 @@ export const addActivityDetailsController = {
         },
         {
           $push: { [`${sitePath}.activityDetails`]: activityDetails },
-          $set: { updatedAt, updatedBy }
+          $set: { siteDetailsConfirmed: false, updatedAt, updatedBy }
         }
       )
 

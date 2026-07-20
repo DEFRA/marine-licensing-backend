@@ -46,7 +46,10 @@ export const deleteActivityDetailsController = {
             [sitePath]: { $exists: true },
             updatedAt: marineLicence.updatedAt
           },
-          { $unset: { [activityPath]: 1 }, $set: { updatedAt, updatedBy } }
+          {
+            $unset: { [activityPath]: 1 },
+            $set: { siteDetailsConfirmed: false, updatedAt, updatedBy }
+          }
         )
 
       if (unsetResult.matchedCount === 0) {

@@ -47,6 +47,7 @@ export const updateSiteDetailsController = {
           $set: {
             siteDetails: siteDetailsWithActivity,
             ...buildPolicyResetFields(id, existing, siteDetailsWithActivity),
+            siteDetailsConfirmed: false,
             updatedAt,
             updatedBy
           }
