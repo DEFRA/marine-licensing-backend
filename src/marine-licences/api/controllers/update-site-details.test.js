@@ -102,6 +102,7 @@ describe('PATCH /marine-licences/site-details', () => {
       const setFields = mockUpdateOne.mock.calls[0][1].$set
       expect(setFields).not.toHaveProperty('marinePlanPolicyJob')
       expect(setFields).not.toHaveProperty('marinePlanPolicies')
+      expect(setFields).toMatchObject({ siteDetailsConfirmed: false })
     })
 
     it('should discard computed policies when the geometry changes', async () => {
@@ -127,7 +128,8 @@ describe('PATCH /marine-licences/site-details', () => {
       expect(setFields).toMatchObject({
         marinePlanPolicyJob: null,
         marinePlanPolicyJobId: null,
-        marinePlanPolicies: []
+        marinePlanPolicies: [],
+        siteDetailsConfirmed: false
       })
       expect(setFields).not.toHaveProperty('marinePlanPolicyJobQueuedAt')
       expect(setFields).not.toHaveProperty('marinePlanPolicyResponses')
@@ -150,6 +152,7 @@ describe('PATCH /marine-licences/site-details', () => {
       const setFields = mockUpdateOne.mock.calls[0][1].$set
       expect(setFields).not.toHaveProperty('marinePlanPolicyJob')
       expect(setFields).not.toHaveProperty('marinePlanPolicies')
+      expect(setFields).toMatchObject({ siteDetailsConfirmed: false })
     })
   })
 })
