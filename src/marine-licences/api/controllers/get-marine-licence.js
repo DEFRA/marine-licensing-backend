@@ -58,8 +58,8 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
         ...rest,
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],
-        marinePlanPolicyResponses: rest.marinePlanPolicyResponses ?? {},
-        marinePlanPolicyResponseCount: rest.marinePlanPolicyResponseCount ?? 0,
+        marinePlanPolicyResponses,
+        marinePlanPolicyResponseCount,
         taskList,
         siteDetailsDataComplete:
           getSiteDetailsDataStatus(marineLicence.siteDetails) === COMPLETED
