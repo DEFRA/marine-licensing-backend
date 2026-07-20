@@ -47,7 +47,7 @@ export const updateInvoicingController = {
               invoiceAddressType,
               invoiceAddress,
               invoiceContactDetails,
-              ...(purchaseOrderDetails ? { purchaseOrderDetails } : {})
+              ...(isCitizen ? {} : { purchaseOrderDetails })
             },
             updatedAt,
             updatedBy
