@@ -43,7 +43,7 @@ describe('PATCH /marine-licence/add-activity-details', () => {
         },
         {
           $push: { 'siteDetails.0.activityDetails': emptyActivityDetails },
-          $set: mockAuditPayload
+          $set: { siteDetailsConfirmed: false, ...mockAuditPayload }
         }
       )
     })
