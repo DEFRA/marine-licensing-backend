@@ -48,7 +48,7 @@
     "@terraformer/arcgis": "2.2.2",
     "@tmcw/togeojson": "^7.1.2",
     "@turf/turf": "7.3.5",
-    "adm-zip": "^0.5.18",
+    "adm-zip": "0.6.0",
     "aws-embedded-metrics": "4.2.1",
     "aws4": "1.13.2",
     "convict": "6.2.5",
