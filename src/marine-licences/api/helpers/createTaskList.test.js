@@ -1,4 +1,4 @@
-import { createTaskList } from './createTaskList'
+import { createTaskList, getSiteDetailsDataStatus } from './createTaskList'
 import {
   INCOMPLETE,
   IN_PROGRESS,
@@ -39,12 +39,13 @@ const mockCompleteSite = {
 }
 
 describe('createTaskList', () => {
-  it('should mark siteDetails as COMPLETED when all site and activity fields are present', () => {
+  it('should mark siteDetails as COMPLETED when all site and activity fields are present and confirmed', () => {
     const marineLicence = {
       feeEstimate,
       harbourAuthority,
       projectName: 'Test Project',
       siteDetails: [mockCompleteSite],
+      siteDetailsConfirmed: true,
       specialLegalPowers: 'Some powers',
       otherAuthorities: 'Some authorities',
       preferredDates: {
@@ -74,6 +75,31 @@ describe('createTaskList', () => {
       waterFrameworkDirective: COMPLETED,
       marinePlanPolicies: INCOMPLETE
     })
+  })
+
+  it('should mark siteDetails as IN_PROGRESS when all site and activity fields are present but not confirmed', () => {
+    const marineLicence = {
+      feeEstimate,
+      harbourAuthority,
+      projectName: 'Test Project',
+      siteDetails: [mockCompleteSite],
+      siteDetailsConfirmed: false,
+      specialLegalPowers: 'Some powers',
+      otherAuthorities: 'Some authorities',
+      preferredDates: {
+        start: { month: '01', year: '2026' },
+        end: { month: '12', year: '2026' }
+      },
+      projectBackground: 'Some background',
+      publicRegister: 'Public Register Info',
+      publicConsultation: {
+        consulted: 'yes',
+        details: 'Public consultation details'
+      },
+      waterFrameworkDirective: mockWaterFrameworkDirectiveWithNoNauticalMile
+    }
+
+    expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
   })
 
   it('should not include specialLegalPowers for citizens', () => {
@@ -302,7 +328,7 @@ describe('createTaskList', () => {
   })
 
   describe('circle site (coordinatesType=coordinates, coordinatesEntry=single)', () => {
-    it('should return siteDetails as COMPLETED when all circle fields and activity details are present', () => {
+    it('should return siteDetails as COMPLETED when all circle fields and activity details are present and confirmed', () => {
       const marineLicence = {
         projectName: 'Test Project',
         specialLegalPowers: 'Some powers',
@@ -311,10 +337,21 @@ describe('createTaskList', () => {
         publicRegister: 'Public Register Info',
         siteDetails: [
           { ...mockCircleSite, activityDetails: completedActivityDetails }
-        ]
+        ],
+        siteDetailsConfirmed: true
       }
 
       expect(createTaskList(marineLicence).siteDetails).toBe(COMPLETED)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when all circle fields and activity details are present but not confirmed', () => {
+      const marineLicence = {
+        siteDetails: [
+          { ...mockCircleSite, activityDetails: completedActivityDetails }
+        ]
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
     })
 
     it('should return siteDetails as IN_PROGRESS when circle fields are present but activity details are missing', () => {
@@ -357,14 +394,25 @@ describe('createTaskList', () => {
   })
 
   describe('multiple coordinate site (coordinatesType=coordinates, coordinatesEntry=multiple)', () => {
-    it('should return siteDetails as COMPLETED when all fields, valid coordinates, and activity details are present', () => {
+    it('should return siteDetails as COMPLETED when all fields, valid coordinates, and activity details are present and confirmed', () => {
+      const marineLicence = {
+        siteDetails: [
+          { ...mockMultipleSite, activityDetails: completedActivityDetails }
+        ],
+        siteDetailsConfirmed: true
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(COMPLETED)
+    })
+
+    it('should return siteDetails as IN_PROGRESS when all fields, valid coordinates, and activity details are present but not confirmed', () => {
       const marineLicence = {
         siteDetails: [
           { ...mockMultipleSite, activityDetails: completedActivityDetails }
         ]
       }
 
-      expect(createTaskList(marineLicence).siteDetails).toBe(COMPLETED)
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
     })
 
     it('should return siteDetails as INCOMPLETE when no fields are present', () => {
@@ -505,6 +553,24 @@ describe('createTaskList', () => {
       siteDetails: IN_PROGRESS,
       waterFrameworkDirective: COMPLETED,
       marinePlanPolicies: INCOMPLETE
+    })
+  })
+
+  describe('getSiteDetailsDataStatus', () => {
+    it('returns COMPLETED for valid site data regardless of siteDetailsConfirmed', () => {
+      expect(getSiteDetailsDataStatus([mockCompleteSite])).toBe(COMPLETED)
+    })
+
+    it('returns INCOMPLETE when there is no site data', () => {
+      expect(getSiteDetailsDataStatus([])).toBe(INCOMPLETE)
+      expect(getSiteDetailsDataStatus(undefined)).toBe(INCOMPLETE)
+    })
+
+    it('returns IN_PROGRESS when a site field is missing', () => {
+      const siteWithoutSiteName = { ...mockCompleteSite }
+      delete siteWithoutSiteName.siteName
+
+      expect(getSiteDetailsDataStatus([siteWithoutSiteName])).toBe(IN_PROGRESS)
     })
   })
 

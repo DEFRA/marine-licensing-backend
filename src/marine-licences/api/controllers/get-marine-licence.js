@@ -1,8 +1,12 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
-import { createTaskList } from '../helpers/createTaskList.js'
 import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-policy-responses.js'
+import {
+  createTaskList,
+  getSiteDetailsDataStatus
+} from '../helpers/createTaskList.js'
+import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { getAuthUserContext } from '../../../shared/helpers/get-auth-user-context.js'
@@ -54,9 +58,11 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
         ...rest,
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],
-        marinePlanPolicyResponses,
-        marinePlanPolicyResponseCount,
-        taskList
+        marinePlanPolicyResponses: rest.marinePlanPolicyResponses ?? {},
+        marinePlanPolicyResponseCount: rest.marinePlanPolicyResponseCount ?? 0,
+        taskList,
+        siteDetailsDataComplete:
+          getSiteDetailsDataStatus(marineLicence.siteDetails) === COMPLETED
       }
 
       return h
