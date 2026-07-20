@@ -16,8 +16,6 @@ describe('invoicingSchema', () => {
     emailAddress: 'test@example.com'
   }
 
-
-
   const validPayload = {
     invoiceAddressType: 'uk',
     invoiceAddress: validUkInvoiceAddress,
