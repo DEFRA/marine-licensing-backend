@@ -276,4 +276,190 @@ describe('getPoliciesContent', () => {
       })
     ).rejects.toThrow('GOV.UK policies API returned no policies')
   })
+
+  describe('sanitisation and validation at ingest', () => {
+    it('should fetch the dataset with the configured maxBytes cap', async () => {
+      setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1')]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [, options] = Wreck.get.mock.calls[0]
+      expect(options.maxBytes).toBe(30_000_000)
+    })
+
+    it('should sanitise wording fields before caching them', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [
+          policyEntry('E-AGG-1', {
+            policy:
+              '<p><span style="color: black;">Text</span></p><p><br></p><script>alert(1)</script>'
+          })
+        ]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set.policy).toBe('<p>Text</p>')
+    })
+
+    it('should store null and warn when a wording field is not a string', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1', { policyAim: 12345 })]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set.policyAim).toBeNull()
+      expect(logger.warn).toHaveBeenCalledWith(
+        {
+          event: expect.objectContaining({
+            action: 'mp-policies:wording-field-invalid',
+            outcome: 'failure',
+            reference: 'E-AGG-1/policyAim'
+          })
+        },
+        expect.stringContaining('E-AGG-1')
+      )
+      expect(operations[0].updateOne.update.$set.policy).toBe(
+        '<p>E-AGG-1 policy statement</p>'
+      )
+    })
+
+    it('should store null without warning when a wording field is null', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1', { whatIsIt: null })]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set.whatIsIt).toBeNull()
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+
+    it('should store null and warn when a sanitised wording field exceeds the size cap', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [
+          policyEntry('E-AGG-1', {
+            policy: `<p>${'a'.repeat(200_000)}</p>`
+          })
+        ]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set.policy).toBeNull()
+      expect(logger.warn).toHaveBeenCalledWith(
+        {
+          event: expect.objectContaining({
+            action: 'mp-policies:wording-field-too-large',
+            outcome: 'failure',
+            reference: 'E-AGG-1/policy'
+          })
+        },
+        expect.stringContaining('E-AGG-1')
+      )
+    })
+
+    it('should skip entries with a missing or non-string code without aborting the refresh', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1'), cachedDoc('S-AQ-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [
+          policyEntry('E-AGG-1'),
+          { code: 12345, policy: '<p>bad</p>' },
+          { policy: '<p>no code</p>' },
+          policyEntry('S-AQ-1')
+        ]
+      })
+
+      await getPoliciesContent({
+        policies: [
+          { policyCode: 'E-AGG-1', sector: 'Aggregates' },
+          { policyCode: 'S-AQ-1', sector: 'Aquaculture' }
+        ],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations).toHaveLength(2)
+      expect(logger.warn).toHaveBeenCalledWith(
+        {
+          event: expect.objectContaining({
+            action: 'mp-policies:wording-entry-skipped',
+            outcome: 'failure',
+            reference: 'entry-index/1'
+          })
+        },
+        expect.stringContaining('index 1')
+      )
+    })
+
+    it('should throw when every entry in the dataset has an invalid code', async () => {
+      setupMocks({ initialDocs: [], refreshedDocs: [] })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [{ code: 12345 }, { policy: '<p>no code</p>' }]
+      })
+
+      await expect(
+        getPoliciesContent({
+          policies: [{ policyCode: 'E-AGG-1' }],
+          db: global.mockMongo,
+          logger
+        })
+      ).rejects.toThrow('GOV.UK policies API returned no valid policies')
+    })
+  })
 })
