@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { invoicingSchema } from '../../models/invoicing/invoicing.js'
 
 export const updateInvoicingController = {
@@ -19,16 +20,24 @@ export const updateInvoicingController = {
   },
   handler: async (request, h) => {
     try {
-      const { payload, db } = request
+      const { payload, db, auth } = request
 
       const {
         id,
         invoiceAddressType,
         invoiceAddress,
         invoiceContactDetails,
+        purchaseOrderDetails,
         updatedAt,
         updatedBy
       } = payload
+
+      const { userRelationshipType } = getOrganisationDetailsFromAuthToken(auth)
+      const isCitizen = userRelationshipType === 'Citizen'
+
+      if (!isCitizen && !purchaseOrderDetails) {
+        throw Boom.badRequest('Purchase order details are required')
+      }
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
@@ -37,7 +46,8 @@ export const updateInvoicingController = {
             invoicing: {
               invoiceAddressType,
               invoiceAddress,
-              invoiceContactDetails
+              invoiceContactDetails,
+              ...(purchaseOrderDetails ? { purchaseOrderDetails } : {})
             },
             updatedAt,
             updatedBy
