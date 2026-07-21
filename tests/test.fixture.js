@@ -154,7 +154,11 @@ export const mockInvoiceContactDetails = {
 export const mockInvoicing = {
   invoiceAddressType: 'uk',
   invoiceAddress: mockUkInvoicingAddress,
-  invoiceContactDetails: mockInvoiceContactDetails
+  invoiceContactDetails: mockInvoiceContactDetails,
+  purchaseOrderDetails: {
+    requiresPurchaseOrder: 'yes',
+    purchaseOrderNumber: 'PO-12345'
+  }
 }
 
 export const createCompleteMarineLicence = (overrides = {}) => {
