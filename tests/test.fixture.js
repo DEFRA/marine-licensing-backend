@@ -201,6 +201,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     createdAt: new Date('2026-12-01'),
     updatedAt: new Date('2026-12-01'),
     siteDetails: [mockCompleteSite],
+    siteDetailsConfirmed: true,
     waterFrameworkDirective: mockWaterFrameworkDirective,
     ...overrides
   }
