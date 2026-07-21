@@ -54,6 +54,7 @@ describe('Get marine licence - integration tests', async () => {
       taskList: {
         feeEstimate: 'INCOMPLETE',
         harbourAuthority: 'INCOMPLETE',
+        invoicing: 'INCOMPLETE',
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
         preferredDates: 'COMPLETED',
@@ -105,6 +106,7 @@ describe('Get marine licence - integration tests', async () => {
       taskList: {
         feeEstimate: 'INCOMPLETE',
         harbourAuthority: 'INCOMPLETE',
+        invoicing: 'INCOMPLETE',
         projectName: 'COMPLETED',
         otherAuthorities: 'INCOMPLETE',
         preferredDates: 'COMPLETED',

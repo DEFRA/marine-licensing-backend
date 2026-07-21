@@ -7,6 +7,7 @@ import {
   buildTaskList,
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
+import { INVOICE_TYPE_OPTIONS } from '../../constants/invoicing.js'
 import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
 
 const ACTIVITY_DETAILS_FIELDS = [
@@ -203,6 +204,57 @@ const getFeeEstimateStatus = (feeEstimate) => {
   return COMPLETED
 }
 
+const getInvoicingStatus = (invoicing, isCitizen) => {
+  if (!invoicing) {
+    return INCOMPLETE
+  }
+
+  const requiredValues = ['invoiceAddressType']
+
+  const addressRequiredFields =
+    invoicing.invoiceAddressType === INVOICE_TYPE_OPTIONS.UK
+      ? ['addressLine1', 'addressTown', 'addressPostcode']
+      : ['country', 'address']
+
+  const invoicingStatus = getStatusFromRequiredFields(invoicing, requiredValues)
+
+  const invoicingAddressStatus = getStatusFromRequiredFields(
+    invoicing.invoiceAddress,
+    addressRequiredFields
+  )
+
+  const contactRequiredFields = ['fullName', 'phoneNumber', 'emailAddress']
+
+  if (!isCitizen) {
+    contactRequiredFields.push('organisationName')
+  }
+
+  const invoicingContactStatus = getStatusFromRequiredFields(
+    invoicing.invoiceContactDetails,
+    contactRequiredFields
+  )
+
+  const fieldsToCheck = [
+    invoicingStatus,
+    invoicingAddressStatus,
+    invoicingContactStatus
+  ]
+
+  if (!isCitizen) {
+    const purchaseOrderDetails = getStatusFromRequiredFields(
+      invoicing.purchaseOrderDetails,
+      ['requiresPurchaseOrder']
+    )
+    fieldsToCheck.push(purchaseOrderDetails)
+  }
+
+  if (fieldsToCheck.every((s) => s === COMPLETED)) {
+    return COMPLETED
+  }
+
+  return IN_PROGRESS
+}
+
 const getMarinePlanPolicyStatus = (marineLicence) => {
   if (
     marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
@@ -239,7 +291,8 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
     waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
-    marinePlanPolicies: () => getMarinePlanPolicyStatus(marineLicence)
+    marinePlanPolicies: () => getMarinePlanPolicyStatus(marineLicence),
+    invoicing: (value) => getInvoicingStatus(value, isCitizen)
   }
 
   return buildTaskList(marineLicence, tasks)
