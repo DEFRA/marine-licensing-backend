@@ -241,9 +241,15 @@ const getInvoicingStatus = (invoicing, isCitizen) => {
   ]
 
   if (!isCitizen) {
+    const purchaseOrderRequiredFields = ['requiresPurchaseOrder']
+
+    if (invoicing.purchaseOrderDetails?.requiresPurchaseOrder === 'yes') {
+      purchaseOrderRequiredFields.push('purchaseOrderNumber')
+    }
+
     const purchaseOrderDetails = getStatusFromRequiredFields(
-      invoicing.purchaseOrderDetails,
-      ['requiresPurchaseOrder']
+      invoicing.purchaseOrderDetails ?? {},
+      purchaseOrderRequiredFields
     )
     fieldsToCheck.push(purchaseOrderDetails)
   }

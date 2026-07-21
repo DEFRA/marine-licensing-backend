@@ -643,6 +643,17 @@ describe('createTaskList', () => {
       expect(statusFor(invoicing)).toBe(IN_PROGRESS)
     })
 
+    it('is IN_PROGRESS when purchase order is required but purchaseOrderNumber is missing', () => {
+      const invoicing = {
+        ...mockInvoicing,
+        purchaseOrderDetails: {
+          requiresPurchaseOrder: 'yes'
+        }
+      }
+
+      expect(statusFor(invoicing)).toBe(IN_PROGRESS)
+    })
+
     it('does not require organisationName or purchaseOrderDetails for citizens', () => {
       const { organisationName, ...contactDetailsWithoutOrg } =
         mockInvoiceContactDetails
