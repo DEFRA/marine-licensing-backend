@@ -29,7 +29,8 @@ describe('PATCH /marine-licence/delete-activity-details - integration tests', as
           coordinatesType: 'manual',
           activityDetails: [emptyActivityDetails, emptyActivityDetails]
         }
-      ]
+      ],
+      siteDetailsConfirmed: true
     }
 
     await globalThis.mockMongo
@@ -51,6 +52,7 @@ describe('PATCH /marine-licence/delete-activity-details - integration tests', as
       .findOne({ _id: licenceId })
 
     expect(updated.siteDetails[0].activityDetails).toHaveLength(1)
+    expect(updated.siteDetailsConfirmed).toBe(false)
   })
 
   test('returns 404 when siteIndex is invalid', async () => {
