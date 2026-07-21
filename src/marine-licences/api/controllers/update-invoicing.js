@@ -21,14 +21,24 @@ export const updateInvoicingController = {
     try {
       const { payload, db } = request
 
-      const { id, invoiceAddressType, invoiceAddress, updatedAt, updatedBy } =
-        payload
+      const {
+        id,
+        invoiceAddressType,
+        invoiceAddress,
+        invoiceContactDetails,
+        updatedAt,
+        updatedBy
+      } = payload
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            invoicing: { invoiceAddressType, invoiceAddress },
+            invoicing: {
+              invoiceAddressType,
+              invoiceAddress,
+              invoiceContactDetails
+            },
             updatedAt,
             updatedBy
           }
