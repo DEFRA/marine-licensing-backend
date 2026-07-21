@@ -5,7 +5,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
-    threads: false,
+    // Single worker so vitest-mongodb setup runs once (replaces deprecated threads: false)
+    fileParallelism: false,
+    maxWorkers: 1,
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',
