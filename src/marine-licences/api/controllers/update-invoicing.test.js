@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updateInvoicingController } from './update-invoicing.js'
-import { mockUkInvoicingAddress } from '../../../../tests/test.fixture.js'
+import {
+  mockUkInvoicingAddress,
+  mockInvoiceContactDetails
+} from '../../../../tests/test.fixture.js'
 
 describe('PATCH /marine-licence/invoicing', () => {
   const mockAuditPayload = {
@@ -15,6 +18,7 @@ describe('PATCH /marine-licence/invoicing', () => {
       id: new ObjectId().toHexString(),
       invoiceAddressType: 'uk',
       invoiceAddress: mockUkInvoicingAddress,
+      invoiceContactDetails: mockInvoiceContactDetails,
       ...mockAuditPayload
     }
 
@@ -44,7 +48,8 @@ describe('PATCH /marine-licence/invoicing', () => {
         $set: {
           invoicing: {
             invoiceAddressType: mockPayload.invoiceAddressType,
-            invoiceAddress: mockPayload.invoiceAddress
+            invoiceAddress: mockPayload.invoiceAddress,
+            invoiceContactDetails: mockPayload.invoiceContactDetails
           },
           ...mockAuditPayload
         }

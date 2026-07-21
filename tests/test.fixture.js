@@ -144,9 +144,17 @@ export const mockUkInvoicingAddress = {
   addressPostcode: 'AA1 1AA'
 }
 
+export const mockInvoiceContactDetails = {
+  fullName: 'Test Person',
+  organisationName: 'Test Organisation',
+  phoneNumber: '01234 567890',
+  emailAddress: 'test@example.com'
+}
+
 export const mockInvoicing = {
   invoiceAddressType: 'uk',
-  invoiceAddress: mockUkInvoicingAddress
+  invoiceAddress: mockUkInvoicingAddress,
+  invoiceContactDetails: mockInvoiceContactDetails
 }
 
 export const createCompleteMarineLicence = (overrides = {}) => {
