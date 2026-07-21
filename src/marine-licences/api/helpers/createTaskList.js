@@ -135,7 +135,7 @@ const validateSite = (site) => {
   return strategy(site)
 }
 
-const getSiteDetailsStatus = (siteDetails) => {
+export const getSiteDetailsDataStatus = (siteDetails) => {
   if (!siteDetails || siteDetails.length === 0) {
     return INCOMPLETE
   }
@@ -153,6 +153,16 @@ const getSiteDetailsStatus = (siteDetails) => {
   }
 
   return hasInProgress ? IN_PROGRESS : COMPLETED
+}
+
+const getSiteDetailsStatus = (siteDetails, siteDetailsConfirmed) => {
+  const dataStatus = getSiteDetailsDataStatus(siteDetails)
+
+  if (dataStatus !== COMPLETED) {
+    return dataStatus
+  }
+
+  return siteDetailsConfirmed ? COMPLETED : IN_PROGRESS
 }
 
 const checkWaterFrameworkDirective = (wfd) => {
@@ -292,7 +302,8 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     otherAuthorities: (value) => (value ? COMPLETED : INCOMPLETE),
     harbourAuthority: (value) => (value ? COMPLETED : INCOMPLETE),
     projectBackground: (value) => (value ? COMPLETED : INCOMPLETE),
-    siteDetails: (value) => getSiteDetailsStatus(value),
+    siteDetails: (value) =>
+      getSiteDetailsStatus(value, marineLicence.siteDetailsConfirmed),
     preferredDates: (value) => (value ? COMPLETED : INCOMPLETE),
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),

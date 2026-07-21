@@ -6,6 +6,7 @@ import {
 } from '../../../../.vite/mocks.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { preferredDates } from '../../models/test-fixtures.js'
+import { mockCompleteSite } from '../../../../tests/test.fixture.js'
 
 describe('GET /marine-licence', () => {
   const authenticatedController = getMarineLicenceController({
@@ -160,8 +161,61 @@ describe('GET /marine-licence', () => {
               siteDetails: 'INCOMPLETE',
               waterFrameworkDirective: 'INCOMPLETE',
               marinePlanPolicies: 'INCOMPLETE'
-            }
+            },
+            siteDetailsDataComplete: false
           }
+        })
+      )
+    })
+
+    it('should report siteDetailsDataComplete as true when site data is valid regardless of siteDetailsConfirmed', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: 'abc',
+        siteDetails: [mockCompleteSite],
+        siteDetailsConfirmed: false
+      })
+
+      await authenticatedController.handler(
+        requestFromApplicantUser({
+          userContactId: 'abc',
+          params: { id: mockId }
+        }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          value: expect.objectContaining({ siteDetailsDataComplete: true })
+        })
+      )
+    })
+
+    it('should report siteDetailsDataComplete as false when site data is invalid even if siteDetailsConfirmed is true', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: 'abc',
+        siteDetails: [],
+        siteDetailsConfirmed: true
+      })
+
+      await authenticatedController.handler(
+        requestFromApplicantUser({
+          userContactId: 'abc',
+          params: { id: mockId }
+        }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          value: expect.objectContaining({ siteDetailsDataComplete: false })
         })
       )
     })
