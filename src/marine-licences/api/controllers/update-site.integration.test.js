@@ -18,7 +18,8 @@ describe('PATCH /marine-licence/site - integration tests', async () => {
       contactId,
       siteDetails: [
         { coordinatesType: 'file', activityDetails: existingActivityDetails }
-      ]
+      ],
+      siteDetailsConfirmed: true
     }
 
     await globalThis.mockMongo
@@ -47,6 +48,7 @@ describe('PATCH /marine-licence/site - integration tests', async () => {
     expect(updated.siteDetails[0].activityDetails).toEqual(
       existingActivityDetails
     )
+    expect(updated.siteDetailsConfirmed).toBe(false)
   })
 
   test('returns 404 when siteIndex is out of range', async () => {
