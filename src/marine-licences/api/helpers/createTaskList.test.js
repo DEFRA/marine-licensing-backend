@@ -575,11 +575,10 @@ describe('createTaskList', () => {
   })
 
   describe('marinePlanPolicies status', () => {
-    const statusFor = (overrides) =>
-      createTaskList(overrides).marinePlanPolicies
-
-    const mockPolicies = (count) =>
-      Array.from({ length: count }, (_, i) => ({ policyCode: `P${i + 1}` }))
+    const statusFor = (overrides, marinePlanPolicyResponseCount = 0) =>
+      createTaskList(overrides, false, {
+        marinePlanPolicyResponseCount
+      }).marinePlanPolicies
 
     it.each([null, 'pending', 'computing', 'failed'])(
       'is INCOMPLETE before the ArcGIS policy query is ready (job=%s)',
@@ -592,58 +591,45 @@ describe('createTaskList', () => {
       expect(
         statusFor({
           marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: mockPolicies(0),
-          marinePlanPoliciesCount: 0,
-          marinePlanPolicyResponses: {}
+          marinePlanPoliciesCount: 0
         })
       ).toBe(COMPLETED)
     })
 
     it('is INCOMPLETE when ready with policies but none answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: mockPolicies(3),
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponses: {}
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          0
+        )
       ).toBe(INCOMPLETE)
     })
 
     it('is IN_PROGRESS when ready with some but not all policies answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: mockPolicies(3),
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponses: { P1: 'answer' }
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          1
+        )
       ).toBe(IN_PROGRESS)
     })
 
     it('is COMPLETED when ready with every policy answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: mockPolicies(3),
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponses: { P1: 'a', P2: 'a', P3: 'a' }
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          3
+        )
       ).toBe(COMPLETED)
-    })
-
-    it('is INCOMPLETE when responses only match policies from a previous, stale query', () => {
-      // Reproduces ML-1367: after a site change re-queries a different policy
-      // set, old responses (keyed by codes no longer in marinePlanPolicies)
-      // must not count towards the new set's completion.
-      expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPolicies: mockPolicies(42),
-          marinePlanPoliciesCount: 42,
-          marinePlanPolicyResponses: { 'OLD-POLICY-1': 'answer' }
-        })
-      ).toBe(INCOMPLETE)
     })
   })
 })

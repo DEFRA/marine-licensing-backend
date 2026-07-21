@@ -1,4 +1,4 @@
-import { filterCurrentPolicyResponses } from './filter-policy-responses.js'
+import { filterCurrentPolicyResponses } from './filter-current-policy-responses.js'
 
 describe('filterCurrentPolicyResponses', () => {
   it('keeps responses whose policy code is in the current policy set', () => {
