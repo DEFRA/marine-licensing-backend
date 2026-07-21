@@ -49,6 +49,7 @@ export const updateSiteController = {
           $set: {
             [sitePath]: siteDetails,
             ...buildPolicyResetFields(id, existing, newSiteDetails),
+            siteDetailsConfirmed: false,
             updatedAt,
             updatedBy
           }

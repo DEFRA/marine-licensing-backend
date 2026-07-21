@@ -26,7 +26,8 @@ describe('PATCH /marine-licence/add-activity-details - integration tests', async
       ...mockMarineLicence,
       _id: marineLicenceId,
       contactId,
-      siteDetails: [mockSite]
+      siteDetails: [mockSite],
+      siteDetailsConfirmed: true
     }
 
     await globalThis.mockMongo
@@ -50,6 +51,7 @@ describe('PATCH /marine-licence/add-activity-details - integration tests', async
     expect(updated.siteDetails[0].activityDetails).toEqual([
       emptyActivityDetails
     ])
+    expect(updated.siteDetailsConfirmed).toBe(false)
   })
 
   test('returns 404 when siteIndex is out of range', async () => {

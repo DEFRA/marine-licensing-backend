@@ -43,7 +43,11 @@ describe('PATCH /marine-licence/site', () => {
           'siteDetails.0': { $exists: true }
         },
         {
-          $set: { 'siteDetails.0': mockFileUploadSite, ...mockAuditPayload }
+          $set: {
+            'siteDetails.0': mockFileUploadSite,
+            siteDetailsConfirmed: false,
+            ...mockAuditPayload
+          }
         }
       )
     })
