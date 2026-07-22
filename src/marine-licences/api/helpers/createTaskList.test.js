@@ -10,9 +10,13 @@ import {
   mockCircleSite,
   mockMultipleSite,
   mockWaterFrameworkDirective,
+  mockInvoicing,
+  mockUkInvoicingAddress,
+  mockInvoiceContactDetails,
   createCompleteMarineLicence
 } from '../../../../tests/test.fixture.js'
 import { createActivityDetails } from './create-empty-activity-details.js'
+import { INVOICE_TYPE_OPTIONS } from '../../constants/invoicing.js'
 
 const mockWaterFrameworkDirectiveWithNoNauticalMile = { nauticalMile: 'no' }
 
@@ -73,7 +77,8 @@ describe('createTaskList', () => {
       publicConsultation: COMPLETED,
       publicRegister: COMPLETED,
       waterFrameworkDirective: COMPLETED,
-      marinePlanPolicies: INCOMPLETE
+      marinePlanPolicies: INCOMPLETE,
+      invoicing: INCOMPLETE
     })
   })
 
@@ -134,7 +139,8 @@ describe('createTaskList', () => {
       projectBackground: COMPLETED,
       publicConsultation: COMPLETED,
       waterFrameworkDirective: COMPLETED,
-      marinePlanPolicies: INCOMPLETE
+      marinePlanPolicies: INCOMPLETE,
+      invoicing: INCOMPLETE
     })
   })
 
@@ -169,7 +175,8 @@ describe('createTaskList', () => {
       publicConsultation: INCOMPLETE,
       publicRegister: INCOMPLETE,
       waterFrameworkDirective: COMPLETED,
-      marinePlanPolicies: INCOMPLETE
+      marinePlanPolicies: INCOMPLETE,
+      invoicing: INCOMPLETE
     })
   })
 
@@ -513,7 +520,8 @@ describe('createTaskList', () => {
       publicConsultation: INCOMPLETE,
       siteDetails: INCOMPLETE,
       waterFrameworkDirective: INCOMPLETE,
-      marinePlanPolicies: INCOMPLETE
+      marinePlanPolicies: INCOMPLETE,
+      invoicing: INCOMPLETE
     })
   })
 
@@ -552,7 +560,8 @@ describe('createTaskList', () => {
       publicConsultation: COMPLETED,
       siteDetails: IN_PROGRESS,
       waterFrameworkDirective: COMPLETED,
-      marinePlanPolicies: INCOMPLETE
+      marinePlanPolicies: INCOMPLETE,
+      invoicing: INCOMPLETE
     })
   })
 
@@ -575,8 +584,10 @@ describe('createTaskList', () => {
   })
 
   describe('marinePlanPolicies status', () => {
-    const statusFor = (overrides) =>
-      createTaskList(overrides).marinePlanPolicies
+    const statusFor = (overrides, marinePlanPolicyResponseCount = 0) =>
+      createTaskList(overrides, false, {
+        marinePlanPolicyResponseCount
+      }).marinePlanPolicies
 
     it.each([null, 'pending', 'computing', 'failed'])(
       'is INCOMPLETE before the ArcGIS policy query is ready (job=%s)',
@@ -589,40 +600,153 @@ describe('createTaskList', () => {
       expect(
         statusFor({
           marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 0,
-          marinePlanPolicyResponseCount: 0
+          marinePlanPoliciesCount: 0
         })
       ).toBe(COMPLETED)
     })
 
     it('is INCOMPLETE when ready with policies but none answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponseCount: 0
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          0
+        )
       ).toBe(INCOMPLETE)
     })
 
     it('is IN_PROGRESS when ready with some but not all policies answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponseCount: 1
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          1
+        )
       ).toBe(IN_PROGRESS)
     })
 
     it('is COMPLETED when ready with every policy answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponseCount: 3
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          3
+        )
       ).toBe(COMPLETED)
+    })
+  })
+
+  describe('invoicing status', () => {
+    const statusFor = (invoicing, isCitizen = false) =>
+      createTaskList({ invoicing }, isCitizen).invoicing
+
+    it('is INCOMPLETE when invoicing is missing', () => {
+      expect(createTaskList({}).invoicing).toBe(INCOMPLETE)
+    })
+
+    it('is COMPLETED for an organisation with a UK address, contact details and purchase order details', () => {
+      expect(statusFor(mockInvoicing)).toBe(COMPLETED)
+    })
+
+    it('is COMPLETED for an international address with country and address present', () => {
+      const invoicing = {
+        ...mockInvoicing,
+        invoiceAddressType: INVOICE_TYPE_OPTIONS.INTERNATIONAL,
+        invoiceAddress: {
+          country: 'France',
+          address: '1 Rue Example, Paris'
+        }
+      }
+
+      expect(statusFor(invoicing)).toBe(COMPLETED)
+    })
+
+    it('is IN_PROGRESS when invoiceAddressType is set but the address fields are missing', () => {
+      const invoicing = {
+        ...mockInvoicing,
+        invoiceAddressType: INVOICE_TYPE_OPTIONS.UK,
+        invoiceAddress: {}
+      }
+
+      expect(statusFor(invoicing)).toBe(IN_PROGRESS)
+    })
+
+    it('is IN_PROGRESS for a UK address missing required fields', () => {
+      const invoicing = {
+        ...mockInvoicing,
+        invoiceAddress: { addressLine1: mockUkInvoicingAddress.addressLine1 }
+      }
+
+      expect(statusFor(invoicing)).toBe(IN_PROGRESS)
+    })
+
+    it('is IN_PROGRESS for an international address missing required fields', () => {
+      const invoicing = {
+        ...mockInvoicing,
+        invoiceAddressType: INVOICE_TYPE_OPTIONS.INTERNATIONAL,
+        invoiceAddress: { country: 'France' }
+      }
+
+      expect(statusFor(invoicing)).toBe(IN_PROGRESS)
+    })
+
+    it('is IN_PROGRESS when contact details are missing required fields', () => {
+      const { emailAddress, ...contactDetailsWithoutEmail } =
+        mockInvoiceContactDetails
+      const invoicing = {
+        ...mockInvoicing,
+        invoiceContactDetails: contactDetailsWithoutEmail
+      }
+
+      expect(statusFor(invoicing)).toBe(IN_PROGRESS)
+    })
+
+    it('is IN_PROGRESS for an organisation missing purchaseOrderDetails', () => {
+      const invoicing = {
+        ...mockInvoicing,
+        purchaseOrderDetails: {}
+      }
+
+      expect(statusFor(invoicing)).toBe(IN_PROGRESS)
+    })
+
+    it('is IN_PROGRESS when purchase order is required but purchaseOrderNumber is missing', () => {
+      const invoicing = {
+        ...mockInvoicing,
+        purchaseOrderDetails: {
+          requiresPurchaseOrder: 'yes'
+        }
+      }
+
+      expect(statusFor(invoicing)).toBe(IN_PROGRESS)
+    })
+
+    it('does not require organisationName or purchaseOrderDetails for citizens', () => {
+      const { organisationName, ...contactDetailsWithoutOrg } =
+        mockInvoiceContactDetails
+      const { purchaseOrderDetails, ...invoicing } = {
+        ...mockInvoicing,
+        invoiceContactDetails: contactDetailsWithoutOrg
+      }
+
+      expect(statusFor(invoicing, true)).toBe(COMPLETED)
+    })
+
+    it('is IN_PROGRESS for a citizen missing required contact details', () => {
+      const { organisationName, phoneNumber, ...contactDetails } =
+        mockInvoiceContactDetails
+      const invoicing = {
+        ...mockInvoicing,
+        invoiceContactDetails: contactDetails
+      }
+
+      expect(statusFor(invoicing, true)).toBe(IN_PROGRESS)
     })
   })
 })
