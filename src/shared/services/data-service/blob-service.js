@@ -17,6 +17,7 @@ import { getS3Client } from './s3-client.js'
 const logger = createLogger()
 const awsConfig = config.get('aws')
 const cdpEnvironment = config.get('cdpEnvironment')
+const FILE_NOT_FOUND_IN_S3 = 'File not found in S3'
 
 class BlobService {
   logSystem = 'FileUpload:BlobService'
@@ -57,7 +58,7 @@ class BlobService {
       )
 
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        throw Boom.notFound('File not found in S3')
+        throw Boom.notFound(FILE_NOT_FOUND_IN_S3)
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
@@ -105,7 +106,7 @@ class BlobService {
       )
 
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        throw Boom.notFound('File not found in S3')
+        throw Boom.notFound(FILE_NOT_FOUND_IN_S3)
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
@@ -185,7 +186,7 @@ class BlobService {
       )
 
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        throw Boom.notFound('File not found in S3')
+        throw Boom.notFound(FILE_NOT_FOUND_IN_S3)
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
