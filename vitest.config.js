@@ -6,6 +6,8 @@ export default defineConfig({
     environment: 'node',
     clearMocks: true,
     threads: false,
+    // MMS may download/extract mongod on cold CI caches; default 10s is too short
+    hookTimeout: 60_000,
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',
