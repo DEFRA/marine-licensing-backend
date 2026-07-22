@@ -1,5 +1,6 @@
 import { invoicingSchema } from './invoicing.js'
 import { mockMarineLicence } from '../test-fixtures.js'
+import { mockInvoicing } from '../../../../tests/test.fixture.js'
 
 describe('invoicingSchema', () => {
   const validUkInvoiceAddress = {
@@ -8,9 +9,18 @@ describe('invoicingSchema', () => {
     addressPostcode: 'TE1 1ST'
   }
 
+  const validInvoiceContactDetails = {
+    fullName: 'Test Person',
+    organisationName: 'Test Organisation',
+    phoneNumber: '01234 567890',
+    emailAddress: 'test@example.com'
+  }
+
   const validPayload = {
     invoiceAddressType: 'uk',
     invoiceAddress: validUkInvoiceAddress,
+    invoiceContactDetails: validInvoiceContactDetails,
+    purchaseOrderDetails: mockInvoicing.purchaseOrderDetails,
     id: mockMarineLicence._id.toHexString()
   }
 
@@ -38,7 +48,9 @@ describe('invoicingSchema', () => {
   test('should error when id is missing', () => {
     const { error } = invoicingSchema.validate({
       invoiceAddressType: 'uk',
-      invoiceAddress: validUkInvoiceAddress
+      invoiceAddress: validUkInvoiceAddress,
+      invoiceContactDetails: validInvoiceContactDetails,
+      purchaseOrderDetails: mockInvoicing.purchaseOrderDetails
     })
     expect(error.message).toContain('MARINE_LICENCE_ID_REQUIRED')
   })
@@ -102,6 +114,103 @@ describe('invoicingSchema', () => {
           ...validUkInvoiceAddress,
           addressLine2: 'Flat 2',
           addressCounty: 'Test'
+        }
+      })
+      expect(error).toBeUndefined()
+    })
+  })
+
+  describe('invoiceContactDetails', () => {
+    test('should error when invoiceContactDetails is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: undefined
+      })
+      expect(error.message).toContain('INVOICING_CONTACT_DETAILS_REQUIRED')
+    })
+
+    test('should error when fullName is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          fullName: undefined
+        }
+      })
+      expect(error.message).toContain('INVOICING_CONTACT_FULL_NAME_REQUIRED')
+    })
+
+    test('should pass when organisationName is omitted', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          organisationName: undefined
+        }
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should error when phoneNumber is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          phoneNumber: undefined
+        }
+      })
+      expect(error.message).toContain('INVOICING_CONTACT_PHONE_NUMBER_REQUIRED')
+    })
+
+    test('should error when emailAddress is invalid', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        invoiceContactDetails: {
+          ...validInvoiceContactDetails,
+          emailAddress: 'not-an-email'
+        }
+      })
+      expect(error.message).toContain('INVOICING_CONTACT_EMAIL_ADDRESS_INVALID')
+    })
+  })
+
+  describe('purchaseOrderDetails', () => {
+    test('should pass when purchaseOrderDetails is omitted', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        purchaseOrderDetails: undefined
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should error when requiresPurchaseOrder is missing', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        purchaseOrderDetails: {
+          ...mockInvoicing.purchaseOrderDetails,
+          requiresPurchaseOrder: undefined
+        }
+      })
+      expect(error.message).toContain('INVOICING_PURCHASE_ORDER_REQUIRED')
+    })
+
+    test('should error when purchaseOrderNumber is missing and requiresPurchaseOrder is yes', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        purchaseOrderDetails: {
+          requiresPurchaseOrder: 'yes'
+        }
+      })
+      expect(error.message).toContain(
+        'INVOICING_PURCHASE_ORDER_NUMBER_REQUIRED'
+      )
+    })
+
+    test('should pass when requiresPurchaseOrder is no and purchaseOrderNumber is omitted', () => {
+      const { error } = invoicingSchema.validate({
+        ...validPayload,
+        purchaseOrderDetails: {
+          requiresPurchaseOrder: 'no'
         }
       })
       expect(error).toBeUndefined()
