@@ -7,6 +7,7 @@ import {
   buildTaskList,
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
+import { INVOICE_TYPE_OPTIONS } from '../../constants/invoicing.js'
 import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
 
 const ACTIVITY_DETAILS_FIELDS = [
@@ -213,7 +214,64 @@ const getFeeEstimateStatus = (feeEstimate) => {
   return COMPLETED
 }
 
-const getMarinePlanPolicyStatus = (marineLicence) => {
+const getInvoicingStatus = (invoicing, isCitizen) => {
+  if (!invoicing) {
+    return INCOMPLETE
+  }
+
+  const requiredValues = ['invoiceAddressType']
+
+  const addressRequiredFields =
+    invoicing.invoiceAddressType === INVOICE_TYPE_OPTIONS.UK
+      ? ['addressLine1', 'addressTown', 'addressPostcode']
+      : ['country', 'address']
+
+  const invoicingStatus = getStatusFromRequiredFields(invoicing, requiredValues)
+
+  const invoicingAddressStatus = getStatusFromRequiredFields(
+    invoicing.invoiceAddress,
+    addressRequiredFields
+  )
+
+  const contactRequiredFields = ['fullName', 'phoneNumber', 'emailAddress']
+
+  if (!isCitizen) {
+    contactRequiredFields.push('organisationName')
+  }
+
+  const invoicingContactStatus = getStatusFromRequiredFields(
+    invoicing.invoiceContactDetails,
+    contactRequiredFields
+  )
+
+  const fieldsToCheck = [
+    invoicingStatus,
+    invoicingAddressStatus,
+    invoicingContactStatus
+  ]
+
+  if (!isCitizen) {
+    const purchaseOrderRequiredFields = ['requiresPurchaseOrder']
+
+    if (invoicing.purchaseOrderDetails?.requiresPurchaseOrder === 'yes') {
+      purchaseOrderRequiredFields.push('purchaseOrderNumber')
+    }
+
+    const purchaseOrderDetails = getStatusFromRequiredFields(
+      invoicing.purchaseOrderDetails ?? {},
+      purchaseOrderRequiredFields
+    )
+    fieldsToCheck.push(purchaseOrderDetails)
+  }
+
+  if (fieldsToCheck.every((s) => s === COMPLETED)) {
+    return COMPLETED
+  }
+
+  return IN_PROGRESS
+}
+
+const getMarinePlanPolicyStatus = (marineLicence, completed) => {
   if (
     marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
   ) {
@@ -221,7 +279,6 @@ const getMarinePlanPolicyStatus = (marineLicence) => {
   }
 
   const total = marineLicence.marinePlanPoliciesCount ?? 0
-  const completed = marineLicence.marinePlanPolicyResponseCount ?? 0
 
   if (completed >= total) {
     return COMPLETED
@@ -234,7 +291,11 @@ const getMarinePlanPolicyStatus = (marineLicence) => {
   return IN_PROGRESS
 }
 
-export const createTaskList = (marineLicence, isCitizen = false) => {
+export const createTaskList = (
+  marineLicence,
+  isCitizen = false,
+  { marinePlanPolicyResponseCount = 0 } = {}
+) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
     ...(!isCitizen && {
@@ -250,7 +311,9 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
     waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
-    marinePlanPolicies: () => getMarinePlanPolicyStatus(marineLicence)
+    invoicing: (value) => getInvoicingStatus(value, isCitizen),
+    marinePlanPolicies: () =>
+      getMarinePlanPolicyStatus(marineLicence, marinePlanPolicyResponseCount)
   }
 
   return buildTaskList(marineLicence, tasks)

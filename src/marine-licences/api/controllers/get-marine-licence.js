@@ -1,6 +1,7 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
+import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
 import {
   createTaskList,
   getSiteDetailsDataStatus
@@ -44,14 +45,23 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       const isCitizen = userRelationshipType === 'Citizen'
 
       const { _id, ...rest } = marineLicence
-      const taskList = createTaskList(marineLicence, isCitizen)
+      const {
+        responses: marinePlanPolicyResponses,
+        count: marinePlanPolicyResponseCount
+      } = filterCurrentPolicyResponses(
+        rest.marinePlanPolicies,
+        rest.marinePlanPolicyResponses
+      )
+      const taskList = createTaskList(marineLicence, isCitizen, {
+        marinePlanPolicyResponseCount
+      })
       const response = {
         id: _id.toString(),
         ...rest,
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],
-        marinePlanPolicyResponses: rest.marinePlanPolicyResponses ?? {},
-        marinePlanPolicyResponseCount: rest.marinePlanPolicyResponseCount ?? 0,
+        marinePlanPolicyResponses,
+        marinePlanPolicyResponseCount,
         taskList,
         siteDetailsDataComplete:
           getSiteDetailsDataStatus(marineLicence.siteDetails) === COMPLETED
