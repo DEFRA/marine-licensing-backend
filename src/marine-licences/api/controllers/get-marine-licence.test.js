@@ -151,6 +151,7 @@ describe('GET /marine-licence', () => {
             taskList: {
               feeEstimate: 'COMPLETED',
               harbourAuthority: 'COMPLETED',
+              invoicing: 'INCOMPLETE',
               preferredDates: 'COMPLETED',
               projectName: 'COMPLETED',
               otherAuthorities: 'COMPLETED',

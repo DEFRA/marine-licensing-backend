@@ -35,8 +35,14 @@ export const updateInvoicingController = {
       const { userRelationshipType } = getOrganisationDetailsFromAuthToken(auth)
       const isCitizen = userRelationshipType === 'Citizen'
 
-      if (!isCitizen && !purchaseOrderDetails) {
-        throw Boom.badRequest('Purchase order details are required')
+      if (!isCitizen) {
+        if (!purchaseOrderDetails) {
+          throw Boom.badRequest('INVOICING_PURCHASE_ORDER_REQUIRED')
+        }
+
+        if (!invoiceContactDetails?.organisationName?.trim()) {
+          throw Boom.badRequest('INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED')
+        }
       }
 
       const result = await db.collection(collectionMarineLicences).updateOne(
