@@ -109,7 +109,7 @@ services:
       MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS: 60000
       MONGO_URI: mongodb://mongodb:27017/
       DEFRA_ID_ENABLED: true
-      ARCGIS_FEATURE_SERVER_URL: http://marine-licensing-api-stub:3002/ArcGIS/rest/services/PolicyData_MDP/FeatureServer/0
+      ARCGIS_FEATURE_SERVER_URL: ${ARCGIS_FEATURE_SERVER_URL:-http://marine-licensing-api-stub:3002/ArcGIS/rest/services/PolicyData_MDP/FeatureServer/0}
     networks:
       - cdp-tenant
     volumes:

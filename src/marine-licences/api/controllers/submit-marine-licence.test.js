@@ -211,7 +211,9 @@ describe('POST /marine-licence/submit', () => {
         mockHandler
       )
 
-      expect(createTaskList).toHaveBeenCalledWith(mockMarineLicence, false)
+      expect(createTaskList).toHaveBeenCalledWith(mockMarineLicence, false, {
+        marinePlanPolicyResponseCount: 0
+      })
     })
   })
 
