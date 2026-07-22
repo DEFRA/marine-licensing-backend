@@ -271,7 +271,7 @@ const getInvoicingStatus = (invoicing, isCitizen) => {
   return IN_PROGRESS
 }
 
-const getMarinePlanPolicyStatus = (marineLicence) => {
+const getMarinePlanPolicyStatus = (marineLicence, completed) => {
   if (
     marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
   ) {
@@ -279,7 +279,6 @@ const getMarinePlanPolicyStatus = (marineLicence) => {
   }
 
   const total = marineLicence.marinePlanPoliciesCount ?? 0
-  const completed = marineLicence.marinePlanPolicyResponseCount ?? 0
 
   if (completed >= total) {
     return COMPLETED
@@ -292,7 +291,11 @@ const getMarinePlanPolicyStatus = (marineLicence) => {
   return IN_PROGRESS
 }
 
-export const createTaskList = (marineLicence, isCitizen = false) => {
+export const createTaskList = (
+  marineLicence,
+  isCitizen = false,
+  { marinePlanPolicyResponseCount = 0 } = {}
+) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
     ...(!isCitizen && {
@@ -308,8 +311,9 @@ export const createTaskList = (marineLicence, isCitizen = false) => {
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
     publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
     waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
-    marinePlanPolicies: () => getMarinePlanPolicyStatus(marineLicence),
-    invoicing: (value) => getInvoicingStatus(value, isCitizen)
+    invoicing: (value) => getInvoicingStatus(value, isCitizen),
+    marinePlanPolicies: () =>
+      getMarinePlanPolicyStatus(marineLicence, marinePlanPolicyResponseCount)
   }
 
   return buildTaskList(marineLicence, tasks)

@@ -584,8 +584,10 @@ describe('createTaskList', () => {
   })
 
   describe('marinePlanPolicies status', () => {
-    const statusFor = (overrides) =>
-      createTaskList(overrides).marinePlanPolicies
+    const statusFor = (overrides, marinePlanPolicyResponseCount = 0) =>
+      createTaskList(overrides, false, {
+        marinePlanPolicyResponseCount
+      }).marinePlanPolicies
 
     it.each([null, 'pending', 'computing', 'failed'])(
       'is INCOMPLETE before the ArcGIS policy query is ready (job=%s)',
@@ -598,39 +600,44 @@ describe('createTaskList', () => {
       expect(
         statusFor({
           marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 0,
-          marinePlanPolicyResponseCount: 0
+          marinePlanPoliciesCount: 0
         })
       ).toBe(COMPLETED)
     })
 
     it('is INCOMPLETE when ready with policies but none answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponseCount: 0
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          0
+        )
       ).toBe(INCOMPLETE)
     })
 
     it('is IN_PROGRESS when ready with some but not all policies answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponseCount: 1
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          1
+        )
       ).toBe(IN_PROGRESS)
     })
 
     it('is COMPLETED when ready with every policy answered', () => {
       expect(
-        statusFor({
-          marinePlanPolicyJob: 'ready',
-          marinePlanPoliciesCount: 3,
-          marinePlanPolicyResponseCount: 3
-        })
+        statusFor(
+          {
+            marinePlanPolicyJob: 'ready',
+            marinePlanPoliciesCount: 3
+          },
+          3
+        )
       ).toBe(COMPLETED)
     })
   })
