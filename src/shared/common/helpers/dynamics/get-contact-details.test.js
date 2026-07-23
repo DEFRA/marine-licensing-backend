@@ -59,7 +59,7 @@ describe('Get contact name from Dynamics 365', () => {
       }
     )
     expect(logger.info).toHaveBeenCalledWith(
-      `Dynamics contact details requested for ID ${contactId}`
+      `Dynamics:ContactDetails: Contact details requested for ID ${contactId}`
     )
   })
 
@@ -203,13 +203,9 @@ describe('batchGetContactNames', () => {
         [validGuid2]: 'Jane Doe'
       })
       expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({
-          durationMs: expect.any(Number),
-          service: 'dynamics',
-          operation: 'dynamics.batchGetContactNames',
-          count: 2
-        }),
-        'Dynamics batch contact details completed'
+        expect.stringMatching(
+          /^Dynamics:ContactDetails: Batch contact details completed in \d+ms \(count: 2\)$/
+        )
       )
     })
 
@@ -336,25 +332,17 @@ describe('batchGetContactNames - fetchContactBatch integration', () => {
       [validGuid2]: 'Jane Doe'
     })
     expect(logger.info).toHaveBeenCalledWith(
-      expect.objectContaining({
-        durationMs: expect.any(Number),
-        service: 'dynamics',
-        operation: 'dynamics.token',
-        count: 2
-      }),
-      'Dynamics access token retrieved for batch contact details'
+      expect.stringMatching(
+        /^Dynamics:ContactDetails: Access token retrieved for batch contact details in \d+ms \(count: 2\)$/
+      )
     )
     expect(logger.info).toHaveBeenCalledWith(
-      'Dynamics batch contact details requested for 2 contacts'
+      'Dynamics:ContactDetails: Batch contact details requested for 2 contacts'
     )
     expect(logger.info).toHaveBeenCalledWith(
-      expect.objectContaining({
-        durationMs: expect.any(Number),
-        service: 'dynamics',
-        operation: 'dynamics.batchContacts',
-        count: 2
-      }),
-      'Dynamics batch contact details request completed'
+      expect.stringMatching(
+        /^Dynamics:ContactDetails: Batch contact details request completed in \d+ms \(count: 2\)$/
+      )
     )
   })
 

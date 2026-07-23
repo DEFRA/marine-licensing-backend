@@ -13,6 +13,7 @@ import { batchGetContactNames } from '../../../common/helpers/dynamics/get-conta
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 
 const logger = createLogger()
+const logSystem = 'Projects:GetProjects'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
@@ -79,13 +80,7 @@ const getEmployeeProjects = async (db, organisationId, contactId) => {
       .toArray()
   ])
   logger.info(
-    {
-      durationMs: Date.now() - dbStartedAt,
-      operation: 'getEmployeeProjects.db',
-      exemptionCount: empExemptions.length,
-      marineLicenceCount: empMarineLicences.length
-    },
-    'Employee projects database query completed'
+    `${logSystem}: Employee projects database query completed in ${Date.now() - dbStartedAt}ms (exemptions: ${empExemptions.length}, marineLicences: ${empMarineLicences.length})`
   )
 
   const contactIds = [

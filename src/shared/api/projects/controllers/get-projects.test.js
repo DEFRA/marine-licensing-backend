@@ -125,13 +125,9 @@ describe('getProjectsController', () => {
         'organisation.id': testOrgId
       })
       expect(logger.info).toHaveBeenCalledWith(
-        expect.objectContaining({
-          durationMs: expect.any(Number),
-          operation: 'getEmployeeProjects.db',
-          exemptionCount: 2,
-          marineLicenceCount: 1
-        }),
-        'Employee projects database query completed'
+        expect.stringMatching(
+          /^Projects:GetProjects: Employee projects database query completed in \d+ms \(exemptions: 2, marineLicences: 1\)$/
+        )
       )
     })
 
