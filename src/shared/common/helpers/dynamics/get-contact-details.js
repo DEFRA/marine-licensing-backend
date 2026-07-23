@@ -5,6 +5,7 @@ import { retryAsyncOperation } from '../retry-async-operation.js'
 import { config } from '../../../../config.js'
 
 const logger = createLogger()
+const logSystem = 'Dynamics:ContactDetails'
 
 const isValidGuid = (guid) => {
   const guidRegex =
@@ -54,16 +55,28 @@ const filterValidContactIds = (contactIds) => {
 }
 
 const fetchContactBatch = async (batchIds, baseUrl) => {
+  const tokenStartedAt = Date.now()
   const accessToken = await getDynamicsAccessToken({ type: 'contactDetails' })
+  logger.info(
+    `${logSystem}: Access token retrieved for batch contact details in ${Date.now() - tokenStartedAt}ms (count: ${batchIds.length})`
+  )
+
+  logger.info(
+    `${logSystem}: Batch contact details requested for ${batchIds.length} contacts`
+  )
 
   const filterClauses = batchIds
     .map((id) => `contactid eq '${escapeODataString(id)}'`)
     .join(' or ')
   const endpoint = `${baseUrl}/contacts?$select=fullname,contactid&$filter=${filterClauses}`
 
+  const httpStartedAt = Date.now()
   const response = await Wreck.get(endpoint, {
     headers: dynamicsHeaders(accessToken)
   })
+  logger.info(
+    `${logSystem}: Batch contact details request completed in ${Date.now() - httpStartedAt}ms (count: ${batchIds.length})`
+  )
 
   const parsedData = parseResponse(response)
   const contacts = parsedData.value || []
@@ -80,7 +93,6 @@ export const getContactNameById = async ({ contactId }) => {
     return null
   }
 
-  logger.info(`Dynamics contact details requested for ID ${contactId}`)
   try {
     const {
       contactDetails: { apiUrl },
@@ -91,6 +103,7 @@ export const getContactNameById = async ({ contactId }) => {
     }
     const endpoint = apiUrl.replace('{{contactId}}', contactId)
     const accessToken = await getDynamicsAccessToken({ type: 'contactDetails' })
+    logger.info(`${logSystem}: Contact details requested for ID ${contactId}`)
     const response = await Wreck.get(endpoint, {
       headers: dynamicsHeaders(accessToken)
     })
@@ -130,11 +143,8 @@ export const batchGetContactNames = async (contactIds) => {
     return {}
   }
 
-  logger.info(
-    `Dynamics batch contact details requested for ${validIds.length} contacts`
-  )
-
   const results = {}
+  const batchStartedAt = Date.now()
 
   try {
     for (let i = 0; i < validIds.length; i += MAX_BATCH_SIZE) {
@@ -146,6 +156,9 @@ export const batchGetContactNames = async (contactIds) => {
       })
       Object.assign(results, batchResult)
     }
+    logger.info(
+      `${logSystem}: Batch contact details completed in ${Date.now() - batchStartedAt}ms (count: ${validIds.length})`
+    )
     return results
   } catch (err) {
     logger.error(

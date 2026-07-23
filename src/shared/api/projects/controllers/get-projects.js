@@ -10,6 +10,10 @@ import {
 } from '../../../constants/project-status.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
+import { createLogger } from '../../../common/helpers/logging/logger.js'
+
+const logger = createLogger()
+const logSystem = 'Projects:GetProjects'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
@@ -62,6 +66,7 @@ export const sortByStatus = (a, b) => {
 const getEmployeeProjects = async (db, organisationId, contactId) => {
   const orgFilter = { 'organisation.id': organisationId }
 
+  const dbStartedAt = Date.now()
   const [empExemptions, empMarineLicences] = await Promise.all([
     db
       .collection(collectionExemptions)
@@ -74,6 +79,9 @@ const getEmployeeProjects = async (db, organisationId, contactId) => {
       .sort({ projectName: 1 })
       .toArray()
   ])
+  logger.info(
+    `${logSystem}: Employee projects database query completed in ${Date.now() - dbStartedAt}ms (exemptions: ${empExemptions.length}, marineLicences: ${empMarineLicences.length})`
+  )
 
   const contactIds = [
     ...new Set(
