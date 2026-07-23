@@ -205,6 +205,15 @@ describe('batchGetContactNames', () => {
       expect(logger.info).toHaveBeenCalledWith(
         'Dynamics batch contact details requested for 2 contacts'
       )
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          durationMs: expect.any(Number),
+          service: 'dynamics',
+          operation: 'dynamics.batchGetContactNames',
+          count: 2
+        }),
+        'Dynamics batch contact details completed'
+      )
     })
 
     it('should call retryAsyncOperation with correct parameters', async () => {
@@ -329,6 +338,24 @@ describe('batchGetContactNames - fetchContactBatch integration', () => {
       [validGuid1]: 'John Smith',
       [validGuid2]: 'Jane Doe'
     })
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        durationMs: expect.any(Number),
+        service: 'dynamics',
+        operation: 'dynamics.token',
+        count: 2
+      }),
+      'Dynamics access token retrieved for batch contact details'
+    )
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        durationMs: expect.any(Number),
+        service: 'dynamics',
+        operation: 'dynamics.batchContacts',
+        count: 2
+      }),
+      'Dynamics batch contact details request completed'
+    )
   })
 
   it('should handle contacts with missing fullname', async () => {

@@ -54,16 +54,36 @@ const filterValidContactIds = (contactIds) => {
 }
 
 const fetchContactBatch = async (batchIds, baseUrl) => {
+  const tokenStartedAt = Date.now()
   const accessToken = await getDynamicsAccessToken({ type: 'contactDetails' })
+  logger.info(
+    {
+      durationMs: Date.now() - tokenStartedAt,
+      service: 'dynamics',
+      operation: 'dynamics.token',
+      count: batchIds.length
+    },
+    'Dynamics access token retrieved for batch contact details'
+  )
 
   const filterClauses = batchIds
     .map((id) => `contactid eq '${escapeODataString(id)}'`)
     .join(' or ')
   const endpoint = `${baseUrl}/contacts?$select=fullname,contactid&$filter=${filterClauses}`
 
+  const httpStartedAt = Date.now()
   const response = await Wreck.get(endpoint, {
     headers: dynamicsHeaders(accessToken)
   })
+  logger.info(
+    {
+      durationMs: Date.now() - httpStartedAt,
+      service: 'dynamics',
+      operation: 'dynamics.batchContacts',
+      count: batchIds.length
+    },
+    'Dynamics batch contact details request completed'
+  )
 
   const parsedData = parseResponse(response)
   const contacts = parsedData.value || []
@@ -135,6 +155,7 @@ export const batchGetContactNames = async (contactIds) => {
   )
 
   const results = {}
+  const batchStartedAt = Date.now()
 
   try {
     for (let i = 0; i < validIds.length; i += MAX_BATCH_SIZE) {
@@ -146,6 +167,15 @@ export const batchGetContactNames = async (contactIds) => {
       })
       Object.assign(results, batchResult)
     }
+    logger.info(
+      {
+        durationMs: Date.now() - batchStartedAt,
+        service: 'dynamics',
+        operation: 'dynamics.batchGetContactNames',
+        count: validIds.length
+      },
+      'Dynamics batch contact details completed'
+    )
     return results
   } catch (err) {
     logger.error(

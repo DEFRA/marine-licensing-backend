@@ -6,6 +6,7 @@ import {
   collectionExemptions,
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
+import { createLogger } from '../../../common/helpers/logging/logger.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn().mockResolvedValue({})
@@ -19,6 +20,7 @@ describe('getProjectsController', () => {
   let mockMarineLicenceCollection
   const testContactId = 'contact-123-abc'
   const testOrgId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
+  const logger = createLogger()
 
   const createAuthWithOrg = (organisationId = testOrgId) => ({
     credentials: {
@@ -107,7 +109,10 @@ describe('getProjectsController', () => {
     }
   ]
 
-  beforeEach(() => setupMocks(mockExemptions, mockMarineLicences))
+  beforeEach(() => {
+    setupMocks(mockExemptions, mockMarineLicences)
+    vi.spyOn(logger, 'info')
+  })
 
   describe('handler', () => {
     it('should query employee collection with organisation filter', async () => {
@@ -119,6 +124,15 @@ describe('getProjectsController', () => {
       expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
         'organisation.id': testOrgId
       })
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          durationMs: expect.any(Number),
+          operation: 'getEmployeeProjects.db',
+          exemptionCount: 2,
+          marineLicenceCount: 1
+        }),
+        'Employee projects database query completed'
+      )
     })
 
     it('should query citizen collection with contactId and no-org filter', async () => {
