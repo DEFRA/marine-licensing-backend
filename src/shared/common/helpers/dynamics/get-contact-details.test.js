@@ -203,9 +203,6 @@ describe('batchGetContactNames', () => {
         [validGuid2]: 'Jane Doe'
       })
       expect(logger.info).toHaveBeenCalledWith(
-        'Dynamics batch contact details requested for 2 contacts'
-      )
-      expect(logger.info).toHaveBeenCalledWith(
         expect.objectContaining({
           durationMs: expect.any(Number),
           service: 'dynamics',
@@ -346,6 +343,9 @@ describe('batchGetContactNames - fetchContactBatch integration', () => {
         count: 2
       }),
       'Dynamics access token retrieved for batch contact details'
+    )
+    expect(logger.info).toHaveBeenCalledWith(
+      'Dynamics batch contact details requested for 2 contacts'
     )
     expect(logger.info).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -66,6 +66,10 @@ const fetchContactBatch = async (batchIds, baseUrl) => {
     'Dynamics access token retrieved for batch contact details'
   )
 
+  logger.info(
+    `Dynamics batch contact details requested for ${batchIds.length} contacts`
+  )
+
   const filterClauses = batchIds
     .map((id) => `contactid eq '${escapeODataString(id)}'`)
     .join(' or ')
@@ -100,7 +104,6 @@ export const getContactNameById = async ({ contactId }) => {
     return null
   }
 
-  logger.info(`Dynamics contact details requested for ID ${contactId}`)
   try {
     const {
       contactDetails: { apiUrl },
@@ -111,6 +114,7 @@ export const getContactNameById = async ({ contactId }) => {
     }
     const endpoint = apiUrl.replace('{{contactId}}', contactId)
     const accessToken = await getDynamicsAccessToken({ type: 'contactDetails' })
+    logger.info(`Dynamics contact details requested for ID ${contactId}`)
     const response = await Wreck.get(endpoint, {
       headers: dynamicsHeaders(accessToken)
     })
@@ -149,10 +153,6 @@ export const batchGetContactNames = async (contactIds) => {
     logger.warn('No valid contact IDs provided for batch lookup')
     return {}
   }
-
-  logger.info(
-    `Dynamics batch contact details requested for ${validIds.length} contacts`
-  )
 
   const results = {}
   const batchStartedAt = Date.now()
