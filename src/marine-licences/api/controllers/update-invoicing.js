@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { invoicingSchema } from '../../models/invoicing/invoicing.js'
 
 export const updateInvoicingController = {
@@ -19,16 +20,41 @@ export const updateInvoicingController = {
   },
   handler: async (request, h) => {
     try {
-      const { payload, db } = request
+      const { payload, db, auth } = request
 
-      const { id, invoiceAddressType, invoiceAddress, updatedAt, updatedBy } =
-        payload
+      const {
+        id,
+        invoiceAddressType,
+        invoiceAddress,
+        invoiceContactDetails,
+        purchaseOrderDetails,
+        updatedAt,
+        updatedBy
+      } = payload
+
+      const { userRelationshipType } = getOrganisationDetailsFromAuthToken(auth)
+      const isCitizen = userRelationshipType === 'Citizen'
+
+      if (!isCitizen) {
+        if (!purchaseOrderDetails) {
+          throw Boom.badRequest('INVOICING_PURCHASE_ORDER_REQUIRED')
+        }
+
+        if (!invoiceContactDetails?.organisationName?.trim()) {
+          throw Boom.badRequest('INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED')
+        }
+      }
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            invoicing: { invoiceAddressType, invoiceAddress },
+            invoicing: {
+              invoiceAddressType,
+              invoiceAddress,
+              invoiceContactDetails,
+              ...(isCitizen ? {} : { purchaseOrderDetails })
+            },
             updatedAt,
             updatedBy
           }

@@ -2,7 +2,8 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
 import {
   createCompleteMarineLicence,
-  mockUkInvoicingAddress
+  mockUkInvoicingAddress,
+  mockInvoiceContactDetails
 } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
@@ -26,7 +27,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
     const payload = {
       id: marineLicenceId.toString(),
       invoiceAddressType: 'uk',
-      invoiceAddress: mockUkInvoicingAddress
+      invoiceAddress: mockUkInvoicingAddress,
+      invoiceContactDetails: mockInvoiceContactDetails
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -45,7 +47,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
     expect(updatedLicence.invoicing).toEqual({
       invoiceAddressType: 'uk',
-      invoiceAddress: mockUkInvoicingAddress
+      invoiceAddress: mockUkInvoicingAddress,
+      invoiceContactDetails: mockInvoiceContactDetails
     })
   })
 
@@ -61,7 +64,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
     const payload = {
       id: marineLicenceId.toString(),
       invoiceAddressType: 'international',
-      invoiceAddress: { country: 'France', address: 'test address' }
+      invoiceAddress: { country: 'France', address: 'test address' },
+      invoiceContactDetails: mockInvoiceContactDetails
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -80,7 +84,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
 
     expect(updatedLicence.invoicing).toEqual({
       invoiceAddressType: 'international',
-      invoiceAddress: { country: 'France', address: 'test address' }
+      invoiceAddress: { country: 'France', address: 'test address' },
+      invoiceContactDetails: mockInvoiceContactDetails
     })
   })
 
@@ -90,7 +95,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
     const payload = {
       id: nonExistentId.toString(),
       invoiceAddressType: 'uk',
-      invoiceAddress: mockUkInvoicingAddress
+      invoiceAddress: mockUkInvoicingAddress,
+      invoiceContactDetails: mockInvoiceContactDetails
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -117,7 +123,8 @@ describe('PATCH /marine-licence/invoicing - integration tests', async () => {
     const payload = {
       id: marineLicenceId.toString(),
       invoiceAddressType: 'uk',
-      invoiceAddress: mockUkInvoicingAddress
+      invoiceAddress: mockUkInvoicingAddress,
+      invoiceContactDetails: mockInvoiceContactDetails
     }
 
     const { statusCode, body } = await makePatchRequest({

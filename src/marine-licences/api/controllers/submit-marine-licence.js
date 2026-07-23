@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { submitMarineLicence } from '../../models/submit-marine-licence.js'
 import { createTaskList } from '../helpers/createTaskList.js'
+import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
 import { generateApplicationReference } from '../../../shared/helpers/reference-generator.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
@@ -22,7 +23,13 @@ import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/up
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 
 const checkForIncompleteTasks = (marineLicence, isCitizen) => {
-  const taskList = createTaskList(marineLicence, isCitizen)
+  const { count: marinePlanPolicyResponseCount } = filterCurrentPolicyResponses(
+    marineLicence.marinePlanPolicies,
+    marineLicence.marinePlanPolicyResponses
+  )
+  const taskList = createTaskList(marineLicence, isCitizen, {
+    marinePlanPolicyResponseCount
+  })
   const incompleteTasks = Object.entries(taskList)
     .filter(([task]) => task !== 'waterFrameworkDirective') // Temporary until Water Framework Directive is complete
     .filter(([_task, status]) => status !== 'COMPLETED')
