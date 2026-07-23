@@ -75,6 +75,60 @@ describe('PATCH /marine-licence/invoicing', () => {
     )
   })
 
+  test('should require organisationName for a non-citizen', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPurchaseOrderDetails = { requiresPurchaseOrder: 'no' }
+    const { organisationName, ...contactDetailsWithoutOrg } =
+      mockInvoiceContactDetails
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress,
+      invoiceContactDetails: contactDetailsWithoutOrg,
+      purchaseOrderDetails: mockPurchaseOrderDetails,
+      ...mockAuditPayload
+    }
+
+    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        updateOne: mockUpdateOne
+      }
+    })
+
+    await expect(() =>
+      updateInvoicingController.handler(
+        {
+          db: mockMongo,
+          payload: mockPayload,
+          auth: mockAgentAuth
+        },
+        mockHandler
+      )
+    ).rejects.toThrow('INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED')
+
+    expect(mockUpdateOne).not.toHaveBeenCalled()
+
+    await expect(() =>
+      updateInvoicingController.handler(
+        {
+          db: mockMongo,
+          payload: {
+            ...mockPayload,
+            invoiceContactDetails: {
+              ...contactDetailsWithoutOrg,
+              organisationName: '   '
+            }
+          },
+          auth: mockAgentAuth
+        },
+        mockHandler
+      )
+    ).rejects.toThrow('INVOICING_CONTACT_ORGANISATION_NAME_REQUIRED')
+
+    expect(mockUpdateOne).not.toHaveBeenCalled()
+  })
+
   test('should require and persist purchaseOrderDetails for a non-citizen', async () => {
     const { mockMongo, mockHandler } = global
     const mockPurchaseOrderDetails = { requiresPurchaseOrder: 'no' }
@@ -102,7 +156,7 @@ describe('PATCH /marine-licence/invoicing', () => {
         },
         mockHandler
       )
-    ).rejects.toThrow('Purchase order details are required')
+    ).rejects.toThrow('INVOICING_PURCHASE_ORDER_REQUIRED')
 
     expect(mockUpdateOne).not.toHaveBeenCalled()
 
