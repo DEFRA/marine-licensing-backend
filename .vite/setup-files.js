@@ -18,13 +18,6 @@ beforeAll(async () => {
     response: vi.fn().mockReturnThis(),
     code: vi.fn().mockReturnThis()
   }
-
-  if (!globalThis.__MONGO_URI__) {
-    throw new Error(
-      'MongoDB memory server is not running. Ensure vitest-mongodb setup completed and no other test process is holding the port.'
-    )
-  }
-
   client = await MongoClient.connect(globalThis.__MONGO_URI__)
   globalThis.mockMongo = client.db('marine-licensing-backend')
 })
@@ -45,5 +38,5 @@ beforeEach(async () => {
 
 afterAll(async () => {
   fetchMock.disableMocks()
-  await client?.close()
+  await client.close()
 })

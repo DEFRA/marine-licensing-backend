@@ -8,7 +8,6 @@ export default defineConfig({
     // Single worker so vitest-mongodb setup runs once (replaces deprecated threads: false)
     fileParallelism: false,
     maxWorkers: 1,
-    threads: false,
     // MMS may download/extract mongod on cold CI caches; default 10s is too short
     hookTimeout: 60_000,
     coverage: {
