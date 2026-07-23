@@ -45,25 +45,29 @@ describe('Dynamics Client', () => {
       }
     }
     config.get.mockImplementation(function (value) {
-      return value === 'dynamics'
-        ? {
-            projects: {
-              clientId: 'test-client-id',
-              clientSecret: 'test-client-secret',
-              scope: 'test-scope',
-              maxRetries: 3
-            },
-            exemptions: {
-              apiUrl: 'https://localhost/api/data/v9.2',
-              withdrawUrl: 'https://localhost/api/data/v9.2',
-              updateUrl: 'https://localhost/api/data/v9.2/exemptions/update'
-            },
-            marineLicences: {
-              apiUrl: 'https://localhost/api/data/v9.2/marine-licences'
-            },
-            tokenUrl: 'https://localhost/oauth2/token'
-          }
-        : 'http://localhost'
+      if (value === 'dynamics') {
+        return {
+          projects: {
+            clientId: 'test-client-id',
+            clientSecret: 'test-client-secret',
+            scope: 'test-scope',
+            maxRetries: 3
+          },
+          exemptions: {
+            apiUrl: 'https://localhost/api/data/v9.2',
+            withdrawUrl: 'https://localhost/api/data/v9.2',
+            updateUrl: 'https://localhost/api/data/v9.2/exemptions/update'
+          },
+          marineLicences: {
+            apiUrl: 'https://localhost/api/data/v9.2/marine-licences'
+          },
+          tokenUrl: 'https://localhost/oauth2/token'
+        }
+      }
+      if (value === 'backendGatewayUrl') {
+        return 'http://localhost:3001'
+      }
+      return 'http://localhost'
     })
   })
 
@@ -437,6 +441,8 @@ describe('Dynamics Client', () => {
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
               'http://localhost/view-marine-licence-details/ml-123',
+            coordinatesCsvUrl:
+              'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             marinePlanAreas: [],
             coastalOperationsAreas: [],
             status: 'SUBMITTED'
@@ -472,6 +478,8 @@ describe('Dynamics Client', () => {
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
               'http://localhost/view-marine-licence-details/ml-123',
+            coordinatesCsvUrl:
+              'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             marinePlanAreas: [],
             coastalOperationsAreas: [],
             status: 'SUBMITTED'
