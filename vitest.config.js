@@ -5,7 +5,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
-    threads: false,
+    // Single worker so vitest-mongodb setup runs once (replaces deprecated threads: false)
+    fileParallelism: false,
+    maxWorkers: 1,
     // MMS may download/extract mongod on cold CI caches; default 10s is too short
     hookTimeout: 60_000,
     coverage: {
