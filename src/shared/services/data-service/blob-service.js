@@ -185,10 +185,6 @@ class BlobService {
         `${this.logSystem}: Failed to generate presigned URL`
       )
 
-      if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        throw Boom.notFound(FILE_NOT_FOUND_IN_S3)
-      }
-
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
         throw Boom.clientTimeout('S3 operation timed out')
       }

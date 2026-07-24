@@ -518,16 +518,6 @@ describe('BlobService', () => {
       )
     })
 
-    it('should throw Boom.notFound when the object does not exist', async () => {
-      const error = new Error('Not found')
-      error.name = 'NoSuchKey'
-      getSignedUrl.mockRejectedValue(error)
-
-      await expect(
-        blobService.getPresignedUrl(s3Bucket, s3Key)
-      ).rejects.toThrow(Boom.notFound('File not found in S3'))
-    })
-
     it('should throw Boom.internal for unexpected errors', async () => {
       getSignedUrl.mockRejectedValue(new Error('Signing failed'))
 
