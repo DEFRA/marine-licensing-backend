@@ -443,6 +443,12 @@ describe('Dynamics Client', () => {
               'http://localhost/view-marine-licence-details/ml-123',
             coordinatesCsvUrl:
               'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
+            waterFrameworkDirective: {
+              nauticalMile: null,
+              excludedActivities: null,
+              documentUrl: null,
+              fileName: null
+            },
             marinePlanAreas: [],
             coastalOperationsAreas: [],
             status: 'SUBMITTED'
@@ -480,6 +486,12 @@ describe('Dynamics Client', () => {
               'http://localhost/view-marine-licence-details/ml-123',
             coordinatesCsvUrl:
               'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
+            waterFrameworkDirective: {
+              nauticalMile: null,
+              excludedActivities: null,
+              documentUrl: null,
+              fileName: null
+            },
             marinePlanAreas: [],
             coastalOperationsAreas: [],
             status: 'SUBMITTED'
@@ -490,6 +502,63 @@ describe('Dynamics Client', () => {
           }
         })
       )
+    })
+
+    it('should include waterFrameworkDirective answers and document fields when present', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'no',
+          uploadedFile: { filename: 'wfd-assessment.docx' },
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'exemptions/file-id'
+          }
+        }
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1].payload).toEqual(
+        expect.objectContaining({
+          waterFrameworkDirective: {
+            nauticalMile: 'yes',
+            excludedActivities: 'no',
+            documentUrl:
+              'http://localhost:3001/public/marine-licence/ml-123/water-framework-directive/download-url',
+            fileName: 'wfd-assessment.docx'
+          }
+        })
+      )
+    })
+
+    it('should include partial waterFrameworkDirective answers when incomplete', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        waterFrameworkDirective: {
+          nauticalMile: 'yes'
+        }
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(
+        mockWreckPost.mock.calls[0][1].payload.waterFrameworkDirective
+      ).toEqual({
+        nauticalMile: 'yes',
+        excludedActivities: null,
+        documentUrl: null,
+        fileName: null
+      })
     })
 
     it('should include marinePlanAreas and coastalOperationsAreas when present on the marine licence', async () => {

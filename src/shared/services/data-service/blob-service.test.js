@@ -1,5 +1,6 @@
 import { vi, expect, it } from 'vitest'
 import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { pipeline } from 'node:stream/promises'
@@ -53,6 +54,10 @@ vi.mock('./s3-client.js', () => ({
 vi.mock('@aws-sdk/client-s3', () => ({
   HeadObjectCommand: vi.fn(function () {}),
   GetObjectCommand: vi.fn(function () {})
+}))
+
+vi.mock('@aws-sdk/s3-request-presigner', () => ({
+  getSignedUrl: vi.fn()
 }))
 
 vi.mock('node:fs', () => ({
@@ -476,6 +481,51 @@ describe('BlobService', () => {
       const result = await service.validateFileSize('bucket', 'key')
 
       expect(result).toEqual(mockMetadata)
+    })
+  })
+
+  describe('getPresignedUrl', () => {
+    const s3Bucket = 'test-bucket'
+    const s3Key = 'exemptions/file-id'
+    const mockUrl = 'https://s3.example.com/presigned'
+
+    beforeEach(() => {
+      getSignedUrl.mockResolvedValue(mockUrl)
+    })
+
+    it('should generate a presigned URL for the S3 object', async () => {
+      const result = await blobService.getPresignedUrl(s3Bucket, s3Key, 1800)
+
+      expect(result).toBe(mockUrl)
+      expect(GetObjectCommand).toHaveBeenCalledWith({
+        Bucket: s3Bucket,
+        Key: s3Key
+      })
+      expect(getSignedUrl).toHaveBeenCalledWith(
+        mockS3Client,
+        expect.any(GetObjectCommand),
+        { expiresIn: 1800 }
+      )
+    })
+
+    it('should default expiresIn to 3600 seconds', async () => {
+      await blobService.getPresignedUrl(s3Bucket, s3Key)
+
+      expect(getSignedUrl).toHaveBeenCalledWith(
+        mockS3Client,
+        expect.any(GetObjectCommand),
+        { expiresIn: 3600 }
+      )
+    })
+
+    it('should throw Boom.internal for unexpected errors', async () => {
+      getSignedUrl.mockRejectedValue(new Error('Signing failed'))
+
+      await expect(
+        blobService.getPresignedUrl(s3Bucket, s3Key)
+      ).rejects.toThrow(
+        Boom.internal('S3 presigned URL generation failed: Signing failed')
+      )
     })
   })
 })
