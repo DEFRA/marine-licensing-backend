@@ -1,4 +1,5 @@
 import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -16,6 +17,7 @@ import { getS3Client } from './s3-client.js'
 const logger = createLogger()
 const awsConfig = config.get('aws')
 const cdpEnvironment = config.get('cdpEnvironment')
+const FILE_NOT_FOUND_IN_S3 = 'File not found in S3'
 
 class BlobService {
   logSystem = 'FileUpload:BlobService'
@@ -56,7 +58,7 @@ class BlobService {
       )
 
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        throw Boom.notFound('File not found in S3')
+        throw Boom.notFound(FILE_NOT_FOUND_IN_S3)
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
@@ -104,7 +106,7 @@ class BlobService {
       )
 
       if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        throw Boom.notFound('File not found in S3')
+        throw Boom.notFound(FILE_NOT_FOUND_IN_S3)
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
@@ -155,6 +157,42 @@ class BlobService {
     }
 
     return metadata
+  }
+
+  async getPresignedUrl(s3Bucket, s3Key, expiresInSeconds = 3600) {
+    logger.info(
+      `${this.logSystem}: Generating presigned URL for ${s3Bucket}/${s3Key}`
+    )
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: s3Bucket,
+        Key: s3Key
+      })
+
+      const url = await getSignedUrl(this.client, command, {
+        expiresIn: expiresInSeconds
+      })
+
+      logger.info(
+        `${this.logSystem}: Successfully generated presigned URL for ${s3Bucket}/${s3Key}`
+      )
+
+      return url
+    } catch (error) {
+      logger.error(
+        structureErrorForECS(error),
+        `${this.logSystem}: Failed to generate presigned URL`
+      )
+
+      if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
+        throw Boom.clientTimeout('S3 operation timed out')
+      }
+
+      throw Boom.internal(
+        `S3 presigned URL generation failed: ${error.message}`
+      )
+    }
   }
 }
 
