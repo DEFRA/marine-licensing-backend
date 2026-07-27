@@ -2,7 +2,7 @@ import { config } from '../../../config.js'
 import { runPollLoop } from '../../common/helpers/sqs/poll-loop.js'
 
 // Loop starts onPostStart and stops onPreStop; in-flight work completes before exit.
-export const createMarinePlanPoliciesPollerPlugin = ({
+export const createMasPollerPlugin = ({
   name,
   receiveMessages,
   processMessage
@@ -10,7 +10,7 @@ export const createMarinePlanPoliciesPollerPlugin = ({
   plugin: {
     name,
     register: (server) => {
-      const { isEnabled } = config.get('marinePlanPolicies')
+      const { isEnabled } = config.get('mas')
       if (!isEnabled) {
         return
       }

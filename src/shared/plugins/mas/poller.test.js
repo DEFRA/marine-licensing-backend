@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { createMarinePlanPoliciesPollerPlugin } from './poller.js'
+import { createMasPollerPlugin } from './poller.js'
 import { config } from '../../../config.js'
 import { runPollLoop } from '../../common/helpers/sqs/poll-loop.js'
 
@@ -7,7 +7,7 @@ vi.mock('../../common/helpers/sqs/poll-loop.js', () => ({
   runPollLoop: vi.fn()
 }))
 
-describe('createMarinePlanPoliciesPollerPlugin', () => {
+describe('createMasPollerPlugin', () => {
   const buildServer = () => ({
     app: {},
     ext: vi.fn(),
@@ -24,11 +24,11 @@ describe('createMarinePlanPoliciesPollerPlugin', () => {
     }
   }
 
-  it('should not start when the policies feature is disabled', () => {
+  it('should not start when the MAS feature is disabled', () => {
     vi.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: false })
     const server = buildServer()
 
-    createMarinePlanPoliciesPollerPlugin({
+    createMasPollerPlugin({
       name: 'test-poller',
       receiveMessages: vi.fn(),
       processMessage: vi.fn()
@@ -43,7 +43,7 @@ describe('createMarinePlanPoliciesPollerPlugin', () => {
     const processMessage = vi.fn()
     vi.mocked(runPollLoop).mockResolvedValue(undefined)
 
-    const plugin = createMarinePlanPoliciesPollerPlugin({
+    const plugin = createMasPollerPlugin({
       name: 'test-poller',
       receiveMessages,
       processMessage

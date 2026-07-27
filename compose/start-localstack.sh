@@ -45,3 +45,7 @@ aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploa
 # so the user can trigger a fresh calculation from the UI.
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies-deadletter
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_policies --attributes "{\"VisibilityTimeout\":\"60\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_policies-deadletter\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}"
+
+# Read messages from MAS SQS queue
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_mas-deadletter
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_mas --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_mas-deadletter\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}"
