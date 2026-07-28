@@ -37,7 +37,7 @@ export const marinePlanPoliciesSchema = {
     doc: 'URL of the GOV.UK marine-plans-explorer policies API (public; same value in all environments)',
     format: String,
     default:
-      'https://environment.data.gov.uk/marine-plans-explorer/api/policies',
+      'https://environment.data.gov.uk/explore-marine-plans/api/policies',
     env: 'GOVUK_MARINE_POLICIES_API_URL'
   },
   arcgisTimeoutMs: {
