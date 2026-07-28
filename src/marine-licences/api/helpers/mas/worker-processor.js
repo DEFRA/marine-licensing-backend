@@ -1,5 +1,6 @@
 import { config } from '../../../../config.js'
 import { parseMessageBody } from '../../../../shared/common/helpers/sqs/parse-message-body.js'
+import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
 import { deleteMasMessage } from './sqs-client.js'
 import { updateTransferredMarineLicence } from './update-licence.js'
 
@@ -24,7 +25,7 @@ export const processMasMessage = async (server, message) => {
     throw new Error('No Application Reference exists on message')
   }
 
-  if (status === 'transferred') {
+  if (status === MARINE_LICENCE_STATUS.TRANSFERRED) {
     await updateTransferredMarineLicence(db, logger, {
       body,
       id: message.MessageId

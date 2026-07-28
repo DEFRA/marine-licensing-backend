@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { updateTransferredMarineLicence } from './update-licence'
 import { mockMasSqsMessage } from './test-fixtures.js'
+import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
 
 describe('updateTransferredMarineLicence', async () => {
   beforeEach(() => {
@@ -39,7 +40,7 @@ describe('updateTransferredMarineLicence', async () => {
       { applicationReference: body.applicationReference },
       {
         $set: {
-          status: 'transferred',
+          status: MARINE_LICENCE_STATUS.TRANSFERRED,
           transferredDate: body.transferredDate,
           updatedAt: new Date(),
           updatedBy: mockMasSqsMessage.MessageId
