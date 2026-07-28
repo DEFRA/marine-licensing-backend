@@ -1,22 +1,22 @@
 import { vi } from 'vitest'
 import { processMasMessage, processMasDlqMessage } from './worker-processor.js'
 import { deleteMasMessage } from './sqs-client.js'
+import {
+  mockMalformedMasSqsMessage,
+  mockMasSqsMessage
+} from './test-fixtures.js'
+import { updateTransferredMarineLicence } from './update-licence.js'
 
 vi.mock('./sqs-client.js', () => ({
   deleteMasMessage: vi.fn()
 }))
 
+vi.mock('./update-licence.js')
+
 const sqsQueueName = 'marine_licensing_mas'
 const sqsDlqName = 'marine_licensing_mas-deadletter'
 
 describe('mas-worker-processor', () => {
-  const receiptHandle = 'receipt-1'
-
-  const buildMessage = (body) => ({
-    Body: typeof body === 'string' ? body : JSON.stringify(body),
-    ReceiptHandle: receiptHandle
-  })
-
   const buildServer = () => ({
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   })
@@ -24,50 +24,66 @@ describe('mas-worker-processor', () => {
   describe('processMasMessage', () => {
     it('should log and delete a well-formed message', async () => {
       const server = buildServer()
-      const body = { event: 'licence-updated' }
+      const body = JSON.parse(mockMasSqsMessage.Body)
 
-      await processMasMessage(server, buildMessage(body))
+      await processMasMessage(server, mockMasSqsMessage)
 
       expect(server.logger.info).toHaveBeenCalledWith(
         { body },
         'Received MAS message'
       )
-      expect(deleteMasMessage).toHaveBeenCalledWith(sqsQueueName, receiptHandle)
+      expect(updateTransferredMarineLicence).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        { body, id: mockMasSqsMessage.MessageId }
+      )
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasSqsMessage.ReceiptHandle
+      )
     })
 
     it('should log an error and still delete a malformed message', async () => {
       const server = buildServer()
 
-      await processMasMessage(server, buildMessage('not json'))
+      await processMasMessage(server, mockMalformedMasSqsMessage)
 
       expect(server.logger.error).toHaveBeenCalled()
       expect(server.logger.info).not.toHaveBeenCalled()
-      expect(deleteMasMessage).toHaveBeenCalledWith(sqsQueueName, receiptHandle)
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMalformedMasSqsMessage.ReceiptHandle
+      )
     })
   })
 
   describe('processMasDlqMessage', () => {
     it('should warn and delete a well-formed dead-lettered message', async () => {
       const server = buildServer()
-      const body = { event: 'licence-updated' }
 
-      await processMasDlqMessage(server, buildMessage(body))
+      await processMasDlqMessage(server, mockMasSqsMessage)
 
       expect(server.logger.warn).toHaveBeenCalledWith(
-        { body },
+        { body: JSON.parse(mockMasSqsMessage.Body) },
         'MAS message dead-lettered'
       )
-      expect(deleteMasMessage).toHaveBeenCalledWith(sqsDlqName, receiptHandle)
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsDlqName,
+        mockMasSqsMessage.ReceiptHandle
+      )
     })
 
     it('should log an error and still delete a malformed dead-lettered message', async () => {
       const server = buildServer()
 
-      await processMasDlqMessage(server, buildMessage('not json'))
+      await processMasDlqMessage(server, mockMalformedMasSqsMessage)
 
       expect(server.logger.error).toHaveBeenCalled()
       expect(server.logger.warn).not.toHaveBeenCalled()
-      expect(deleteMasMessage).toHaveBeenCalledWith(sqsDlqName, receiptHandle)
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsDlqName,
+        mockMalformedMasSqsMessage.ReceiptHandle
+      )
     })
   })
 })
