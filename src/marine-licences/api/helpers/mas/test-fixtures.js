@@ -15,6 +15,15 @@ export const mockMasSqsMessage = {
   }
 }
 
+export const mockMasMissingApplicationReferenceSqsMessage = {
+  MessageId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  ReceiptHandle: 'AQEBmock-missing-reference-receipt-handle==',
+  Body: JSON.stringify({ status: 'TRANSFERRED' }),
+  Attributes: {
+    ApproximateReceiveCount: '1'
+  }
+}
+
 export const mockMalformedMasSqsMessage = {
   MessageId: 'c3f0a6c1-4b3d-4e9a-8f2e-1a2b3c4d5e6f',
   ReceiptHandle: 'AQEBmock-malformed-receipt-handle==',

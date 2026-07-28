@@ -3,6 +3,7 @@ import { processMasMessage, processMasDlqMessage } from './worker-processor.js'
 import { deleteMasMessage } from './sqs-client.js'
 import {
   mockMalformedMasSqsMessage,
+  mockMasMissingApplicationReferenceSqsMessage,
   mockMasSqsMessage
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-licence.js'
@@ -54,6 +55,17 @@ describe('mas-worker-processor', () => {
         sqsQueueName,
         mockMalformedMasSqsMessage.ReceiptHandle
       )
+    })
+
+    it('should throw when the message has no application reference', async () => {
+      const server = buildServer()
+
+      await expect(
+        processMasMessage(server, mockMasMissingApplicationReferenceSqsMessage)
+      ).rejects.toThrow('No Application Reference exists on message')
+
+      expect(updateTransferredMarineLicence).not.toHaveBeenCalled()
+      expect(deleteMasMessage).not.toHaveBeenCalled()
     })
   })
 
