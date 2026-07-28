@@ -27,6 +27,7 @@ export const timedJsonFetch = async ({
       },
       payload: options.body,
       timeout: timeoutMs,
+      redirects: 1,
       ...(maxBytes && { maxBytes }),
       json: true
     }
