@@ -40,6 +40,7 @@ describe('updateTransferredMarineLicence', async () => {
       {
         $set: {
           status: 'transferred',
+          transferredDate: body.transferredDate,
           updatedAt: new Date(),
           updatedBy: mockMasSqsMessage.MessageId
         }

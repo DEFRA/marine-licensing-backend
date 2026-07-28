@@ -1,4 +1,4 @@
-import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
@@ -7,7 +7,7 @@ export const updateTransferredMarineLicence = async (
   logger,
   { body, id }
 ) => {
-  const { applicationReference, status } = body
+  const { applicationReference, transferredDate, status } = body
 
   const updatedAt = new Date()
 
@@ -18,6 +18,7 @@ export const updateTransferredMarineLicence = async (
       {
         $set: {
           status,
+          transferredDate,
           updatedAt,
           updatedBy: id
         }
