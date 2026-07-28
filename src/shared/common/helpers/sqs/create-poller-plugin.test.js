@@ -1,13 +1,13 @@
 import { vi } from 'vitest'
-import { createMasPollerPlugin } from './poller.js'
-import { config } from '../../../config.js'
-import { runPollLoop } from '../../common/helpers/sqs/poll-loop.js'
+import { createSqsPollerPlugin } from './create-poller-plugin.js'
+import { config } from '../../../../config.js'
+import { runPollLoop } from './poll-loop.js'
 
-vi.mock('../../common/helpers/sqs/poll-loop.js', () => ({
+vi.mock('./poll-loop.js', () => ({
   runPollLoop: vi.fn()
 }))
 
-describe('createMasPollerPlugin', () => {
+describe('createSqsPollerPlugin', () => {
   const buildServer = () => ({
     app: {},
     ext: vi.fn(),
@@ -24,31 +24,37 @@ describe('createMasPollerPlugin', () => {
     }
   }
 
-  it('should not start when the MAS feature is disabled', () => {
+  it('should not start when the feature is disabled', () => {
     vi.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: false })
     const server = buildServer()
 
-    createMasPollerPlugin({
+    createSqsPollerPlugin({
       name: 'test-poller',
+      configKey: 'mas',
       receiveMessages: vi.fn(),
       processMessage: vi.fn()
     }).plugin.register(server)
 
+    expect(config.get).toHaveBeenCalledWith('mas')
     expect(server.ext).not.toHaveBeenCalled()
   })
 
   it('should start the poll loop onPostStart and stop it onPreStop', async () => {
+    vi.spyOn(config, 'get').mockReturnValueOnce({ isEnabled: true })
     const server = buildServer()
     const receiveMessages = vi.fn()
     const processMessage = vi.fn()
     vi.mocked(runPollLoop).mockResolvedValue(undefined)
 
-    const plugin = createMasPollerPlugin({
+    const plugin = createSqsPollerPlugin({
       name: 'test-poller',
+      configKey: 'marinePlanPolicies',
       receiveMessages,
       processMessage
     })
     const hooks = registerAndGetHooks(server, plugin)
+
+    expect(config.get).toHaveBeenCalledWith('marinePlanPolicies')
 
     hooks.onPostStart()
 

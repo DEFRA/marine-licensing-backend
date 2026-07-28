@@ -1,16 +1,16 @@
-import { config } from '../../../config.js'
-import { runPollLoop } from '../../common/helpers/sqs/poll-loop.js'
+import { config } from '../../../../config.js'
+import { runPollLoop } from './poll-loop.js'
 
-// Loop starts onPostStart and stops onPreStop; in-flight work completes before exit.
-export const createMasPollerPlugin = ({
+export const createSqsPollerPlugin = ({
   name,
+  configKey,
   receiveMessages,
   processMessage
 }) => ({
   plugin: {
     name,
     register: (server) => {
-      const { isEnabled } = config.get('mas')
+      const { isEnabled } = config.get(configKey)
       if (!isEnabled) {
         return
       }
