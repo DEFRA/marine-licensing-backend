@@ -1,16 +1,6 @@
 import { config } from '../../config.js'
-import { NotifyClient } from 'notifications-node-client'
-import { createLogger } from '../common/helpers/logging/logger.js'
-import { retryAsyncOperation } from '../common/helpers/retry-async-operation.js'
-import { ErrorWithData } from '../common/helpers/error-with-data.js'
 import { isOrganisationEmployee } from '../common/helpers/organisations.js'
-import { StatusCodes } from 'http-status-codes'
-import {
-  extractStatusCode,
-  logEmailError,
-  logEmailSuccess,
-  wrapNotifyError
-} from './email.js'
+import { sendEmail } from './email.js'
 
 const getNotifyTemplateId = (organisation, projectType) => {
   const { exemption, marineLicence } = config.get('notify')
@@ -26,84 +16,6 @@ const getNotifyTemplateId = (organisation, projectType) => {
   return notifyConfig.notifyTemplateId
 }
 
-const sendEmail = async ({
-  userName,
-  userEmail,
-  organisation,
-  applicationReference,
-  viewDetailsUrl,
-  projectType
-}) => {
-  const logger = createLogger()
-  const { apiKey, retryIntervalSeconds, retries } = config.get('notify')
-  if (!apiKey) {
-    throw new Error('Notify API key is not set')
-  }
-  const notifyClient = new NotifyClient(apiKey)
-  const emailSendReference = applicationReference
-  const options = {
-    personalisation: {
-      name: userName,
-      reference: applicationReference,
-      viewDetailsUrl,
-      organisationName: organisation?.name
-    },
-    reference: emailSendReference
-  }
-  try {
-    const result = await retryAsyncOperation({
-      operation: async () => {
-        try {
-          const templateId = getNotifyTemplateId(organisation, projectType)
-          return await notifyClient.sendEmail(templateId, userEmail, options)
-        } catch (error) {
-          throw wrapNotifyError(error)
-        }
-      },
-      retries,
-      intervalMs: retryIntervalSeconds * 1000
-    })
-    const { id } = result.data
-    // Gov Notify returns CREATED (201) status on successful email creation
-    logEmailSuccess(
-      logger,
-      applicationReference,
-      StatusCodes.CREATED,
-      projectType
-    )
-    return { status: 'success', id, reference: emailSendReference }
-  } catch (error) {
-    const emailError =
-      error instanceof Error
-        ? error
-        : new Error(
-            `Error sending email for ${projectType} ${applicationReference}`
-          )
-    if (!emailError.code) {
-      emailError.code = 'EMAIL_SEND_ERROR'
-    }
-
-    const statusCode = extractStatusCode(error)
-    logEmailError(
-      logger,
-      emailError,
-      statusCode,
-      applicationReference,
-      projectType
-    )
-
-    const errors =
-      error instanceof ErrorWithData && error.data
-        ? JSON.stringify(error.data)
-        : undefined
-    return {
-      status: 'error',
-      errors,
-      reference: emailSendReference
-    }
-  }
-}
-
 export const sendEmailConfirmation = async ({
   db,
   userName,
@@ -114,11 +26,15 @@ export const sendEmailConfirmation = async ({
   projectType
 }) => {
   const result = await sendEmail({
-    userName,
+    templateId: getNotifyTemplateId(organisation, projectType),
     userEmail,
-    organisation,
+    personalisation: {
+      name: userName,
+      reference: applicationReference,
+      viewDetailsUrl,
+      organisationName: organisation?.name
+    },
     applicationReference,
-    viewDetailsUrl,
     projectType
   })
   db.collection('email-queue')?.insertOne({
