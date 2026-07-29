@@ -4,13 +4,20 @@ import {
   MARINE_LICENCE_STATUS,
   MAS_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
+import { sendTransferredEmail } from './send-transferred-email.js'
 
 export const updateTransferredMarineLicence = async (
   db,
   logger,
   { body, id }
 ) => {
-  const { applicationReference, transferredDate } = body
+  const {
+    applicationReference,
+    transferredDate,
+    userName,
+    userEmail,
+    viewDetailsUrl
+  } = body
 
   const updatedAt = new Date()
 
@@ -47,6 +54,14 @@ export const updateTransferredMarineLicence = async (
       },
       `No marine licence found for applicationReference ${applicationReference}`
     )
+  } else {
+    await sendTransferredEmail({
+      db,
+      userName,
+      userEmail,
+      applicationReference,
+      viewDetailsUrl
+    })
   }
 
   return result

@@ -3,7 +3,10 @@ export const mockMasApplicationReference = 'MMO-2027-00123'
 export const mockMasTransferredMessageBody = {
   applicationReference: mockMasApplicationReference,
   status: 'TRANSFERRED',
-  transferredDate: '2026-05-21T12:00:00.000Z'
+  transferredDate: '2026-05-21T12:00:00.000Z',
+  userName: 'Jane Doe',
+  userEmail: 'jane@example.com',
+  viewDetailsUrl: 'https://example.com/marine-licence/view-details/abc123'
 }
 
 export const mockMasSqsMessage = {

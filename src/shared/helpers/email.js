@@ -1,37 +1,86 @@
 import { config } from '../../config.js'
 import { NotifyClient } from 'notifications-node-client'
-import { createLogger } from '../common/helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../common/helpers/logging/logger.js'
 import { retryAsyncOperation } from '../common/helpers/retry-async-operation.js'
 import { ErrorWithData } from '../common/helpers/error-with-data.js'
-import { isOrganisationEmployee } from '../common/helpers/organisations.js'
 import { StatusCodes } from 'http-status-codes'
-import {
-  extractStatusCode,
-  logEmailError,
-  logEmailSuccess,
-  wrapNotifyError
-} from './email.js'
 
-const getNotifyTemplateId = (organisation, projectType) => {
-  const { exemption, marineLicence } = config.get('notify')
-  const notifyConfig =
-    projectType === 'marine-licence' ? marineLicence : exemption
-
-  if (isOrganisationEmployee(organisation)) {
-    return notifyConfig.notifyTemplateIdEmployee
-  }
-  if (organisation?.userRelationshipType === 'Agent') {
-    return notifyConfig.notifyTemplateIdAgent
-  }
-  return notifyConfig.notifyTemplateId
+export const extractStatusCode = (error) => {
+  return (
+    error.statusCode ||
+    error.response?.statusCode ||
+    error.response?.status ||
+    error.status
+  )
 }
 
-const sendEmail = async ({
-  userName,
-  userEmail,
-  organisation,
+export const wrapNotifyError = (error) => {
+  const wrappedError = new ErrorWithData(
+    'Error sending email',
+    error.response?.data?.errors
+  )
+  wrappedError.statusCode = extractStatusCode(error)
+  return wrappedError
+}
+
+const buildHttpLogContext = (statusCode) => {
+  return statusCode
+    ? {
+        response: {
+          status_code: statusCode
+        }
+      }
+    : undefined
+}
+
+export const logEmailSuccess = (
+  logger,
   applicationReference,
-  viewDetailsUrl,
+  statusCode,
+  projectType
+) => {
+  logger.info(
+    {
+      http: {
+        response: {
+          status_code: statusCode
+        }
+      },
+      service: 'gov-notify',
+      operation: 'sendEmail',
+      applicationReference
+    },
+    `Sent confirmation email for ${projectType} ${applicationReference}`
+  )
+}
+
+export const logEmailError = (
+  logger,
+  emailError,
+  statusCode,
+  applicationReference,
+  projectType
+) => {
+  logger.error(
+    {
+      ...structureErrorForECS(emailError),
+      http: buildHttpLogContext(statusCode),
+      service: 'gov-notify',
+      operation: 'sendEmail',
+      applicationReference
+    },
+    `Error sending email for ${projectType} ${applicationReference}`
+  )
+}
+
+export const sendEmail = async ({
+  templateId,
+  userEmail,
+  personalisation,
+  applicationReference,
   projectType
 }) => {
   const logger = createLogger()
@@ -42,19 +91,13 @@ const sendEmail = async ({
   const notifyClient = new NotifyClient(apiKey)
   const emailSendReference = applicationReference
   const options = {
-    personalisation: {
-      name: userName,
-      reference: applicationReference,
-      viewDetailsUrl,
-      organisationName: organisation?.name
-    },
+    personalisation,
     reference: emailSendReference
   }
   try {
     const result = await retryAsyncOperation({
       operation: async () => {
         try {
-          const templateId = getNotifyTemplateId(organisation, projectType)
           return await notifyClient.sendEmail(templateId, userEmail, options)
         } catch (error) {
           throw wrapNotifyError(error)
@@ -64,7 +107,6 @@ const sendEmail = async ({
       intervalMs: retryIntervalSeconds * 1000
     })
     const { id } = result.data
-    // Gov Notify returns CREATED (201) status on successful email creation
     logEmailSuccess(
       logger,
       applicationReference,
@@ -102,27 +144,4 @@ const sendEmail = async ({
       reference: emailSendReference
     }
   }
-}
-
-export const sendEmailConfirmation = async ({
-  db,
-  userName,
-  userEmail,
-  organisation,
-  applicationReference,
-  viewDetailsUrl,
-  projectType
-}) => {
-  const result = await sendEmail({
-    userName,
-    userEmail,
-    organisation,
-    applicationReference,
-    viewDetailsUrl,
-    projectType
-  })
-  db.collection('email-queue')?.insertOne({
-    applicationReferenceNumber: applicationReference,
-    ...result
-  })
 }
