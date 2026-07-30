@@ -1,6 +1,10 @@
 import { format, isValid } from 'date-fns'
 
 const MONTH_YEAR_FORMAT = 'MMMM yyyy'
+const MIN_MONTH = 1
+const MAX_MONTH = 12
+const MIN_FOUR_DIGIT_YEAR = 1000
+const MAX_FOUR_DIGIT_YEAR = 9999
 
 const isValidMonthYear = ({ month, year }) => {
   const monthNumber = Number(month)
@@ -8,11 +12,11 @@ const isValidMonthYear = ({ month, year }) => {
 
   return (
     Number.isInteger(monthNumber) &&
-    monthNumber >= 1 &&
-    monthNumber <= 12 &&
+    monthNumber >= MIN_MONTH &&
+    monthNumber <= MAX_MONTH &&
     Number.isInteger(yearNumber) &&
-    yearNumber >= 1000 &&
-    yearNumber <= 9999
+    yearNumber >= MIN_FOUR_DIGIT_YEAR &&
+    yearNumber <= MAX_FOUR_DIGIT_YEAR
   )
 }
 
