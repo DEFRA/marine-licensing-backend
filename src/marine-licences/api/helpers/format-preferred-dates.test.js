@@ -32,4 +32,49 @@ describe('formatPreferredDates', () => {
       formatPreferredDates({ end: { month: '11', year: '2026' } })
     ).toBeNull()
   })
+
+  it('returns null for non-numeric month or year', () => {
+    expect(
+      formatPreferredDates({
+        start: { month: 'abc', year: '2026' },
+        end: { month: '11', year: '2026' }
+      })
+    ).toBeNull()
+    expect(
+      formatPreferredDates({
+        start: { month: '08', year: '2026' },
+        end: { month: '11', year: 'abcd' }
+      })
+    ).toBeNull()
+  })
+
+  it('returns null for empty month or year', () => {
+    expect(
+      formatPreferredDates({
+        start: { month: '', year: '2026' },
+        end: { month: '11', year: '2026' }
+      })
+    ).toBeNull()
+    expect(
+      formatPreferredDates({
+        start: { month: '08', year: '2026' },
+        end: { month: '11', year: '' }
+      })
+    ).toBeNull()
+  })
+
+  it('returns null for out-of-range month', () => {
+    expect(
+      formatPreferredDates({
+        start: { month: '13', year: '2026' },
+        end: { month: '11', year: '2026' }
+      })
+    ).toBeNull()
+    expect(
+      formatPreferredDates({
+        start: { month: '08', year: '2026' },
+        end: { month: '0', year: '2026' }
+      })
+    ).toBeNull()
+  })
 })
