@@ -435,6 +435,7 @@ describe('Dynamics Client', () => {
         expect.objectContaining({
           payload: {
             contactid: 'test-contact-id',
+            marineLicenceId: 'ml-123',
             feeBand: '2A',
             projectName: 'Test Marine Project',
             reference: 'MLA/2025/00001',
@@ -478,6 +479,7 @@ describe('Dynamics Client', () => {
         expect.objectContaining({
           payload: {
             contactid: 'test-contact-id',
+            marineLicenceId: 'ml-123',
             feeBand: '2A',
             projectName: 'Test Marine Project',
             reference: 'MLA/2025/00001',
