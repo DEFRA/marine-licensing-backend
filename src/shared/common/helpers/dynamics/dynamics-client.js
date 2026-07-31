@@ -311,6 +311,7 @@ export const sendMarineLicenceToDynamics = async (
 
   const payload = {
     contactid: marineLicence.contactId,
+    marineLicenceId: marineLicence._id.toString(),
     projectName: marineLicence.projectName,
     reference: applicationReferenceNumber,
     feeBand,
