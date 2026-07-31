@@ -233,6 +233,37 @@ describe('queryNonSpatialPolicies', () => {
     expect(policies.map((p) => p.policyCode)).toEqual(['NE-BIO-1', 'NE-CC-1'])
   })
 
+  it('should skip features without a PolicyCode and default sector to null', async () => {
+    Wreck.post.mockResolvedValue(
+      arcgisSuccess([
+        { attributes: { PolicyCode: 'NE-BIO-1' } },
+        { attributes: { irrelevant: true } },
+        {}
+      ])
+    )
+
+    const policies = await queryNonSpatialPolicies({
+      licenceId: 'licence-123',
+      logger
+    })
+
+    expect(policies).toEqual([{ policyCode: 'NE-BIO-1', sector: null }])
+  })
+
+  it('should return an empty array when the response has no features key', async () => {
+    Wreck.post.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: {}
+    })
+
+    const policies = await queryNonSpatialPolicies({
+      licenceId: 'licence-123',
+      logger
+    })
+
+    expect(policies).toEqual([])
+  })
+
   it('should throw when ArcGIS reports an error inside a 200 response', async () => {
     Wreck.post.mockResolvedValue({
       res: { statusCode: 200 },
