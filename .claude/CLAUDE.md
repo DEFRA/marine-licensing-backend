@@ -271,7 +271,7 @@ DYNAMICS_CLIENT_SECRET=***
 
 - **Supported formats:** KML, Shapefile (.zip), GeoJSON
 - **Coordinate systems:** Configurable (OSGB36, WGS84, etc.)
-- **Output:** Normalized coordinate points with validation
+- **Output:** Normalised coordinate points with validation
 - **Libraries:** proj4 (coordinate transformation), @tmcw/togeojson (KML→GeoJSON), shapefile (Shapefile parsing)
 
 ### Logging & Observability
@@ -279,7 +279,7 @@ DYNAMICS_CLIENT_SECRET=***
 - **Logger:** Pino singleton (`src/shared/common/helpers/logging/logger.js`)
 - **HTTP request logging:** `hapi-pino` plugin (auto-enabled)
 - **Log formats:**
-  - Development: `pino-pretty` (colored, readable)
+  - Development: `pino-pretty` (coloured, readable)
   - Production: `ecs` (Elastic Common Schema for CloudWatch)
 - **Request tracing:** Header `x-cdp-request-id` auto-propagated
 - **Metrics:** CloudWatch via `aws-embedded-metrics` (production only)

@@ -342,7 +342,7 @@ describe('findNearestMarinePlanArea', () => {
   })
 
   it('should break an exact distance tie on regionref', async () => {
-    // Two vertices mirrored about longitude 0, each 0.4 degrees from the
+    // Two vertices mirrored about longitude 0, each 0.6 degrees from the
     // nearer edge of its own area, so the two lookups return bit-identical
     // distances. Insertion and vertex order both put the west area first, so
     // only the regionref tiebreaker can make the lexicographically first

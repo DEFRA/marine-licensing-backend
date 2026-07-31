@@ -79,6 +79,14 @@ You may find it easier to manage Node.js versions using a version manager such
 as [nvm](https://github.com/creationix/nvm) or [n](https://www.npmjs.com/package/n). From within the project folder you
 can then either run `nvm use` or `n auto` to install the required version.
 
+### MongoDB
+
+MongoDB `>= 7.0` is required. The nearest-area policy fallback (see
+[docs/nearest-marine-plan-area-fallback.md](./docs/nearest-marine-plan-area-fallback.md))
+uses database-level `$documents` aggregation with `$geoNear` inside `$lookup`,
+which older servers do not support. The in-memory test server is pinned to a
+matching version in `.vite/mongo-memory-server.js`.
+
 ## Local development
 
 ### Setup
