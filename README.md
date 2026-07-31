@@ -12,6 +12,7 @@ The Marine Licensing Backend is part of a GDS-compliant replacement of the Marin
   - [Npm scripts](#npm-scripts)
   - [Dependency updates](#dependency-updates)
   - [Authentication](#authentication)
+- [Documentation](#documentation)
 - [API endpoints](#api-endpoints)
 - [Docker](#docker)
   - [Development image](#development-image)
@@ -136,6 +137,12 @@ The .env.template file referred to by the instructions is in the root of this re
 
 For most local development, you shouldn't need to override any of the env var defaults that are
 in [config.js](./src/config/config.js).
+
+## Documentation
+
+- [Nearest marine plan area fallback](./docs/nearest-marine-plan-area-fallback.md) —
+  how a marine licence still gets policies when its sites intersect no marine plan area,
+  and why the search is built the way it is.
 
 ## API endpoints
 

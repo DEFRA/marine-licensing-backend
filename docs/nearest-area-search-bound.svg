@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 560" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <defs>
+    <marker id="arrowL" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M10 0 L0 5 L10 10 z" fill="#0b0b0b"/>
+    </marker>
+    <marker id="arrowR" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0b0b0b"/>
+    </marker>
+    <clipPath id="insetClip"><rect x="60" y="300" width="660" height="175"/></clipPath>
+  </defs>
+
+  <rect x="0" y="0" width="1240" height="560" fill="#f9f9f7"/>
+
+  <!-- Title -->
+  <text x="40" y="42" font-size="19" font-weight="650" fill="#0b0b0b">The search bound on the nearest marine plan area query</text>
+  <text x="40" y="64" font-size="13" fill="#52514e">Degree space (WGS84, north up), drawn to scale. Phase 1 measures from one vertex; phase 2 searches every vertex, bounded by that measurement.</text>
+
+  <!-- ===== Overview strip: lon -1.4..1.4, lat 53.86..54.14, 400 px/deg ===== -->
+  <rect x="60" y="110" width="1120" height="112" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1"/>
+  <!-- gridlines -->
+  <g stroke="#e1e0d9" stroke-width="1">
+    <line x1="140" y1="110" x2="140" y2="222"/><line x1="300" y1="110" x2="300" y2="222"/>
+    <line x1="460" y1="110" x2="460" y2="222"/><line x1="620" y1="110" x2="620" y2="222"/>
+    <line x1="780" y1="110" x2="780" y2="222"/><line x1="940" y1="110" x2="940" y2="222"/>
+    <line x1="1100" y1="110" x2="1100" y2="222"/><line x1="60" y1="166" x2="1180" y2="166"/>
+  </g>
+  <!-- lon tick labels -->
+  <g font-size="11" fill="#898781" text-anchor="middle">
+    <text x="300" y="238">-0.8°</text><text x="460" y="238">-0.4°</text>
+    <text x="620" y="238">0°</text><text x="780" y="238">0.4°</text><text x="940" y="238">0.8°</text><text x="1100" y="238">1.2°</text>
+  </g>
+  <!-- lat tick labels -->
+  <g font-size="11" fill="#898781" text-anchor="end">
+    <text x="54" y="130">54.1°</text><text x="54" y="170">54.0°</text><text x="54" y="210">53.9°</text>
+  </g>
+
+  <!-- Search-bound envelope: the site swept by (d + site diameter) ≈ 13.3 km.
+       Elliptical corners because a constant ground distance is 81.5 px in
+       longitude but only 48 px in latitude at this latitude and scale. -->
+  <rect x="118.5" y="114" width="223" height="104" rx="81.5" ry="48" fill="#1f7a6b" fill-opacity="0.07" stroke="#1f7a6b" stroke-width="1.8"/>
+
+  <!-- Nearest area -->
+  <rect x="100" y="126" width="80" height="80" fill="#2a78d6" fill-opacity="0.14" stroke="#2a78d6" stroke-width="2" rx="1"/>
+  <text x="140" y="102" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">nearest plan area · NW_i</text>
+  <!-- Far area -->
+  <rect x="1060" y="126" width="80" height="80" fill="#2a78d6" fill-opacity="0.14" stroke="#2a78d6" stroke-width="2" rx="1"/>
+  <text x="1100" y="102" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">another plan area · E_i</text>
+
+  <!-- Site -->
+  <rect x="200" y="162" width="60" height="8" fill="#eb6834" fill-opacity="0.35" stroke="#eb6834" stroke-width="1.5"/>
+  <text x="230" y="156" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">site</text>
+
+  <!-- envelope label + leader -->
+  <line x1="310" y1="124" x2="394" y2="130" stroke="#1f7a6b" stroke-width="1"/>
+  <text x="400" y="134" font-size="12" font-weight="600" fill="#1f7a6b">search bound = d + site diameter ≈ 13 km</text>
+
+  <!-- distance to far area -->
+  <line x1="266" y1="196" x2="1054" y2="196" stroke="#0b0b0b" stroke-width="1.2" marker-start="url(#arrowL)" marker-end="url(#arrowR)"/>
+  <text x="660" y="189" font-size="12" fill="#52514e" text-anchor="middle">≈ 2.0° ≈ 130 km — far outside the bound, so this area is never fetched</text>
+
+  <!-- scale bar -->
+  <line x1="880" y1="132" x2="920" y2="132" stroke="#0b0b0b" stroke-width="2"/>
+  <line x1="880" y1="127" x2="880" y2="137" stroke="#0b0b0b" stroke-width="1.2"/>
+  <line x1="920" y1="127" x2="920" y2="137" stroke="#0b0b0b" stroke-width="1.2"/>
+  <text x="928" y="136" font-size="11" fill="#52514e">0.1° ≈ 6.5 km E–W</text>
+
+  <!-- zoom box + connectors -->
+  <rect x="152" y="112" width="136" height="108" fill="none" stroke="#898781" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <line x1="152" y1="220" x2="60" y2="300" stroke="#898781" stroke-width="1" stroke-dasharray="4 3"/>
+  <line x1="288" y1="220" x2="720" y2="300" stroke="#898781" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <!-- ===== Zoom inset: lon -1.17..-0.83, lat 53.955..54.045, 1941 px/deg (×4.9) ===== -->
+  <text x="60" y="290" font-size="13" font-weight="650" fill="#0b0b0b">Zoom ×4.9 — phase 1, the anchor measurement</text>
+  <rect x="60" y="300" width="660" height="175" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1"/>
+  <g clip-path="url(#insetClip)">
+    <!-- nearest area (east portion, fills full height) -->
+    <rect x="-80" y="280" width="276" height="215" fill="#2a78d6" fill-opacity="0.14" stroke="#2a78d6" stroke-width="2"/>
+    <!-- nearest edge emphasised -->
+    <line x1="196" y1="300" x2="196" y2="475" stroke="#2a78d6" stroke-width="3"/>
+    <!-- site polygon -->
+    <rect x="293" y="368" width="291" height="39" fill="#eb6834" fill-opacity="0.15" stroke="#eb6834" stroke-width="1.5"/>
+    <!-- densified vertices: round dots every ~15px = 500 m -->
+    <rect x="293" y="368" width="291" height="39" fill="none" stroke="#eb6834" stroke-width="6" stroke-dasharray="0 15" stroke-linecap="round"/>
+  </g>
+  <text x="76" y="322" font-size="12" font-weight="600" fill="#0b0b0b">nearest plan area (NW_i)</text>
+  <text x="76" y="338" font-size="11" fill="#52514e">simplified copy, 2dsphere-indexed</text>
+  <text x="438" y="352" font-size="12" font-weight="600" fill="#0b0b0b" text-anchor="middle">site boundary, densified to ≤ 500 m vertex spacing (dots)</text>
+  <text x="438" y="424" font-size="11" fill="#52514e" text-anchor="middle">phase 2 runs one bounded $geoNear per vertex and keeps the smallest distance of all of them</text>
+
+  <!-- anchor vertex + distance annotation -->
+  <line x1="199" y1="387" x2="290" y2="387" stroke="#0b0b0b" stroke-width="1.5" marker-start="url(#arrowL)" marker-end="url(#arrowR)"/>
+  <text x="244" y="379" font-size="12" font-weight="650" fill="#0b0b0b" text-anchor="middle">d</text>
+  <circle cx="293" cy="387" r="3" fill="#eb6834"/>
+  <circle cx="293" cy="387" r="6.5" fill="none" stroke="#0b0b0b" stroke-width="1.8"/>
+  <text x="305" y="391" font-size="10.5" fill="#0b0b0b">anchor vertex</text>
+  <text x="390" y="447" font-size="11" fill="#52514e" text-anchor="middle">d ≈ 3,300 m — one unbounded $geoNear from the anchor vertex; any vertex would do</text>
+
+  <text x="600" y="322" font-size="11" fill="#52514e" text-anchor="middle">far plan area (E_i) → 130 km ⟶</text>
+
+  <!-- ===== Argument panel ===== -->
+  <rect x="760" y="300" width="420" height="175" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)" stroke-width="1" rx="6"/>
+  <text x="778" y="326" font-size="13" font-weight="650" fill="#0b0b0b">Why the bound cannot change the answer</text>
+  <g font-size="12.5" fill="#0b0b0b">
+    <text x="778" y="350">1&#8194;The answer is the smallest distance over all</text>
+    <text x="794" y="367">vertices, and the anchor is one of them — so the</text>
+    <text x="794" y="384">winning distance is at most d.</text>
+    <text x="778" y="408">2&#8194;The bound is d + site diameter, never below d,</text>
+    <text x="794" y="425">so the winning vertex always survives the cut.</text>
+    <text x="778" y="449">3&#8194;A vertex the bound excludes had every area</text>
+    <text x="794" y="466">farther than d — it could never have won.</text>
+  </g>
+
+  <!-- legend -->
+  <rect x="60" y="492" width="12" height="12" fill="#2a78d6" fill-opacity="0.14" stroke="#2a78d6" stroke-width="2"/>
+  <text x="78" y="502" font-size="11.5" fill="#52514e">marine plan area</text>
+  <rect x="200" y="492" width="12" height="12" fill="#eb6834" fill-opacity="0.15" stroke="#eb6834" stroke-width="1.5"/>
+  <text x="218" y="502" font-size="11.5" fill="#52514e">site polygon + queried vertices</text>
+  <rect x="420" y="492" width="12" height="12" fill="#1f7a6b" fill-opacity="0.07" stroke="#1f7a6b" stroke-width="1.8"/>
+  <text x="438" y="502" font-size="11.5" fill="#52514e">search bound — a stopping hint, not a distance cap: for a remote site d is larger and the bound simply grows. Measured ~5.5× faster.</text>
+
+  <!-- Footer -->
+  <text x="60" y="528" font-size="12" fill="#898781">Plan areas 0.2° per side ≈ 22 km N–S × 13 km E–W at latitude 54 · site 0.15° × 0.02° ≈ 9.8 × 2.2 km · gap 0.05° ≈ 3.3 km · site diameter ≈ 10 km.</text>
+  <text x="60" y="548" font-size="12" fill="#898781">Degrees are anisotropic on the ground at this latitude (longitude shrinks by cos 54° ≈ 0.59), so the bound is drawn with elliptical corners: one ground distance in every direction.</text>
+</svg>
