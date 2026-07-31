@@ -83,6 +83,26 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           start: { month: '08', year: '2026' },
           end: { month: '11', year: '2026' }
         },
+        publicRegister: {
+          consent: 'no',
+          reason: 'Commercial confidentiality'
+        },
+        specialLegalPowers: {
+          agree: 'yes',
+          details: 'Harbour powers under local Act'
+        },
+        harbourAuthority: {
+          area: 'yes',
+          details: 'Port of Example'
+        },
+        otherAuthorities: {
+          agree: 'yes',
+          details: 'Planning permission from local authority'
+        },
+        publicConsultation: {
+          consulted: 'yes',
+          details: 'Consultation with stakeholders'
+        },
         status: MARINE_LICENCE_STATUS.SUBMITTED
       })
 
@@ -94,7 +114,27 @@ describe('GET /public/marine-licence/mas/{id}', () => {
       expect(mockHandler.response).toHaveBeenCalledWith({
         projectName: 'Test project',
         projectBackground: 'Test project background',
-        preferredLicenceDates: 'August 2026 to November 2026'
+        preferredLicenceDates: 'August 2026 to November 2026',
+        publicRegister: {
+          consent: 'no',
+          reason: 'Commercial confidentiality'
+        },
+        specialLegalPowers: {
+          agree: 'yes',
+          details: 'Harbour powers under local Act'
+        },
+        harbourAuthority: {
+          area: 'yes',
+          details: 'Port of Example'
+        },
+        otherAuthorities: {
+          agree: 'yes',
+          details: 'Planning permission from local authority'
+        },
+        publicConsultation: {
+          consulted: 'yes',
+          details: 'Consultation with stakeholders'
+        }
       })
     })
 
@@ -114,7 +154,12 @@ describe('GET /public/marine-licence/mas/{id}', () => {
       expect(mockHandler.response).toHaveBeenCalledWith({
         projectName: null,
         projectBackground: null,
-        preferredLicenceDates: null
+        preferredLicenceDates: null,
+        publicRegister: null,
+        specialLegalPowers: null,
+        harbourAuthority: null,
+        otherAuthorities: null,
+        publicConsultation: null
       })
     })
   })

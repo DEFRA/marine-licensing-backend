@@ -23,6 +23,26 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
         start: { month: '08', year: '2026' },
         end: { month: '11', year: '2026' }
       },
+      publicRegister: {
+        consent: 'no',
+        reason: 'Commercial confidentiality'
+      },
+      specialLegalPowers: {
+        agree: 'yes',
+        details: 'Harbour powers under local Act'
+      },
+      harbourAuthority: {
+        area: 'yes',
+        details: 'Port of Example'
+      },
+      otherAuthorities: {
+        agree: 'yes',
+        details: 'Planning permission from local authority'
+      },
+      publicConsultation: {
+        consulted: 'yes',
+        details: 'Consultation with stakeholders'
+      },
       status: MARINE_LICENCE_STATUS.SUBMITTED
     }
 
@@ -39,7 +59,27 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
     expect(JSON.parse(response.payload)).toEqual({
       projectName: 'Harbour dredging',
       projectBackground: 'Maintenance of navigation channel',
-      preferredLicenceDates: 'August 2026 to November 2026'
+      preferredLicenceDates: 'August 2026 to November 2026',
+      publicRegister: {
+        consent: 'no',
+        reason: 'Commercial confidentiality'
+      },
+      specialLegalPowers: {
+        agree: 'yes',
+        details: 'Harbour powers under local Act'
+      },
+      harbourAuthority: {
+        area: 'yes',
+        details: 'Port of Example'
+      },
+      otherAuthorities: {
+        agree: 'yes',
+        details: 'Planning permission from local authority'
+      },
+      publicConsultation: {
+        consulted: 'yes',
+        details: 'Consultation with stakeholders'
+      }
     })
   })
 
