@@ -15,6 +15,9 @@ vi.mock('./arcgis-client.js', async (importOriginal) => ({
 const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 const site = (n) => ({ siteName: `site ${n}` })
 
+const warnCallsFor = (action) =>
+  logger.warn.mock.calls.filter(([payload]) => payload.event.action === action)
+
 describe('shouldRunNearestAreaFallback', () => {
   it('should trigger on an empty policy list', () => {
     expect(shouldRunNearestAreaFallback([])).toBe(true)
@@ -104,7 +107,7 @@ describe('runNearestAreaFallback', () => {
     ])
   })
 
-  it('should log the fallback warn with licence and area references', async () => {
+  it('should log the fallback warn with licence, coverage and area references', async () => {
     findNearestMarinePlanArea.mockResolvedValue({
       name: 'NE inshore',
       regionref: 'NE_i',
@@ -122,10 +125,67 @@ describe('runNearestAreaFallback', () => {
       expect.objectContaining({
         event: expect.objectContaining({
           action: 'mp-policies:nearest-neighbour-fallback',
-          reference: expect.stringContaining('abc123')
+          outcome: 'success',
+          reference: expect.stringContaining('abc123 1/1 sites')
         })
       }),
       expect.stringContaining('abc123')
+    )
+  })
+
+  it('should round the distance to the nearest metre in the provenance reference and message', async () => {
+    findNearestMarinePlanArea.mockResolvedValue({
+      name: 'NE inshore',
+      regionref: 'NE_i',
+      distanceMetres: 1234.56
+    })
+
+    await runNearestAreaFallback({
+      db: global.mockMongo,
+      siteDetails: [site(1)],
+      licenceId: 'abc123',
+      logger
+    })
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'mp-policies:nearest-neighbour-fallback',
+          reference: expect.stringContaining('NE_i@1235m')
+        })
+      }),
+      expect.stringContaining('NE_i@1235m')
+    )
+  })
+
+  it('should derive policies from the sites that resolved an area when another site resolves none', async () => {
+    findNearestMarinePlanArea
+      .mockResolvedValueOnce({
+        name: 'NE inshore',
+        regionref: 'NE_i',
+        distanceMetres: 1200
+      })
+      .mockResolvedValueOnce(null)
+
+    const policies = await runNearestAreaFallback({
+      db: global.mockMongo,
+      siteDetails: [site(1), site(2)],
+      licenceId: 'abc123',
+      logger
+    })
+
+    expect(policies.map((p) => p.policyCode).sort()).toEqual([
+      'NE-BIO-1',
+      'NE-CC-1'
+    ])
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'mp-policies:nearest-neighbour-fallback',
+          reference: expect.stringContaining('1/2 sites')
+        })
+      }),
+      expect.any(String)
     )
   })
 
@@ -147,11 +207,36 @@ describe('runNearestAreaFallback', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: 'mp-policies:region-prefix-no-match'
+          action: 'mp-policies:region-prefix-no-match',
+          outcome: 'failure',
+          reference: 'abc123 prefix=W-'
         })
       }),
       expect.any(String)
     )
+  })
+
+  it('should fire the region-prefix-no-match warn exactly once when two sites collapse to the same unmatched prefix', async () => {
+    findNearestMarinePlanArea
+      .mockResolvedValueOnce({
+        name: 'West area A',
+        regionref: 'W_i',
+        distanceMetres: 500
+      })
+      .mockResolvedValueOnce({
+        name: 'West area B',
+        regionref: 'W_o',
+        distanceMetres: 600
+      })
+
+    await runNearestAreaFallback({
+      db: global.mockMongo,
+      siteDetails: [site(1), site(2)],
+      licenceId: 'abc123',
+      logger
+    })
+
+    expect(warnCallsFor('mp-policies:region-prefix-no-match')).toHaveLength(1)
   })
 
   it('should return [] with a cannot-run warn when no site yields a nearest area', async () => {
@@ -169,10 +254,87 @@ describe('runNearestAreaFallback', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: 'mp-policies:nearest-neighbour-cannot-run'
+          action: 'mp-policies:nearest-neighbour-cannot-run',
+          outcome: 'failure',
+          reference: 'abc123'
         })
       }),
       expect.any(String)
     )
+  })
+
+  it('should treat missing siteDetails as no sites and warn cannot-run', async () => {
+    const policies = await runNearestAreaFallback({
+      db: global.mockMongo,
+      siteDetails: undefined,
+      licenceId: 'abc123',
+      logger
+    })
+
+    expect(policies).toEqual([])
+    expect(findNearestMarinePlanArea).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'mp-policies:nearest-neighbour-cannot-run',
+          reason: expect.stringContaining('no usable site geometry')
+        })
+      }),
+      expect.any(String)
+    )
+  })
+
+  it('should propagate a rejection from findNearestMarinePlanArea rather than swallowing it', async () => {
+    findNearestMarinePlanArea.mockRejectedValue(new Error('geo query failed'))
+
+    await expect(
+      runNearestAreaFallback({
+        db: global.mockMongo,
+        siteDetails: [site(1)],
+        licenceId: 'abc123',
+        logger
+      })
+    ).rejects.toThrow('geo query failed')
+  })
+
+  it('should propagate a rejection from queryNonSpatialPolicies rather than swallowing it', async () => {
+    findNearestMarinePlanArea.mockResolvedValue({
+      name: 'NE inshore',
+      regionref: 'NE_i',
+      distanceMetres: 100
+    })
+    queryNonSpatialPolicies.mockRejectedValue(new Error('arcgis query failed'))
+
+    await expect(
+      runNearestAreaFallback({
+        db: global.mockMongo,
+        siteDetails: [site(1)],
+        licenceId: 'abc123',
+        logger
+      })
+    ).rejects.toThrow('arcgis query failed')
+  })
+
+  it('should process sites sequentially, never running two nearest-area lookups concurrently', async () => {
+    let inFlight = 0
+    let maxInFlight = 0
+    findNearestMarinePlanArea.mockImplementation(async () => {
+      inFlight++
+      maxInFlight = Math.max(maxInFlight, inFlight)
+      // Yield a tick so a parallelised caller (e.g. Promise.all) would have
+      // started every lookup before any of them resolved.
+      await Promise.resolve()
+      inFlight--
+      return { name: 'NE inshore', regionref: 'NE_i', distanceMetres: 100 }
+    })
+
+    await runNearestAreaFallback({
+      db: global.mockMongo,
+      siteDetails: [site(1), site(2), site(3)],
+      licenceId: 'abc123',
+      logger
+    })
+
+    expect(maxInFlight).toBe(1)
   })
 })
