@@ -24,6 +24,11 @@ export const getMarineLicenceGatewayController = {
           projectName: 1,
           projectBackground: 1,
           preferredDates: 1,
+          publicRegister: 1,
+          specialLegalPowers: 1,
+          harbourAuthority: 1,
+          otherAuthorities: 1,
+          publicConsultation: 1,
           status: 1
         }
       }
@@ -41,7 +46,12 @@ export const getMarineLicenceGatewayController = {
       .response({
         projectName: doc.projectName ?? null,
         projectBackground: doc.projectBackground ?? null,
-        preferredLicenceDates: formatPreferredDates(doc.preferredDates)
+        preferredLicenceDates: formatPreferredDates(doc.preferredDates),
+        publicRegister: doc.publicRegister ?? null,
+        specialLegalPowers: doc.specialLegalPowers ?? null,
+        harbourAuthority: doc.harbourAuthority ?? null,
+        otherAuthorities: doc.otherAuthorities ?? null,
+        publicConsultation: doc.publicConsultation ?? null
       })
       .code(StatusCodes.OK)
   }
