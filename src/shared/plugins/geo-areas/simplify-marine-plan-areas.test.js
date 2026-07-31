@@ -2,7 +2,35 @@ import {
   collectionMarinePlanAreas,
   collectionMarinePlanAreasSimplified
 } from '../../common/constants/db-collections.js'
-import { buildSimplifiedMarinePlanAreas } from './simplify-marine-plan-areas.js'
+
+// Forces the zero-width buffer to collapse, or simplification to throw, only
+// for the feature flagged via properties.regionref — so those geometries
+// exercise the fallback while other features go through the real turf
+// implementation unaffected.
+const COLLAPSING_REGIONREF = 'collapses-under-buffer'
+const THROWING_REGIONREF = 'throws-during-simplify'
+
+vi.mock('@turf/turf', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    simplify: vi.fn((feature, options) => {
+      if (feature?.properties?.regionref === THROWING_REGIONREF) {
+        throw new Error('simplify blew up')
+      }
+      return actual.simplify(feature, options)
+    }),
+    buffer: vi.fn((feature, radius, options) => {
+      if (feature?.properties?.regionref === COLLAPSING_REGIONREF) {
+        return undefined
+      }
+      return actual.buffer(feature, radius, options)
+    })
+  }
+})
+
+const { buildSimplifiedMarinePlanAreas, simplifyMarinePlanAreasPlugin } =
+  await import('./simplify-marine-plan-areas.js')
 
 // A ~200-vertex circle of radius ~0.5° around lon/lat — detailed enough to shrink.
 const detailedCircle = (cx, cy, vertices = 200) => {
@@ -63,5 +91,144 @@ describe('buildSimplifiedMarinePlanAreas', () => {
     expect(count).toBe(0)
     expect(await target().countDocuments()).toBe(0)
     expect(logger.warn).toHaveBeenCalled()
+  })
+
+  it('should keep full-fidelity geometry when the zero-width buffer collapses a feature, and warn on it and on the summary', async () => {
+    const collapsingGeometry = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [0, 50],
+          [0.01, 50],
+          [0.01, 50.01],
+          [0, 50.01],
+          [0, 50]
+        ]
+      ]
+    }
+
+    await source().insertOne(
+      areaDoc('East inshore', 'E_i', detailedCircle(1, 52))
+    )
+    await source().insertOne(
+      areaDoc('Collapsing', COLLAPSING_REGIONREF, collapsingGeometry)
+    )
+
+    const count = await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
+
+    expect(count).toBe(2)
+    const docs = await target().find({}).toArray()
+    const collapsedDoc = docs.find(
+      (doc) => doc.properties.regionref === COLLAPSING_REGIONREF
+    )
+    const normalDoc = docs.find((doc) => doc.properties.regionref === 'E_i')
+
+    expect(collapsedDoc.geometry).toEqual(collapsingGeometry)
+    expect(normalDoc.geometry.coordinates[0].length).toBeLessThan(200)
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('collapsed')
+    )
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('kept at full fidelity')
+    )
+  })
+
+  it('should keep full-fidelity geometry when simplification throws, and warn with the error', async () => {
+    const validGeometry = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [1, 50],
+          [1.01, 50],
+          [1.01, 50.01],
+          [1, 50.01],
+          [1, 50]
+        ]
+      ]
+    }
+
+    await source().insertOne(
+      areaDoc('Broken', THROWING_REGIONREF, validGeometry)
+    )
+
+    const count = await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
+
+    expect(count).toBe(1)
+    const [doc] = await target().find({}).toArray()
+
+    expect(doc.geometry).toEqual(validGeometry)
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(Object) }),
+      expect.stringContaining('Simplification failed')
+    )
+  })
+})
+
+describe('simplifyMarinePlanAreasPlugin', () => {
+  const buildServer = ({ locker, db, logger }) => ({
+    locker,
+    db,
+    logger
+  })
+
+  it('should skip the build and log info when the lock is unavailable', async () => {
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const collection = vi.fn()
+    const server = buildServer({
+      locker: { lock: vi.fn().mockResolvedValue(null) },
+      db: { collection },
+      logger
+    })
+
+    await simplifyMarinePlanAreasPlugin.plugin.register(server)
+
+    expect(collection).not.toHaveBeenCalled()
+    expect(logger.info).toHaveBeenCalled()
+  })
+
+  it('should log an error and resolve without throwing when the build fails', async () => {
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const lock = { free: vi.fn().mockResolvedValue(true) }
+    const collection = vi.fn(() => {
+      throw new Error('connection lost')
+    })
+    const server = buildServer({
+      locker: { lock: vi.fn().mockResolvedValue(lock) },
+      db: { collection },
+      logger
+    })
+
+    await expect(
+      simplifyMarinePlanAreasPlugin.plugin.register(server)
+    ).resolves.toBeUndefined()
+
+    expect(logger.error).toHaveBeenCalled()
+    expect(lock.free).toHaveBeenCalled()
+  })
+
+  it('should log an error but not throw when releasing the lock fails', async () => {
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const lock = {
+      free: vi.fn().mockRejectedValue(new Error('lock already expired'))
+    }
+    const collection = vi.fn(() => ({
+      find: () => ({ toArray: async () => [] })
+    }))
+    const server = buildServer({
+      locker: { lock: vi.fn().mockResolvedValue(lock) },
+      db: { collection },
+      logger
+    })
+
+    await expect(
+      simplifyMarinePlanAreasPlugin.plugin.register(server)
+    ).resolves.toBeUndefined()
+
+    expect(logger.warn).toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(Object) }),
+      'Failed to release simplify-marine-plan-areas lock'
+    )
   })
 })

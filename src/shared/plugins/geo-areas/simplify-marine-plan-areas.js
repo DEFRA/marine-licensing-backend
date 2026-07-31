@@ -6,9 +6,10 @@ import {
 import { structureErrorForECS } from '../../common/helpers/logging/logger.js'
 
 /**
- * This tolerance is encoded in the collection name
- * (0.001 → 'marine-plan-areas-simple-0001', db-collections.js). Change them
- * ONLY together, dropping the old collection in the same change.
+ * The tolerance value is encoded in the collection name
+ * (0.001 → 'marine-plan-areas-simple-0001', db-collections.js). The
+ * tolerance and the collection name change ONLY together, dropping the old
+ * collection in the same change.
  *
  * 0.001° ≈ 111m of latitude — the simplified boundary deviates from the true
  * boundary by at most about that, far inside the ~2.4km plan-boundary data
@@ -18,6 +19,8 @@ import { structureErrorForECS } from '../../common/helpers/logging/logger.js'
  * Algorithm: https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
  */
 export const MARINE_PLAN_AREA_SIMPLIFY_TOLERANCE_DEGREES = 0.001
+
+const SIMPLIFY_LOCK_KEY = 'simplify-marine-plan-areas'
 
 const simplifyFeature = (doc, logger) => {
   const feature = {
@@ -37,13 +40,22 @@ const simplifyFeature = (doc, logger) => {
     // Same normalisation the loader applies (geo-transforms.js): a zero-width
     // buffer rebuilds the geometry, resolving any self-intersections that
     // simplification introduces — MongoDB's 2dsphere index rejects them.
-    return buffer(simplified, 0).geometry
+    const buffered = buffer(simplified, 0)
+
+    if (!buffered?.geometry) {
+      logger.warn(
+        `Zero-width buffer collapsed the geometry for marine plan area ${doc.name}; keeping full-fidelity geometry`
+      )
+      return { geometry: doc.geometry, keptFullFidelity: true }
+    }
+
+    return { geometry: buffered.geometry, keptFullFidelity: false }
   } catch (error) {
     logger.warn(
       structureErrorForECS(error),
       `Simplification failed for marine plan area ${doc.name}; keeping full-fidelity geometry`
     )
-    return doc.geometry
+    return { geometry: doc.geometry, keptFullFidelity: true }
   }
 }
 
@@ -55,26 +67,42 @@ export const buildSimplifiedMarinePlanAreas = async (db, logger) => {
 
   if (!source.length) {
     logger.warn(
-      `Cannot build ${collectionMarinePlanAreasSimplified}: ${collectionMarinePlanAreas} is empty — the nearest-area fallback will not run`
+      `Cannot rebuild ${collectionMarinePlanAreasSimplified}: ${collectionMarinePlanAreas} is empty — leaving any existing simplified collection untouched`
     )
     return 0
   }
 
-  const simplified = source.map((doc) => ({
-    type: 'Feature',
-    name: doc.name,
-    geometry: simplifyFeature(doc, logger),
-    properties: doc.properties
-  }))
+  let keptFullFidelityCount = 0
+
+  const simplified = source.map((doc) => {
+    const { geometry, keptFullFidelity } = simplifyFeature(doc, logger)
+    if (keptFullFidelity) {
+      keptFullFidelityCount += 1
+    }
+    return {
+      type: 'Feature',
+      name: doc.name,
+      geometry,
+      properties: doc.properties ?? {}
+    }
+  })
 
   const target = db.collection(collectionMarinePlanAreasSimplified)
   await target.deleteMany({})
   await target.insertMany(simplified)
   await target.createIndex({ geometry: '2dsphere' })
 
-  logger.info(
-    `Built ${collectionMarinePlanAreasSimplified} with ${simplified.length} simplified marine plan areas`
-  )
+  if (keptFullFidelityCount > 0) {
+    const simplifiedCount = simplified.length - keptFullFidelityCount
+    logger.warn(
+      `Built ${collectionMarinePlanAreasSimplified} with ${simplified.length} marine plan areas: ${simplifiedCount} simplified, ${keptFullFidelityCount} kept at full fidelity after simplification failures`
+    )
+  } else {
+    logger.info(
+      `Built ${collectionMarinePlanAreasSimplified} with ${simplified.length} simplified marine plan areas`
+    )
+  }
+
   return simplified.length
 }
 
@@ -82,6 +110,15 @@ export const simplifyMarinePlanAreasPlugin = {
   plugin: {
     name: 'simplify-marine-plan-areas',
     register: async (server) => {
+      const lock = await server.locker.lock(SIMPLIFY_LOCK_KEY)
+
+      if (!lock) {
+        server.logger.info(
+          'Another instance is already rebuilding the simplified marine plan areas collection; skipping'
+        )
+        return
+      }
+
       try {
         await buildSimplifiedMarinePlanAreas(server.db, server.logger)
       } catch (error) {
@@ -91,6 +128,15 @@ export const simplifyMarinePlanAreasPlugin = {
           structureErrorForECS(error),
           'Failed to build simplified marine plan areas'
         )
+      } finally {
+        try {
+          await lock.free()
+        } catch (error) {
+          server.logger.error(
+            structureErrorForECS(error),
+            'Failed to release simplify-marine-plan-areas lock'
+          )
+        }
       }
     }
   }
