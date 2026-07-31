@@ -93,6 +93,20 @@ describe('buildSimplifiedMarinePlanAreas', () => {
     expect(logger.warn).toHaveBeenCalled()
   })
 
+  it('should default properties to an empty object when the source feature has none', async () => {
+    await source().insertOne({
+      type: 'Feature',
+      name: 'No properties',
+      geometry: detailedCircle(1, 52)
+    })
+
+    const count = await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
+
+    expect(count).toBe(1)
+    const [doc] = await target().find({}).toArray()
+    expect(doc.properties).toEqual({})
+  })
+
   it('should keep full-fidelity geometry when the zero-width buffer collapses a feature, and warn on it and on the summary', async () => {
     const collapsingGeometry = {
       type: 'Polygon',
@@ -225,10 +239,31 @@ describe('simplifyMarinePlanAreasPlugin', () => {
       simplifyMarinePlanAreasPlugin.plugin.register(server)
     ).resolves.toBeUndefined()
 
-    expect(logger.warn).toHaveBeenCalled()
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ error: expect.any(Object) }),
       'Failed to release simplify-marine-plan-areas lock'
+    )
+  })
+
+  it('should log an error and resolve without throwing when lock acquisition itself rejects', async () => {
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+    const collection = vi.fn()
+    const server = buildServer({
+      locker: {
+        lock: vi.fn().mockRejectedValue(new Error('write timeout'))
+      },
+      db: { collection },
+      logger
+    })
+
+    await expect(
+      simplifyMarinePlanAreasPlugin.plugin.register(server)
+    ).resolves.toBeUndefined()
+
+    expect(collection).not.toHaveBeenCalled()
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ error: expect.any(Object) }),
+      'Failed to build simplified marine plan areas'
     )
   })
 })

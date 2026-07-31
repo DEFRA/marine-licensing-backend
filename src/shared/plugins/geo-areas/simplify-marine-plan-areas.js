@@ -110,32 +110,39 @@ export const simplifyMarinePlanAreasPlugin = {
   plugin: {
     name: 'simplify-marine-plan-areas',
     register: async (server) => {
-      const lock = await server.locker.lock(SIMPLIFY_LOCK_KEY)
-
-      if (!lock) {
-        server.logger.info(
-          'Another instance is already rebuilding the simplified marine plan areas collection; skipping'
-        )
-        return
-      }
+      let lock
 
       try {
+        lock = await server.locker.lock(SIMPLIFY_LOCK_KEY)
+
+        if (!lock) {
+          server.logger.info(
+            'Another instance is already rebuilding the simplified marine plan areas collection; skipping'
+          )
+          return
+        }
+
         await buildSimplifiedMarinePlanAreas(server.db, server.logger)
       } catch (error) {
         // Non-fatal, matching populate-geo-areas.js: the app starts, the
         // fallback just cannot run (sites then take the zero-policy path).
+        // Covers both a failed build and a failed/erroring lock acquisition
+        // (e.g. a Mongo write timeout, as opposed to mongo-locks' own
+        // duplicate-key "already locked" case, which resolves to null above).
         server.logger.error(
           structureErrorForECS(error),
           'Failed to build simplified marine plan areas'
         )
       } finally {
-        try {
-          await lock.free()
-        } catch (error) {
-          server.logger.error(
-            structureErrorForECS(error),
-            'Failed to release simplify-marine-plan-areas lock'
-          )
+        if (lock) {
+          try {
+            await lock.free()
+          } catch (error) {
+            server.logger.error(
+              structureErrorForECS(error),
+              'Failed to release simplify-marine-plan-areas lock'
+            )
+          }
         }
       }
     }
