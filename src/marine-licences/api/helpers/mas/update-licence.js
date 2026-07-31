@@ -1,3 +1,4 @@
+import { config } from '../../../../config.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
 import {
@@ -11,20 +12,15 @@ export const updateTransferredMarineLicence = async (
   logger,
   { body, id }
 ) => {
-  const {
-    applicationReference,
-    transferredDate,
-    userName,
-    userEmail,
-    viewDetailsUrl
-  } = body
+  const { applicationReference, transferredDate, userName, userEmail } = body
+  const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
   const updatedAt = new Date()
 
   let result
 
   try {
-    result = await db.collection(collectionMarineLicences).updateOne(
+    result = await db.collection(collectionMarineLicences).findOneAndUpdate(
       { applicationReference },
       {
         $set: {
@@ -33,7 +29,8 @@ export const updateTransferredMarineLicence = async (
           updatedAt,
           updatedBy: id
         }
-      }
+      },
+      { returnDocument: 'after' }
     )
   } catch (error) {
     logger.error(
@@ -43,7 +40,7 @@ export const updateTransferredMarineLicence = async (
     throw error
   }
 
-  if (result.matchedCount === 0) {
+  if (!result) {
     logger.warn(
       {
         event: {
@@ -60,7 +57,7 @@ export const updateTransferredMarineLicence = async (
       userName,
       userEmail,
       applicationReference,
-      viewDetailsUrl
+      viewDetailsUrl: `${frontEndBaseUrl}/marine-licence/view-details/${result._id}`
     })
   }
 

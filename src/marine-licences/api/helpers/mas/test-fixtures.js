@@ -5,8 +5,7 @@ export const mockMasTransferredMessageBody = {
   status: 'TRANSFERRED',
   transferredDate: '2026-05-21T12:00:00.000Z',
   userName: 'Jane Doe',
-  userEmail: 'jane@example.com',
-  viewDetailsUrl: 'https://example.com/marine-licence/view-details/abc123'
+  userEmail: 'jane@example.com'
 }
 
 export const mockMasSqsMessage = {

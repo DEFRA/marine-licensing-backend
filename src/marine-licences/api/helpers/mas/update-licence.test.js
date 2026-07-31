@@ -14,9 +14,10 @@ describe('updateTransferredMarineLicence', async () => {
     vi.clearAllMocks()
   })
 
-  const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+  const mockLicenceId = '507f1f77bcf86cd799439011'
+  const mockFindOneAndUpdate = vi.fn().mockResolvedValue({ _id: mockLicenceId })
   const mockCollection = {
-    updateOne: mockUpdateOne
+    findOneAndUpdate: mockFindOneAndUpdate
   }
 
   const mockDb = {
@@ -42,7 +43,7 @@ describe('updateTransferredMarineLicence', async () => {
     })
 
     expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
-    expect(mockUpdateOne).toHaveBeenCalledWith(
+    expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
       { applicationReference: body.applicationReference },
       {
         $set: {
@@ -51,7 +52,8 @@ describe('updateTransferredMarineLicence', async () => {
           updatedAt: new Date(),
           updatedBy: mockMasSqsMessage.MessageId
         }
-      }
+      },
+      { returnDocument: 'after' }
     )
   })
 
@@ -71,7 +73,7 @@ describe('updateTransferredMarineLicence', async () => {
       userName: body.userName,
       userEmail: body.userEmail,
       applicationReference: body.applicationReference,
-      viewDetailsUrl: body.viewDetailsUrl
+      viewDetailsUrl: `http://localhost:3000/marine-licence/view-details/${mockLicenceId}`
     })
   })
 
@@ -81,7 +83,7 @@ describe('updateTransferredMarineLicence', async () => {
     vi.spyOn(mockMongo, 'collection').mockImplementation(mockDb.collection)
     const server = buildServer()
 
-    mockUpdateOne.mockResolvedValueOnce({ matchedCount: 0 })
+    mockFindOneAndUpdate.mockResolvedValueOnce(null)
 
     await updateTransferredMarineLicence(server.db, server.logger, {
       body,
@@ -108,7 +110,7 @@ describe('updateTransferredMarineLicence', async () => {
     const server = buildServer()
 
     const dbError = new Error('connection lost')
-    mockUpdateOne.mockRejectedValueOnce(dbError)
+    mockFindOneAndUpdate.mockRejectedValueOnce(dbError)
 
     await expect(
       updateTransferredMarineLicence(server.db, server.logger, {

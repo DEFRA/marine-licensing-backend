@@ -29,8 +29,7 @@ describe('sendEmail', () => {
   const projectType = 'marine-licence'
   const personalisation = {
     name: 'Jane Doe',
-    reference: applicationReference,
-    viewDetailsUrl: 'https://example.com/marine-licence/view-details/abc123'
+    reference: applicationReference
   }
 
   beforeEach(() => {
