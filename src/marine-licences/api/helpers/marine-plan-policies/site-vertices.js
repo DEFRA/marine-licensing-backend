@@ -74,8 +74,12 @@ export const collectSiteVertices = (
   return vertices.filter((_, i) => i % step === 0)
 }
 
-// Bounding-box diagonal: a cheap OVERESTIMATE of the widest span of the site.
-// Only used in the search bound, where any overestimate is safe.
+// Bounding-box diagonal: a cheap, effectively-conservative estimate of the
+// widest span of the site. It is not a strict overestimate — longitude
+// degrees shrink with latitude, so for an extremely wide, flat box the
+// diagonal can fall a hair short of the longer of its two edges (~2.1mm
+// short for a 20km-wide, 1m-tall site at lat 54). That is sub-centimetre
+// at UK scale and safe for its only consumer, the search bound.
 export const siteDiameterMetres = (geometries) => {
   const [minX, minY, maxX, maxY] = bbox({
     type: 'GeometryCollection',

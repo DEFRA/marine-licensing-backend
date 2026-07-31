@@ -33,8 +33,27 @@ describe('collectSiteVertices', () => {
     })
 
     expect(vertices.length).toBeGreaterThan(10)
-    // Vertices are emitted in boundary order, so consecutive gaps are the
-    // densified segment steps.
+    // Vertices are emitted in boundary order for this single-ring fixture;
+    // ring joins in holed/multi geometries break gap adjacency, which is
+    // fine — the query treats vertices as an unordered set.
+    expect(Math.max(...gapsMetres(vertices))).toBeLessThanOrEqual(510)
+  })
+
+  it('should densify a bare LineString without an enclosing polygon', () => {
+    const vertices = collectSiteVertices(
+      [
+        {
+          type: 'LineString',
+          coordinates: [
+            [-2.79, 54.04],
+            [-2.51, 54.04]
+          ]
+        }
+      ],
+      { maxSpacingMetres: 500, maxVertices: 1000 }
+    )
+
+    expect(vertices.length).toBeGreaterThan(10)
     expect(Math.max(...gapsMetres(vertices))).toBeLessThanOrEqual(510)
   })
 
@@ -45,6 +64,13 @@ describe('collectSiteVertices', () => {
     })
 
     expect(vertices.length).toBeLessThanOrEqual(50)
+    // Not just an upper bound: confirms downsampling actually ran (this
+    // fixture densifies to 414 vertices at 100m spacing) rather than
+    // vacuously passing on an empty or tiny result.
+    expect(vertices.length).toBeGreaterThan(40)
+    // step = ceil(414 / 50) = 9, so the coarsened spacing is 9 * 100m =
+    // 900m; 1000 gives headroom without loosening the check to meaninglessness.
+    expect(Math.max(...gapsMetres(vertices))).toBeLessThan(1000)
   })
 
   it('should pass point geometries through as single vertices', () => {
