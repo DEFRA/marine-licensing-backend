@@ -4,12 +4,11 @@ import {
   MARINE_PLAN_POLICY_EVENT_ACTION,
   MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS
 } from '../../../constants/marine-licence.js'
+import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string.js'
 import { timedJsonFetch } from './policy-http.js'
 import { sanitisePolicyWording } from './sanitise-policy-wording.js'
 
 const normalisePolicyCode = (code) => code.replace(/\s/g, '')
-
-const isValidCode = (code) => typeof code === 'string' && code.trim() !== ''
 
 const logFieldRejected = ({ logger, action, code, field, reason }) =>
   logger.warn(
@@ -76,7 +75,7 @@ const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) =>
 
 const keepValidEntries = (policies, logger) =>
   policies.filter((entry, index) => {
-    if (isValidCode(entry?.code)) {
+    if (isNonEmptyString(entry?.code)) {
       return true
     }
     logger.warn(

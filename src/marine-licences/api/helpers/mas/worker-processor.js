@@ -1,5 +1,6 @@
 import { config } from '../../../../config.js'
 import { parseMessageBody } from '../../../../shared/common/helpers/sqs/parse-message-body.js'
+import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string.js'
 import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
 import { deleteMasMessage } from './sqs-client.js'
 import { updateTransferredMarineLicence } from './update-licence.js'
@@ -21,7 +22,7 @@ export const processMasMessage = async (server, message) => {
 
   const { applicationReference, status } = body
 
-  if (!applicationReference) {
+  if (!isNonEmptyString(applicationReference)) {
     throw new Error('No Application Reference exists on message')
   }
 

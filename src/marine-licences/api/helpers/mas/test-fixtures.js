@@ -26,6 +26,18 @@ export const mockMasMissingApplicationReferenceSqsMessage = {
   }
 }
 
+export const mockMasInvalidApplicationReferenceSqsMessage = {
+  MessageId: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+  ReceiptHandle: 'AQEBmock-invalid-reference-receipt-handle==',
+  Body: JSON.stringify({
+    status: 'TRANSFERRED',
+    applicationReference: { $ne: null }
+  }),
+  Attributes: {
+    ApproximateReceiveCount: '1'
+  }
+}
+
 export const mockMalformedMasSqsMessage = {
   MessageId: 'c3f0a6c1-4b3d-4e9a-8f2e-1a2b3c4d5e6f',
   ReceiptHandle: 'AQEBmock-malformed-receipt-handle==',
