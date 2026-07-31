@@ -34,6 +34,7 @@ export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   ARCGIS_NONSPATIAL_QUERY: 'mp-policies:arcgis-nonspatial-query',
   NEAREST_AREA_FALLBACK: 'mp-policies:nearest-neighbour-fallback',
   NEAREST_AREA_CANNOT_RUN: 'mp-policies:nearest-neighbour-cannot-run',
+  SITE_GEOMETRY_INVALID: 'mp-policies:site-geometry-invalid',
   REGION_PREFIX_NO_MATCH: 'mp-policies:region-prefix-no-match',
   WORDING_FETCH: 'mp-policies:wording-fetch',
   WORDING_ENTRY_SKIPPED: 'mp-policies:wording-entry-skipped',

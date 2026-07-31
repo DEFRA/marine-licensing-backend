@@ -6,7 +6,20 @@ import {
   formatFileCoordinates
 } from '../../../../shared/common/helpers/geo/geo-parse.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
+import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import { collectSiteVertices, siteDiameterMetres } from './site-vertices.js'
+
+const MAX_LONGITUDE = 180
+const MAX_LATITUDE = 90
+
+// NamespaceNotFound (the simplified collection was never built — the source
+// collection was empty at startup) and IndexNotFound (a rebuild died between
+// inserting the areas and creating the geo index). Both mean the fallback is
+// permanently misconfigured rather than momentarily unavailable, so retrying
+// cannot fix them: they take the cannot-run path instead of consuming the
+// queue's delivery attempts and dead-lettering the job. An empty but correctly
+// indexed collection is not an error at all — it simply returns no rows.
+const CANNOT_RUN_ERROR_CODES = new Set([26, 27])
 
 const siteToGeometries = (site) => {
   const { coordinatesType, coordinatesEntry } = site
@@ -19,20 +32,39 @@ const siteToGeometries = (site) => {
   return formatFileCoordinates(site)
 }
 
+const warnSiteGeometryInvalid = ({ logger, site, error, message }) =>
+  logger.warn(
+    {
+      ...structureErrorForECS(error),
+      event: {
+        action: MARINE_PLAN_POLICY_EVENT_ACTION.SITE_GEOMETRY_INVALID,
+        outcome: 'failure',
+        reference: site.siteName ?? 'unknown site'
+      }
+    },
+    message
+  )
+
 /**
  * Self-derived search bound. NOT a distance cap: nothing is
  * ever excluded from the result, however far the nearest area turns out to be.
  *
- * Phase 1 proves an area exists at `anchorDistanceMetres` from one vertex.
- * Every other vertex is at most `siteDiameterMetres` from that vertex, so
- * that same area is within (anchor + diameter) of EVERY vertex — by the
- * triangle inequality each vertex's true nearest area must lie inside that
- * radius, so telling $geoNear to stop looking there provably cannot change
- * any result. It only spares the index expanding across empty ocean
- * (measured 5.5x).
+ * The pipeline returns only the global minimum across every vertex, and that
+ * minimum is by construction no greater than the phase-1 anchor distance,
+ * because the anchor vertex is itself one of the vertices being searched. The
+ * bound is anchor + diameter, which is never below the anchor distance, so the
+ * vertex that ultimately wins always survives the cut. Any vertex the bound
+ * does exclude had every area farther away than the anchor distance, and so
+ * could never have been the minimum. Excluding it provably cannot change the
+ * answer; it only spares the index expanding across empty ocean (measured
+ * 5.5x).
  *
- * References: https://en.wikipedia.org/wiki/Triangle_inequality
- *             https://en.wikipedia.org/wiki/Branch_and_bound
+ * The diameter term is headroom rather than load-bearing — the bound would
+ * still be correct at exactly the anchor distance. It is deliberately not
+ * justified as a span across the site's bounding box: densified vertices
+ * follow great-circle paths that bulge slightly outside that box.
+ *
+ * References: https://en.wikipedia.org/wiki/Branch_and_bound
  *             https://www.mongodb.com/docs/manual/reference/operator/aggregation/geoNear/
  */
 export const deriveNearestAreaSearchBound = ({
@@ -40,6 +72,9 @@ export const deriveNearestAreaSearchBound = ({
   siteDiameterMetres
 }) => anchorDistanceMetres + siteDiameterMetres
 
+// `near` must be the GeoJSON point form. A bare coordinate array is the legacy
+// form, which still runs but reports distances in RADIANS — silently returning
+// numbers orders of magnitude too small rather than raising an error.
 const geoNearStage = (near, maxDistance) => ({
   $geoNear: {
     near,
@@ -49,18 +84,41 @@ const geoNearStage = (near, maxDistance) => ({
   }
 })
 
-// Phase 1: single unbounded $geoNear from one vertex — both the bound anchor
-// and the cannot-run detector (null ⇔ the simplified collection is empty).
-const nearestAreaToPoint = async (db, coordinates) => {
-  const [nearest] = await db
-    .collection(collectionMarinePlanAreasSimplified)
-    .aggregate([
-      geoNearStage({ type: 'Point', coordinates }),
-      { $limit: 1 },
-      { $project: { distanceMetres: 1 } }
-    ])
-    .toArray()
-  return nearest ?? null
+// Phase 1: single unbounded $geoNear from one vertex — both the anchor for the
+// search bound and the cannot-run detector. Null means the fallback cannot
+// produce an answer: either the collection holds no areas, or the collection
+// or its geo index is missing entirely (see CANNOT_RUN_ERROR_CODES).
+const nearestAreaToPoint = async ({ db, coordinates, site, logger }) => {
+  try {
+    const [nearest] = await db
+      .collection(collectionMarinePlanAreasSimplified)
+      .aggregate([
+        geoNearStage({ type: 'Point', coordinates }),
+        { $limit: 1 },
+        { $project: { distanceMetres: 1 } }
+      ])
+      .toArray()
+    return nearest ?? null
+  } catch (error) {
+    // Anything else is genuinely transient and must stay retryable.
+    if (!CANNOT_RUN_ERROR_CODES.has(error.code)) {
+      throw error
+    }
+    logger.warn(
+      {
+        ...structureErrorForECS(error),
+        event: {
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN,
+          outcome: 'failure',
+          reference: collectionMarinePlanAreasSimplified,
+          reason:
+            'The simplified marine plan areas collection or its 2dsphere index is missing; check whether the startup rebuild succeeded'
+        }
+      },
+      `Nearest marine plan area query cannot run against ${collectionMarinePlanAreasSimplified}`
+    )
+    return null
+  }
 }
 
 // Phase 2: one document per site vertex, each looks up its nearest area, and
@@ -87,7 +145,10 @@ const perVertexNearestPipeline = (vertices, searchBound) => [
     }
   },
   { $unwind: '$nearest' },
-  { $sort: { 'nearest.distanceMetres': 1 } },
+  // Equal distances are real — mirrored areas can return bit-identical doubles
+  // — and MongoDB documents no sort stability, so regionref breaks the tie
+  // deterministically rather than letting an arbitrary policy prefix win.
+  { $sort: { 'nearest.distanceMetres': 1, 'nearest.regionref': 1 } },
   { $limit: 1 },
   {
     $project: {
@@ -99,13 +160,23 @@ const perVertexNearestPipeline = (vertices, searchBound) => [
   }
 ]
 
+const outOfRangeVertex = (vertices) =>
+  vertices.find(
+    ([longitude, latitude]) =>
+      longitude < -MAX_LONGITUDE ||
+      longitude > MAX_LONGITUDE ||
+      latitude < -MAX_LATITUDE ||
+      latitude > MAX_LATITUDE
+  )
+
 /**
  * Every geometry computation the query depends on, in one synchronous guarded
  * block. A stored geometry can be malformed in ways the upstream converters
  * wave through — an empty `coordinates` array is truthy, so it survives the
  * file-feature filter and then makes turf throw — and an unhandled throw here
- * would reach the queue worker as a transient failure and be retried forever.
- * Degrading to null instead routes it to the visible cannot-run path.
+ * would reach the queue worker as a transient failure, burning every delivery
+ * attempt before the job is dead-lettered. Degrading to null instead routes it
+ * to the visible cannot-run path.
  *
  * The database calls deliberately stay OUTSIDE this catch: a Mongo failure is
  * genuinely transient and must keep propagating so it can be retried, rather
@@ -130,12 +201,29 @@ const deriveSiteQueryGeometry = (site, logger) => {
       return null
     }
 
+    // Turf happily densifies coordinates outside the valid longitude/latitude
+    // range — a site stored in eastings and northings, say — and $geoNear then
+    // rejects them with a BadValue error naming neither the site nor the
+    // offending coordinate. Failing here keeps the diagnosis in one place.
+    const outOfRange = outOfRangeVertex(vertices)
+    if (outOfRange) {
+      warnSiteGeometryInvalid({
+        logger,
+        site,
+        message: `Site geometry has a coordinate outside the valid longitude/latitude range [${outOfRange}], skipping site in nearest marine plan area query`
+      })
+      return null
+    }
+
     return { vertices, diameterMetres: siteDiameterMetres(geometries) }
   } catch (error) {
-    logger.warn(
-      structureErrorForECS(error),
-      'Site geometry could not be converted to vertices, skipping site in nearest marine plan area query'
-    )
+    warnSiteGeometryInvalid({
+      logger,
+      site,
+      error,
+      message:
+        'Site geometry could not be converted to vertices, skipping site in nearest marine plan area query'
+    })
     return null
   }
 }
@@ -153,7 +241,12 @@ export const findNearestMarinePlanArea = async ({
   }
   const { vertices, diameterMetres } = queryGeometry
 
-  const anchor = await nearestAreaToPoint(db, vertices[0])
+  const anchor = await nearestAreaToPoint({
+    db,
+    coordinates: vertices[0],
+    site,
+    logger
+  })
   if (!anchor) {
     return null
   }

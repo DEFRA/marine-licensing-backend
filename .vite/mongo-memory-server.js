@@ -4,7 +4,10 @@ beforeAll(async () => {
   // Setup mongo mock
   await setup({
     binary: {
-      version: 'latest'
+      // Pinned, not 'latest': the nearest-area query needs $documents and
+      // $geoNear inside a $lookup sub-pipeline with let, which require a
+      // server of at least 7.0.
+      version: '7.0.24'
     },
     serverOptions: {},
     autoStart: false

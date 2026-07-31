@@ -1,4 +1,5 @@
 import { collectionMarinePlanAreasSimplified } from '../../../../shared/common/constants/db-collections.js'
+import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import {
   deriveNearestAreaSearchBound,
   findNearestMarinePlanArea
@@ -28,9 +29,11 @@ const areaDoc = (name, regionref, geometry) => ({
   properties: { regionref }
 })
 
-// Manual-coordinates polygon site: closer to the WEST area, but its western
-// EDGE is what is close — the eastern vertices are nearer the east area's
-// longitude midline, so vertex-min matters.
+// Manual-coordinates polygon site, unambiguously nearest the WEST area. What
+// it discriminates is edge-versus-centroid: the site's western edge sits
+// ~3.3km from the area, while its centroid is ~8.2km away, so measuring from
+// the centroid rather than the boundary vertices fails the distance assertion
+// below.
 const siteNearWest = {
   coordinatesType: 'coordinates',
   coordinatesEntry: 'multiple',
@@ -59,6 +62,7 @@ const circleSiteNearWest = {
 // that check — so malformed geometries reach the vertex collection intact.
 const fileSite = (geometry) => ({
   coordinatesType: 'file',
+  siteName: 'Malformed site',
   geoJSON: { features: [{ type: 'Feature', geometry }] }
 })
 
@@ -177,9 +181,136 @@ describe('findNearestMarinePlanArea', () => {
     expect(nearest).toBeNull()
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
-        error: expect.objectContaining({ type: 'TypeError' })
+        error: expect.objectContaining({ type: 'TypeError' }),
+        event: expect.objectContaining({
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.SITE_GEOMETRY_INVALID,
+          outcome: 'failure',
+          reference: 'Malformed site'
+        })
       }),
       expect.stringContaining('vertices')
     )
+  })
+
+  it('should return null and warn for coordinates outside the valid longitude/latitude range', async () => {
+    const nearest = await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      // Eastings and northings stored as if they were degrees: turf densifies
+      // these without complaint, so only an explicit range check catches them.
+      // Unnamed, so this also covers the missing-siteName log reference.
+      site: {
+        coordinatesType: 'file',
+        geoJSON: {
+          features: [
+            {
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [430000, 370000],
+                    [430100, 370000],
+                    [430100, 370100],
+                    [430000, 370000]
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      },
+      logger
+    })
+
+    expect(nearest).toBeNull()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.SITE_GEOMETRY_INVALID,
+          outcome: 'failure',
+          reference: 'unknown site'
+        })
+      }),
+      expect.stringContaining('outside the valid longitude/latitude range')
+    )
+  })
+
+  it('should return null and warn when the simplified collection does not exist', async () => {
+    await simplified().drop()
+
+    const nearest = await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: siteNearWest,
+      logger
+    })
+
+    expect(nearest).toBeNull()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN,
+          outcome: 'failure',
+          reference: collectionMarinePlanAreasSimplified
+        })
+      }),
+      expect.stringContaining('cannot run')
+    )
+  })
+
+  it('should return null and warn when the geo index is missing', async () => {
+    await simplified().dropIndexes()
+
+    const nearest = await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: siteNearWest,
+      logger
+    })
+
+    expect(nearest).toBeNull()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN
+        })
+      }),
+      expect.stringContaining('cannot run')
+    )
+  })
+
+  it('should rethrow database errors that are not a missing collection or index', async () => {
+    const failing = {
+      collection: () => ({
+        aggregate: () => ({
+          toArray: async () => {
+            const error = new Error('connection reset')
+            error.code = 6 // HostUnreachable — transient, must stay retryable
+            throw error
+          }
+        })
+      })
+    }
+
+    await expect(
+      findNearestMarinePlanArea({ db: failing, site: siteNearWest, logger })
+    ).rejects.toThrow('connection reset')
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  it('should return null when the per-vertex phase finds nothing', async () => {
+    // Phase 1 hits the real indexed collection and finds the anchor; phase 2
+    // is stubbed empty, which is otherwise only reachable if the collection is
+    // dropped between the two queries.
+    const emptyPhaseTwo = {
+      collection: (name) => global.mockMongo.collection(name),
+      aggregate: () => ({ toArray: async () => [] })
+    }
+
+    const nearest = await findNearestMarinePlanArea({
+      db: emptyPhaseTwo,
+      site: siteNearWest,
+      logger
+    })
+
+    expect(nearest).toBeNull()
   })
 })
