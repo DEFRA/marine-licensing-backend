@@ -21,7 +21,10 @@ export const updateTransferredMarineLicence = async (
 
   try {
     result = await db.collection(collectionMarineLicences).findOneAndUpdate(
-      { applicationReference },
+      {
+        applicationReference,
+        status: { $ne: MARINE_LICENCE_STATUS.TRANSFERRED }
+      },
       {
         $set: {
           status: MARINE_LICENCE_STATUS.TRANSFERRED,
@@ -49,7 +52,7 @@ export const updateTransferredMarineLicence = async (
           reference: applicationReference
         }
       },
-      `No marine licence found for applicationReference ${applicationReference}`
+      `No marine licence found, or it is already transferred, for applicationReference ${applicationReference}`
     )
   } else {
     await sendTransferredEmail({

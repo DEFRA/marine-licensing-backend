@@ -44,7 +44,10 @@ describe('updateTransferredMarineLicence', async () => {
 
     expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
-      { applicationReference: body.applicationReference },
+      {
+        applicationReference: body.applicationReference,
+        status: { $ne: MARINE_LICENCE_STATUS.TRANSFERRED }
+      },
       {
         $set: {
           status: MARINE_LICENCE_STATUS.TRANSFERRED,
@@ -98,7 +101,31 @@ describe('updateTransferredMarineLicence', async () => {
           reference: body.applicationReference
         }
       },
-      `No marine licence found for applicationReference ${body.applicationReference}`
+      `No marine licence found, or it is already transferred, for applicationReference ${body.applicationReference}`
+    )
+    expect(sendTransferredEmail).not.toHaveBeenCalled()
+  })
+
+  it('should not update or send an email again for a duplicate message when the licence is already transferred', async () => {
+    const { mockMongo } = global
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(mockDb.collection)
+    const server = buildServer()
+
+    mockFindOneAndUpdate.mockResolvedValueOnce(null)
+
+    await updateTransferredMarineLicence(server.db, server.logger, {
+      body,
+      id: mockMasSqsMessage.MessageId
+    })
+
+    expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
+      {
+        applicationReference: body.applicationReference,
+        status: { $ne: MARINE_LICENCE_STATUS.TRANSFERRED }
+      },
+      expect.anything(),
+      expect.anything()
     )
     expect(sendTransferredEmail).not.toHaveBeenCalled()
   })
