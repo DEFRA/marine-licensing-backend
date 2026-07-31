@@ -61,7 +61,7 @@ describe('sendTransferredEmail', () => {
         applicationReference,
         viewDetailsUrl
       },
-      reference: applicationReference,
+      applicationReference,
       projectType: 'marine-licence'
     })
 

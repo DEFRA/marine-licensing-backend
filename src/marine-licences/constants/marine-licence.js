@@ -40,6 +40,8 @@ export const MARINE_PLAN_POLICY_EVENT_ACTION = {
 }
 
 export const MAS_EVENT_ACTION = {
+  MESSAGE_RECEIVED: 'mas:message-received',
+  MESSAGE_DEAD_LETTERED: 'mas:message-dead-lettered',
   JOB_STALE: 'mas:job-stale',
   JOB_FAILED: 'mas:job-failed',
   JOB_COMPLETE: 'mas:job-complete'

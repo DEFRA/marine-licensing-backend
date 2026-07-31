@@ -18,7 +18,7 @@ export const sendTransferredEmail = async ({
       applicationReference,
       viewDetailsUrl
     },
-    reference: applicationReference,
+    applicationReference,
     projectType: 'marine-licence'
   })
 

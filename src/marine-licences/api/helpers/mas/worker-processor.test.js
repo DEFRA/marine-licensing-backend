@@ -8,6 +8,7 @@ import {
   mockMasSqsMessage
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-licence.js'
+import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
 vi.mock('./sqs-client.js', () => ({
   deleteMasMessage: vi.fn()
@@ -31,8 +32,14 @@ describe('mas-worker-processor', () => {
       await processMasMessage(server, mockMasSqsMessage)
 
       expect(server.logger.info).toHaveBeenCalledWith(
-        { body },
-        'Received MAS message'
+        {
+          event: {
+            action: MAS_EVENT_ACTION.MESSAGE_RECEIVED,
+            outcome: 'success',
+            reference: body.applicationReference
+          }
+        },
+        `Received MAS message for ${body.applicationReference}`
       )
       expect(updateTransferredMarineLicence).toHaveBeenCalledWith(
         server.db,
@@ -87,9 +94,16 @@ describe('mas-worker-processor', () => {
 
       await processMasDlqMessage(server, mockMasSqsMessage)
 
+      const body = JSON.parse(mockMasSqsMessage.Body)
       expect(server.logger.warn).toHaveBeenCalledWith(
-        { body: JSON.parse(mockMasSqsMessage.Body) },
-        'MAS message dead-lettered'
+        {
+          event: {
+            action: MAS_EVENT_ACTION.MESSAGE_DEAD_LETTERED,
+            outcome: 'failure',
+            reference: body.applicationReference
+          }
+        },
+        `MAS message dead-lettered for ${body.applicationReference}`
       )
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsDlqName,

@@ -1,7 +1,10 @@
 import { config } from '../../../../config.js'
 import { parseMessageBody } from '../../../../shared/common/helpers/sqs/parse-message-body.js'
 import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string.js'
-import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  MAS_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
 import { deleteMasMessage } from './sqs-client.js'
 import { updateTransferredMarineLicence } from './update-licence.js'
 
@@ -18,7 +21,16 @@ export const processMasMessage = async (server, message) => {
     return
   }
 
-  logger.info({ body }, 'Received MAS message')
+  logger.info(
+    {
+      event: {
+        action: MAS_EVENT_ACTION.MESSAGE_RECEIVED,
+        outcome: 'success',
+        reference: body.applicationReference
+      }
+    },
+    `Received MAS message for ${body.applicationReference}`
+  )
 
   const { applicationReference, status } = body
 
@@ -42,7 +54,16 @@ export const processMasDlqMessage = async (server, message) => {
 
   const body = parseMessageBody(message, logger, discardMalformedMessage)
   if (body) {
-    logger.warn({ body }, 'MAS message dead-lettered')
+    logger.warn(
+      {
+        event: {
+          action: MAS_EVENT_ACTION.MESSAGE_DEAD_LETTERED,
+          outcome: 'failure',
+          reference: body.applicationReference
+        }
+      },
+      `MAS message dead-lettered for ${body.applicationReference}`
+    )
   }
 
   await deleteMasMessage(sqsDlqName, message.ReceiptHandle)
