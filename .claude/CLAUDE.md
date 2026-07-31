@@ -33,19 +33,34 @@ npm run
 
 ```
 src/
-├── api/
-│   ├── exemptions/              # Exemption management (CRUD operations)
-│   │   ├── controllers/         # HTTP handlers (business logic)
-│   │   ├── helpers/             # Utility functions (auth, email, generators)
-│   │   └── index.js            # Route definitions
-│   └── geo-parser/              # Geospatial data parsing (KML/Shapefile)
-├── services/                    # Business logic (S3 operations, geo processing)
-├── models/                      # Joi validation schemas (not database models)
-├── common/
-│   ├── helpers/                 # Shared utilities (logging, database, proxy)
-│   └── constants/               # Enums and configuration
-├── plugins/                     # Hapi plugins (auth, routes, Dynamics queue)
-└── routes/                      # Additional routes (health check)
+├── config.js              # Convict configuration schema (env vars, defaults)
+├── config/                # Config sub-schemas (e.g. marine-plan-policies.js)
+├── server.js              # Hapi server assembly: plugins, routes, decorations
+├── index.js               # Process entry point
+├── exemptions/            # Exemption domain
+│   ├── api/               # controllers/, helpers/, services/, index.js (routes)
+│   ├── constants/         # EXEMPTION_STATUS, EXEMPTION_STATUS_LABEL, etc.
+│   └── models/            # Joi schemas
+├── marine-licences/       # Marine licence domain
+│   ├── api/               # controllers/, helpers/ (incl. marine-plan-policies/), csv/,
+│   │                      # services/, index.js + frontend-routes.js + gateway-routes.js
+│   ├── constants/
+│   └── models/
+├── iat-contexts/          # In-flight IAT self-service journey state (api/, models/)
+├── iat-outcome-documents/ # Immutable IAT outcome snapshots (api/, models/)
+├── iat-shared/            # Helpers shared across IAT (e.g. generate-slug.js)
+└── shared/                # Cross-domain infrastructure
+    ├── api/               # geo-parser/, projects/
+    ├── common/            # constants/ (db-collections.js, etc.), helpers/ (logging,
+    │                      # proxy, geo, convict, mongodb, fail-action)
+    ├── constants/         # errors.js, project-status.js, site-details.js
+    ├── handlers/          # shared HTTP handlers (create/update project name)
+    ├── helpers/           # auth, task-list, reference-generator, email confirmation
+    ├── models/            # shared Joi schemas
+    ├── plugins/           # Hapi plugins: auth, dynamics, emp, geo-areas,
+    │                      # marine-plan-policies, router
+    ├── routes/            # health check
+    └── services/          # data-service/ (S3 blob-service), geo-parser/
 ```
 
 ### Request Flow
@@ -61,7 +76,23 @@ src/
 ### Database & Collections
 
 - **Primary:** MongoDB
-- **Collections:** exemptions, mongo-locks, reference-sequences, exemption-dynamics-queue, exemption-dynamics-queue-failed
+- **Collections** (constants in `src/shared/common/constants/db-collections.js`):
+  - `exemptions`
+  - `exemption-emp-queue`, `exemption-emp-queue-failed`
+  - `exemption-dynamics-queue`, `exemption-dynamics-queue-failed`
+  - `marine-licences`
+  - `marine-licence-dynamics-queue`, `marine-licence-dynamics-queue-failed`
+  - `coastal-operations-areas`
+  - `marine-plan-areas` — downloaded reference data (source of truth)
+  - `marine-plan-areas-simple-0001` — a simplified copy of `marine-plan-areas`, rebuilt from
+    it on every server boot by a startup plugin (see below). The `0001` suffix encodes the
+    simplify tolerance; name and tolerance change only together, and the source collection is
+    never modified.
+  - `marine-plan-policy-wording`, `marine-plan-policy-wording-snapshots`
+  - `iat-contexts`, `iat-outcome-documents`
+  - `mongo-locks`, `reference-sequences` — utility collections; referenced as hardcoded
+    literals rather than named constants (`src/shared/common/helpers/mongodb.js`,
+    `src/shared/helpers/reference-generator.js`)
 - **Access:** Via `request.db` or `server.db`
 - **Locking:** Distributed locks via `request.locker` or `server.locker`
 
@@ -89,7 +120,8 @@ export const controllerName = {
 
 ### Validation & Error Handling
 
-- Use **Joi schemas** in `src/models/` for all input validation
+- Use **Joi schemas** in each domain's `models/` directory (`src/exemptions/models/`,
+  `src/marine-licences/models/`, `src/shared/models/`, etc.) for all input validation
 - Validation errors automatically formatted by `fail-action.js`
 - Use **@hapi/boom** for HTTP errors: `Boom.badRequest()`, `Boom.unauthorized()`, `Boom.conflict()`
 - Custom error messages via Joi `.messages()` with semantic codes (e.g., 'PROJECT_NAME_REQUIRED')
@@ -121,7 +153,8 @@ export const controllerName = {
 ### Testing Patterns
 
 - Tests colocated with source: `controller.js` + `controller.test.js`
-- **Global test setup** (`src/config.js/setup-files.js`):
+- **Global test setup** (`.vite/mongo-memory-server.js` and `.vite/setup-files.js`, wired via
+  `setupFiles` in `vitest.config.js`):
   - `global.mockMongo` - In-memory MongoDB instance
   - `global.mockHandler` - Mock Hapi response object (`.response()`, `.code()`)
   - `fetchMock` - Mocked fetch for HTTP calls
@@ -180,7 +213,7 @@ DEFRA_ID_JWKS_URI=http://localhost:3200/.../jwks.json
 ENTRA_ID_JWKS_URI=https://login.microsoftonline.com/.../keys
 LOG_LEVEL=info|debug
 AWS_REGION=eu-west-2
-AWS_S3_ENDPOINT=http://localhost:4566  # LocalStack for local dev
+S3_ENDPOINT=http://localhost:4566  # LocalStack for local dev
 CDP_UPLOAD_BUCKET=mmo-uploads
 DYNAMICS_ENABLED=true
 DYNAMICS_CLIENT_ID=***
@@ -190,8 +223,9 @@ DYNAMICS_CLIENT_SECRET=***
 ### Configuration Management
 
 - **File:** `src/config.js` (Convict-based, type-safe)
-- **Access:** `server.settings.app.config` or `request.server.settings.app.config`
-- **Structure:** Organized by domain (auth, db, aws, dynamics, notify)
+- **Access:** Import the singleton directly — `import { config } from '../config.js'` — then
+  `config.get('domain')`
+- **Structure:** Organised by domain (defraId, entraId, mongo, aws, cdp, dynamics, notify, iat, etc.)
 
 ---
 
@@ -199,18 +233,39 @@ DYNAMICS_CLIENT_SECRET=***
 
 ### Dynamics 365 Integration
 
-- **Queue-based:** Exemptions queued for sync, processed asynchronously
-- **Polling:** Default 5-minute interval (configurable)
-- **Retry logic:** Up to 3 retries with exponential backoff
-- **Failed items:** Moved to `exemption-dynamics-queue-failed` collection
+- **Queue-based:** Exemptions and marine licences both queued for sync, processed
+  asynchronously (shared client ID/secret, separate queue collections per domain)
+- **Polling:** Default 5-minute interval (configurable via plugin options)
+- **Retry logic:** Up to `DYNAMICS_MAX_RETRIES` (default 3) retries, each gated by a fixed
+  `DYNAMICS_RETRY_DELAY_MS` (default 1 minute) — not exponential backoff
+- **Failed items:** Moved to `exemption-dynamics-queue-failed` or
+  `marine-licence-dynamics-queue-failed` (matching the source queue)
 - **Feature flag:** `DYNAMICS_ENABLED` environment variable
 
 ### File Upload & S3
 
-- **Service:** `src/services/blob-service.js`
-- **Max file size:** 50MB (configurable)
+- **Service:** `src/shared/services/data-service/blob-service.js`
+- **Max file size:** 50MB (configurable via `MAX_FILE_SIZE`)
 - **Supported formats:** KML, Shapefile (ZIP), GeoJSON
-- **Geo parsing:** `src/services/geo-parser/geo-parser.js` extracts coordinates
+- **Geo parsing:** `src/shared/services/geo-parser/geo-parser.js` extracts coordinates
+
+### Marine Plan Policy Queue & Nearest-Area Fallback
+
+- **Queue-based:** Marine licence sites are queued (SQS) for marine plan policy lookup and
+  processed asynchronously by `src/shared/plugins/marine-plan-policies/worker.js` (dead
+  letters handled by `dlq-worker.js`); job status stored on the licence
+  (`MARINE_PLAN_POLICY_JOB_STATUS`: pending/computing/ready/failed).
+- **Processing:** `src/marine-licences/api/helpers/marine-plan-policies/worker-processor.js`
+  queries ArcGIS for spatially-intersecting policies per site.
+- **Nearest-area fallback:** if that query returns zero policies (or only the onshore `Land`
+  policy), the worker falls back to the nearest marine plan area's non-spatial policies —
+  orchestrated by `nearest-area-fallback.js` — and logs the outcome as an ECS `warn` (this
+  warning is the only record of the fallback; nothing else is persisted about it). The
+  nearest-area lookup runs against the simplified `marine-plan-areas-simple-0001` collection.
+- **Startup rebuild:** `src/shared/plugins/geo-areas/simplify-marine-plan-areas.js` rebuilds
+  `marine-plan-areas-simple-0001` from `marine-plan-areas` on every boot, guarded by a
+  distributed lock so only one instance rebuilds at a time; the source collection is never
+  modified.
 
 ### Geospatial Data Parsing
 
@@ -221,7 +276,7 @@ DYNAMICS_CLIENT_SECRET=***
 
 ### Logging & Observability
 
-- **Logger:** Pino singleton (`src/common/helpers/logging/logger.js`)
+- **Logger:** Pino singleton (`src/shared/common/helpers/logging/logger.js`)
 - **HTTP request logging:** `hapi-pino` plugin (auto-enabled)
 - **Log formats:**
   - Development: `pino-pretty` (colored, readable)
@@ -293,12 +348,13 @@ logger.warn({ tempDir, error }, 'Cleanup failed')
 
 - **Service:** GOV.UK Notify API
 - **Configuration:** Template IDs for user and organisation emails
-- **Retry:** Configured with backoff logic
+- **Retry:** Fixed-interval retries (`NOTIFY_RETRIES`, `NOTIFY_RETRY_INTERVAL_SECONDS`), not
+  exponential backoff
 - **Usage:** `src/shared/helpers/send-email-confirmation.js`
 
 ### Proxy & Network
 
-- **Default proxy agent:** `undici` ProxyAgent (configured in `src/common/helpers/proxy/setup-proxy.js`)
+- **Default proxy agent:** `undici` ProxyAgent (configured in `src/shared/common/helpers/proxy/setup-proxy.js`)
 - **HTTP clients:** Use `undici.fetch()` or `@hapi/wreck` for automatic proxy support
 - **Custom clients:** Pass `dispatcher: new ProxyAgent({...})` explicitly
 
@@ -309,7 +365,7 @@ logger.warn({ tempDir, error }, 'Cleanup failed')
 Tests are run via npm scripts (see package.json). Key patterns:
 
 - Run all tests: `npm test`
-- Single test file: `npm test -- src/api/exemptions/controllers/create-project-name.test.js`
+- Single test file: `npm test -- src/exemptions/api/controllers/create-project-name.test.js`
 - Watch mode: `npm run test:watch`
 
 ### Test Structure Best Practices
@@ -334,15 +390,16 @@ Tests are run via npm scripts (see package.json). Key patterns:
 
 ### Adding a New Endpoint
 
-1. Create controller: `src/api/exemptions/controllers/{action}.js`
-2. Add Joi schema: `src/models/{entity}.js`
-3. Create test: `src/api/exemptions/controllers/{action}.test.js`
-4. Register route: `src/api/exemptions/index.js`
+1. Create controller: `src/exemptions/api/controllers/{action}.js` (or the equivalent
+   domain directory, e.g. `src/marine-licences/api/controllers/`)
+2. Add Joi schema: `src/exemptions/models/{entity}.js` (or the equivalent domain directory)
+3. Create test: `src/exemptions/api/controllers/{action}.test.js`
+4. Register route: `src/exemptions/api/index.js`
 5. Implement handler logic and validation
 
 ### Updating Exemption Status Workflow
 
-- Update `EXEMPTION_STATUS` constant in `src/common/constants/exemption.js`
+- Update `EXEMPTION_STATUS` constant in `src/exemptions/constants/exemption.js`
 - Update `EXEMPTION_STATUS_LABEL` for display labels
 - Update status transitions in relevant controllers
 - Update `createTaskList()` helper to reflect new task states
@@ -368,7 +425,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 
 - **ESLint:** neostandard (modern JavaScript standards)
 - **Prettier:** Auto-format on pre-commit hook
-- **Config:** `.eslintrc.cjs`, `.prettierrc.js`
+- **Config:** `eslint.config.js`, `.prettierrc.js`
 - **Windows issue:** If Prettier breaks on line endings, run: `git config --global core.autocrlf false`
 
 ### Pre-commit Hooks (Husky)
@@ -390,7 +447,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 ### S3/LocalStack Issues
 
 - Ensure LocalStack is running: `docker compose up -d`
-- Verify `AWS_S3_ENDPOINT` points to LocalStack
+- Verify `S3_ENDPOINT` points to LocalStack
 - Check bucket exists: Use AWS CLI against LocalStack
 
 ### Authentication Failures
@@ -430,7 +487,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 ### Dynamics Sync
 
 - Queue-based async processing prevents blocking
-- Retry logic with exponential backoff
+- Retry logic with a fixed retry delay (not exponential backoff)
 - Failed items logged for investigation
 
 ### Logging
@@ -447,7 +504,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 - **package.json** - All npm scripts and dependencies
 - **sonar-project.properties** - SonarCloud configuration
 - **Dockerfile** - Multi-stage build (development and production)
-- **.github/example.dependabot.yml** - Dependency updates configuration
+- **.github/dependabot.yml** - Dependency updates configuration
 - After a refactor, ensure any related unit tests pass
 - When adding integration tests, not every edge case needs to be covered ie don't cover every validation scenario. Those will be covered by lower level unit tests.
 - Don't call vi.resetAllMocks() in individual test files because clearMocks is already set in vitest config
