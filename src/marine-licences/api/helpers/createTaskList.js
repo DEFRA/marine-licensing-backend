@@ -51,14 +51,14 @@ const checkActivityDetails = (activityDetails) => {
   return COMPLETED
 }
 
-const CONSTRUCTION_DRAWING_SUBTYPES = [
+const CONSTRUCTION_DRAWING_SUBTYPES = new Set([
   'construction-type-1',
   'construction-type-3'
-]
+])
 
 const requiresConstructionDrawing = (activityDetails) =>
   (activityDetails ?? []).some((activity) =>
-    CONSTRUCTION_DRAWING_SUBTYPES.includes(activity.activitySubType)
+    CONSTRUCTION_DRAWING_SUBTYPES.has(activity.activitySubType)
   )
 
 const checkConstructionDrawings = (siteDetails) => {
