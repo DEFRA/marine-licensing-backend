@@ -7,6 +7,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
   const paramsValidator =
     getMarineLicenceGatewayController.options.validate.params
   const mockId = '123456789123456789123456'
+  const backendGatewayUrl = 'http://localhost:3001'
 
   let mockedFindOne
 
@@ -103,6 +104,15 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           consulted: 'yes',
           details: 'Consultation with stakeholders'
         },
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'no',
+          uploadedFile: { filename: 'wfd-assessment.docx' },
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'exemptions/file-id'
+          }
+        },
         status: MARINE_LICENCE_STATUS.SUBMITTED
       })
 
@@ -134,6 +144,12 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         publicConsultation: {
           consulted: 'yes',
           details: 'Consultation with stakeholders'
+        },
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'no',
+          documentUrl: `${backendGatewayUrl}/public/marine-licence/${mockId}/water-framework-directive/download-url`,
+          fileName: 'wfd-assessment.docx'
         }
       })
     })
@@ -159,7 +175,13 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         specialLegalPowers: null,
         harbourAuthority: null,
         otherAuthorities: null,
-        publicConsultation: null
+        publicConsultation: null,
+        waterFrameworkDirective: {
+          nauticalMile: null,
+          excludedActivities: null,
+          documentUrl: null,
+          fileName: null
+        }
       })
     })
   })
