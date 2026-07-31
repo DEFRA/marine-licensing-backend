@@ -168,7 +168,9 @@ describe('policies-worker-processor', () => {
 
     it('should still delete the message when the result write finds the job stale', async () => {
       const { server, mockUpdateOne } = setupMocks(buildLicence())
-      vi.mocked(queryArcGISPolicies).mockResolvedValue([])
+      vi.mocked(queryArcGISPolicies).mockResolvedValue([
+        { policyCode: 'S-FISH-1', sector: 'Fishing' }
+      ])
       vi.mocked(getPoliciesContent).mockResolvedValue([])
       // computing update matches, ready update does not (site edited mid-flight)
       mockUpdateOne
@@ -230,7 +232,8 @@ describe('policies-worker-processor', () => {
     })
 
     it('should keep the retry path when the fallback throws', async () => {
-      const { server, mockUpdateOne } = setupMocks(buildLicence())
+      const { server, mockUpdateOne, mockBulkWrite } =
+        setupMocks(buildLicence())
       vi.mocked(queryArcGISPolicies).mockResolvedValue([])
       vi.mocked(runNearestAreaFallback).mockRejectedValue(
         new Error('mongo unavailable')
@@ -243,6 +246,14 @@ describe('policies-worker-processor', () => {
 
       // only the computing write happened; the message is kept for redelivery
       expect(mockUpdateOne).toHaveBeenCalledTimes(1)
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId
+        },
+        { $set: { marinePlanPolicyJob: 'computing' } }
+      )
+      expect(mockBulkWrite).not.toHaveBeenCalled()
       expect(deletePolicyJob).not.toHaveBeenCalled()
       expect(server.logger.error).toHaveBeenCalled()
     })
