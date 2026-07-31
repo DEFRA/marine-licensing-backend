@@ -12,14 +12,18 @@ import { collectSiteVertices, siteDiameterMetres } from './site-vertices.js'
 const MAX_LONGITUDE = 180
 const MAX_LATITUDE = 90
 
-// NamespaceNotFound (the simplified collection was never built — the source
-// collection was empty at startup) and IndexNotFound (a rebuild died between
-// inserting the areas and creating the geo index). Both mean the fallback is
-// permanently misconfigured rather than momentarily unavailable, so retrying
-// cannot fix them: they take the cannot-run path instead of consuming the
-// queue's delivery attempts and dead-lettering the job. An empty but correctly
-// indexed collection is not an error at all — it simply returns no rows.
-const CANNOT_RUN_ERROR_CODES = new Set([26, 27])
+// Every way the simplified collection can be unusable rather than merely
+// unavailable: 26 NamespaceNotFound (never built — the source collection was
+// empty at startup), 291 NoQueryExecutionPlans (no 2dsphere index on the key
+// named below, so a rebuild died between inserting the areas and creating the
+// index, or built the index on the wrong field), and 27 IndexNotFound, which
+// is what an unkeyed $geoNear reports for the same missing index.
+//
+// All mean the fallback is permanently misconfigured, so retrying cannot fix
+// them: they take the cannot-run path instead of consuming the queue's
+// delivery attempts and dead-lettering the job. An empty but correctly indexed
+// collection is not an error at all — it simply returns no rows.
+const CANNOT_RUN_ERROR_CODES = new Set([26, 27, 291])
 
 const siteToGeometries = (site) => {
   const { coordinatesType, coordinatesEntry } = site
@@ -78,6 +82,11 @@ export const deriveNearestAreaSearchBound = ({
 const geoNearStage = (near, maxDistance) => ({
   $geoNear: {
     near,
+    // Naming the key removes two silent misconfiguration paths: with two
+    // 2dsphere indexes $geoNear hard-fails as unsure which to use, and with an
+    // index on a different field it quietly returns no rows, which would be
+    // misreported as cannot-run.
+    key: 'geometry',
     distanceField: 'distanceMetres',
     spherical: true,
     ...(maxDistance === undefined ? {} : { maxDistance })
@@ -160,13 +169,17 @@ const perVertexNearestPipeline = (vertices, searchBound) => [
   }
 ]
 
+// Tested with Number.isFinite and abs rather than range comparisons so that
+// null, NaN and Infinity all fail closed: comparisons against null are false
+// on BOTH sides, so a null ordinate would otherwise pass as in-range and only
+// surface as a $geoNear error.
 const outOfRangeVertex = (vertices) =>
   vertices.find(
     ([longitude, latitude]) =>
-      longitude < -MAX_LONGITUDE ||
-      longitude > MAX_LONGITUDE ||
-      latitude < -MAX_LATITUDE ||
-      latitude > MAX_LATITUDE
+      !Number.isFinite(longitude) ||
+      !Number.isFinite(latitude) ||
+      Math.abs(longitude) > MAX_LONGITUDE ||
+      Math.abs(latitude) > MAX_LATITUDE
   )
 
 /**

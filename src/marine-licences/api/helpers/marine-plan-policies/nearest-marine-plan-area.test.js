@@ -277,6 +277,29 @@ describe('findNearestMarinePlanArea', () => {
     )
   })
 
+  it('should return null and warn when the geo index is on the wrong field', async () => {
+    await simplified().dropIndexes()
+    await simplified().createIndex({ somethingElse: '2dsphere' })
+
+    const nearest = await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: siteNearWest,
+      logger
+    })
+
+    // Naming the key is what makes this loud: an unkeyed $geoNear would pick
+    // the unrelated index, return no rows and look like an empty collection.
+    expect(nearest).toBeNull()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN
+        })
+      }),
+      expect.stringContaining('cannot run')
+    )
+  })
+
   it('should rethrow database errors that are not a missing collection or index', async () => {
     const failing = {
       collection: () => ({
@@ -294,6 +317,50 @@ describe('findNearestMarinePlanArea', () => {
       findNearestMarinePlanArea({ db: failing, site: siteNearWest, logger })
     ).rejects.toThrow('connection reset')
     expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  it('should return null and warn for non-finite coordinates', async () => {
+    const nearest = await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      // Comparisons against null are false on both sides, so a range test
+      // alone would wave these through to $geoNear.
+      site: fileSite({ type: 'Point', coordinates: [null, null] }),
+      logger
+    })
+
+    expect(nearest).toBeNull()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.SITE_GEOMETRY_INVALID,
+          outcome: 'failure',
+          reference: 'Malformed site'
+        })
+      }),
+      expect.stringContaining('outside the valid longitude/latitude range')
+    )
+  })
+
+  it('should break an exact distance tie on regionref', async () => {
+    // Two vertices mirrored about longitude 0, each 0.4 degrees from the
+    // nearer edge of its own area, so the two lookups return bit-identical
+    // distances. Insertion and vertex order both put the west area first, so
+    // only the regionref tiebreaker can make the lexicographically first
+    // regionref win.
+    const nearest = await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: fileSite({
+        type: 'MultiPoint',
+        coordinates: [
+          [-0.5, 54],
+          [0.5, 54]
+        ]
+      }),
+      logger
+    })
+
+    expect(nearest.regionref).toBe('E_i')
+    expect(nearest.name).toBe('East area')
   })
 
   it('should return null when the per-vertex phase finds nothing', async () => {
