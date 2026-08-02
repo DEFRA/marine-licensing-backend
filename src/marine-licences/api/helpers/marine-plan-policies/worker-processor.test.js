@@ -217,6 +217,11 @@ describe('policies-worker-processor', () => {
       await processPolicyJob(server, buildMessage())
 
       expect(runNearestAreaFallback).toHaveBeenCalled()
+      expect(getPoliciesContent).toHaveBeenCalledWith({
+        policies: [],
+        db: server.db,
+        logger: server.logger
+      })
     })
 
     it('should not run the fallback when real policies are returned', async () => {

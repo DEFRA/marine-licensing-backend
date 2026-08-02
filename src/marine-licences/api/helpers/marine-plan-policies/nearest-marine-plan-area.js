@@ -43,7 +43,9 @@ const warnSiteGeometryInvalid = ({ logger, site, error, message }) =>
       event: {
         action: MARINE_PLAN_POLICY_EVENT_ACTION.SITE_GEOMETRY_INVALID,
         outcome: 'failure',
-        reference: site.siteName ?? 'unknown site'
+        reference: site.siteName ?? 'unknown site',
+        reason:
+          'Site geometry could not be turned into query vertices; the site is skipped by the nearest-area lookup — check the stored site geometry'
       }
     },
     message
@@ -97,7 +99,7 @@ const geoNearStage = (near, maxDistance) => ({
 // search bound and the cannot-run detector. Null means the fallback cannot
 // produce an answer: either the collection holds no areas, or the collection
 // or its geo index is missing entirely (see CANNOT_RUN_ERROR_CODES).
-const nearestAreaToPoint = async ({ db, coordinates, site, logger }) => {
+const nearestAreaToPoint = async ({ db, coordinates, logger }) => {
   try {
     const [nearest] = await db
       .collection(collectionMarinePlanAreasSimplified)
@@ -257,7 +259,6 @@ export const findNearestMarinePlanArea = async ({
   const anchor = await nearestAreaToPoint({
     db,
     coordinates: vertices[0],
-    site,
     logger
   })
   if (!anchor) {

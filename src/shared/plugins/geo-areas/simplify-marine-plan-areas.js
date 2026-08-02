@@ -18,7 +18,7 @@ import { structureErrorForECS } from '../../common/helpers/logging/logger.js'
  * fallback query fast (measured 73.6s → sub-second).
  * Algorithm: https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
  */
-export const MARINE_PLAN_AREA_SIMPLIFY_TOLERANCE_DEGREES = 0.001
+const MARINE_PLAN_AREA_SIMPLIFY_TOLERANCE_DEGREES = 0.001
 
 const SIMPLIFY_LOCK_KEY = 'simplify-marine-plan-areas'
 

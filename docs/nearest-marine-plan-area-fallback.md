@@ -53,12 +53,20 @@ match is visible for review rather than silently dropped.
 
 - It does not affect applications whose sites do intersect a plan area. It runs
   only when the intersect returns nothing, or returns only `Land`.
+- It does not run per site when an application has several sites. If even one
+  site intersects a plan area, the fallback does not run for any of the
+  application's sites — the sites outside every area simply contribute no
+  policies, and only the intersecting sites' policies apply.
 - It does not write anything to the database about itself. The policies it
   produces are stored in exactly the same way as intersect-derived ones. The
   only record that the fallback ran is a log line — see
   [section 4](#4-observability).
 - It never modifies the full-resolution plan area data. The fallback works from
   a separate simplified copy; the original data is read-only to it.
+- It does not fall back to keeping the `Land` result. If the fallback is
+  triggered but cannot produce any policies — for example the reference data
+  is missing, or a derived prefix matches nothing — the application ends up
+  with zero policies, not the `Land` placeholder that triggered it.
 
 A product owner can stop here. The rest of this page is about how the search is
 made accurate enough and fast enough.
