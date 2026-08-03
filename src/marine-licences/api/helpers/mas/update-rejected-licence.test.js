@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
-import { mockMasSqsMessage } from './test-fixtures.js'
+import { mockMasRejectedSqsMessage } from './test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
 import { sendRejectedEmail } from './send-rejected-email.js'
 
@@ -29,7 +29,7 @@ describe('updateRejectedMarineLicence', async () => {
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   })
 
-  const body = JSON.parse(mockMasSqsMessage.Body)
+  const body = JSON.parse(mockMasRejectedSqsMessage.Body)
 
   it('should update marine licence with new status', async () => {
     const { mockMongo } = global
@@ -39,7 +39,7 @@ describe('updateRejectedMarineLicence', async () => {
 
     await updateRejectedMarineLicence(server.db, server.logger, {
       body,
-      id: mockMasSqsMessage.MessageId
+      id: mockMasRejectedSqsMessage.MessageId
     })
 
     expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
@@ -52,8 +52,10 @@ describe('updateRejectedMarineLicence', async () => {
         $set: {
           status: MARINE_LICENCE_STATUS.REJECTED,
           rejectedDate: body.rejectedDate,
+          rejectedInformation: 'Test free text',
+          rejectedReasons: 'Marine plan policies, Another reason',
           updatedAt: new Date(),
-          updatedBy: mockMasSqsMessage.MessageId
+          updatedBy: mockMasRejectedSqsMessage.MessageId
         }
       },
       { returnDocument: 'after' }
@@ -68,7 +70,7 @@ describe('updateRejectedMarineLicence', async () => {
 
     await updateRejectedMarineLicence(server.db, server.logger, {
       body,
-      id: mockMasSqsMessage.MessageId
+      id: mockMasRejectedSqsMessage.MessageId
     })
 
     expect(sendRejectedEmail).toHaveBeenCalledWith({
@@ -90,7 +92,7 @@ describe('updateRejectedMarineLicence', async () => {
 
     await updateRejectedMarineLicence(server.db, server.logger, {
       body,
-      id: mockMasSqsMessage.MessageId
+      id: mockMasRejectedSqsMessage.MessageId
     })
 
     expect(server.logger.warn).toHaveBeenCalledWith(
@@ -115,7 +117,7 @@ describe('updateRejectedMarineLicence', async () => {
 
     await updateRejectedMarineLicence(server.db, server.logger, {
       body,
-      id: mockMasSqsMessage.MessageId
+      id: mockMasRejectedSqsMessage.MessageId
     })
 
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
@@ -141,7 +143,7 @@ describe('updateRejectedMarineLicence', async () => {
     await expect(
       updateRejectedMarineLicence(server.db, server.logger, {
         body,
-        id: mockMasSqsMessage.MessageId
+        id: mockMasRejectedSqsMessage.MessageId
       })
     ).rejects.toThrow(dbError)
 

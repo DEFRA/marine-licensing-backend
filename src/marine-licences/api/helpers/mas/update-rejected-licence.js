@@ -8,7 +8,14 @@ import {
 import { sendRejectedEmail } from './send-rejected-email.js'
 
 export const updateRejectedMarineLicence = async (db, logger, { body, id }) => {
-  const { applicationReference, rejectedDate, userName, userEmail } = body
+  const {
+    applicationReference,
+    rejectedDate,
+    rejectedReasons,
+    rejectedInformation,
+    userName,
+    userEmail
+  } = body
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
   const updatedAt = new Date()
@@ -25,6 +32,8 @@ export const updateRejectedMarineLicence = async (db, logger, { body, id }) => {
         $set: {
           status: MARINE_LICENCE_STATUS.REJECTED,
           rejectedDate,
+          rejectedReasons,
+          rejectedInformation,
           updatedAt,
           updatedBy: id
         }
