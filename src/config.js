@@ -7,6 +7,7 @@ import {
   requiredFromEnvInCdp
 } from './shared/common/helpers/convict/required-from-env-in-cdp.js'
 import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
+import { masSchema } from './config/mas.js'
 import { configDotenv } from 'dotenv'
 
 export {
@@ -476,6 +477,7 @@ const config = convict({
     }
   },
   marinePlanPolicies: marinePlanPoliciesSchema,
+  mas: masSchema,
   iat: {
     inFlightTtlMs: {
       doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',

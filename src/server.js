@@ -7,6 +7,8 @@ import { processDynamicsQueuePlugin } from './shared/plugins/dynamics.js'
 import { processEmpQueuePlugin } from './shared/plugins/emp.js'
 import { marinePlanPoliciesWorkerPlugin } from './shared/plugins/marine-plan-policies/worker.js'
 import { marinePlanPoliciesDlqWorkerPlugin } from './shared/plugins/marine-plan-policies/dlq-worker.js'
+import { masWorkerPlugin } from './shared/plugins/mas/mas-worker.js'
+import { masDlqWorkerPlugin } from './shared/plugins/mas/mas-dlq-worker.js'
 import { populateCoastalOperationsAreasPlugin } from './shared/plugins/geo-areas/populate-coastal-operations-areas.js'
 import { populateMarinePlanAreasPlugin } from './shared/plugins/geo-areas/populate-marine-plan-areas.js'
 import { requestLogger } from './shared/common/helpers/logging/request-logger.js'
@@ -60,6 +62,8 @@ async function createServer() {
   // processEmpQueuePlugin - polls exemption queue and syncs to "Explore Marine Planning"
   // marinePlanPoliciesWorkerPlugin - processes marine plan policy SQS jobs
   // marinePlanPoliciesDlqWorkerPlugin - marks dead-lettered policy jobs as failed
+  // masWorkerPlugin - reads change notifications from the MAS SQS queue
+  // masDlqWorkerPlugin - logs dead-lettered MAS messages
   await server.register([
     requestTracing,
     requestLogger,
@@ -77,7 +81,9 @@ async function createServer() {
     processDynamicsQueuePlugin,
     processEmpQueuePlugin,
     marinePlanPoliciesWorkerPlugin,
-    marinePlanPoliciesDlqWorkerPlugin
+    marinePlanPoliciesDlqWorkerPlugin,
+    masWorkerPlugin,
+    masDlqWorkerPlugin
   ])
 
   return server
