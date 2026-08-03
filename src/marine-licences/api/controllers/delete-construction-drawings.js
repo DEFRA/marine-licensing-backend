@@ -1,12 +1,12 @@
 import Boom from '@hapi/boom'
-import { deleteConstructionDrawingSchema } from '../../models/site-details/delete-construction-drawing.js'
+import { deleteConstructionDrawingsSchema } from '../../models/site-details/delete-construction-drawings.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { versionedUpdate } from '../helpers/versionedUpdate.js'
 
-export const deleteConstructionDrawingController = {
+export const deleteConstructionDrawingsController = {
   options: {
     payload: {
       parse: true,
@@ -15,30 +15,28 @@ export const deleteConstructionDrawingController = {
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
-      payload: deleteConstructionDrawingSchema
+      payload: deleteConstructionDrawingsSchema
     }
   },
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const { id, siteIndex, drawingIndex, updatedAt, updatedBy } = payload
+      const { id, siteIndex, updatedAt, updatedBy } = payload
 
       const constructionDrawingsPath = `siteDetails.${siteIndex}.constructionDrawings`
-      const drawingPath = `${constructionDrawingsPath}.${drawingIndex}`
       const sitePath = `siteDetails.${siteIndex}`
       const _id = ObjectId.createFromHexString(id)
 
       const marineLicence = await db
         .collection(collectionMarineLicences)
-        .findOne({ _id, [drawingPath]: { $exists: true } })
+        .findOne({ _id, [sitePath]: { $exists: true } })
 
       if (!marineLicence) {
         throw Boom.notFound(
-          `Construction Drawing not found for site ${siteIndex} and drawing ${drawingIndex} for Marine Licence ${id}`
+          `Site not found at index ${siteIndex} for Marine Licence ${id}`
         )
       }
 
-      // updatedAt here is used as a version to prevent collisions and users deleting other drawings
       await versionedUpdate({
         db,
         collectionName: collectionMarineLicences,
@@ -47,14 +45,10 @@ export const deleteConstructionDrawingController = {
         sitePath,
         expectedUpdatedAt: marineLicence.updatedAt,
         updateOps: {
-          $unset: { [drawingPath]: 1 },
+          $unset: { [constructionDrawingsPath]: 1 },
           $set: { siteDetailsConfirmed: false, updatedAt, updatedBy }
         }
       })
-
-      await db
-        .collection(collectionMarineLicences)
-        .updateOne({ _id }, { $pull: { [constructionDrawingsPath]: null } })
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {
@@ -63,7 +57,7 @@ export const deleteConstructionDrawingController = {
       }
 
       throw Boom.internal(
-        `Error deleting construction drawing: ${error.message}`
+        `Error deleting construction drawings: ${error.message}`
       )
     }
   }

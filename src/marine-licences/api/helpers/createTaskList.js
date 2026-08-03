@@ -66,7 +66,10 @@ const checkConstructionDrawings = (siteDetails) => {
     return COMPLETED
   }
 
-  return siteDetails.constructionDrawings?.[0]?.s3Location
+  const { constructionDrawings } = siteDetails
+
+  return constructionDrawings?.length > 0 &&
+    constructionDrawings.every((drawing) => drawing.s3Location)
     ? COMPLETED
     : IN_PROGRESS
 }
