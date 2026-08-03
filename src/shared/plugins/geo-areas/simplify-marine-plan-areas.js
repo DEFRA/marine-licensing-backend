@@ -100,10 +100,10 @@ export const buildSimplifiedMarinePlanAreas = async (db, logger) => {
   // the live collection is untouched until the rename, and a failure before
   // it throws with the live collection exactly as it was.
   //
-  // dropCollection resolves to false for a namespace that does not exist
-  // rather than throwing (node_modules/mongodb/lib/operations/drop.js), so
-  // this also clears any scratch collection abandoned by a previous build
-  // that crashed before reaching the rename.
+  // dropCollection does not throw for a namespace that does not exist
+  // (the driver handles NamespaceNotFound internally), so this also clears
+  // any scratch collection abandoned by a previous build that crashed
+  // before reaching the rename.
   await db.dropCollection(SCRATCH_COLLECTION)
   const scratch = db.collection(SCRATCH_COLLECTION)
   await scratch.insertMany(simplified)
@@ -112,7 +112,9 @@ export const buildSimplifiedMarinePlanAreas = async (db, logger) => {
   // A same-database renameCollection is a namespace-only swap done under an
   // exclusive lock, not a document-by-document copy, so it is effectively
   // instantaneous: a reader sees either the complete previous collection or
-  // the complete new one, never a gap. dropTarget replaces the previous
+  // the complete new one, never a partial state (a query mid-stream at the
+  // swap instant is interrupted with an error — loud, and retried by the
+  // worker — rather than served stale data). dropTarget replaces the previous
   // build in the same operation; MongoDB documents dropTarget as a no-op
   // when the target does not exist (true on the very first-ever run), so no
   // special-casing is needed here — confirmed empirically in this file's
