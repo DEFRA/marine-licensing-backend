@@ -1,13 +1,15 @@
 export const MARINE_LICENCE_STATUS = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
-  SUBMITTED: 'SUBMITTED'
+  SUBMITTED: 'SUBMITTED',
+  TRANSFERRED: 'TRANSFERRED'
 }
 
 export const MARINE_LICENCE_STATUS_LABEL = {
   DRAFT: 'Draft',
   ACTIVE: 'Active',
-  SUBMITTED: 'Submitted'
+  SUBMITTED: 'Submitted',
+  TRANSFERRED: 'Transferred'
 }
 
 export const MARINE_PLAN_POLICY_JOB_STATUS = {
@@ -35,4 +37,12 @@ export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   WORDING_ENTRY_SKIPPED: 'mp-policies:wording-entry-skipped',
   WORDING_FIELD_INVALID: 'mp-policies:wording-field-invalid',
   WORDING_FIELD_TOO_LARGE: 'mp-policies:wording-field-too-large'
+}
+
+export const MAS_EVENT_ACTION = {
+  MESSAGE_RECEIVED: 'mas:message-received',
+  MESSAGE_DEAD_LETTERED: 'mas:message-dead-lettered',
+  JOB_STALE: 'mas:job-stale',
+  JOB_FAILED: 'mas:job-failed',
+  JOB_COMPLETE: 'mas:job-complete'
 }

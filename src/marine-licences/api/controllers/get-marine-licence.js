@@ -1,6 +1,7 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
+import { MARINE_LICENCE_STATUS_LABEL } from '../../constants/marine-licence.js'
 import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
 import {
   createTaskList,
@@ -44,7 +45,7 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
 
       const isCitizen = userRelationshipType === 'Citizen'
 
-      const { _id, ...rest } = marineLicence
+      const { _id, status, ...rest } = marineLicence
       const {
         responses: marinePlanPolicyResponses,
         count: marinePlanPolicyResponseCount
@@ -58,6 +59,7 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       const response = {
         id: _id.toString(),
         ...rest,
+        status: MARINE_LICENCE_STATUS_LABEL[status] || status,
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],
         marinePlanPolicyResponses,

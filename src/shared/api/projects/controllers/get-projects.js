@@ -49,7 +49,11 @@ const transformProjects = (projects, type) =>
   (projects ?? []).filter(Boolean).map((p) => transformProjectBase(p, type))
 
 export const sortByStatus = (a, b) => {
-  const statusOrder = [PROJECT_STATUS_LABEL.DRAFT, PROJECT_STATUS_LABEL.ACTIVE]
+  const statusOrder = [
+    PROJECT_STATUS_LABEL.TRANSFERRED,
+    PROJECT_STATUS_LABEL.DRAFT,
+    PROJECT_STATUS_LABEL.ACTIVE
+  ]
 
   const firstStatus = statusOrder.indexOf(a.status)
   const comparisonStatus = statusOrder.indexOf(b.status)

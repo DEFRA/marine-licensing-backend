@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb'
 import { config } from '../../../../config.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
+import { parseMessageBody } from '../../../../shared/common/helpers/sqs/parse-message-body.js'
 import {
   MARINE_PLAN_POLICY_JOB_STATUS,
   MARINE_PLAN_POLICY_EVENT_ACTION
@@ -11,21 +12,16 @@ import { getPoliciesContent } from './policy-content-client.js'
 import { pinWordingSnapshots } from './wording-snapshots.js'
 import { deletePolicyJob } from './sqs-client.js'
 
-const parseMessageBody = (message, logger) => {
-  try {
-    const { licenceId, policyJobId } = JSON.parse(message.Body)
+const discardMalformedMessage = 'Discarding malformed policy job message'
+
+const parsePolicyJobBody = (message, logger) =>
+  parseMessageBody(message, logger, discardMalformedMessage, (body) => {
+    const { licenceId, policyJobId } = body
     if (!licenceId || !policyJobId) {
       throw new Error('licenceId and policyJobId are required')
     }
     return { licenceId, policyJobId }
-  } catch (error) {
-    logger.error(
-      structureErrorForECS(error),
-      'Discarding malformed policy job message'
-    )
-    return null
-  }
-}
+  })
 
 const fetchPolicies = async ({ siteDetails, licenceId, db, logger }) => {
   const policies = await queryArcGISPolicies({ siteDetails, licenceId, logger })
@@ -105,7 +101,7 @@ export const processPolicyJob = async (server, message) => {
   const { db, logger } = server
   const { sqsQueueName } = config.get('marinePlanPolicies')
 
-  const body = parseMessageBody(message, logger)
+  const body = parsePolicyJobBody(message, logger)
   if (!body) {
     await deletePolicyJob(sqsQueueName, message.ReceiptHandle)
     return
@@ -155,7 +151,7 @@ export const processDlqJob = async (server, message) => {
   const { db, logger } = server
   const { sqsDlqName } = config.get('marinePlanPolicies')
 
-  const body = parseMessageBody(message, logger)
+  const body = parsePolicyJobBody(message, logger)
   if (body) {
     const { licenceId, policyJobId } = body
     const job = {

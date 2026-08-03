@@ -2,7 +2,10 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makeGetRequest } from '../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
-import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  MARINE_LICENCE_STATUS_LABEL
+} from '../../constants/marine-licence.js'
 import Wreck from '@hapi/wreck'
 
 vi.mock('../../../shared/common/helpers/dynamics/get-access-token.js', () => ({
@@ -44,6 +47,7 @@ describe('Get marine licence - integration tests', async () => {
     expect(body).toEqual({
       ...rest,
       id: _id.toString(),
+      status: MARINE_LICENCE_STATUS_LABEL[marineLicence.status],
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
       preferredDates,
@@ -96,6 +100,7 @@ describe('Get marine licence - integration tests', async () => {
     expect(body).toEqual({
       ...rest,
       id: _id.toString(),
+      status: MARINE_LICENCE_STATUS_LABEL[marineLicence.status],
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),
       preferredDates,
