@@ -25,6 +25,7 @@ import { confirmSiteDetailsController } from './controllers/confirm-site-details
 import { addConstructionDrawingController } from './controllers/add-construction-drawing.js'
 import { updateConstructionDrawingController } from './controllers/update-construction-drawing.js'
 import { deleteConstructionDrawingController } from './controllers/delete-construction-drawing.js'
+import { deleteConstructionDrawingsController } from './controllers/delete-construction-drawings.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -169,5 +170,10 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/delete-construction-drawing',
     ...deleteConstructionDrawingController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-construction-drawings',
+    ...deleteConstructionDrawingsController
   }
 ]

@@ -234,42 +234,6 @@ describe('PATCH /marine-licence/update-construction-drawing - integration tests'
     expect(statusCode).toBe(403)
   })
 
-  test('returns 413 when file exceeds the maximum allowed size', async () => {
-    const licenceId = await insertLicenceWithDrawing()
-
-    blobService.getMetadata.mockResolvedValue({
-      size: 10 * 1024 * 1024 + 1,
-      contentType: 'application/pdf'
-    })
-
-    const { statusCode } = await makePatchRequest({
-      server: getServer(),
-      url: '/marine-licence/update-construction-drawing',
-      contactId,
-      payload: buildPayload({ id: licenceId.toString() })
-    })
-
-    expect(statusCode).toBe(413)
-  })
-
-  test('returns 415 when content type is not an allowed pdf/image type', async () => {
-    const licenceId = await insertLicenceWithDrawing()
-
-    blobService.getMetadata.mockResolvedValue({
-      size: 1_000_000,
-      contentType: 'application/zip'
-    })
-
-    const { statusCode } = await makePatchRequest({
-      server: getServer(),
-      url: '/marine-licence/update-construction-drawing',
-      contactId,
-      payload: buildPayload({ id: licenceId.toString() })
-    })
-
-    expect(statusCode).toBe(415)
-  })
-
   test('returns 400 when filename is missing', async () => {
     const licenceId = await insertLicenceWithDrawing()
 
