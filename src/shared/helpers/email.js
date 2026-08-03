@@ -44,14 +44,7 @@ export const logEmailSuccess = (
 ) => {
   logger.info(
     {
-      http: {
-        response: {
-          status_code: statusCode
-        }
-      },
-      service: 'gov-notify',
-      operation: 'sendEmail',
-      applicationReference
+      http: buildHttpLogContext(statusCode)
     },
     `Sent confirmation email for ${projectType} ${applicationReference}`
   )
@@ -67,10 +60,7 @@ export const logEmailError = (
   logger.error(
     {
       ...structureErrorForECS(emailError),
-      http: buildHttpLogContext(statusCode),
-      service: 'gov-notify',
-      operation: 'sendEmail',
-      applicationReference
+      http: buildHttpLogContext(statusCode)
     },
     `Error sending email for ${projectType} ${applicationReference}`
   )

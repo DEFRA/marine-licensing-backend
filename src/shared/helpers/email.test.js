@@ -79,11 +79,7 @@ describe('sendEmail', () => {
     )
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.objectContaining({
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference
-      }),
+      expect.any(Object),
       `Sent confirmation email for ${projectType} ${applicationReference}`
     )
 
@@ -131,10 +127,7 @@ describe('sendEmail', () => {
         error: expect.objectContaining({
           message: expect.stringContaining('Error sending email'),
           code: 'EMAIL_SEND_ERROR'
-        }),
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference
+        })
       }),
       `Error sending email for ${projectType} ${applicationReference}`
     )
@@ -188,10 +181,7 @@ describe('sendEmail', () => {
         error: expect.objectContaining({
           message: expect.stringContaining('Error sending email'),
           code: 'EMAIL_SEND_ERROR'
-        }),
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference
+        })
       }),
       `Error sending email for ${projectType} ${applicationReference}`
     )
