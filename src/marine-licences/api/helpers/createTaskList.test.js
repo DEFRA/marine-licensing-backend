@@ -646,6 +646,17 @@ describe('createTaskList', () => {
       expect(getSiteDetailsDataStatus([siteWithEmptyDrawing])).toBe(IN_PROGRESS)
     })
 
+    it('returns IN_PROGRESS when a second, added-but-not-uploaded drawing slot exists alongside a completed one', () => {
+      const siteWithSecondEmptyDrawing = {
+        ...mockCompleteSite,
+        constructionDrawings: [...completedConstructionDrawings, {}]
+      }
+
+      expect(getSiteDetailsDataStatus([siteWithSecondEmptyDrawing])).toBe(
+        IN_PROGRESS
+      )
+    })
+
     it('is unaffected by construction drawings when no activity requires one', () => {
       const nonConstructionActivity = [
         {

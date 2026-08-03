@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { validateConstructionDrawingUpload } from '../helpers/validateConstructionDrawingUpload.js'
+import { versionedUpdate } from '../helpers/versionedUpdate.js'
 
 export const updateConstructionDrawingController = {
   options: {
@@ -39,7 +40,7 @@ export const updateConstructionDrawingController = {
 
       const marineLicence = await db
         .collection(collectionMarineLicences)
-        .findOne({ _id }, { projection: { siteDetails: 1 } })
+        .findOne({ _id }, { projection: { siteDetails: 1, updatedAt: 1 } })
 
       const site = marineLicence?.siteDetails?.[siteIndex]
       const constructionDrawingsCount = site?.constructionDrawings?.length ?? 0
@@ -63,9 +64,16 @@ export const updateConstructionDrawingController = {
           ? { [constructionDrawingsPath]: [{ filename, s3Location }] }
           : { [drawingPath]: { filename, s3Location } }
 
-      await db.collection(collectionMarineLicences).updateOne(
-        { _id },
-        {
+      // updatedAt here is used as a version to prevent collisions between
+      // concurrent uploads racing to write the same drawing slot
+      await versionedUpdate({
+        db,
+        collectionName: collectionMarineLicences,
+        id,
+        _id,
+        sitePath,
+        expectedUpdatedAt: marineLicence.updatedAt,
+        updateOps: {
           $set: {
             ...update,
             siteDetailsConfirmed: false,
@@ -73,7 +81,7 @@ export const updateConstructionDrawingController = {
             updatedBy
           }
         }
-      )
+      })
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {

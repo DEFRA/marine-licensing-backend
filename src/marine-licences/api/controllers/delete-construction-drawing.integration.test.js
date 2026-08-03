@@ -13,7 +13,7 @@ describe('PATCH /marine-licence/delete-construction-drawing - integration tests'
     ...overrides
   })
 
-  test('successfully deletes the drawing at the given index', async () => {
+  test('successfully deletes the drawing at the given index, leaving other sites untouched', async () => {
     const licenceId = new ObjectId()
     const marineLicence = {
       ...mockMarineLicence,
@@ -26,6 +26,10 @@ describe('PATCH /marine-licence/delete-construction-drawing - integration tests'
             { filename: 'drawing-1.pdf' },
             { filename: 'drawing-2.pdf' }
           ]
+        },
+        {
+          coordinatesType: 'manual',
+          constructionDrawings: [{ filename: 'other-site.pdf' }]
         }
       ],
       siteDetailsConfirmed: true
@@ -54,6 +58,9 @@ describe('PATCH /marine-licence/delete-construction-drawing - integration tests'
       filename: 'drawing-2.pdf'
     })
     expect(updated.siteDetailsConfirmed).toBe(false)
+    expect(updated.siteDetails[1].constructionDrawings).toEqual([
+      { filename: 'other-site.pdf' }
+    ])
   })
 
   test('renumbers remaining drawings after deleting a middle item', async () => {
