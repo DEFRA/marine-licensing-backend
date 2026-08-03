@@ -7,6 +7,7 @@ import {
   requiredFromEnvInCdp
 } from './shared/common/helpers/convict/required-from-env-in-cdp.js'
 import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
+import { masSchema } from './config/mas.js'
 import { configDotenv } from 'dotenv'
 
 export {
@@ -460,10 +461,17 @@ const config = convict({
         format: String,
         default: 'c30e5fb4-70f9-46fb-9fbb-a82f45d45664',
         env: 'NOTIFY_MARINE_LICENCE_TEMPLATE_ID_AGENT'
+      },
+      notifyTransferredId: {
+        doc: 'Notify template ID for a marine licence transferred email',
+        format: String,
+        default: '3dde6815-2908-4d3b-b4d0-026d69396318',
+        env: 'NOTIFY_MARINE_LICENCE_TRANSFERRED_TEMPLATE_ID'
       }
     }
   },
   marinePlanPolicies: marinePlanPoliciesSchema,
+  mas: masSchema,
   iat: {
     inFlightTtlMs: {
       doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',
