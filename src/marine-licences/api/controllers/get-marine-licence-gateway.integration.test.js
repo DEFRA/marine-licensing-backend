@@ -1,5 +1,6 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { ObjectId } from 'mongodb'
+import { mockWaterFrameworkDirective } from '../../../../tests/test.fixture.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 
@@ -11,6 +12,7 @@ vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
 
 describe('GET /public/marine-licence/mas/{id} - integration tests', async () => {
   const getServer = await setupTestServer()
+  const backendGatewayUrl = 'http://localhost:3001'
 
   test('returns project fields for a SUBMITTED marine licence', async () => {
     const publicId = new ObjectId()
@@ -43,6 +45,7 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
         consulted: 'yes',
         details: 'Consultation with stakeholders'
       },
+      waterFrameworkDirective: mockWaterFrameworkDirective,
       status: MARINE_LICENCE_STATUS.SUBMITTED
     }
 
@@ -79,6 +82,12 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
       publicConsultation: {
         consulted: 'yes',
         details: 'Consultation with stakeholders'
+      },
+      waterFrameworkDirective: {
+        nauticalMile: 'yes',
+        excludedActivities: 'no',
+        documentUrl: `${backendGatewayUrl}/public/marine-licence/${publicId}/water-framework-directive/download-url`,
+        fileName: mockWaterFrameworkDirective.uploadedFile.filename
       }
     })
   })
