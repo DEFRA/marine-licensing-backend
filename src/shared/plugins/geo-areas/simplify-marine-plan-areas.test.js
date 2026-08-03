@@ -10,6 +10,11 @@ import {
 const COLLAPSING_REGIONREF = 'collapses-under-buffer'
 const THROWING_REGIONREF = 'throws-during-simplify'
 
+// Derived exactly as the plugin derives it. A build that used any other
+// namespace would leave the scratch collection these tests seed and inspect
+// untouched, so the tests below still pin the name.
+const SCRATCH_COLLECTION = `${collectionMarinePlanAreasSimplified}-build`
+
 vi.mock('@turf/turf', async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -53,11 +58,31 @@ describe('buildSimplifiedMarinePlanAreas', () => {
   const source = () => global.mockMongo.collection(collectionMarinePlanAreas)
   const target = () =>
     global.mockMongo.collection(collectionMarinePlanAreasSimplified)
+  const scratch = () => global.mockMongo.collection(SCRATCH_COLLECTION)
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+
+  const namespaceExists = async (name) =>
+    (await global.mockMongo.listCollections({ name }).toArray()).length > 0
+
+  const targetHasGeoIndex = async () =>
+    (await target().indexes()).some((ix) => ix.key.geometry === '2dsphere')
+
+  // Forwards every operation to the in-memory Mongo, so a test can observe or
+  // break one named collection while the rest of the build runs for real.
+  const forwardingDb = (collectionFor) => ({
+    collection: (name) =>
+      collectionFor?.(name) ?? global.mockMongo.collection(name),
+    dropCollection: (name) => global.mockMongo.dropCollection(name),
+    renameCollection: (from, to, options) =>
+      global.mockMongo.renameCollection(from, to, options)
+  })
 
   beforeEach(async () => {
     await source().deleteMany({})
-    await target().deleteMany({})
+    // Dropped rather than emptied: the build swaps a whole namespace in, so
+    // tests that assert on a first-ever run need the target genuinely absent.
+    await global.mockMongo.dropCollection(collectionMarinePlanAreasSimplified)
+    await global.mockMongo.dropCollection(SCRATCH_COLLECTION)
   })
 
   it('should build a simplified copy with fewer vertices and a 2dsphere index', async () => {
@@ -71,8 +96,7 @@ describe('buildSimplifiedMarinePlanAreas', () => {
     const [doc] = await target().find({}).toArray()
     expect(doc.properties.regionref).toBe('E_i')
     expect(doc.geometry.coordinates[0].length).toBeLessThan(200)
-    const indexes = await target().indexes()
-    expect(indexes.some((ix) => ix.key.geometry === '2dsphere')).toBe(true)
+    expect(await targetHasGeoIndex()).toBe(true)
   })
 
   it('should replace previous contents on rebuild', async () => {
@@ -83,6 +107,93 @@ describe('buildSimplifiedMarinePlanAreas', () => {
     await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
 
     expect(await target().countDocuments()).toBe(1)
+    expect(await targetHasGeoIndex()).toBe(true)
+  })
+
+  it('should build and index the collection when it does not exist yet', async () => {
+    expect(await namespaceExists(collectionMarinePlanAreasSimplified)).toBe(
+      false
+    )
+    await source().insertOne(
+      areaDoc('East inshore', 'E_i', detailedCircle(1, 52))
+    )
+
+    const count = await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
+
+    expect(count).toBe(1)
+    expect(await target().countDocuments()).toBe(1)
+    expect(await targetHasGeoIndex()).toBe(true)
+  })
+
+  it('should discard a scratch collection abandoned by an earlier crashed build', async () => {
+    await scratch().insertOne(
+      areaDoc('Stale half-built area', 'stale', detailedCircle(9, 45))
+    )
+    await source().insertOne(
+      areaDoc('East inshore', 'E_i', detailedCircle(1, 52))
+    )
+
+    const count = await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
+
+    expect(count).toBe(1)
+    expect(await namespaceExists(SCRATCH_COLLECTION)).toBe(false)
+    const docs = await target().find({}).toArray()
+    expect(docs).toHaveLength(1)
+    expect(docs[0].properties.regionref).toBe('E_i')
+  })
+
+  it('should leave the previous collection and its index intact when the build fails partway', async () => {
+    await source().insertOne(
+      areaDoc('East inshore', 'E_i', detailedCircle(1, 52))
+    )
+    await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
+    const before = await target().find({}).toArray()
+
+    // A second source area, so a build that did complete would be visible.
+    await source().insertOne(
+      areaDoc('South inshore', 'S_i', detailedCircle(1, 50))
+    )
+    const failingScratch = {
+      insertMany: () => Promise.reject(new Error('scratch build failed')),
+      createIndex: () => Promise.resolve()
+    }
+    const db = forwardingDb((name) =>
+      name === SCRATCH_COLLECTION ? failingScratch : undefined
+    )
+
+    await expect(buildSimplifiedMarinePlanAreas(db, logger)).rejects.toThrow(
+      'scratch build failed'
+    )
+
+    expect(await target().find({}).toArray()).toEqual(before)
+    expect(await targetHasGeoIndex()).toBe(true)
+  })
+
+  it('should never clear the live collection in place while rebuilding', async () => {
+    await source().insertOne(
+      areaDoc('East inshore', 'E_i', detailedCircle(1, 52))
+    )
+    await buildSimplifiedMarinePlanAreas(global.mockMongo, logger)
+
+    const deleteManyTargets = []
+    const db = forwardingDb((name) => {
+      const collection = global.mockMongo.collection(name)
+      return {
+        find: (...args) => collection.find(...args),
+        insertMany: (...args) => collection.insertMany(...args),
+        createIndex: (...args) => collection.createIndex(...args),
+        deleteMany: (...args) => {
+          deleteManyTargets.push(name)
+          return collection.deleteMany(...args)
+        }
+      }
+    })
+
+    await buildSimplifiedMarinePlanAreas(db, logger)
+
+    expect(deleteManyTargets).not.toContain(collectionMarinePlanAreasSimplified)
+    expect(await target().countDocuments()).toBe(1)
+    expect(await targetHasGeoIndex()).toBe(true)
   })
 
   it('should skip the build and warn when the source collection is empty', async () => {

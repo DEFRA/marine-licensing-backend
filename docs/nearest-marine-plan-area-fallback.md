@@ -143,7 +143,10 @@ site**, which is unusable inside a queue worker.
 The fallback therefore queries a **simplified copy** of the areas, rebuilt from
 the source collection at every boot and reduced by Ramer–Douglas–Peucker
 simplification at a tolerance of **0.001° (~111 m)**. That cuts the geometry to
-around 18,000 vertices and the per-site query to tens of milliseconds.
+around 18,000 vertices and the per-site query to tens of milliseconds. The
+rebuild is assembled off to one side and swapped in as a whole, so a lookup
+running while it happens sees either the previous copy or the new one complete,
+never a half-built one.
 
 The tolerance was chosen by sweeping it against real sites:
 

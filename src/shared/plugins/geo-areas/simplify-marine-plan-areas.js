@@ -22,6 +22,10 @@ const MARINE_PLAN_AREA_SIMPLIFY_TOLERANCE_DEGREES = 0.001
 
 const SIMPLIFY_LOCK_KEY = 'simplify-marine-plan-areas'
 
+// Scratch namespace the rebuild writes into before the atomic swap below.
+// Derived from the live name (never hardcoded) so the two can never drift.
+const SCRATCH_COLLECTION = `${collectionMarinePlanAreasSimplified}-build`
+
 const simplifyFeature = (doc, logger) => {
   const feature = {
     type: 'Feature',
@@ -87,10 +91,38 @@ export const buildSimplifiedMarinePlanAreas = async (db, logger) => {
     }
   })
 
-  const target = db.collection(collectionMarinePlanAreasSimplified)
-  await target.deleteMany({})
-  await target.insertMany(simplified)
-  await target.createIndex({ geometry: '2dsphere' })
+  // Build into a scratch collection, then swap it in with an atomic rename
+  // (below), rather than clearing and repopulating the live collection in
+  // place. That would leave a window — visible to another instance's
+  // in-flight policy lookup — where marine-plan-areas-simple-0001 is empty or
+  // not yet 2dsphere-indexed, and a build that fails partway would leave a
+  // truncated collection that still looks healthy. Neither can happen here:
+  // the live collection is untouched until the rename, and a failure before
+  // it throws with the live collection exactly as it was.
+  //
+  // dropCollection resolves to false for a namespace that does not exist
+  // rather than throwing (node_modules/mongodb/lib/operations/drop.js), so
+  // this also clears any scratch collection abandoned by a previous build
+  // that crashed before reaching the rename.
+  await db.dropCollection(SCRATCH_COLLECTION)
+  const scratch = db.collection(SCRATCH_COLLECTION)
+  await scratch.insertMany(simplified)
+  await scratch.createIndex({ geometry: '2dsphere' })
+
+  // A same-database renameCollection is a namespace-only swap done under an
+  // exclusive lock, not a document-by-document copy, so it is effectively
+  // instantaneous: a reader sees either the complete previous collection or
+  // the complete new one, never a gap. dropTarget replaces the previous
+  // build in the same operation; MongoDB documents dropTarget as a no-op
+  // when the target does not exist (true on the very first-ever run), so no
+  // special-casing is needed here — confirmed empirically in this file's
+  // tests too.
+  // https://www.mongodb.com/docs/manual/reference/command/renameCollection/
+  await db.renameCollection(
+    SCRATCH_COLLECTION,
+    collectionMarinePlanAreasSimplified,
+    { dropTarget: true }
+  )
 
   if (keptFullFidelityCount > 0) {
     const simplifiedCount = simplified.length - keptFullFidelityCount

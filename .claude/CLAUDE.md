@@ -265,7 +265,11 @@ DYNAMICS_CLIENT_SECRET=***
 - **Startup rebuild:** `src/shared/plugins/geo-areas/simplify-marine-plan-areas.js` rebuilds
   `marine-plan-areas-simple-0001` from `marine-plan-areas` on every boot, guarded by a
   distributed lock so only one instance rebuilds at a time; the source collection is never
-  modified.
+  modified. The rebuild is written into a scratch collection
+  (`marine-plan-areas-simple-0001-build`, derived from the live name) and swapped in with an
+  atomic `renameCollection`, so another instance's in-flight policy lookup sees either the
+  complete previous collection or the complete new one — never one that is empty, unindexed
+  or half-built. A build that fails before the rename leaves the live collection untouched.
 
 ### Geospatial Data Parsing
 
