@@ -150,8 +150,87 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           excludedActivities: 'no',
           documentUrl: `${backendGatewayUrl}/public/marine-licence/${mockId}/water-framework-directive/download-url`,
           fileName: 'wfd-assessment.docx'
-        }
+        },
+        sites: []
       })
+    })
+
+    it('should include formatted sites for Dynamics', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        status: MARINE_LICENCE_STATUS.SUBMITTED,
+        siteDetails: [
+          {
+            siteName: 'Outer pontoon',
+            coordinatesType: 'file',
+            fileUploadType: 'shapefile',
+            uploadedFile: { filename: 'pontoon.zip' },
+            geoJSON: {
+              type: 'FeatureCollection',
+              features: [
+                {
+                  type: 'Feature',
+                  properties: {},
+                  geometry: {
+                    type: 'Polygon',
+                    coordinates: [
+                      [
+                        [-3.4, 50.5],
+                        [-3.3, 50.5],
+                        [-3.3, 50.6],
+                        [-3.4, 50.6],
+                        [-3.4, 50.5]
+                      ]
+                    ]
+                  }
+                }
+              ]
+            },
+            activityDetails: [
+              {
+                activityType: 'construction',
+                activityTypeLabel:
+                  'Construction, alteration or improvement of any works',
+                activitySubType: 'construction-type-1',
+                activitySubTypeLabel: 'Construction of new marine works',
+                activities: {
+                  selections: ['CON14'],
+                  selectionLabels: ['Pontoons or floating walkways']
+                },
+                activityDuration: { years: 0, months: 6 },
+                completionDate: { date: 'no' }
+              }
+            ]
+          }
+        ]
+      })
+
+      await getMarineLicenceGatewayController.handler(
+        mockRequest(),
+        mockHandler
+      )
+
+      const response = mockHandler.response.mock.calls[0][0]
+      expect(response.sites).toHaveLength(1)
+      expect(response.sites[0].siteName).toBe('Outer pontoon')
+      expect(response.sites[0].locationMethod).toBe('File upload')
+      expect(response.sites[0].geometry).not.toBeNull()
+      expect(response.sites[0].activities[0].activityType).toBe(
+        'Construction, alteration or improvement of any works'
+      )
+      expect(response.sites[0].activities[0].activitySubType).toBe(
+        'Construction of new marine works'
+      )
+      expect(response.sites[0].activities[0].activityDuration).toBe('6 months')
+      expect(
+        response.sites[0].activities[0].completionDate.hasSpecificDate
+      ).toBe('Not needed to be completed by a certain date')
+      expect(response.sites[0].activities[0].subActivities).toEqual([
+        'Pontoons or floating walkways'
+      ])
     })
 
     it('should return nulls when optional fields are missing', async () => {
@@ -181,7 +260,8 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           excludedActivities: null,
           documentUrl: null,
           fileName: null
-        }
+        },
+        sites: []
       })
     })
   })

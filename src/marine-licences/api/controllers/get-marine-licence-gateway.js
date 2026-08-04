@@ -8,6 +8,7 @@ import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../constants/water-framework-directive.js'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { formatPreferredDates } from '../helpers/format-preferred-dates.js'
+import { formatSitesForGateway } from '../helpers/format-sites-for-gateway.js'
 
 export const getMarineLicenceGatewayController = {
   options: {
@@ -32,6 +33,7 @@ export const getMarineLicenceGatewayController = {
           otherAuthorities: 1,
           publicConsultation: 1,
           waterFrameworkDirective: 1,
+          siteDetails: 1,
           status: 1
         }
       }
@@ -59,7 +61,8 @@ export const getMarineLicenceGatewayController = {
           doc.waterFrameworkDirective,
           config.get('backendGatewayUrl'),
           id
-        )
+        ),
+        sites: formatSitesForGateway(doc.siteDetails)
       })
       .code(StatusCodes.OK)
   }
