@@ -35,7 +35,7 @@
   "dependencies": {
     "@arcgis/core": "5.1.14",
     "@aws-sdk/client-s3": "^3.1095.0",
-    "@aws-sdk/client-sqs": "3.1091.0",
+    "@aws-sdk/client-sqs": "3.1096.0",
     "@aws-sdk/credential-providers": "3.1095.0",
     "@aws-sdk/s3-request-presigner": "3.1095.0",
     "@defra/cdp-auditing": "0.6.1",
@@ -75,7 +75,7 @@
     "proj4": "2.20.9",
     "sanitize-html": "2.17.6",
     "shapefile": "^0.6.6",
-    "undici": "8.8.0",
+    "undici": "8.10.0",
     "uuid": "14.0.1"
   },
   "devDependencies": {
@@ -92,31 +92,5 @@
     "vitest": "4.1.2",
     "vitest-fetch-mock": "0.4.5",
     "vitest-mongodb": "1.0.3"
-  },
-  "overrides": {
-    "@babel/plugin-transform-modules-systemjs": "7.29.4",
-    "vite": "8.0.16",
-    "minimatch": "10.2.4",
-    "axios": "^1.18.1",
-    "rollup": "^4.59.0",
-    "eslint": {
-      "ajv": "^6.14.0"
-    },
-    "flatted": "^3.4.2",
-    "yauzl": "^3.2.1",
-    "tinyexec": "1.0.2",
-    "postcss": "8.5.20",
-    "fast-xml-parser": "^5.5.7",
-    "picomatch": "^2.3.2 || ^4.0.4",
-    "brace-expansion": "5.0.8",
-    "shell-quote": "^1.10.0",
-    "hapi-pulse": {
-      "joi": "17.13.4"
-    },
-    "form-data": "4.0.6",
-    "js-yaml": "4.3.0",
-    "jsdom": {
-      "undici": "7.28.0"
-    }
   }
 }
