@@ -124,7 +124,7 @@ describe('runNearestAreaFallback', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: 'mp-policies:nearest-neighbour-fallback',
+          action: 'mp-policies:nearest-area-fallback',
           outcome: 'success',
           reference: expect.stringContaining('abc123 1/1 sites')
         })
@@ -150,7 +150,7 @@ describe('runNearestAreaFallback', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: 'mp-policies:nearest-neighbour-fallback',
+          action: 'mp-policies:nearest-area-fallback',
           reference: expect.stringContaining('NE_i@1235m')
         })
       }),
@@ -181,7 +181,7 @@ describe('runNearestAreaFallback', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: 'mp-policies:nearest-neighbour-fallback',
+          action: 'mp-policies:nearest-area-fallback',
           reference: expect.stringContaining('1/2 sites')
         })
       }),
@@ -254,7 +254,7 @@ describe('runNearestAreaFallback', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: 'mp-policies:nearest-neighbour-cannot-run',
+          action: 'mp-policies:nearest-area-cannot-run',
           outcome: 'failure',
           reference: 'abc123'
         })
@@ -276,7 +276,7 @@ describe('runNearestAreaFallback', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: 'mp-policies:nearest-neighbour-cannot-run',
+          action: 'mp-policies:nearest-area-cannot-run',
           reason: expect.stringContaining('no usable site geometry')
         })
       }),

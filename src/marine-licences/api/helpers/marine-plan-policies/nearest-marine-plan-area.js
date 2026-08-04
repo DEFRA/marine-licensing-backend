@@ -119,7 +119,7 @@ const nearestAreaToPoint = async ({ db, coordinates, logger }) => {
       {
         ...structureErrorForECS(error),
         event: {
-          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN,
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_UNAVAILABLE,
           outcome: 'failure',
           reference: collectionMarinePlanAreasSimplified,
           reason:

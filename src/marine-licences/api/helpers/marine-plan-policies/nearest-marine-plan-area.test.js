@@ -248,7 +248,7 @@ describe('findNearestMarinePlanArea', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN,
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_UNAVAILABLE,
           outcome: 'failure',
           reference: collectionMarinePlanAreasSimplified
         })
@@ -270,7 +270,7 @@ describe('findNearestMarinePlanArea', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_UNAVAILABLE
         })
       }),
       expect.stringContaining('cannot run')
@@ -293,7 +293,7 @@ describe('findNearestMarinePlanArea', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_UNAVAILABLE
         })
       }),
       expect.stringContaining('cannot run')
