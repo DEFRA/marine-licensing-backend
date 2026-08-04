@@ -5,15 +5,19 @@ import {
   mockMalformedMasSqsMessage,
   mockMasInvalidApplicationReferenceSqsMessage,
   mockMasMissingApplicationReferenceSqsMessage,
+  mockMasRejectedSqsMessage,
   mockMasSqsMessage
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
+import { updateRejectedMarineLicence } from './update-rejected-licence.js'
+
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
 vi.mock('./sqs-client.js', () => ({
   deleteMasMessage: vi.fn()
 }))
 
+vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
 
 const sqsQueueName = 'marine_licensing_mas'
@@ -49,6 +53,23 @@ describe('mas-worker-processor', () => {
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
         mockMasSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should call updateRejectedMarineLicence for a rejected message', async () => {
+      const server = buildServer()
+      const body = JSON.parse(mockMasRejectedSqsMessage.Body)
+
+      await processMasMessage(server, mockMasRejectedSqsMessage)
+
+      expect(updateRejectedMarineLicence).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        { body, id: mockMasRejectedSqsMessage.MessageId }
+      )
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasRejectedSqsMessage.ReceiptHandle
       )
     })
 
