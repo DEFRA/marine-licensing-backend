@@ -13,7 +13,6 @@ import {
 // nothing (or only the onshore 'Land' policy). Evaluated only on successful
 // queries; failures keep the existing SQS retry path.
 export const shouldRunNearestAreaFallback = (policies) =>
-  policies.length === 0 ||
   policies.every((policy) => policy.policyCode === LAND_POLICY_CODE)
 
 const warnEvent = (logger, action, outcome, reference, reason, message) =>
