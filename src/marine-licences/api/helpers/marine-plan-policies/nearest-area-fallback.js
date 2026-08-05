@@ -90,8 +90,11 @@ export const runNearestAreaFallback = async ({
   // least one entry of `siteDetails ?? []` produced a result above.
   const siteCoverage = `${siteAreas.length}/${siteDetails.length} sites`
   const siteSummary = siteAreas
-    .map((area) => `${area.regionref}@${Math.round(area.distanceMetres)}m`)
-    .join(' ')
+    .map(
+      (area) =>
+        `area: ${area.regionref}, distance: ${Math.round(area.distanceMetres)}m`
+    )
+    .join('; ')
   warnEvent(
     logger,
     MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_FALLBACK,

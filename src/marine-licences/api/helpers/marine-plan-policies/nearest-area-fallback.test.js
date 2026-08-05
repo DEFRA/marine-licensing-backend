@@ -151,10 +151,10 @@ describe('runNearestAreaFallback', () => {
       expect.objectContaining({
         event: expect.objectContaining({
           action: 'mp-policies:nearest-area-fallback',
-          reference: expect.stringContaining('NE_i@1235m')
+          reference: expect.stringContaining('area: NE_i, distance: 1235m')
         })
       }),
-      expect.stringContaining('NE_i@1235m')
+      expect.stringContaining('area: NE_i, distance: 1235m')
     )
   })
 
