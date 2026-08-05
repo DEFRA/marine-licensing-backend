@@ -68,7 +68,7 @@ match is visible for review rather than silently dropped.
   is missing, or a derived prefix matches nothing — the application ends up
   with zero policies, not the `Land` placeholder that triggered it.
 
-A product owner can stop here. The rest of this page is about how the search is
+Non-technical readers can stop here. The rest of this page is about how the search is
 made accurate enough and fast enough.
 
 ## 2. The decisions and their reasons
@@ -111,8 +111,7 @@ de-duplicated.
 Densification alone is unbounded: a large or intricate site can produce
 thousands of vertices, and every vertex costs one `$geoNear` — measured at
 **~6.6 ms** for a site far from any area. At that rate 226 vertices hold a
-single site's lookup near **1.5 s**, which is the operating budget the product
-owner set for it.
+single site's lookup near **1.5 s**, which is the current operating budget.
 
 That number is an explicit judgement call about latency, not a value derived
 from any precision requirement, and it is adjustable in config.
