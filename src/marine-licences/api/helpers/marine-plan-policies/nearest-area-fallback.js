@@ -45,8 +45,8 @@ export const runNearestAreaFallback = async ({
 
   if (!siteAreas.length) {
     // Cannot run — e.g. no site had usable geometry, or the simplified
-    // areas collection is missing or empty. Fall through to today's
-    // zero-policy behaviour, visibly.
+    // areas collection is missing or empty. Fall through to zero-policy
+    // behaviour, visibly.
     warnEvent(
       logger,
       MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_CANNOT_RUN,
