@@ -123,23 +123,17 @@ export const formatActivityMonthsForGateway = (activityMonths = {}) => {
   }
 }
 
-const ringToPolygonFeature = (ring, siteIndex, siteName) => {
-  if (!Array.isArray(ring) || ring.length === 0) {
-    return null
+const ringToPolygonFeature = (ring, siteIndex, siteName) => ({
+  type: 'Feature',
+  properties: {
+    siteIndex,
+    siteName: siteName ?? null
+  },
+  geometry: {
+    type: 'Polygon',
+    coordinates: [ring]
   }
-
-  return {
-    type: 'Feature',
-    properties: {
-      siteIndex,
-      siteName: siteName ?? null
-    },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [ring]
-    }
-  }
-}
+})
 
 export const buildSiteGeometry = (site, siteIndex) => {
   if (!site) {
@@ -168,23 +162,19 @@ export const buildSiteGeometry = (site, siteIndex) => {
     }
 
     const [coords] = getSiteCoordinates([site])
-    if (!coords?.length) {
+    if (
+      !coords?.length ||
+      !Array.isArray(coords[0]) ||
+      typeof coords[0][0] !== 'number'
+    ) {
       return null
     }
 
-    if (Array.isArray(coords[0]) && typeof coords[0][0] === 'number') {
-      const feature = ringToPolygonFeature(coords, siteIndex, site.siteName)
-      if (!feature) {
-        return null
-      }
-      return {
-        type: 'FeatureCollection',
-        crs: WGS84_CRS,
-        features: [feature]
-      }
+    return {
+      type: 'FeatureCollection',
+      crs: WGS84_CRS,
+      features: [ringToPolygonFeature(coords, siteIndex, site.siteName)]
     }
-
-    return null
   } catch {
     return null
   }
