@@ -54,37 +54,43 @@ const toSelectionArray = (selections) => {
   return selections ? [selections] : []
 }
 
+const parseDurationPart = (value) => (value == null ? 0 : Number(value))
+
+const formatDurationUnit = (value, singular, plural) =>
+  `${value} ${value === 1 ? singular : plural}`
+
+const isEmptyActivityDuration = ({ years, months }) =>
+  years == null && months == null
+
+const isInvalidActivityDuration = (yearsNumber, monthsNumber) =>
+  !Number.isFinite(yearsNumber) ||
+  !Number.isFinite(monthsNumber) ||
+  (yearsNumber === 0 && monthsNumber === 0)
+
 export const formatActivityDuration = (activityDuration = {}) => {
-  const years = activityDuration.years
-  const months = activityDuration.months
-
-  if (years == null && months == null) {
+  if (isEmptyActivityDuration(activityDuration)) {
     return null
   }
 
-  const yearsNumber = years == null ? 0 : Number(years)
-  const monthsNumber = months == null ? 0 : Number(months)
+  const yearsNumber = parseDurationPart(activityDuration.years)
+  const monthsNumber = parseDurationPart(activityDuration.months)
 
-  if (
-    !Number.isFinite(yearsNumber) ||
-    !Number.isFinite(monthsNumber) ||
-    (yearsNumber === 0 && monthsNumber === 0)
-  ) {
+  if (isInvalidActivityDuration(yearsNumber, monthsNumber)) {
     return null
   }
 
-  const yearLabel = yearsNumber === 1 ? 'year' : 'years'
-  const monthLabel = monthsNumber === 1 ? 'month' : 'months'
+  const yearsPart = formatDurationUnit(yearsNumber, 'year', 'years')
+  const monthsPart = formatDurationUnit(monthsNumber, 'month', 'months')
 
   if (monthsNumber === 0) {
-    return `${yearsNumber} ${yearLabel}`
+    return yearsPart
   }
 
   if (yearsNumber === 0) {
-    return `${monthsNumber} ${monthLabel}`
+    return monthsPart
   }
 
-  return `${yearsNumber} ${yearLabel} ${monthsNumber} ${monthLabel}`
+  return `${yearsPart} ${monthsPart}`
 }
 
 export const formatCompletionDateForGateway = (completionDate = {}) => {
