@@ -337,9 +337,7 @@ describe('formatSitesForGateway', () => {
       }
     ])
 
-    expect(result[0].locationMethod).toBe(
-      'Enter the coordinates of the site manually'
-    )
+    expect(result[0].locationMethod).toBe('Manual coordinate entry')
     expect(result[0].coordinatesEntry).toBe(
       'Enter a single set of coordinates and a width for a circle'
     )

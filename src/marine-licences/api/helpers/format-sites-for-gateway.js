@@ -23,7 +23,7 @@ const COMPLETION_DATE_NOT_NEEDED =
 
 const LOCATION_METHOD_LABELS = {
   file: 'File upload',
-  coordinates: 'Enter the coordinates of the site manually'
+  coordinates: 'Manual coordinate entry'
 }
 
 const COORDINATES_ENTRY_LABELS = {
