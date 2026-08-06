@@ -28,6 +28,15 @@ describe('buildCopiedMarineLicence', () => {
     })
   })
 
+  it('does not add feeEstimate when the source has none', () => {
+    const source = createCompleteMarineLicence(mockRejectedMarineLicenceFields)
+    delete source.feeEstimate
+
+    const result = buildCopiedMarineLicence(source, audit)
+
+    expect(result).not.toHaveProperty('feeEstimate')
+  })
+
   it('deletes the fields that are excluded in the copy', () => {
     const source = createCompleteMarineLicence(mockRejectedMarineLicenceFields)
     const result = buildCopiedMarineLicence(source, audit)
