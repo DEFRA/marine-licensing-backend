@@ -1,4 +1,14 @@
 import { getSiteCoordinates } from '../csv/site-details.js'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../../../shared/common/helpers/logging/logger.js'
+
+const logger = createLogger()
+
+/** 4 hours — short-lived; D365 should treat as ephemeral and re-fetch MAS if needed. */
+export const SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS = 4 * 60 * 60
 
 const WGS84_CRS = {
   type: 'name',
@@ -200,7 +210,35 @@ const formatActivityForGateway = (activity, activityIndex) => {
   }
 }
 
-const formatUploadedFile = (site) => {
+const mintSitePresignedFileUrl = async (site, getPresignedUrl) => {
+  if (site.coordinatesType !== 'file') {
+    return null
+  }
+
+  const s3Bucket = site.s3Location?.s3Bucket
+  const s3Key = site.s3Location?.s3Key
+  if (!s3Bucket || !s3Key || !getPresignedUrl) {
+    return null
+  }
+
+  try {
+    return await getPresignedUrl(
+      s3Bucket,
+      s3Key,
+      SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS
+    )
+  } catch (error) {
+    // Prefer a useful MAS payload over failing the whole response.
+    const filename = site.uploadedFile?.filename ?? 'unknown'
+    logger.error(
+      structureErrorForECS(error),
+      `MarineLicence:MAS: Failed to generate site file presigned URL for ${s3Bucket} (filename: ${filename})`
+    )
+    return null
+  }
+}
+
+const formatUploadedFile = (site, presignedFileUrl = null) => {
   if (site.coordinatesType !== 'file' || !site.uploadedFile?.filename) {
     return null
   }
@@ -210,11 +248,12 @@ const formatUploadedFile = (site) => {
     fileType:
       FILE_UPLOAD_TYPE_LABELS[site.fileUploadType] ||
       site.fileUploadType ||
-      null
+      null,
+    presignedFileUrl
   }
 }
 
-const formatSiteForGateway = (site, siteIndex) => ({
+const formatSiteForGateway = (site, siteIndex, presignedFileUrl = null) => ({
   siteIndex,
   siteName: site.siteName ?? null,
   locationMethod: LOCATION_METHOD_LABELS[site.coordinatesType] ?? null,
@@ -226,7 +265,7 @@ const formatSiteForGateway = (site, siteIndex) => ({
     site.coordinatesType === 'coordinates'
       ? (COORDINATE_SYSTEM_LABELS[site.coordinateSystem] ?? null)
       : null,
-  uploadedFile: formatUploadedFile(site),
+  uploadedFile: formatUploadedFile(site, presignedFileUrl),
   circleWidthMetres:
     site.coordinatesEntry === 'single' && site.circleWidth != null
       ? Number(site.circleWidth)
@@ -237,11 +276,28 @@ const formatSiteForGateway = (site, siteIndex) => ({
 
 /**
  * Maps stored siteDetails into the Dynamics MAS sites payload (labels only).
+ * Mints short-lived S3 URLs for file-upload sites via getPresignedUrl.
+ *
+ * @param {Array} siteDetails
+ * @param {{ getPresignedUrl?: Function }} [options] inject for tests; defaults to blobService
  */
-export const formatSitesForGateway = (siteDetails = []) => {
+export const formatSitesForGateway = async (siteDetails = [], options = {}) => {
   if (!Array.isArray(siteDetails)) {
     return []
   }
 
-  return siteDetails.map(formatSiteForGateway)
+  const getPresignedUrl =
+    options.getPresignedUrl ??
+    ((s3Bucket, s3Key, expiresInSeconds) =>
+      blobService.getPresignedUrl(s3Bucket, s3Key, expiresInSeconds))
+
+  return Promise.all(
+    siteDetails.map(async (site, siteIndex) => {
+      const presignedFileUrl = await mintSitePresignedFileUrl(
+        site,
+        getPresignedUrl
+      )
+      return formatSiteForGateway(site, siteIndex, presignedFileUrl)
+    })
+  )
 }

@@ -3,7 +3,8 @@ import {
   buildSiteGeometry,
   formatActivityDuration,
   formatCompletionDateForGateway,
-  formatSitesForGateway
+  formatSitesForGateway,
+  SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS
 } from './format-sites-for-gateway.js'
 import * as siteDetailsModule from '../csv/site-details.js'
 
@@ -53,64 +54,82 @@ describe('formatCompletionDateForGateway', () => {
 })
 
 describe('formatSitesForGateway', () => {
-  test('uses FE-snapshotted labels from the licence record only', () => {
-    const result = formatSitesForGateway([
-      {
-        siteName: 'Outer pontoon',
-        coordinatesType: 'file',
-        fileUploadType: 'shapefile',
-        uploadedFile: { filename: 'site.zip' },
-        geoJSON: {
-          type: 'FeatureCollection',
-          features: [
-            {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'Polygon',
-                coordinates: [
-                  [
-                    [-3.4, 50.5],
-                    [-3.3, 50.5],
-                    [-3.3, 50.6],
-                    [-3.4, 50.6],
-                    [-3.4, 50.5]
+  test('uses FE-snapshotted labels and mints presignedFileUrl for file sites', async () => {
+    const getPresignedUrl = vi
+      .fn()
+      .mockResolvedValue('https://s3.example.com/presigned-site.zip')
+
+    const result = await formatSitesForGateway(
+      [
+        {
+          siteName: 'Outer pontoon',
+          coordinatesType: 'file',
+          fileUploadType: 'shapefile',
+          uploadedFile: { filename: 'site.zip' },
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'marine-licences/site.zip',
+            checksumSha256: 'abc'
+          },
+          geoJSON: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [-3.4, 50.5],
+                      [-3.3, 50.5],
+                      [-3.3, 50.6],
+                      [-3.4, 50.6],
+                      [-3.4, 50.5]
+                    ]
                   ]
-                ]
+                }
               }
+            ]
+          },
+          activityDetails: [
+            {
+              activityType: 'construction',
+              activityTypeLabel:
+                'Construction, alteration or improvement of any works',
+              activitySubType: 'construction-type-1',
+              activitySubTypeLabel: 'Construction of new marine works',
+              activities: {
+                selections: ['CON14', 'CON12'],
+                selectionLabels: [
+                  'Pontoons or floating walkways',
+                  'Slipway or boat ramp'
+                ]
+              },
+              activityDescription: 'Install pontoon',
+              activityDuration: { years: 0, months: 6 },
+              activityMonths: { months: 'yes', details: 'Mar–Sep' },
+              completionDate: { date: 'no' },
+              workingHours: '08:00-17:00'
             }
           ]
-        },
-        activityDetails: [
-          {
-            activityType: 'construction',
-            activityTypeLabel:
-              'Construction, alteration or improvement of any works',
-            activitySubType: 'construction-type-1',
-            activitySubTypeLabel: 'Construction of new marine works',
-            activities: {
-              selections: ['CON14', 'CON12'],
-              selectionLabels: [
-                'Pontoons or floating walkways',
-                'Slipway or boat ramp'
-              ]
-            },
-            activityDescription: 'Install pontoon',
-            activityDuration: { years: 0, months: 6 },
-            activityMonths: { months: 'yes', details: 'Mar–Sep' },
-            completionDate: { date: 'no' },
-            workingHours: '08:00-17:00'
-          }
-        ]
-      }
-    ])
+        }
+      ],
+      { getPresignedUrl }
+    )
 
+    expect(getPresignedUrl).toHaveBeenCalledWith(
+      'mmo-uploads',
+      'marine-licences/site.zip',
+      SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS
+    )
     expect(result).toHaveLength(1)
     expect(result[0].siteIndex).toBe(0)
     expect(result[0].locationMethod).toBe('File upload')
     expect(result[0].uploadedFile).toEqual({
       filename: 'site.zip',
-      fileType: 'Shapefile'
+      fileType: 'Shapefile',
+      presignedFileUrl: 'https://s3.example.com/presigned-site.zip'
     })
     expect(result[0].geometry.type).toBe('FeatureCollection')
     expect(result[0].activities[0]).toMatchObject({
@@ -130,8 +149,36 @@ describe('formatSitesForGateway', () => {
     })
   })
 
-  test('does not invent activity labels from keys alone', () => {
-    const result = formatSitesForGateway([
+  test('returns null presignedFileUrl when minting fails and logs the error', async () => {
+    const getPresignedUrl = vi
+      .fn()
+      .mockRejectedValue(new Error('S3 unavailable'))
+
+    const result = await formatSitesForGateway(
+      [
+        {
+          coordinatesType: 'file',
+          fileUploadType: 'kml',
+          uploadedFile: { filename: 'site.kml' },
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'marine-licences/site.kml'
+          },
+          activityDetails: []
+        }
+      ],
+      { getPresignedUrl }
+    )
+
+    expect(result[0].uploadedFile).toEqual({
+      filename: 'site.kml',
+      fileType: 'KML',
+      presignedFileUrl: null
+    })
+  })
+
+  test('does not invent activity labels from keys alone', async () => {
+    const result = await formatSitesForGateway([
       {
         siteName: 'Site',
         coordinatesType: 'coordinates',
@@ -148,11 +195,12 @@ describe('formatSitesForGateway', () => {
     expect(result[0].activities[0].activityType).toBeNull()
     expect(result[0].activities[0].activitySubType).toBeNull()
     expect(result[0].activities[0].subActivities).toEqual([])
+    expect(result[0].uploadedFile).toBeNull()
   })
 
-  test('returns empty array for missing siteDetails', () => {
-    expect(formatSitesForGateway()).toEqual([])
-    expect(formatSitesForGateway(null)).toEqual([])
+  test('returns empty array for missing siteDetails', async () => {
+    expect(await formatSitesForGateway()).toEqual([])
+    expect(await formatSitesForGateway(null)).toEqual([])
   })
 })
 

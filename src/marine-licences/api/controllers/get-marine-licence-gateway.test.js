@@ -2,6 +2,13 @@ import { getMarineLicenceGatewayController } from './get-marine-licence-gateway.
 import { vi } from 'vitest'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { preferredDates } from '../../models/test-fixtures.js'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
+
+vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    getPresignedUrl: vi.fn()
+  }
+}))
 
 describe('GET /public/marine-licence/mas/{id}', () => {
   const paramsValidator =
@@ -17,6 +24,9 @@ describe('GET /public/marine-licence/mas/{id}', () => {
     vi.spyOn(global.mockMongo, 'collection').mockImplementation(function () {
       return { findOne: mockedFindOne }
     })
+    blobService.getPresignedUrl.mockResolvedValue(
+      'https://s3.example.com/default-presigned'
+    )
   })
 
   const mockRequest = (overrides = {}) => ({
@@ -168,6 +178,11 @@ describe('GET /public/marine-licence/mas/{id}', () => {
             coordinatesType: 'file',
             fileUploadType: 'shapefile',
             uploadedFile: { filename: 'pontoon.zip' },
+            s3Location: {
+              s3Bucket: 'mmo-uploads',
+              s3Key: 'marine-licences/pontoon.zip',
+              checksumSha256: 'abc'
+            },
             geoJSON: {
               type: 'FeatureCollection',
               features: [
@@ -208,6 +223,10 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         ]
       })
 
+      blobService.getPresignedUrl.mockResolvedValue(
+        'https://s3.example.com/pontoon.zip'
+      )
+
       await getMarineLicenceGatewayController.handler(
         mockRequest(),
         mockHandler
@@ -217,6 +236,16 @@ describe('GET /public/marine-licence/mas/{id}', () => {
       expect(response.sites).toHaveLength(1)
       expect(response.sites[0].siteName).toBe('Outer pontoon')
       expect(response.sites[0].locationMethod).toBe('File upload')
+      expect(response.sites[0].uploadedFile).toEqual({
+        filename: 'pontoon.zip',
+        fileType: 'Shapefile',
+        presignedFileUrl: 'https://s3.example.com/pontoon.zip'
+      })
+      expect(blobService.getPresignedUrl).toHaveBeenCalledWith(
+        'mmo-uploads',
+        'marine-licences/pontoon.zip',
+        4 * 60 * 60
+      )
       expect(response.sites[0].geometry).not.toBeNull()
       expect(response.sites[0].activities[0].activityType).toBe(
         'Construction, alteration or improvement of any works'

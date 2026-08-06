@@ -47,6 +47,8 @@ export const getMarineLicenceGatewayController = {
       throw Boom.forbidden(notAuthorisedMessage)
     }
 
+    const sites = await formatSitesForGateway(doc.siteDetails)
+
     return h
       .response({
         projectName: doc.projectName ?? null,
@@ -62,7 +64,7 @@ export const getMarineLicenceGatewayController = {
           config.get('backendGatewayUrl'),
           id
         ),
-        sites: formatSitesForGateway(doc.siteDetails)
+        sites
       })
       .code(StatusCodes.OK)
   }
