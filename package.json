@@ -33,18 +33,18 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "dependencies": {
-    "@arcgis/core": "5.1.12",
-    "@aws-sdk/client-s3": "^3.1086.0",
-    "@aws-sdk/client-sqs": "3.1091.0",
-    "@aws-sdk/credential-providers": "3.1086.0",
-    "@aws-sdk/s3-request-presigner": "3.1090.0",
+    "@arcgis/core": "5.1.14",
+    "@aws-sdk/client-s3": "^3.1095.0",
+    "@aws-sdk/client-sqs": "3.1096.0",
+    "@aws-sdk/credential-providers": "3.1098.0",
+    "@aws-sdk/s3-request-presigner": "3.1098.0",
     "@defra/cdp-auditing": "0.6.1",
     "@defra/hapi-secure-context": "0.4.0",
     "@defra/hapi-tracing": "1.30.0",
     "@elastic/ecs-pino-format": "1.5.0",
     "@esri/arcgis-rest-feature-service": "4.10.3",
     "@hapi/boom": "10.0.1",
-    "@hapi/hapi": "21.4.9",
+    "@hapi/hapi": "21.4.10",
     "@hapi/wreck": "18.1.2",
     "@terraformer/arcgis": "2.2.2",
     "@tmcw/togeojson": "^7.1.2",
@@ -66,7 +66,7 @@
     "joi": "18.2.3",
     "jsdom": "^29.1.0",
     "migrate-mongo": "14.0.7",
-    "mongo-locks": "3.0.2",
+    "mongo-locks": "3.2.0",
     "mongodb": "7.5.0",
     "node-fetch": "3.3.2",
     "notifications-node-client": "8.4.0",
@@ -75,48 +75,22 @@
     "proj4": "2.20.9",
     "sanitize-html": "2.17.6",
     "shapefile": "^0.6.6",
-    "undici": "8.8.0",
+    "undici": "8.10.0",
     "uuid": "14.0.1"
   },
   "devDependencies": {
     "@babel/core": "7.29.7",
     "@babel/preset-env": "7.29.5",
     "@vitest/coverage-v8": "4.1.2",
-    "autoprefixer": "10.5.2",
+    "autoprefixer": "10.5.4",
     "eslint": "9.35.0",
     "husky": "9.1.7",
     "neostandard": "0.13.0",
     "nodemon": "3.1.14",
     "npm-run-all": "4.1.5",
-    "prettier": "3.9.4",
+    "prettier": "3.9.6",
     "vitest": "4.1.2",
     "vitest-fetch-mock": "0.4.5",
     "vitest-mongodb": "1.0.3"
-  },
-  "overrides": {
-    "@babel/plugin-transform-modules-systemjs": "7.29.4",
-    "vite": "8.0.16",
-    "minimatch": "10.2.4",
-    "axios": "^1.18.1",
-    "rollup": "^4.59.0",
-    "eslint": {
-      "ajv": "^6.14.0"
-    },
-    "flatted": "^3.4.2",
-    "yauzl": "^3.2.1",
-    "tinyexec": "1.0.2",
-    "postcss": "8.5.20",
-    "fast-xml-parser": "^5.5.7",
-    "picomatch": "^2.3.2 || ^4.0.4",
-    "brace-expansion": "5.0.8",
-    "shell-quote": "^1.10.0",
-    "hapi-pulse": {
-      "joi": "17.13.4"
-    },
-    "form-data": "4.0.6",
-    "js-yaml": "4.3.0",
-    "jsdom": {
-      "undici": "7.28.0"
-    }
   }
 }

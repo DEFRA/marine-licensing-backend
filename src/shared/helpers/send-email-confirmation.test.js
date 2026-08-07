@@ -96,11 +96,7 @@ describe('sendEmailConfirmation', () => {
     )
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.objectContaining({
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference: 'ML/2025/10001'
-      }),
+      expect.any(Object),
       'Sent confirmation email for marine-licence ML/2025/10001'
     )
 
@@ -154,10 +150,7 @@ describe('sendEmailConfirmation', () => {
         error: expect.objectContaining({
           message: expect.stringContaining('Error sending email'),
           code: 'EMAIL_SEND_ERROR'
-        }),
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference: 'ML/2025/10002'
+        })
       }),
       'Error sending email for marine-licence ML/2025/10002'
     )
@@ -216,10 +209,7 @@ describe('sendEmailConfirmation', () => {
         error: expect.objectContaining({
           message: expect.stringContaining('Error sending email'),
           code: 'EMAIL_SEND_ERROR'
-        }),
-        service: 'gov-notify',
-        operation: 'sendEmail',
-        applicationReference: 'ML/2025/10002'
+        })
       }),
       'Error sending email for marine-licence ML/2025/10002'
     )

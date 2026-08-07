@@ -7,6 +7,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
   const paramsValidator =
     getMarineLicenceGatewayController.options.validate.params
   const mockId = '123456789123456789123456'
+  const backendGatewayUrl = 'http://localhost:3001'
 
   let mockedFindOne
 
@@ -83,6 +84,35 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           start: { month: '08', year: '2026' },
           end: { month: '11', year: '2026' }
         },
+        publicRegister: {
+          consent: 'no',
+          reason: 'Commercial confidentiality'
+        },
+        specialLegalPowers: {
+          agree: 'yes',
+          details: 'Harbour powers under local Act'
+        },
+        harbourAuthority: {
+          area: 'yes',
+          details: 'Port of Example'
+        },
+        otherAuthorities: {
+          agree: 'yes',
+          details: 'Planning permission from local authority'
+        },
+        publicConsultation: {
+          consulted: 'yes',
+          details: 'Consultation with stakeholders'
+        },
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'no',
+          uploadedFile: { filename: 'wfd-assessment.docx' },
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'exemptions/file-id'
+          }
+        },
         status: MARINE_LICENCE_STATUS.SUBMITTED
       })
 
@@ -94,7 +124,33 @@ describe('GET /public/marine-licence/mas/{id}', () => {
       expect(mockHandler.response).toHaveBeenCalledWith({
         projectName: 'Test project',
         projectBackground: 'Test project background',
-        preferredLicenceDates: 'August 2026 to November 2026'
+        preferredLicenceDates: 'August 2026 to November 2026',
+        publicRegister: {
+          consent: 'no',
+          reason: 'Commercial confidentiality'
+        },
+        specialLegalPowers: {
+          agree: 'yes',
+          details: 'Harbour powers under local Act'
+        },
+        harbourAuthority: {
+          area: 'yes',
+          details: 'Port of Example'
+        },
+        otherAuthorities: {
+          agree: 'yes',
+          details: 'Planning permission from local authority'
+        },
+        publicConsultation: {
+          consulted: 'yes',
+          details: 'Consultation with stakeholders'
+        },
+        waterFrameworkDirective: {
+          nauticalMile: 'yes',
+          excludedActivities: 'no',
+          documentUrl: `${backendGatewayUrl}/public/marine-licence/${mockId}/water-framework-directive/download-url`,
+          fileName: 'wfd-assessment.docx'
+        }
       })
     })
 
@@ -114,7 +170,18 @@ describe('GET /public/marine-licence/mas/{id}', () => {
       expect(mockHandler.response).toHaveBeenCalledWith({
         projectName: null,
         projectBackground: null,
-        preferredLicenceDates: null
+        preferredLicenceDates: null,
+        publicRegister: null,
+        specialLegalPowers: null,
+        harbourAuthority: null,
+        otherAuthorities: null,
+        publicConsultation: null,
+        waterFrameworkDirective: {
+          nauticalMile: null,
+          excludedActivities: null,
+          documentUrl: null,
+          fileName: null
+        }
       })
     })
   })

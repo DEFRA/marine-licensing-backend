@@ -265,6 +265,31 @@ describe('GET /marine-licence', () => {
       )
     })
 
+    it('should return the mapped status label rather than the raw status', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: 'abc',
+        status: MARINE_LICENCE_STATUS.ACTIVE
+      })
+
+      await authenticatedController.handler(
+        requestFromApplicantUser({
+          userContactId: 'abc',
+          params: { id: mockId }
+        }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          value: expect.objectContaining({ status: 'Active' })
+        })
+      )
+    })
+
     it('should allow an internal (Entra ID) user to access any marine licence', async () => {
       const { mockHandler } = global
 
@@ -356,6 +381,7 @@ describe('GET /marine-licence', () => {
           value: expect.objectContaining({
             id: mockId,
             projectName: 'Test project',
+            status: 'Submitted',
             whoMarineLicenceIsFor: 'Dredging Co'
           })
         })

@@ -205,6 +205,19 @@ describe('getProjectsController', () => {
       expect(result[1].status).toBe(PROJECT_STATUS_LABEL.ACTIVE)
     })
 
+    it('should put TRANSFERRED status at the top', () => {
+      const projects = [
+        { status: PROJECT_STATUS_LABEL.DRAFT, projectName: 'Draft Project' },
+        {
+          status: PROJECT_STATUS_LABEL.TRANSFERRED,
+          projectName: 'Transferred Project'
+        }
+      ]
+      const result = projects.sort(sortByStatus)
+      expect(result[0].status).toBe(PROJECT_STATUS_LABEL.TRANSFERRED)
+      expect(result[1].status).toBe(PROJECT_STATUS_LABEL.DRAFT)
+    })
+
     it('should handle unknown status by placing it last', () => {
       const projects = [
         { status: 'UNKNOWN_STATUS', projectName: 'Unknown Project' },
