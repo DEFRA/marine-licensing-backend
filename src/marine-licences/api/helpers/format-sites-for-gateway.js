@@ -152,7 +152,7 @@ export const buildSiteGeometry = (site, siteIndex) => {
         features: site.geoJSON.features.map((feature) => ({
           type: 'Feature',
           properties: {
-            ...(feature.properties || {}),
+            ...feature.properties,
             siteIndex,
             siteName: site.siteName ?? null
           },
