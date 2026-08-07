@@ -73,13 +73,15 @@ describe('PATCH /marine-licence/delete-construction-drawings', () => {
         checksumSha256: 'abc123'
       })
 
-      const setupMocks = (drawings, referencingLicences = []) => {
+      // The reference guard's own behaviour is covered by deleteS3Objects.test.js
+      // and, against real mongo, by delete-construction-drawing.integration.test.js
+      const setupMocks = (drawings) => {
         const { mockMongo } = global
         vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
           findOne: vi.fn().mockResolvedValueOnce(buildMarineLicence(drawings)),
           updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 }),
           find: vi.fn().mockReturnValue({
-            toArray: vi.fn().mockResolvedValue(referencingLicences)
+            toArray: vi.fn().mockResolvedValue([])
           })
         }))
       }
@@ -101,49 +103,6 @@ describe('PATCH /marine-licence/delete-construction-drawings', () => {
           { s3Bucket: 'mmo-uploads', s3Key: 'key-1' },
           { s3Bucket: 'mmo-uploads', s3Key: 'key-3' }
         ])
-      })
-
-      it('should not delete files still referenced by another marine licence', async () => {
-        const { mockMongo, mockHandler } = global
-        setupMocks(
-          [
-            { filename: 'drawing-1.pdf', s3Location: s3Location('shared') },
-            { filename: 'drawing-2.pdf', s3Location: s3Location('unique') }
-          ],
-          [
-            {
-              siteDetails: [
-                { constructionDrawings: [{ s3Location: s3Location('shared') }] }
-              ]
-            }
-          ]
-        )
-
-        await deleteConstructionDrawingsController.handler(
-          { db: mockMongo, payload: buildPayload() },
-          mockHandler
-        )
-
-        expect(blobService.deleteFiles).toHaveBeenCalledWith([
-          { s3Bucket: 'mmo-uploads', s3Key: 'unique' }
-        ])
-      })
-
-      it('should still succeed when the S3 delete fails', async () => {
-        const { mockMongo, mockHandler } = global
-        setupMocks([
-          { filename: 'drawing-1.pdf', s3Location: s3Location('key-1') }
-        ])
-        blobService.deleteFiles.mockRejectedValue(new Error('S3 unavailable'))
-
-        await deleteConstructionDrawingsController.handler(
-          { db: mockMongo, payload: buildPayload() },
-          mockHandler
-        )
-
-        expect(mockHandler.response).toHaveBeenCalledWith({
-          message: 'success'
-        })
       })
     })
 

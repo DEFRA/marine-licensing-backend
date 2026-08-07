@@ -57,17 +57,17 @@ export const updateConstructionDrawingController = {
         )
       }
 
-      // Mongo's $set does not auto-vivify arrays for a purely-numeric dotted
-      // path - if constructionDrawings doesn't exist yet, `$set` on
-      // "constructionDrawings.0" creates it as a plain object ({ "0": ... })
-      // rather than an array, which then breaks any later $push. Only safe
-      // to $set the specific index once the array already exists.
       // The drawing being replaced still owns its previous upload - clean it up
       // once the new location has been written
       const previousS3Locations = collectS3Locations(
         site.constructionDrawings?.[drawingIndex]
       )
 
+      // Mongo's $set does not auto-vivify arrays for a purely-numeric dotted
+      // path - if constructionDrawings doesn't exist yet, `$set` on
+      // "constructionDrawings.0" creates it as a plain object ({ "0": ... })
+      // rather than an array, which then breaks any later $push. Only safe
+      // to $set the specific index once the array already exists.
       const constructionDrawingsPath = `${sitePath}.constructionDrawings`
       const update =
         constructionDrawingsCount === 0
