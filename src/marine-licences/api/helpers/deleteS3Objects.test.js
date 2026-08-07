@@ -54,29 +54,19 @@ describe('collectS3Locations', () => {
     ).toEqual([{ s3Bucket: bucket, s3Key: 'key-3' }])
   })
 
-  it('collects drawings and the water framework directive document from a whole licence', () => {
-    const marineLicence = {
-      projectName: 'Test',
-      siteDetails: [
-        {
-          constructionDrawings: [
-            { s3Location: location('site-0-key-0') },
-            { s3Location: location('site-0-key-1') }
-          ]
-        },
-        { constructionDrawings: [{ s3Location: location('site-1-key-0') }] }
-      ],
-      waterFrameworkDirective: {
-        nauticalMile: 'yes',
-        s3Location: location('wfd-key')
-      }
+  it('collects every drawing from a site', () => {
+    const site = {
+      coordinatesType: 'manual',
+      constructionDrawings: [
+        { s3Location: location('key-0') },
+        {},
+        { s3Location: location('key-2') }
+      ]
     }
 
-    expect(collectS3Locations(marineLicence)).toEqual([
-      { s3Bucket: bucket, s3Key: 'site-0-key-0' },
-      { s3Bucket: bucket, s3Key: 'site-0-key-1' },
-      { s3Bucket: bucket, s3Key: 'site-1-key-0' },
-      { s3Bucket: bucket, s3Key: 'wfd-key' }
+    expect(collectS3Locations(site.constructionDrawings)).toEqual([
+      { s3Bucket: bucket, s3Key: 'key-0' },
+      { s3Bucket: bucket, s3Key: 'key-2' }
     ])
   })
 
@@ -145,18 +135,6 @@ describe('filterUnreferencedS3Keys', () => {
         { s3Bucket: bucket, s3Key: 'unique' }
       ])
     ).toEqual([{ s3Bucket: bucket, s3Key: 'unique' }])
-  })
-
-  it('retains a key still referenced by another licence water framework directive document', async () => {
-    toArray.mockResolvedValue([
-      { waterFrameworkDirective: { s3Location: location('wfd-key') } }
-    ])
-
-    expect(
-      await filterUnreferencedS3Keys(db, [
-        { s3Bucket: bucket, s3Key: 'wfd-key' }
-      ])
-    ).toEqual([])
   })
 
   it('does not query mongo when there are no candidates', async () => {

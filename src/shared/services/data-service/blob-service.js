@@ -1,7 +1,6 @@
 import {
   HeadObjectCommand,
   GetObjectCommand,
-  DeleteObjectCommand,
   DeleteObjectsCommand
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -120,43 +119,6 @@ class BlobService {
       }
 
       throw Boom.internal(`S3 download failed: ${error.message}`)
-    }
-  }
-
-  async deleteFile(s3Bucket, s3Key) {
-    logger.info(`${this.logSystem}: Deleting S3 object ${s3Bucket}/${s3Key}`)
-
-    try {
-      const command = new DeleteObjectCommand({
-        Bucket: s3Bucket,
-        Key: s3Key
-      })
-      await this.client.send(command)
-
-      logger.info(
-        { event: { action: 'delete', outcome: 'success' } },
-        `${this.logSystem}: Successfully deleted S3 object ${s3Bucket}/${s3Key}`
-      )
-    } catch (error) {
-      // Deleting an object that is already gone is the desired end state, so
-      // treat a missing key as success rather than an error
-      if (error.name === 'NoSuchKey' || error.name === 'NotFound') {
-        logger.info(
-          `${this.logSystem}: S3 object ${s3Bucket}/${s3Key} already absent`
-        )
-        return
-      }
-
-      logger.error(
-        structureErrorForECS(error),
-        `${this.logSystem}: Failed to delete S3 object ${s3Bucket}/${s3Key}`
-      )
-
-      if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
-      }
-
-      throw Boom.internal(`S3 delete failed: ${error.message}`)
     }
   }
 

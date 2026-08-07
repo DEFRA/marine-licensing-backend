@@ -6,10 +6,6 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { createLogger } from '../../../shared/common/helpers/logging/logger.js'
-import {
-  collectS3Locations,
-  deleteOrphanedS3Objects
-} from '../helpers/deleteS3Objects.js'
 
 const logger = createLogger()
 
@@ -33,15 +29,9 @@ export const deleteMarineLicenceController = {
         )
       }
 
-      // Picks up every construction drawing plus the water framework directive
-      // document in one sweep
-      const s3Locations = collectS3Locations(marineLicence)
-
       await db
         .collection(collectionMarineLicences)
         .deleteOne({ _id: ObjectId.createFromHexString(params.id) })
-
-      await deleteOrphanedS3Objects(db, s3Locations)
 
       logger.info(
         { event: { action: 'delete', outcome: 'success' } },
