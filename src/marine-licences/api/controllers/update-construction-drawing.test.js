@@ -126,15 +126,14 @@ describe('PATCH /marine-licence/update-construction-drawing', () => {
         checksumSha256: 'previous-checksum'
       }
 
-      const mockDbWithReferences = (
-        marineLicence,
-        referencingLicences = []
-      ) => ({
+      // The reference guard's own behaviour is covered by deleteS3Objects.test.js
+      // and, against real mongo, by update-construction-drawing.integration.test.js
+      const mockDbWithReferences = (marineLicence) => ({
         collection: vi.fn().mockReturnValue({
           findOne: vi.fn().mockResolvedValueOnce(marineLicence),
           updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 1 }),
           find: vi.fn().mockReturnValue({
-            toArray: vi.fn().mockResolvedValue(referencingLicences)
+            toArray: vi.fn().mockResolvedValue([])
           })
         })
       })
@@ -179,54 +178,6 @@ describe('PATCH /marine-licence/update-construction-drawing', () => {
         )
 
         expect(blobService.deleteFiles).not.toHaveBeenCalled()
-      })
-
-      it('does not delete the file when the same key is re-uploaded', async () => {
-        const { mockHandler } = global
-        const mockPayload = buildPayload()
-        const marineLicence = {
-          _id: mockPayload.id,
-          updatedAt: existingUpdatedAt,
-          siteDetails: [
-            { constructionDrawings: [{ filename: 'same.pdf', s3Location }] }
-          ]
-        }
-        // The document still references the key after the write, so the
-        // reference guard filters it out
-        const mockDb = mockDbWithReferences(marineLicence, [marineLicence])
-
-        await updateConstructionDrawingController.handler(
-          { db: mockDb, payload: mockPayload },
-          mockHandler
-        )
-
-        expect(blobService.deleteFiles).not.toHaveBeenCalled()
-      })
-
-      it('still succeeds when the S3 delete fails', async () => {
-        const { mockHandler } = global
-        const mockPayload = buildPayload()
-        const mockDb = mockDbWithReferences({
-          _id: mockPayload.id,
-          updatedAt: existingUpdatedAt,
-          siteDetails: [
-            {
-              constructionDrawings: [
-                { filename: 'previous.pdf', s3Location: previousS3Location }
-              ]
-            }
-          ]
-        })
-        blobService.deleteFiles.mockRejectedValue(new Error('S3 unavailable'))
-
-        await updateConstructionDrawingController.handler(
-          { db: mockDb, payload: mockPayload },
-          mockHandler
-        )
-
-        expect(mockHandler.response).toHaveBeenCalledWith({
-          message: 'success'
-        })
       })
     })
 

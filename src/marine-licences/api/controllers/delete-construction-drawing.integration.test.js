@@ -118,6 +118,9 @@ describe('PATCH /marine-licence/delete-construction-drawing - integration tests'
     ])
   })
 
+  // Also pins the ordering: if the S3 delete ran before the mongo write, this
+  // document would still reference key-1 and the guard would retain it, so
+  // deleteFiles would never be called. Don't weaken this test.
   test('deletes the uploaded file from S3', async () => {
     const licenceId = new ObjectId()
 
@@ -197,7 +200,7 @@ describe('PATCH /marine-licence/delete-construction-drawing - integration tests'
 
   test('still succeeds when the S3 delete fails', async () => {
     const licenceId = new ObjectId()
-    blobService.deleteFiles.mockRejectedValue(new Error('S3 unavailable'))
+    blobService.deleteFiles.mockRejectedValueOnce(new Error('S3 unavailable'))
 
     await globalThis.mockMongo.collection('marine-licences').insertOne({
       ...mockMarineLicence,
