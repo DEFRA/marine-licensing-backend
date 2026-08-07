@@ -5,6 +5,7 @@ import { fileUploadConditionalSiteItemFields } from '../../../shared/models/site
 import { manualCoordinatesConditionalSiteItemFields } from '../../../shared/models/site-details/manual-coordinates.js'
 import { siteNameFieldSchema } from '../../../shared/models/site-details/site-name.js'
 import { activityItemSchema } from '../activity-details/activity-details.js'
+import { constructionDrawingSchema } from './construction-drawing.js'
 import { COORDINATE_SYSTEMS } from '../../../shared/common/constants/coordinates.js'
 import {
   wgs84ValidationSchema,
@@ -23,6 +24,7 @@ export const siteItemSchema = joi.object({
     otherwise: siteNameFieldSchema.optional()
   }),
   activityDetails: joi.array().items(activityItemSchema).optional(),
+  constructionDrawings: joi.array().items(constructionDrawingSchema).optional(),
   ...fileUploadConditionalSiteItemFields,
   ...manualCoordinatesConditionalSiteItemFields,
   coordinates: joi.when('coordinatesType', {

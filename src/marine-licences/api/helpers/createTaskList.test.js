@@ -37,9 +37,21 @@ const mockMarineLicence = createCompleteMarineLicence()
 
 const { feeEstimate, harbourAuthority } = mockMarineLicence
 
+const completedConstructionDrawings = [
+  {
+    filename: 'tech-drawing.pdf',
+    s3Location: {
+      s3Bucket: 'test-bucket',
+      s3Key: 'test-key',
+      checksumSha256: 'test-checksum'
+    }
+  }
+]
+
 const mockCompleteSite = {
   ...mockFileUploadSite,
-  activityDetails: completedActivityDetails
+  activityDetails: completedActivityDetails,
+  constructionDrawings: completedConstructionDrawings
 }
 
 describe('createTaskList', () => {
@@ -343,7 +355,11 @@ describe('createTaskList', () => {
         projectBackground: 'Some background',
         publicRegister: 'Public Register Info',
         siteDetails: [
-          { ...mockCircleSite, activityDetails: completedActivityDetails }
+          {
+            ...mockCircleSite,
+            activityDetails: completedActivityDetails,
+            constructionDrawings: completedConstructionDrawings
+          }
         ],
         siteDetailsConfirmed: true
       }
@@ -404,7 +420,11 @@ describe('createTaskList', () => {
     it('should return siteDetails as COMPLETED when all fields, valid coordinates, and activity details are present and confirmed', () => {
       const marineLicence = {
         siteDetails: [
-          { ...mockMultipleSite, activityDetails: completedActivityDetails }
+          {
+            ...mockMultipleSite,
+            activityDetails: completedActivityDetails,
+            constructionDrawings: completedConstructionDrawings
+          }
         ],
         siteDetailsConfirmed: true
       }
@@ -580,6 +600,79 @@ describe('createTaskList', () => {
       delete siteWithoutSiteName.siteName
 
       expect(getSiteDetailsDataStatus([siteWithoutSiteName])).toBe(IN_PROGRESS)
+    })
+  })
+
+  describe('construction drawings', () => {
+    it('returns IN_PROGRESS for a file-upload site with a drawing-requiring activity and no construction drawings', () => {
+      const siteWithoutDrawings = { ...mockCompleteSite }
+      delete siteWithoutDrawings.constructionDrawings
+
+      expect(getSiteDetailsDataStatus([siteWithoutDrawings])).toBe(IN_PROGRESS)
+    })
+
+    it('returns IN_PROGRESS for a circle site with a drawing-requiring activity and no construction drawings', () => {
+      const marineLicence = {
+        siteDetails: [
+          { ...mockCircleSite, activityDetails: completedActivityDetails }
+        ],
+        siteDetailsConfirmed: true
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+
+    it('returns IN_PROGRESS for a multiple-coordinates site with a drawing-requiring activity and no construction drawings', () => {
+      const marineLicence = {
+        siteDetails: [
+          { ...mockMultipleSite, activityDetails: completedActivityDetails }
+        ],
+        siteDetailsConfirmed: true
+      }
+
+      expect(createTaskList(marineLicence).siteDetails).toBe(IN_PROGRESS)
+    })
+
+    it('returns COMPLETED once a construction drawing with an s3Location is present', () => {
+      expect(getSiteDetailsDataStatus([mockCompleteSite])).toBe(COMPLETED)
+    })
+
+    it('returns IN_PROGRESS when the only construction drawing has no s3Location yet (an added-but-not-uploaded slot)', () => {
+      const siteWithEmptyDrawing = {
+        ...mockCompleteSite,
+        constructionDrawings: [{}]
+      }
+
+      expect(getSiteDetailsDataStatus([siteWithEmptyDrawing])).toBe(IN_PROGRESS)
+    })
+
+    it('returns IN_PROGRESS when a second, added-but-not-uploaded drawing slot exists alongside a completed one', () => {
+      const siteWithSecondEmptyDrawing = {
+        ...mockCompleteSite,
+        constructionDrawings: [...completedConstructionDrawings, {}]
+      }
+
+      expect(getSiteDetailsDataStatus([siteWithSecondEmptyDrawing])).toBe(
+        IN_PROGRESS
+      )
+    })
+
+    it('is unaffected by construction drawings when no activity requires one', () => {
+      const nonConstructionActivity = [
+        {
+          ...completedActivityDetails[0],
+          activitySubType: 'deposit-type-1'
+        }
+      ]
+
+      const siteWithoutDrawingRequirement = {
+        ...mockFileUploadSite,
+        activityDetails: nonConstructionActivity
+      }
+
+      expect(getSiteDetailsDataStatus([siteWithoutDrawingRequirement])).toBe(
+        COMPLETED
+      )
     })
   })
 
