@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { collectionMarinePlanPolicyWordingSnapshots } from '../../../../shared/common/constants/db-collections.js'
+import { MONGO_DUPLICATE_KEY_CODE } from '../../../../shared/common/constants/mongo.js'
 import {
   canonicaliseWording,
   computeWordingRef,
@@ -156,11 +157,11 @@ describe('wording-snapshots', () => {
     })
 
     it('should swallow duplicate-key errors from concurrent upserts', async () => {
-      const bulkWrite = vi
-        .fn()
-        .mockRejectedValue(
-          Object.assign(new Error('duplicate'), { code: 11000 })
-        )
+      const bulkWrite = vi.fn().mockRejectedValue(
+        Object.assign(new Error('duplicate'), {
+          code: MONGO_DUPLICATE_KEY_CODE
+        })
+      )
       const db = { collection: () => ({ bulkWrite }) }
 
       const pinned = await pinWordingSnapshots({
@@ -173,11 +174,11 @@ describe('wording-snapshots', () => {
     })
 
     it('should swallow bulk write errors made up solely of duplicate-key errors', async () => {
-      const bulkWrite = vi
-        .fn()
-        .mockRejectedValue(
-          Object.assign(new Error('bulk'), { writeErrors: [{ code: 11000 }] })
-        )
+      const bulkWrite = vi.fn().mockRejectedValue(
+        Object.assign(new Error('bulk'), {
+          writeErrors: [{ code: MONGO_DUPLICATE_KEY_CODE }]
+        })
+      )
       const db = { collection: () => ({ bulkWrite }) }
 
       await expect(
