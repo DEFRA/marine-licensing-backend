@@ -4,6 +4,13 @@ import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { ObjectId } from 'mongodb'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
+
+vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    deleteFiles: vi.fn()
+  }
+}))
 
 describe('Delete marine licence - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -37,6 +44,56 @@ describe('Delete marine licence - integration tests', async () => {
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
     expect(deletedMarineLicence).toBeNull()
+  })
+
+  test('deletes every construction drawing and the water framework directive document from S3', async () => {
+    const licenceId = new ObjectId()
+    const s3Location = (s3Key) => ({
+      s3Bucket: 'mmo-uploads',
+      s3Key,
+      checksumSha256: 'abc123'
+    })
+
+    await globalThis.mockMongo.collection(collectionMarineLicences).insertOne({
+      ...createCompleteMarineLicence({
+        _id: licenceId,
+        contactId,
+        status: MARINE_LICENCE_STATUS.DRAFT
+      }),
+      siteDetails: [
+        {
+          coordinatesType: 'manual',
+          constructionDrawings: [
+            { filename: 'drawing-1.pdf', s3Location: s3Location('key-1') },
+            {}
+          ]
+        },
+        {
+          coordinatesType: 'manual',
+          constructionDrawings: [
+            { filename: 'drawing-2.pdf', s3Location: s3Location('key-2') }
+          ]
+        }
+      ],
+      waterFrameworkDirective: {
+        nauticalMile: 'yes',
+        excludedActivities: 'no',
+        s3Location: s3Location('wfd-key')
+      }
+    })
+
+    const { statusCode } = await makeDeleteRequest({
+      server: getServer(),
+      url: `/marine-licence/${licenceId}`,
+      contactId
+    })
+
+    expect(statusCode).toBe(200)
+    expect(blobService.deleteFiles).toHaveBeenCalledWith([
+      { s3Bucket: 'mmo-uploads', s3Key: 'key-1' },
+      { s3Bucket: 'mmo-uploads', s3Key: 'key-2' },
+      { s3Bucket: 'mmo-uploads', s3Key: 'wfd-key' }
+    ])
   })
 
   test('returns 404 when attempting to delete a non-existent marine licence', async () => {
