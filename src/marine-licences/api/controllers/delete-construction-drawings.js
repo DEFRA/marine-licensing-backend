@@ -5,6 +5,10 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { versionedUpdate } from '../helpers/versionedUpdate.js'
+import {
+  collectS3Locations,
+  deleteOrphanedS3Objects
+} from '../helpers/deleteS3Objects.js'
 
 export const deleteConstructionDrawingsController = {
   options: {
@@ -37,6 +41,10 @@ export const deleteConstructionDrawingsController = {
         )
       }
 
+      const s3Locations = collectS3Locations(
+        marineLicence.siteDetails?.[siteIndex]?.constructionDrawings
+      )
+
       await versionedUpdate({
         db,
         collectionName: collectionMarineLicences,
@@ -49,6 +57,8 @@ export const deleteConstructionDrawingsController = {
           $set: { siteDetailsConfirmed: false, updatedAt, updatedBy }
         }
       })
+
+      await deleteOrphanedS3Objects(db, s3Locations)
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {

@@ -6,6 +6,10 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { validateConstructionDrawingUpload } from '../helpers/validateConstructionDrawingUpload.js'
 import { versionedUpdate } from '../helpers/versionedUpdate.js'
+import {
+  collectS3Locations,
+  deleteOrphanedS3Objects
+} from '../helpers/deleteS3Objects.js'
 
 export const updateConstructionDrawingController = {
   options: {
@@ -58,6 +62,12 @@ export const updateConstructionDrawingController = {
       // "constructionDrawings.0" creates it as a plain object ({ "0": ... })
       // rather than an array, which then breaks any later $push. Only safe
       // to $set the specific index once the array already exists.
+      // The drawing being replaced still owns its previous upload - clean it up
+      // once the new location has been written
+      const previousS3Locations = collectS3Locations(
+        site.constructionDrawings?.[drawingIndex]
+      )
+
       const constructionDrawingsPath = `${sitePath}.constructionDrawings`
       const update =
         constructionDrawingsCount === 0
@@ -82,6 +92,8 @@ export const updateConstructionDrawingController = {
           }
         }
       })
+
+      await deleteOrphanedS3Objects(db, previousS3Locations)
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {

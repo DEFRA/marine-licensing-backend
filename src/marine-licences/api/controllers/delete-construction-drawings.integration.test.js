@@ -2,10 +2,23 @@ import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
+
+vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    deleteFiles: vi.fn()
+  }
+}))
 
 describe('PATCH /marine-licence/delete-construction-drawings - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
+
+  const s3Location = (s3Key) => ({
+    s3Bucket: 'mmo-uploads',
+    s3Key,
+    checksumSha256: 'abc123'
+  })
 
   const buildPayload = (overrides = {}) => ({
     siteIndex: 0,
@@ -57,6 +70,45 @@ describe('PATCH /marine-licence/delete-construction-drawings - integration tests
       { filename: 'other-site.pdf' }
     ])
     expect(updated.siteDetailsConfirmed).toBe(false)
+  })
+
+  test('deletes every uploaded file for the site from S3, leaving other sites untouched', async () => {
+    const licenceId = new ObjectId()
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: licenceId,
+      contactId,
+      siteDetails: [
+        {
+          coordinatesType: 'manual',
+          constructionDrawings: [
+            { filename: 'drawing-1.pdf', s3Location: s3Location('key-1') },
+            {},
+            { filename: 'drawing-3.pdf', s3Location: s3Location('key-3') }
+          ]
+        },
+        {
+          coordinatesType: 'manual',
+          constructionDrawings: [
+            { filename: 'other-site.pdf', s3Location: s3Location('other-key') }
+          ]
+        }
+      ]
+    })
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/delete-construction-drawings',
+      contactId,
+      payload: buildPayload({ id: licenceId.toString() })
+    })
+
+    expect(statusCode).toBe(200)
+    expect(blobService.deleteFiles).toHaveBeenCalledWith([
+      { s3Bucket: 'mmo-uploads', s3Key: 'key-1' },
+      { s3Bucket: 'mmo-uploads', s3Key: 'key-3' }
+    ])
   })
 
   test('returns 404 when siteIndex is invalid', async () => {

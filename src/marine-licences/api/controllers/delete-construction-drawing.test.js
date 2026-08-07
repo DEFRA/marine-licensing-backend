@@ -2,6 +2,13 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { deleteConstructionDrawingController } from './delete-construction-drawing.js'
 import Boom from '@hapi/boom'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
+
+vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    deleteFiles: vi.fn()
+  }
+}))
 
 describe('PATCH /marine-licence/delete-construction-drawing', () => {
   const mockAuditPayload = {
@@ -104,6 +111,82 @@ describe('PATCH /marine-licence/delete-construction-drawing', () => {
           mockHandler
         )
       ).rejects.toThrow('was modified by another user')
+    })
+
+    describe('S3 cleanup', () => {
+      const s3Location = {
+        s3Bucket: 'mmo-uploads',
+        s3Key: 'drawing-key',
+        checksumSha256: 'abc123'
+      }
+
+      const setupMocks = (drawings, referencingLicences = []) => {
+        const { mockMongo } = global
+        const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+        vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+          findOne: vi.fn().mockResolvedValueOnce(buildMarineLicence(drawings)),
+          updateOne: mockUpdateOne,
+          find: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue(referencingLicences)
+          })
+        }))
+      }
+
+      it('should delete the deleted drawing file from S3', async () => {
+        const { mockMongo, mockHandler } = global
+        setupMocks([{ filename: 'drawing-1.pdf', s3Location }])
+
+        await deleteConstructionDrawingController.handler(
+          { db: mockMongo, payload: buildPayload() },
+          mockHandler
+        )
+
+        expect(blobService.deleteFiles).toHaveBeenCalledWith([
+          { s3Bucket: 'mmo-uploads', s3Key: 'drawing-key' }
+        ])
+      })
+
+      it('should not delete from S3 when the drawing has no uploaded file', async () => {
+        const { mockMongo, mockHandler } = global
+        setupMocks([emptyDrawing])
+
+        await deleteConstructionDrawingController.handler(
+          { db: mockMongo, payload: buildPayload() },
+          mockHandler
+        )
+
+        expect(blobService.deleteFiles).not.toHaveBeenCalled()
+      })
+
+      it('should not delete from S3 when another marine licence still references the file', async () => {
+        const { mockMongo, mockHandler } = global
+        setupMocks(
+          [{ filename: 'drawing-1.pdf', s3Location }],
+          [{ siteDetails: [{ constructionDrawings: [{ s3Location }] }] }]
+        )
+
+        await deleteConstructionDrawingController.handler(
+          { db: mockMongo, payload: buildPayload() },
+          mockHandler
+        )
+
+        expect(blobService.deleteFiles).not.toHaveBeenCalled()
+      })
+
+      it('should still succeed when the S3 delete fails', async () => {
+        const { mockMongo, mockHandler } = global
+        setupMocks([{ filename: 'drawing-1.pdf', s3Location }])
+        blobService.deleteFiles.mockRejectedValue(new Error('S3 unavailable'))
+
+        await deleteConstructionDrawingController.handler(
+          { db: mockMongo, payload: buildPayload() },
+          mockHandler
+        )
+
+        expect(mockHandler.response).toHaveBeenCalledWith({
+          message: 'success'
+        })
+      })
     })
 
     it('should throw a 500 when the database operation fails', async () => {
