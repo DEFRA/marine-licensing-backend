@@ -8,6 +8,16 @@ export const mockMasTransferredMessageBody = {
   userEmail: 'jane@example.com'
 }
 
+export const mockMasRejectedMessageBody = {
+  applicationReference: mockMasApplicationReference,
+  status: 'REJECTED',
+  rejectedDate: '2026-05-21T12:00:00.000Z',
+  rejectedReasons: 'Marine plan policies, Another reason',
+  rejectedInformation: 'Test free text',
+  userName: 'Jane Doe',
+  userEmail: 'jane@example.com'
+}
+
 export const mockMasSqsMessage = {
   MessageId: '11d59c92-2c1d-4d8b-9c0a-2f6b1c9e2b40',
   ReceiptHandle: 'AQEBmock-receipt-handle==',
@@ -15,6 +25,11 @@ export const mockMasSqsMessage = {
   Attributes: {
     ApproximateReceiveCount: '1'
   }
+}
+
+export const mockMasRejectedSqsMessage = {
+  ...mockMasSqsMessage,
+  Body: JSON.stringify(mockMasRejectedMessageBody)
 }
 
 export const mockMasMissingApplicationReferenceSqsMessage = {

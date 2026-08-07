@@ -462,6 +462,12 @@ const config = convict({
         default: 'c30e5fb4-70f9-46fb-9fbb-a82f45d45664',
         env: 'NOTIFY_MARINE_LICENCE_TEMPLATE_ID_AGENT'
       },
+      notifyRejectedId: {
+        doc: 'Notify template ID for a marine licence rejected email',
+        format: String,
+        default: '1f349652-9f7d-4cda-8abc-a0899ef068ec',
+        env: 'NOTIFY_MARINE_LICENCE_REJECTED_TEMPLATE_ID'
+      },
       notifyTransferredId: {
         doc: 'Notify template ID for a marine licence transferred email',
         format: String,
