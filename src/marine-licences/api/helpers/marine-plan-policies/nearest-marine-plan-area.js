@@ -1,6 +1,11 @@
 import { config } from '../../../../config.js'
 import { collectionMarinePlanAreasSimplified } from '../../../../shared/common/constants/db-collections.js'
 import {
+  MONGO_INDEX_NOT_FOUND_CODE,
+  MONGO_NAMESPACE_NOT_FOUND_CODE,
+  MONGO_NO_QUERY_EXECUTION_PLANS_CODE
+} from '../../../../shared/common/constants/mongo.js'
+import {
   convertMultipleCoordinates,
   convertSingleCoordinates,
   formatFileCoordinates
@@ -13,17 +18,18 @@ const MAX_LONGITUDE = 180
 const MAX_LATITUDE = 90
 
 // Every way the simplified collection can be unusable rather than merely
-// unavailable: 26 NamespaceNotFound (never built — the source collection was
-// empty at startup), 291 NoQueryExecutionPlans (no 2dsphere index on the key
-// named below, so a rebuild died between inserting the areas and creating the
-// index, or built the index on the wrong field), and 27 IndexNotFound, which
-// is what an unkeyed $geoNear reports for the same missing index.
-//
-// All mean the fallback is permanently misconfigured, so retrying cannot fix
-// them: they take the cannot-run path instead of consuming the queue's
-// delivery attempts and dead-lettering the job. An empty but correctly indexed
-// collection is not an error at all — it simply returns no rows.
-const CANNOT_RUN_ERROR_CODES = new Set([26, 27, 291])
+// empty: never built (the source collection was empty at startup), or its
+// 2dsphere index missing or on the wrong field (a rebuild died between
+// inserting the areas and creating the index). All mean the fallback is
+// permanently misconfigured, so retrying cannot fix them: they take the
+// cannot-run path instead of consuming the queue's delivery attempts and
+// dead-lettering the job. An empty but correctly indexed collection is not
+// an error at all — it simply returns no rows.
+const CANNOT_RUN_ERROR_CODES = new Set([
+  MONGO_NAMESPACE_NOT_FOUND_CODE,
+  MONGO_INDEX_NOT_FOUND_CODE,
+  MONGO_NO_QUERY_EXECUTION_PLANS_CODE
+])
 
 const siteToGeometries = (site) => {
   const { coordinatesType, coordinatesEntry } = site
@@ -72,6 +78,9 @@ const warnSiteGeometryInvalid = ({ logger, site, error, message }) =>
  *
  * References: https://en.wikipedia.org/wiki/Branch_and_bound
  *             https://www.mongodb.com/docs/manual/reference/operator/aggregation/geoNear/
+ *             https://www.youtube.com/watch?v=Glp7THUpGow
+ *.            https://www.cs.cmu.edu/~ckingsf/bioinfo-lectures/kdtrees.pdf
+ *.            https://blog.christianperone.com/2015/08/googles-s2-geometry-on-the-sphere-cells-and-hilbert-curve/
  */
 export const deriveNearestAreaSearchBound = ({
   anchorDistanceMetres,
