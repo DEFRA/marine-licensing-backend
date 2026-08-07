@@ -80,7 +80,7 @@ export const collectSiteVertices = (
 // diagonal can fall a hair short of the longer of its two edges (~2.1mm
 // short for a 20km-wide, 1m-tall site at lat 54). That is sub-centimetre
 // at UK scale and safe for its only consumer, the search bound.
-export const siteDiameterMetres = (geometries) => {
+export const calculateSiteDiameterMetres = (geometries) => {
   const [minX, minY, maxX, maxY] = bbox({
     type: 'GeometryCollection',
     geometries

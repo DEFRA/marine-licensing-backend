@@ -12,7 +12,10 @@ import {
 } from '../../../../shared/common/helpers/geo/geo-parse.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
 import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
-import { collectSiteVertices, siteDiameterMetres } from './site-vertices.js'
+import {
+  calculateSiteDiameterMetres,
+  collectSiteVertices
+} from './site-vertices.js'
 
 const MAX_LONGITUDE = 180
 const MAX_LATITUDE = 90
@@ -239,7 +242,7 @@ const deriveSiteQueryGeometry = (site, logger) => {
       return null
     }
 
-    return { vertices, diameterMetres: siteDiameterMetres(geometries) }
+    return { vertices, diameterMetres: calculateSiteDiameterMetres(geometries) }
   } catch (error) {
     warnSiteGeometryInvalid({
       logger,

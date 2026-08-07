@@ -1,5 +1,8 @@
 import { distance, point } from '@turf/turf'
-import { collectSiteVertices, siteDiameterMetres } from './site-vertices.js'
+import {
+  calculateSiteDiameterMetres,
+  collectSiteVertices
+} from './site-vertices.js'
 
 // A 4-vertex rectangle ~18km wide, ~2km tall at lat 54 — the sparse
 // hand-drawn shape densification exists for (design §8: the nearest point of
@@ -92,9 +95,9 @@ describe('collectSiteVertices', () => {
   })
 })
 
-describe('siteDiameterMetres', () => {
+describe('calculateSiteDiameterMetres', () => {
   it('should return at least the width of the rectangle', () => {
-    const diameter = siteDiameterMetres([sparseRectangle])
+    const diameter = calculateSiteDiameterMetres([sparseRectangle])
 
     // ~18.3km wide at lat 54; bbox diagonal is a safe overestimate.
     expect(diameter).toBeGreaterThan(18_000)
