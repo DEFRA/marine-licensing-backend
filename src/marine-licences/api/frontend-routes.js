@@ -21,6 +21,7 @@ import { calculateMarinePlanPoliciesController } from './controllers/calculate-m
 import { saveMarinePlanPolicyResponseController } from './controllers/save-marine-plan-policy-response.js'
 import { updateInvoicingController } from './controllers/update-invoicing.js'
 import { confirmSiteDetailsController } from './controllers/confirm-site-details.js'
+import { withdrawMarineLicenceController } from './controllers/withdraw-marine-licence.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -55,6 +56,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'POST',
     path: '/marine-licence/submit',
     ...submitMarineLicenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/{id}/withdraw',
+    ...withdrawMarineLicenceController
   },
   {
     method: 'PATCH',

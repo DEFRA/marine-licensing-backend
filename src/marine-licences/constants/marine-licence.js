@@ -2,14 +2,16 @@ export const MARINE_LICENCE_STATUS = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
   SUBMITTED: 'SUBMITTED',
-  TRANSFERRED: 'TRANSFERRED'
+  TRANSFERRED: 'TRANSFERRED',
+  WITHDRAWN: 'WITHDRAWN'
 }
 
 export const MARINE_LICENCE_STATUS_LABEL = {
   DRAFT: 'Draft',
   ACTIVE: 'Active',
   SUBMITTED: 'Submitted',
-  TRANSFERRED: 'Transferred'
+  TRANSFERRED: 'Transferred',
+  WITHDRAWN: 'Withdrawn'
 }
 
 export const MARINE_PLAN_POLICY_JOB_STATUS = {
