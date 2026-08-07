@@ -12,9 +12,16 @@ const isS3Location = (value) =>
   typeof value?.s3Bucket === 'string' && typeof value?.s3Key === 'string'
 
 /**
- * Walks a construction drawing or an array of them and returns every
- * well-formed s3Location it holds. Drawings without an s3Location (the empty
- * placeholder pushed by add-construction-drawing) are simply skipped.
+ * Walks a construction drawing, an array of drawings, or a whole marine licence
+ * document, and returns every well-formed s3Location it holds. Drawings without
+ * an s3Location (the empty placeholder pushed by add-construction-drawing) are
+ * simply skipped.
+ *
+ * The recursion is load-bearing for the marine licence case: the reference
+ * guard below relies on it descending
+ * siteDetails[] -> constructionDrawings[] -> s3Location. Flattening this to a
+ * single-level map over drawings would silently stop shared files being
+ * protected.
  */
 export const collectS3Locations = (source) => {
   const locations = []
@@ -51,11 +58,7 @@ export const collectS3Locations = (source) => {
  * current document's own reference is gone by then, so no document needs
  * excluding.
  */
-export const filterUnreferencedS3Keys = async (db, s3Locations) => {
-  if (s3Locations.length === 0) {
-    return []
-  }
-
+const filterUnreferencedS3Keys = async (db, s3Locations) => {
   const s3Keys = s3Locations.map(({ s3Key }) => s3Key)
 
   const referencingLicences = await db
@@ -72,21 +75,19 @@ export const filterUnreferencedS3Keys = async (db, s3Locations) => {
     )
   )
 
-  const [retained, unreferenced] = s3Locations.reduce(
-    ([kept, removable], location) => {
-      if (referencedKeys.has(location.s3Key)) {
-        kept.push(location)
-      } else {
-        removable.push(location)
-      }
-      return [kept, removable]
-    },
-    [[], []]
+  const retained = s3Locations.filter(({ s3Key }) => referencedKeys.has(s3Key))
+  const unreferenced = s3Locations.filter(
+    ({ s3Key }) => !referencedKeys.has(s3Key)
   )
 
   if (retained.length > 0) {
     logger.info(
-      { event: { action: 'delete', outcome: 'success' } },
+      {
+        event: {
+          action: 'delete',
+          reason: 'retained - still referenced by another marine licence'
+        }
+      },
       `${logSystem}: Retained ${retained.length} S3 object(s) still referenced by another marine licence: ${retained
         .map(({ s3Key }) => s3Key)
         .join(', ')}`
@@ -101,7 +102,7 @@ export const filterUnreferencedS3Keys = async (db, s3Locations) => {
  * so a storage failure must not stop a user removing a file - the object is
  * left orphaned and the failure logged.
  */
-export const deleteS3ObjectsBestEffort = async (s3Locations) => {
+const deleteS3ObjectsBestEffort = async (s3Locations) => {
   if (s3Locations.length === 0) {
     return
   }

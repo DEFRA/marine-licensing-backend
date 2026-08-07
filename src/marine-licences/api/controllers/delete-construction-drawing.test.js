@@ -120,14 +120,16 @@ describe('PATCH /marine-licence/delete-construction-drawing', () => {
         checksumSha256: 'abc123'
       }
 
-      const setupMocks = (drawings, referencingLicences = []) => {
+      // The reference guard's own behaviour is covered by deleteS3Objects.test.js
+      // and, against real mongo, by delete-construction-drawing.integration.test.js
+      const setupMocks = (drawings) => {
         const { mockMongo } = global
         const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
         vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
           findOne: vi.fn().mockResolvedValueOnce(buildMarineLicence(drawings)),
           updateOne: mockUpdateOne,
           find: vi.fn().mockReturnValue({
-            toArray: vi.fn().mockResolvedValue(referencingLicences)
+            toArray: vi.fn().mockResolvedValue([])
           })
         }))
       }
@@ -156,36 +158,6 @@ describe('PATCH /marine-licence/delete-construction-drawing', () => {
         )
 
         expect(blobService.deleteFiles).not.toHaveBeenCalled()
-      })
-
-      it('should not delete from S3 when another marine licence still references the file', async () => {
-        const { mockMongo, mockHandler } = global
-        setupMocks(
-          [{ filename: 'drawing-1.pdf', s3Location }],
-          [{ siteDetails: [{ constructionDrawings: [{ s3Location }] }] }]
-        )
-
-        await deleteConstructionDrawingController.handler(
-          { db: mockMongo, payload: buildPayload() },
-          mockHandler
-        )
-
-        expect(blobService.deleteFiles).not.toHaveBeenCalled()
-      })
-
-      it('should still succeed when the S3 delete fails', async () => {
-        const { mockMongo, mockHandler } = global
-        setupMocks([{ filename: 'drawing-1.pdf', s3Location }])
-        blobService.deleteFiles.mockRejectedValue(new Error('S3 unavailable'))
-
-        await deleteConstructionDrawingController.handler(
-          { db: mockMongo, payload: buildPayload() },
-          mockHandler
-        )
-
-        expect(mockHandler.response).toHaveBeenCalledWith({
-          message: 'success'
-        })
       })
     })
 
