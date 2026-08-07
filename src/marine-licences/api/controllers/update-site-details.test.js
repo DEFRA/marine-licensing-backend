@@ -135,6 +135,35 @@ describe('PATCH /marine-licences/site-details', () => {
       expect(setFields).not.toHaveProperty('marinePlanPolicyResponses')
     })
 
+    it('should also clear marinePlanPolicyResponses when all sites are deleted', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = {
+        id: new ObjectId().toHexString(),
+        siteDetails: [],
+        ...mockAuditPayload
+      }
+      const mockUpdateOne = setupMocks({
+        _id: mockPayload.id,
+        marinePlanPolicyJobId: 'job-1',
+        siteDetails: [mockFileUploadSite]
+      })
+
+      await updateSiteDetailsController.handler(
+        { db: mockMongo, payload: mockPayload },
+        mockHandler
+      )
+
+      const setFields = mockUpdateOne.mock.calls[0][1].$set
+      expect(setFields).toMatchObject({
+        marinePlanPolicyJob: null,
+        marinePlanPolicyJobId: null,
+        marinePlanPolicies: [],
+        marinePlanPolicyResponses: {},
+        marinePlanPolicyResponseCount: 0,
+        siteDetailsConfirmed: false
+      })
+    })
+
     it('should keep computed policies when the geometry is unchanged', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = buildPayload()

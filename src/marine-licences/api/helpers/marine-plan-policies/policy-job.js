@@ -43,7 +43,8 @@ export const computePolicyJobId = (licenceId, siteDetails = []) => {
     .digest('hex')
 }
 
-// Responses are never reset — only job state is cleared on geometry change, so existing results survive a re-trigger.
+// Responses survive a geometry change so existing results are available if a re-trigger
+// produces the same job — except when all sites are removed, which also clears responses.
 export const buildPolicyResetFields = (id, existing, newSiteDetails) => {
   if (!existing?.marinePlanPolicyJobId) {
     return {}
@@ -58,6 +59,10 @@ export const buildPolicyResetFields = (id, existing, newSiteDetails) => {
     marinePlanPolicyJob: null,
     marinePlanPolicyJobId: null,
     marinePlanPolicies: [],
-    marinePlanPoliciesCount: 0
+    marinePlanPoliciesCount: 0,
+    ...(newSiteDetails.length === 0 && {
+      marinePlanPolicyResponses: {},
+      marinePlanPolicyResponseCount: 0
+    })
   }
 }
