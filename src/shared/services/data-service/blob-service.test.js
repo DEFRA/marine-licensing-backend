@@ -2,7 +2,6 @@ import { vi, expect, it } from 'vitest'
 import {
   HeadObjectCommand,
   GetObjectCommand,
-  DeleteObjectCommand,
   DeleteObjectsCommand
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -59,7 +58,6 @@ vi.mock('./s3-client.js', () => ({
 vi.mock('@aws-sdk/client-s3', () => ({
   HeadObjectCommand: vi.fn(function () {}),
   GetObjectCommand: vi.fn(function () {}),
-  DeleteObjectCommand: vi.fn(function () {}),
   DeleteObjectsCommand: vi.fn(function () {})
 }))
 
@@ -227,58 +225,6 @@ describe('BlobService', () => {
 
       await expect(blobService.getMetadata(s3Bucket, s3Key)).rejects.toThrow(
         Boom.internal('S3 metadata retrieval failed: Access denied')
-      )
-    })
-  })
-
-  describe('deleteFile', () => {
-    const s3Bucket = 'test-bucket'
-    const s3Key = 'test-key.pdf'
-
-    it('should delete the S3 object', async () => {
-      mockSend.mockResolvedValue({})
-
-      await blobService.deleteFile(s3Bucket, s3Key)
-
-      expect(mockSend).toHaveBeenCalledWith(expect.any(DeleteObjectCommand))
-      expect(DeleteObjectCommand).toHaveBeenCalledWith({
-        Bucket: s3Bucket,
-        Key: s3Key
-      })
-    })
-
-    it.each(['NoSuchKey', 'NotFound'])(
-      'should resolve without error when the object is already absent (%s)',
-      async (name) => {
-        const error = new Error(name)
-        error.name = name
-        mockSend.mockRejectedValue(error)
-
-        await expect(
-          blobService.deleteFile(s3Bucket, s3Key)
-        ).resolves.toBeUndefined()
-        expect(mockLogger.error).not.toHaveBeenCalled()
-      }
-    )
-
-    it.each(['RequestTimeout', 'TimeoutError'])(
-      'should throw 408 when the S3 operation times out (%s)',
-      async (name) => {
-        const error = new Error(name)
-        error.name = name
-        mockSend.mockRejectedValue(error)
-
-        await expect(blobService.deleteFile(s3Bucket, s3Key)).rejects.toThrow(
-          Boom.clientTimeout('S3 operation timed out')
-        )
-      }
-    )
-
-    it('should throw 500 for other S3 errors', async () => {
-      mockSend.mockRejectedValue(new Error('Access denied'))
-
-      await expect(blobService.deleteFile(s3Bucket, s3Key)).rejects.toThrow(
-        Boom.internal('S3 delete failed: Access denied')
       )
     })
   })

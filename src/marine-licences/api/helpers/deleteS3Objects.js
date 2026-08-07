@@ -12,11 +12,9 @@ const isS3Location = (value) =>
   typeof value?.s3Bucket === 'string' && typeof value?.s3Key === 'string'
 
 /**
- * Walks a construction drawing, a site, or a whole marine licence document and
- * returns every well-formed s3Location it holds. Covers construction drawings
- * and the water framework directive document in one pass. Drawings without an
- * s3Location (the empty placeholder pushed by add-construction-drawing) are
- * simply skipped.
+ * Walks a construction drawing or an array of them and returns every
+ * well-formed s3Location it holds. Drawings without an s3Location (the empty
+ * placeholder pushed by add-construction-drawing) are simply skipped.
  */
 export const collectS3Locations = (source) => {
   const locations = []
@@ -46,11 +44,12 @@ export const collectS3Locations = (source) => {
 }
 
 /**
- * Removes any candidate whose s3Key is still referenced by a marine licence.
- * A rejected licence can be copied into a new one, which duplicates the
- * s3Location values, so the same object can be shared by more than one
- * document. Call this _after_ the mongo mutation: the current document's own
- * reference is gone by then, so no document needs excluding.
+ * Removes any candidate whose s3Key is still referenced by a construction
+ * drawing on any marine licence. A rejected licence can be copied into a new
+ * one, which duplicates the s3Location values, so the same object can be
+ * shared by more than one document. Call this _after_ the mongo mutation: the
+ * current document's own reference is gone by then, so no document needs
+ * excluding.
  */
 export const filterUnreferencedS3Keys = async (db, s3Locations) => {
   if (s3Locations.length === 0) {
@@ -62,22 +61,8 @@ export const filterUnreferencedS3Keys = async (db, s3Locations) => {
   const referencingLicences = await db
     .collection(collectionMarineLicences)
     .find(
-      {
-        $or: [
-          {
-            'siteDetails.constructionDrawings.s3Location.s3Key': {
-              $in: s3Keys
-            }
-          },
-          { 'waterFrameworkDirective.s3Location.s3Key': { $in: s3Keys } }
-        ]
-      },
-      {
-        projection: {
-          'siteDetails.constructionDrawings.s3Location': 1,
-          'waterFrameworkDirective.s3Location': 1
-        }
-      }
+      { 'siteDetails.constructionDrawings.s3Location.s3Key': { $in: s3Keys } },
+      { projection: { 'siteDetails.constructionDrawings.s3Location': 1 } }
     )
     .toArray()
 
