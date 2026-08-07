@@ -23,6 +23,7 @@ const logger = createLogger()
 const awsConfig = config.get('aws')
 const cdpEnvironment = config.get('cdpEnvironment')
 const FILE_NOT_FOUND_IN_S3 = 'File not found in S3'
+const S3_OPERATION_TIMED_OUT = 'S3 operation timed out'
 
 class BlobService {
   logSystem = 'FileUpload:BlobService'
@@ -67,7 +68,7 @@ class BlobService {
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.clientTimeout('S3 operation timed out')
+        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
       }
 
       throw Boom.internal(`S3 metadata retrieval failed: ${error.message}`)
@@ -152,7 +153,7 @@ class BlobService {
       )
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.clientTimeout('S3 operation timed out')
+        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
       }
 
       throw Boom.internal(`S3 delete failed: ${error.message}`)
@@ -212,7 +213,7 @@ class BlobService {
       )
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.clientTimeout('S3 operation timed out')
+        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
       }
 
       throw Boom.internal(`S3 batch delete failed: ${error.message}`)
@@ -288,7 +289,7 @@ class BlobService {
       )
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.clientTimeout('S3 operation timed out')
+        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
       }
 
       throw Boom.internal(
