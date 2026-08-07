@@ -5,6 +5,10 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { versionedUpdate } from '../helpers/versionedUpdate.js'
+import {
+  collectS3Locations,
+  deleteOrphanedS3Objects
+} from '../helpers/deleteS3Objects.js'
 
 export const deleteConstructionDrawingController = {
   options: {
@@ -38,6 +42,12 @@ export const deleteConstructionDrawingController = {
         )
       }
 
+      const s3Locations = collectS3Locations(
+        marineLicence.siteDetails?.[siteIndex]?.constructionDrawings?.[
+          drawingIndex
+        ]
+      )
+
       // updatedAt here is used as a version to prevent collisions and users deleting other drawings
       await versionedUpdate({
         db,
@@ -55,6 +65,8 @@ export const deleteConstructionDrawingController = {
       await db
         .collection(collectionMarineLicences)
         .updateOne({ _id }, { $pull: { [constructionDrawingsPath]: null } })
+
+      await deleteOrphanedS3Objects(db, s3Locations)
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {

@@ -1,5 +1,9 @@
 import { vi, expect, it } from 'vitest'
-import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import {
+  HeadObjectCommand,
+  GetObjectCommand,
+  DeleteObjectsCommand
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
@@ -53,7 +57,8 @@ vi.mock('./s3-client.js', () => ({
 
 vi.mock('@aws-sdk/client-s3', () => ({
   HeadObjectCommand: vi.fn(function () {}),
-  GetObjectCommand: vi.fn(function () {})
+  GetObjectCommand: vi.fn(function () {}),
+  DeleteObjectsCommand: vi.fn(function () {})
 }))
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
@@ -221,6 +226,80 @@ describe('BlobService', () => {
       await expect(blobService.getMetadata(s3Bucket, s3Key)).rejects.toThrow(
         Boom.internal('S3 metadata retrieval failed: Access denied')
       )
+    })
+  })
+
+  describe('deleteFiles', () => {
+    it('should batch delete objects grouped by bucket', async () => {
+      mockSend.mockResolvedValue({ Deleted: [{ Key: 'a.pdf' }] })
+
+      await blobService.deleteFiles([
+        { s3Bucket: 'bucket-one', s3Key: 'a.pdf' },
+        { s3Bucket: 'bucket-one', s3Key: 'b.pdf' },
+        { s3Bucket: 'bucket-two', s3Key: 'c.pdf' }
+      ])
+
+      expect(mockSend).toHaveBeenCalledTimes(2)
+      expect(DeleteObjectsCommand).toHaveBeenCalledWith({
+        Bucket: 'bucket-one',
+        Delete: { Objects: [{ Key: 'a.pdf' }, { Key: 'b.pdf' }] }
+      })
+      expect(DeleteObjectsCommand).toHaveBeenCalledWith({
+        Bucket: 'bucket-two',
+        Delete: { Objects: [{ Key: 'c.pdf' }] }
+      })
+    })
+
+    it.each([
+      ['an empty list', []],
+      ['a nullish list', undefined],
+      [
+        'entries missing a bucket or key',
+        [{ s3Key: 'a.pdf' }, { s3Bucket: 'b' }, null]
+      ]
+    ])('should not call S3 for %s', async (_description, s3Locations) => {
+      await blobService.deleteFiles(s3Locations)
+
+      expect(mockSend).not.toHaveBeenCalled()
+    })
+
+    it('should log per-key failures returned in the response without throwing', async () => {
+      mockSend.mockResolvedValue({
+        Deleted: [{ Key: 'a.pdf' }],
+        Errors: [
+          { Key: 'b.pdf', Code: 'AccessDenied', Message: 'Access Denied' }
+        ]
+      })
+
+      await expect(
+        blobService.deleteFiles([
+          { s3Bucket: 'bucket-one', s3Key: 'a.pdf' },
+          { s3Bucket: 'bucket-one', s3Key: 'b.pdf' }
+        ])
+      ).resolves.toBeUndefined()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        { event: { action: 'delete', outcome: 'failure' } },
+        expect.stringContaining('bucket-one/b.pdf')
+      )
+    })
+
+    it('should throw 500 when the batch delete fails', async () => {
+      mockSend.mockRejectedValue(new Error('Access denied'))
+
+      await expect(
+        blobService.deleteFiles([{ s3Bucket: 'bucket-one', s3Key: 'a.pdf' }])
+      ).rejects.toThrow(Boom.internal('S3 batch delete failed: Access denied'))
+    })
+
+    it('should throw 408 when the batch delete times out', async () => {
+      const error = new Error('RequestTimeout')
+      error.name = 'RequestTimeout'
+      mockSend.mockRejectedValue(error)
+
+      await expect(
+        blobService.deleteFiles([{ s3Bucket: 'bucket-one', s3Key: 'a.pdf' }])
+      ).rejects.toThrow(Boom.clientTimeout('S3 operation timed out'))
     })
   })
 
