@@ -16,7 +16,7 @@ const updateMarineLicenceRecord = async ({
 }) => {
   const { db } = request
   const { id } = params
-  const { updatedAt, updatedBy } = payload ?? {}
+  const { updatedAt, updatedBy } = payload
 
   const marineLicence = await db
     .collection(collectionMarineLicences)
@@ -32,8 +32,7 @@ const updateMarineLicenceRecord = async ({
           updatedAt,
           updatedBy
         }
-      },
-      { returnDocument: 'after' }
+      }
     )
 
   if (!marineLicence) {
@@ -41,8 +40,6 @@ const updateMarineLicenceRecord = async ({
       `Cannot withdraw marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.SUBMITTED}'.`
     )
   }
-
-  return marineLicence
 }
 
 export const withdrawMarineLicenceController = {

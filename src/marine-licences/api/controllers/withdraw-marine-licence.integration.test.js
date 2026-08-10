@@ -43,7 +43,26 @@ describe('Withdraw marine licence - integration tests', async () => {
     const withdrawnMarineLicence = await findMarineLicence()
     expect(withdrawnMarineLicence.status).toBe(MARINE_LICENCE_STATUS.WITHDRAWN)
     expect(withdrawnMarineLicence.withdrawnAt).toBeInstanceOf(Date)
-    expect(withdrawnMarineLicence.updatedAt).toBeDefined()
+    expect(withdrawnMarineLicence.updatedAt).toBeInstanceOf(Date)
+    expect(withdrawnMarineLicence.updatedBy).toBe(contactId)
+  })
+
+  // The route takes everything it needs from the path, so a caller sending no
+  // body at all is legitimate — it must not fall over in the audit-field extension.
+  test('successfully withdraws when the request has no body', async () => {
+    await insertMarineLicence(MARINE_LICENCE_STATUS.SUBMITTED)
+
+    const { statusCode } = await makePostRequest({
+      server: getServer(),
+      url: `/marine-licence/${marineLicenceId}/withdraw`,
+      contactId
+    })
+
+    expect(statusCode).toBe(200)
+
+    const withdrawnMarineLicence = await findMarineLicence()
+    expect(withdrawnMarineLicence.status).toBe(MARINE_LICENCE_STATUS.WITHDRAWN)
+    expect(withdrawnMarineLicence.updatedAt).toBeInstanceOf(Date)
     expect(withdrawnMarineLicence.updatedBy).toBe(contactId)
   })
 
@@ -79,6 +98,7 @@ describe('Withdraw marine licence - integration tests', async () => {
 
   test.each([
     MARINE_LICENCE_STATUS.DRAFT,
+    MARINE_LICENCE_STATUS.ACTIVE,
     MARINE_LICENCE_STATUS.TRANSFERRED,
     MARINE_LICENCE_STATUS.WITHDRAWN
   ])('returns 400 when the marine licence status is %s', async (status) => {

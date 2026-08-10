@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { StatusCodes } from 'http-status-codes'
 import { withdrawMarineLicenceController } from './withdraw-marine-licence.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
@@ -58,7 +59,7 @@ describe('POST /marine-licence/{id}/withdraw', () => {
 
     expect(collection).toHaveBeenCalledWith(collectionMarineLicences)
 
-    const [filter, update, options] = findOneAndUpdate.mock.calls[0]
+    const [filter, update] = findOneAndUpdate.mock.calls[0]
 
     expect(filter).toEqual({
       _id: expect.anything(),
@@ -70,7 +71,6 @@ describe('POST /marine-licence/{id}/withdraw', () => {
       updatedAt: request.payload.updatedAt,
       updatedBy: 'user123'
     })
-    expect(options).toEqual({ returnDocument: 'after' })
   })
 
   it('should respond with the withdrawal date', async () => {
@@ -91,6 +91,7 @@ describe('POST /marine-licence/{id}/withdraw', () => {
       message: 'success',
       value: { withdrawnAt: expect.any(String) }
     })
+    expect(mockHandler.code).toHaveBeenCalledWith(StatusCodes.OK)
   })
 
   it('should return a bad request error when the application is not submitted', async () => {
