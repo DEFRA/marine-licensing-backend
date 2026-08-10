@@ -1,12 +1,32 @@
+import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
+import AdmZip from 'adm-zip'
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
-import { buildCoordinatesCsvPathById } from '../../constants/coordinates-csv.js'
+import {
+  buildCoordinatesCsvPathById,
+  COORDINATES_CSV_FILENAME
+} from '../../constants/coordinates-csv.js'
+
+vi.mock('adm-zip', () => ({
+  default: vi.fn(function () {})
+}))
 
 describe('Generate coordinates CSV by id - public integration tests', async () => {
   const getServer = await setupTestServer()
   const marineLicenceId = new ObjectId()
+
+  const addFile = vi.fn()
+
+  beforeEach(() => {
+    addFile.mockClear()
+    AdmZip.mockImplementation(function () {
+      return { addFile, toBuffer: vi.fn(() => Buffer.from('zip-bytes')) }
+    })
+  })
+
+  const csvFromLastZip = () => addFile.mock.calls[0][1].toString()
 
   const insertSubmittedMarineLicence = async (overrides = {}) => {
     await globalThis.mockMongo.collection('marine-licences').insertOne({
@@ -37,12 +57,12 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.headers['content-type']).toContain('text/csv')
+    expect(response.headers['content-type']).toContain('application/zip')
     expect(response.headers['content-disposition']).toBe(
-      'attachment; filename="locationForCSV.csv"'
+      'attachment; filename="Download CSV.zip"'
     )
 
-    const firstLine = response.payload.split('\n')[0]
+    const firstLine = csvFromLastZip().split('\n')[0]
     expect(firstLine).toBe(
       'Lat Degree,Lat Dec Min,Long Degree,Long Dec Min,objectid'
     )
@@ -58,11 +78,15 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
 
     expect(response.statusCode).toBe(200)
 
-    const lines = response.payload.split('\n').filter(Boolean)
+    const lines = csvFromLastZip().split('\n').filter(Boolean)
     expect(lines).toHaveLength(4)
     expect(lines[1]).toBe('51,30,0,6,1')
     expect(lines[2]).toBe('51,36,0,12,1')
     expect(lines[3]).toBe('51,30,0,6,1')
+    expect(addFile).toHaveBeenCalledWith(
+      COORDINATES_CSV_FILENAME,
+      expect.any(Buffer)
+    )
   })
 
   test('returns 404 when the marine licence id is not found', async () => {
@@ -107,6 +131,6 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.headers['content-type']).toContain('text/csv')
+    expect(response.headers['content-type']).toContain('application/zip')
   })
 })

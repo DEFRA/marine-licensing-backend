@@ -1,10 +1,28 @@
-import { setupTestServer } from '../../../../tests/test-server.js'
+import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
+import AdmZip from 'adm-zip'
+import { setupTestServer } from '../../../../tests/test-server.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
+import { COORDINATES_CSV_FILENAME } from '../../constants/coordinates-csv.js'
+
+vi.mock('adm-zip', () => ({
+  default: vi.fn(function () {})
+}))
 
 describe('Generate coordinates CSV - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = mockMarineLicence.contactId
+
+  const addFile = vi.fn()
+
+  beforeEach(() => {
+    addFile.mockClear()
+    AdmZip.mockImplementation(function () {
+      return { addFile, toBuffer: vi.fn(() => Buffer.from('zip-bytes')) }
+    })
+  })
+
+  const csvFromLastZip = () => addFile.mock.calls[0][1].toString()
 
   const injectAsEntraIdUser = (server, id) =>
     server.inject({
@@ -40,13 +58,13 @@ describe('Generate coordinates CSV - integration tests', async () => {
     )
 
     expect(response.statusCode).toBe(200)
-    expect(response.headers['content-type']).toContain('text/csv')
+    expect(response.headers['content-type']).toContain('application/zip')
 
     expect(response.headers['content-disposition']).toBe(
-      'attachment; filename="locationForCSV.csv"'
+      'attachment; filename="Download CSV.zip"'
     )
 
-    const firstLine = response.payload.split('\n')[0]
+    const firstLine = csvFromLastZip().split('\n')[0]
     expect(firstLine).toBe(
       'Lat Degree,Lat Dec Min,Long Degree,Long Dec Min,objectid'
     )
@@ -77,12 +95,16 @@ describe('Generate coordinates CSV - integration tests', async () => {
 
     expect(response.statusCode).toBe(200)
 
-    const lines = response.payload.split('\n').filter(Boolean)
+    const lines = csvFromLastZip().split('\n').filter(Boolean)
     expect(lines).toHaveLength(4) // header + 2 coordinate rows + closing coordinate
 
     expect(lines[1]).toBe('51,30,0,6,1')
     expect(lines[2]).toBe('51,36,0,12,1')
     expect(lines[3]).toBe('51,30,0,6,1')
+    expect(addFile).toHaveBeenCalledWith(
+      COORDINATES_CSV_FILENAME,
+      expect.any(Buffer)
+    )
   })
 
   test('returns 403 for a non-Entra ID user', async () => {

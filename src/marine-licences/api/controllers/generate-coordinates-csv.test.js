@@ -1,7 +1,12 @@
 import { vi } from 'vitest'
+import AdmZip from 'adm-zip'
 import { generateCoordinatesCsvController } from './generate-coordinates-csv.js'
 import * as siteDetailsModule from '../csv/site-details.js'
 import * as csvOutputModule from '../csv/csv-output.js'
+
+vi.mock('adm-zip', () => ({
+  default: vi.fn(function () {})
+}))
 
 describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
   const mockId = 'a'.repeat(24)
@@ -19,6 +24,7 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
   let mockFindOne
   let mockRequest
   let mockH
+  let mockAdmZip
 
   afterEach(() => {
     vi.restoreAllMocks()
@@ -40,6 +46,14 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
       type: vi.fn().mockReturnThis(),
       header: vi.fn().mockReturnThis()
     }
+
+    mockAdmZip = {
+      addFile: vi.fn(),
+      toBuffer: vi.fn().mockReturnValue(Buffer.from('zip-bytes'))
+    }
+    AdmZip.mockImplementation(function () {
+      return mockAdmZip
+    })
   })
 
   it('should return 403 when user is not an Entra ID user', async () => {
@@ -88,13 +102,13 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
     ).rejects.toThrow('processing failed')
   })
 
-  it('should return the stream with csv content-type and content-disposition headers', async () => {
+  it('should return the zip with zip content-type and content-disposition headers', async () => {
     await generateCoordinatesCsvController.handler(mockRequest, mockH)
 
-    expect(mockH.type).toHaveBeenCalledWith('text/csv')
+    expect(mockH.type).toHaveBeenCalledWith('application/zip')
     expect(mockH.header).toHaveBeenCalledWith(
       'Content-Disposition',
-      'attachment; filename="locationForCSV.csv"'
+      'attachment; filename="Download CSV.zip"'
     )
   })
 })

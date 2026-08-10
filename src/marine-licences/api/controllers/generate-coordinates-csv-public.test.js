@@ -1,9 +1,15 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
+
+import AdmZip from 'adm-zip'
 import { generateCoordinatesCsvPublicController } from './generate-coordinates-csv-public.js'
 import * as siteDetailsModule from '../csv/site-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
+
+vi.mock('adm-zip', () => ({
+  default: vi.fn(function () {})
+}))
 
 describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
   const mockId = new ObjectId().toHexString()
@@ -24,6 +30,7 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
   let mockFindOne
   let mockRequest
   let mockH
+  let mockAdmZip
 
   afterEach(() => {
     vi.restoreAllMocks()
@@ -43,6 +50,14 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
       type: vi.fn().mockReturnThis(),
       header: vi.fn().mockReturnThis()
     }
+
+    mockAdmZip = {
+      addFile: vi.fn(),
+      toBuffer: vi.fn().mockReturnValue(Buffer.from('zip-bytes'))
+    }
+    AdmZip.mockImplementation(function () {
+      return mockAdmZip
+    })
   })
 
   it('should throw a 404 when the document is not found', async () => {
@@ -72,7 +87,7 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
 
     await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
-    expect(mockH.type).toHaveBeenCalledWith('text/csv')
+    expect(mockH.type).toHaveBeenCalledWith('application/zip')
   })
 
   it('should look up the marine licence by id', async () => {
@@ -96,13 +111,13 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
     expect(getSiteCoordinatesSpy).toHaveBeenCalledWith([mockSite])
   })
 
-  it('should return the stream with csv content-type and content-disposition headers', async () => {
+  it('should return the zip with zip content-type and content-disposition headers', async () => {
     await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
-    expect(mockH.type).toHaveBeenCalledWith('text/csv')
+    expect(mockH.type).toHaveBeenCalledWith('application/zip')
     expect(mockH.header).toHaveBeenCalledWith(
       'Content-Disposition',
-      'attachment; filename="locationForCSV.csv"'
+      'attachment; filename="Download CSV.zip"'
     )
   })
 })

@@ -1,10 +1,14 @@
 import { Transform } from 'node:stream'
 import { stringify } from 'csv-stringify'
+import AdmZip from 'adm-zip'
 import { getSiteCoordinates } from './site-details.js'
 import { convertCoordinatesToDdm } from './coordinates-to-ddm.js'
 import { csvOutput } from './csv-output.js'
 import { coordinatesToCsvObject } from './coordinates-to-csv.js'
-import { COORDINATES_CSV_FILENAME } from '../../constants/coordinates-csv.js'
+import {
+  COORDINATES_CSV_FILENAME,
+  COORDINATES_ZIP_FILENAME
+} from '../../constants/coordinates-csv.js'
 
 const csvHeaders = [
   'Lat Degree',
@@ -40,11 +44,21 @@ export const buildCoordinatesCsvStream = (siteDetails) => {
   return csvStream
 }
 
-export const coordinatesCsvResponse = (h, csvStream) =>
-  h
-    .response(csvStream)
-    .type('text/csv')
+const bufferCsvStream = async (csvStream) => {
+  const chunks = await csvStream.toArray()
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)))
+}
+
+export const coordinatesCsvResponse = async (h, csvStream) => {
+  const csvBuffer = await bufferCsvStream(csvStream)
+  const zip = new AdmZip()
+  zip.addFile(COORDINATES_CSV_FILENAME, csvBuffer)
+
+  return h
+    .response(zip.toBuffer())
+    .type('application/zip')
     .header(
       'Content-Disposition',
-      `attachment; filename="${COORDINATES_CSV_FILENAME}"`
+      `attachment; filename="${COORDINATES_ZIP_FILENAME}"`
     )
+}
