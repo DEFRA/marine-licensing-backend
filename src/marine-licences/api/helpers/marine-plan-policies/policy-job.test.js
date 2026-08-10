@@ -119,10 +119,26 @@ describe('buildPolicyResetFields', () => {
     })
   })
 
-  it('should never reset marinePlanPolicyResponses', () => {
+  it('should not reset marinePlanPolicyResponses when sites remain', () => {
     const existing = { marinePlanPolicyJobId: 'job-1', siteDetails: [] }
     expect(
       buildPolicyResetFields(licenceId, existing, [site])
     ).not.toHaveProperty('marinePlanPolicyResponses')
+  })
+
+  it('should reset marinePlanPolicyResponses when all sites are deleted', () => {
+    const existing = {
+      marinePlanPolicyJobId: 'job-1',
+      siteDetails: [site]
+    }
+
+    expect(buildPolicyResetFields(licenceId, existing, [])).toEqual({
+      marinePlanPolicyJob: null,
+      marinePlanPolicyJobId: null,
+      marinePlanPolicies: [],
+      marinePlanPoliciesCount: 0,
+      marinePlanPolicyResponses: {},
+      marinePlanPolicyResponseCount: 0
+    })
   })
 })

@@ -499,6 +499,13 @@ describe('createTaskList', () => {
       expect(createTaskList(marineLicence).feeEstimate).toBe(NOT_ACCEPTED)
     })
 
+    it('should return INCOMPLETE when accept is cleared', () => {
+      const marineLicence = {
+        feeEstimate: { termsAndConditions: true, feeBand: '2A' }
+      }
+      expect(createTaskList(marineLicence).feeEstimate).toBe(INCOMPLETE)
+    })
+
     it('should return COMPLETED when accept is yes', () => {
       const marineLicence = {
         feeEstimate: { accept: 'yes', termsAndConditions: true }
