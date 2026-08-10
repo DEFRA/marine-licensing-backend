@@ -2,6 +2,7 @@ import { createProjectNameController } from './controllers/create-project-name.j
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { getMarineLicenceController } from './controllers/get-marine-licence.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
+import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
@@ -50,6 +51,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'DELETE',
     path: '/marine-licence/{id}',
     ...deleteMarineLicenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/copy-marine-licence',
+    ...copyMarineLicenceController
   },
   {
     method: 'POST',

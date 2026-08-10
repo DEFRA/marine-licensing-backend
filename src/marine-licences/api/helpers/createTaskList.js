@@ -211,6 +211,10 @@ const getFeeEstimateStatus = (feeEstimate) => {
     return NOT_ACCEPTED
   }
 
+  if (feeEstimate.accept !== 'yes') {
+    return INCOMPLETE
+  }
+
   return COMPLETED
 }
 
