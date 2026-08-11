@@ -26,9 +26,9 @@ const isS3Location = (value) =>
 export const collectS3Locations = (source) => {
   const locations = []
 
-  const walk = (value) => {
+  const traverseForS3Locations = (value) => {
     if (Array.isArray(value)) {
-      value.forEach(walk)
+      value.forEach(traverseForS3Locations)
       return
     }
 
@@ -40,12 +40,12 @@ export const collectS3Locations = (source) => {
       if (key === 's3Location' && isS3Location(child)) {
         locations.push({ s3Bucket: child.s3Bucket, s3Key: child.s3Key })
       } else {
-        walk(child)
+        traverseForS3Locations(child)
       }
     }
   }
 
-  walk(source)
+  traverseForS3Locations(source)
 
   return locations
 }
