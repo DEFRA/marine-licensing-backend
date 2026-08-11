@@ -5,10 +5,7 @@ import { getSiteCoordinates } from './site-details.js'
 import { convertCoordinatesToDdm } from './coordinates-to-ddm.js'
 import { csvOutput } from './csv-output.js'
 import { coordinatesToCsvObject } from './coordinates-to-csv.js'
-import {
-  COORDINATES_CSV_FILENAME,
-  COORDINATES_ZIP_FILENAME
-} from '../../constants/coordinates-csv.js'
+import { COORDINATES_ZIP_FILENAME } from '../../constants/coordinates-csv.js'
 
 const csvHeaders = [
   'Lat Degree',
@@ -49,10 +46,10 @@ const bufferCsvStream = async (csvStream) => {
   return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)))
 }
 
-export const coordinatesCsvResponse = async (h, csvStream) => {
+export const coordinatesCsvResponse = async (h, csvStream, siteDetails) => {
   const csvBuffer = await bufferCsvStream(csvStream)
   const zip = new AdmZip()
-  zip.addFile(COORDINATES_CSV_FILENAME, csvBuffer)
+  zip.addFile(siteDetails[0].siteName + '.csv', csvBuffer)
 
   return h
     .response(zip.toBuffer())

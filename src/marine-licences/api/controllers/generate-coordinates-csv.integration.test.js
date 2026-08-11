@@ -2,15 +2,27 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import AdmZip from 'adm-zip'
 import { setupTestServer } from '../../../../tests/test-server.js'
-import { mockMarineLicence } from '../../models/test-fixtures.js'
-import { COORDINATES_CSV_FILENAME } from '../../constants/coordinates-csv.js'
+import {
+  createCompleteMarineLicence,
+  mockCircleSite
+} from '../../../../tests/test.fixture.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
 }))
 
+// TODO: mockFileUploadSite (tests/test.fixture.js) uses a Point geometry,
+// but the geo-parser rejects Point/MultiPoint/LineString/MultiLineString on
+// upload (see validateFeatureGeometryTypes in geo-parser.js) - a 'file' site
+// can never really have one. That makes createCompleteMarineLicence()'s
+// default siteDetails unrealistic for CSV generation, which crashes trying
+// to convert it. Using mockCircleSite here for now - fix the shared fixture
+// to use a Polygon geometry instead, then drop this override.
 describe('Generate coordinates CSV - integration tests', async () => {
   const getServer = await setupTestServer()
+  const mockMarineLicence = createCompleteMarineLicence({
+    siteDetails: [mockCircleSite]
+  })
   const contactId = mockMarineLicence.contactId
 
   const addFile = vi.fn()
@@ -56,7 +68,6 @@ describe('Generate coordinates CSV - integration tests', async () => {
       getServer(),
       marineLicenceId.toString()
     )
-
     expect(response.statusCode).toBe(200)
     expect(response.headers['content-type']).toContain('application/zip')
 
@@ -83,7 +94,8 @@ describe('Generate coordinates CSV - integration tests', async () => {
           coordinates: [
             { latitude: '51.5', longitude: '-0.1' },
             { latitude: '51.6', longitude: '-0.2' }
-          ]
+          ],
+          siteName: 'Test Site'
         }
       ]
     })
@@ -101,10 +113,7 @@ describe('Generate coordinates CSV - integration tests', async () => {
     expect(lines[1]).toBe('51,30,0,6,1')
     expect(lines[2]).toBe('51,36,0,12,1')
     expect(lines[3]).toBe('51,30,0,6,1')
-    expect(addFile).toHaveBeenCalledWith(
-      COORDINATES_CSV_FILENAME,
-      expect.any(Buffer)
-    )
+    expect(addFile).toHaveBeenCalledWith('Test Site.csv', expect.any(Buffer))
   })
 
   test('returns 403 for a non-Entra ID user', async () => {

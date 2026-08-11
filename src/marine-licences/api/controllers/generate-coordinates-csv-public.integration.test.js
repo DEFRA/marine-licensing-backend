@@ -4,10 +4,7 @@ import AdmZip from 'adm-zip'
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
-import {
-  buildCoordinatesCsvPathById,
-  COORDINATES_CSV_FILENAME
-} from '../../constants/coordinates-csv.js'
+import { buildCoordinatesCsvPathById } from '../../constants/coordinates-csv.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
@@ -28,6 +25,7 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
 
   const csvFromLastZip = () => addFile.mock.calls[0][1].toString()
 
+  // TODO - USE PROPER MOCK
   const insertSubmittedMarineLicence = async (overrides = {}) => {
     await globalThis.mockMongo.collection('marine-licences').insertOne({
       ...mockMarineLicence,
@@ -41,7 +39,8 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
           coordinates: [
             { latitude: '51.5', longitude: '-0.1' },
             { latitude: '51.6', longitude: '-0.2' }
-          ]
+          ],
+          siteName: 'Test Site'
         }
       ],
       ...overrides
@@ -83,10 +82,7 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
     expect(lines[1]).toBe('51,30,0,6,1')
     expect(lines[2]).toBe('51,36,0,12,1')
     expect(lines[3]).toBe('51,30,0,6,1')
-    expect(addFile).toHaveBeenCalledWith(
-      COORDINATES_CSV_FILENAME,
-      expect.any(Buffer)
-    )
+    expect(addFile).toHaveBeenCalledWith('Test Site.csv', expect.any(Buffer))
   })
 
   test('returns 404 when the marine licence id is not found', async () => {

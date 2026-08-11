@@ -1,4 +1,3 @@
-export const COORDINATES_CSV_FILENAME = 'locationForCSV.csv'
 export const COORDINATES_ZIP_FILENAME = 'Download CSV.zip'
 
 export const buildCoordinatesCsvPathById = (id) =>
