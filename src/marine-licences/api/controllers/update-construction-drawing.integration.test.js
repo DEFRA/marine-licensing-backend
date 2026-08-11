@@ -6,7 +6,8 @@ import { blobService } from '../../../shared/services/data-service/blob-service.
 
 vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
   blobService: {
-    getMetadata: vi.fn()
+    getMetadata: vi.fn(),
+    deleteFiles: vi.fn()
   }
 }))
 
@@ -203,6 +204,65 @@ describe('PATCH /marine-licence/update-construction-drawing - integration tests'
       filename: 'replacement.pdf',
       s3Location
     })
+  })
+
+  test('deletes the replaced drawing file from S3', async () => {
+    const licenceId = new ObjectId()
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: licenceId,
+      contactId,
+      siteDetails: [
+        {
+          coordinatesType: 'manual',
+          constructionDrawings: [
+            {
+              filename: 'previous.pdf',
+              s3Location: { ...s3Location, s3Key: 'previous-file-key' }
+            }
+          ]
+        }
+      ]
+    })
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/update-construction-drawing',
+      contactId,
+      payload: buildPayload({ id: licenceId.toString() })
+    })
+
+    expect(statusCode).toBe(200)
+    expect(blobService.deleteFiles).toHaveBeenCalledWith([
+      { s3Bucket: 'mmo-uploads', s3Key: 'previous-file-key' }
+    ])
+  })
+
+  test('does not delete the file when the same s3 key is re-uploaded', async () => {
+    const licenceId = new ObjectId()
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: licenceId,
+      contactId,
+      siteDetails: [
+        {
+          coordinatesType: 'manual',
+          constructionDrawings: [{ filename: 'previous.pdf', s3Location }]
+        }
+      ]
+    })
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/update-construction-drawing',
+      contactId,
+      payload: buildPayload({ id: licenceId.toString() })
+    })
+
+    expect(statusCode).toBe(200)
+    expect(blobService.deleteFiles).not.toHaveBeenCalled()
   })
 
   test('returns 404 when drawingIndex is invalid', async () => {
