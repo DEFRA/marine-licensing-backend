@@ -2,27 +2,15 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import AdmZip from 'adm-zip'
 import { setupTestServer } from '../../../../tests/test-server.js'
-import {
-  createCompleteMarineLicence,
-  mockCircleSite
-} from '../../../../tests/test.fixture.js'
+import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
 }))
 
-// TODO: mockFileUploadSite (tests/test.fixture.js) uses a Point geometry,
-// but the geo-parser rejects Point/MultiPoint/LineString/MultiLineString on
-// upload (see validateFeatureGeometryTypes in geo-parser.js) - a 'file' site
-// can never really have one. That makes createCompleteMarineLicence()'s
-// default siteDetails unrealistic for CSV generation, which crashes trying
-// to convert it. Using mockCircleSite here for now - fix the shared fixture
-// to use a Polygon geometry instead, then drop this override.
 describe('Generate coordinates CSV - integration tests', async () => {
   const getServer = await setupTestServer()
-  const mockMarineLicence = createCompleteMarineLicence({
-    siteDetails: [mockCircleSite]
-  })
+  const mockMarineLicence = createCompleteMarineLicence()
   const contactId = mockMarineLicence.contactId
 
   const addFile = vi.fn()
