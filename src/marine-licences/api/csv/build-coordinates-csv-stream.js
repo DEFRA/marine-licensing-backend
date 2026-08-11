@@ -45,7 +45,9 @@ export const buildCoordinatesCsvStream = (siteDetails) => {
 }
 
 const formatCsvName = (site, index) => {
-  return `${site.siteName ?? `Site ${index + 1}`}.csv`
+  const { siteName } = site
+
+  return siteName ?? `Site ${index + 1}.csv`
 }
 
 const bufferCsvStream = async (csvStream) => {
