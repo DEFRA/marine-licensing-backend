@@ -21,6 +21,8 @@ export const updateSiteController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
+      // Labels are snapshotted by the frontend at save time and stored on the
+      // licence record. Backend stores the site payload as-is.
       const { id, siteIndex, siteDetails, updatedAt, updatedBy } = payload
       const sitePath = `siteDetails.${siteIndex}`
       const _id = ObjectId.createFromHexString(id)
