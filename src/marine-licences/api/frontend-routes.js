@@ -23,6 +23,10 @@ import { saveMarinePlanPolicyResponseController } from './controllers/save-marin
 import { updateInvoicingController } from './controllers/update-invoicing.js'
 import { confirmSiteDetailsController } from './controllers/confirm-site-details.js'
 import { withdrawMarineLicenceController } from './controllers/withdraw-marine-licence.js'
+import { addConstructionDrawingController } from './controllers/add-construction-drawing.js'
+import { updateConstructionDrawingController } from './controllers/update-construction-drawing.js'
+import { deleteConstructionDrawingController } from './controllers/delete-construction-drawing.js'
+import { deleteConstructionDrawingsController } from './controllers/delete-construction-drawings.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -157,5 +161,25 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/confirm-site-details',
     ...confirmSiteDetailsController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/add-construction-drawing',
+    ...addConstructionDrawingController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/update-construction-drawing',
+    ...updateConstructionDrawingController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-construction-drawing',
+    ...deleteConstructionDrawingController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-construction-drawings',
+    ...deleteConstructionDrawingsController
   }
 ]
