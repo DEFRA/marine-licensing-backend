@@ -6,7 +6,10 @@ import { generateCoordinatesCsvPublicController } from './generate-coordinates-c
 import * as siteDetailsModule from '../csv/site-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
-import { mockCircleSite } from '../../../../tests/test.fixture.js'
+import {
+  mockCircleSite,
+  mockMultipleSite
+} from '../../../../tests/test.fixture.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
@@ -15,16 +18,8 @@ vi.mock('adm-zip', () => ({
 describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
   const mockId = new ObjectId().toHexString()
 
-  const mockSite = {
-    coordinatesType: 'coordinates',
-    coordinatesEntry: 'single',
-    coordinateSystem: 'wgs84',
-    coordinates: { latitude: '51.5', longitude: '-0.1' },
-    circleWidth: '100'
-  }
-
   const mockDoc = {
-    siteDetails: [mockSite],
+    siteDetails: [mockCircleSite],
     status: MARINE_LICENCE_STATUS.SUBMITTED
   }
 
@@ -109,7 +104,7 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
     await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
     expect(getSiteCoordinatesSpy).toHaveBeenCalledTimes(1)
-    expect(getSiteCoordinatesSpy).toHaveBeenCalledWith([mockSite])
+    expect(getSiteCoordinatesSpy).toHaveBeenCalledWith([mockCircleSite])
   })
 
   it('should add a single zip entry named after the site when there is only one site', async () => {
@@ -117,7 +112,7 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
 
     expect(mockAdmZip.addFile).toHaveBeenCalledTimes(1)
     expect(mockAdmZip.addFile).toHaveBeenCalledWith(
-      'Site 1.csv',
+      `${mockCircleSite.siteName}.csv`,
       expect.any(Buffer)
     )
   })
@@ -125,7 +120,7 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
   it('for multiple sites it should add a combined CSV entry plus one entry per site', async () => {
     mockFindOne.mockResolvedValue({
       ...mockDoc,
-      siteDetails: [mockSite, mockCircleSite]
+      siteDetails: [mockMultipleSite, mockCircleSite]
     })
     await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
 
@@ -135,7 +130,7 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
       expect.any(Buffer)
     )
     expect(mockAdmZip.addFile).toHaveBeenCalledWith(
-      'Site 1.csv',
+      `${mockMultipleSite.siteName}.csv`,
       expect.any(Buffer)
     )
     expect(mockAdmZip.addFile).toHaveBeenCalledWith(
