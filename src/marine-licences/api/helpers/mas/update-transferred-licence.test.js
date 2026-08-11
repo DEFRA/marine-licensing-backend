@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { updateTransferredMarineLicence } from './update-licence'
+import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { mockMasSqsMessage } from './test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
 import { sendTransferredEmail } from './send-transferred-email.js'

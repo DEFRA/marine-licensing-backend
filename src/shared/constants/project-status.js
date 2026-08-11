@@ -1,6 +1,7 @@
 export const PROJECT_STATUS_LABEL = {
   DRAFT: 'Draft',
   ACTIVE: 'Active',
+  REJECTED: 'Rejected',
   SUBMITTED: 'Submitted',
   TRANSFERRED: 'Transferred',
   WITHDRAWN: 'Withdrawn'
