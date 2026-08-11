@@ -133,7 +133,17 @@ const completedActivityDetails = [
 
 export const mockCompleteSite = {
   ...mockFileUploadSite,
-  activityDetails: completedActivityDetails
+  activityDetails: completedActivityDetails,
+  constructionDrawings: [
+    {
+      filename: 'tech-drawing.pdf',
+      s3Location: {
+        s3Bucket: 'test-bucket',
+        s3Key: 'test-key',
+        checksumSha256: 'test-checksum'
+      }
+    }
+  ]
 }
 
 export const mockUkInvoicingAddress = {
