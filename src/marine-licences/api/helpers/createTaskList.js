@@ -51,6 +51,29 @@ const checkActivityDetails = (activityDetails) => {
   return COMPLETED
 }
 
+const CONSTRUCTION_DRAWING_SUBTYPES = new Set([
+  'construction-type-1',
+  'construction-type-3'
+])
+
+const requiresConstructionDrawing = (activityDetails) =>
+  (activityDetails ?? []).some((activity) =>
+    CONSTRUCTION_DRAWING_SUBTYPES.has(activity.activitySubType)
+  )
+
+const checkConstructionDrawings = (siteDetails) => {
+  if (!requiresConstructionDrawing(siteDetails.activityDetails)) {
+    return COMPLETED
+  }
+
+  const { constructionDrawings } = siteDetails
+
+  return constructionDrawings?.length > 0 &&
+    constructionDrawings.every((drawing) => drawing.s3Location)
+    ? COMPLETED
+    : IN_PROGRESS
+}
+
 const checkSiteDetailsFileUpload = (siteDetails) => {
   const requiredValues = [
     'fileUploadType',
@@ -62,8 +85,11 @@ const checkSiteDetailsFileUpload = (siteDetails) => {
 
   const siteStatus = getStatusFromRequiredFields(siteDetails, requiredValues)
   const activityStatus = checkActivityDetails(siteDetails.activityDetails)
+  const drawingStatus = checkConstructionDrawings(siteDetails)
 
-  if ([siteStatus, activityStatus].every((s) => s === COMPLETED)) {
+  if (
+    [siteStatus, activityStatus, drawingStatus].every((s) => s === COMPLETED)
+  ) {
     return COMPLETED
   }
   return IN_PROGRESS
@@ -79,8 +105,11 @@ const checkSiteDetailsCircle = (siteDetails) => {
 
   const siteStatus = getStatusFromRequiredFields(siteDetails, requiredValues)
   const activityStatus = checkActivityDetails(siteDetails.activityDetails)
+  const drawingStatus = checkConstructionDrawings(siteDetails)
 
-  if ([siteStatus, activityStatus].every((s) => s === COMPLETED)) {
+  if (
+    [siteStatus, activityStatus, drawingStatus].every((s) => s === COMPLETED)
+  ) {
     return COMPLETED
   }
   return IN_PROGRESS
@@ -108,7 +137,11 @@ const checkSiteDetailsMultiple = (siteDetails) => {
   }
 
   const activityStatus = checkActivityDetails(siteDetails.activityDetails)
-  return activityStatus === COMPLETED ? COMPLETED : IN_PROGRESS
+  const drawingStatus = checkConstructionDrawings(siteDetails)
+
+  return [activityStatus, drawingStatus].every((s) => s === COMPLETED)
+    ? COMPLETED
+    : IN_PROGRESS
 }
 
 const getValidationStrategy = (coordinatesType, coordinatesEntry) => {
