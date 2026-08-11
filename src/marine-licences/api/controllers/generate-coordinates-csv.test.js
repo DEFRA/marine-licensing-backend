@@ -3,6 +3,7 @@ import AdmZip from 'adm-zip'
 import { generateCoordinatesCsvController } from './generate-coordinates-csv.js'
 import * as siteDetailsModule from '../csv/site-details.js'
 import * as csvOutputModule from '../csv/csv-output.js'
+import { mockCircleSite } from '../../../../tests/test.fixture.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
@@ -72,7 +73,7 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
     ).rejects.toThrow('Marine licence not found')
   })
 
-  it('should call getSiteCoordinates once per site', async () => {
+  it('should call getSiteCoordinates once when there is a single site', async () => {
     const getSiteCoordinatesSpy = vi.spyOn(
       siteDetailsModule,
       'getSiteCoordinates'
@@ -84,12 +85,44 @@ describe('GET /marine-licence/{id}/generate-coordinates-csv', () => {
     expect(getSiteCoordinatesSpy).toHaveBeenCalledWith([mockSite])
   })
 
-  it('should call csvOutput once per site', async () => {
+  it('should call csvOutput once when there is a single site', async () => {
     const csvOutputSpy = vi.spyOn(csvOutputModule, 'csvOutput')
 
     await generateCoordinatesCsvController.handler(mockRequest, mockH)
 
     expect(csvOutputSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('should add a single zip entry named after the site when there is only one site', async () => {
+    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+
+    expect(mockAdmZip.addFile).toHaveBeenCalledTimes(1)
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      'Site 1.csv',
+      expect.any(Buffer)
+    )
+  })
+
+  it('for mutliple sites it should add a combined CSV entry plus one entry per site', async () => {
+    mockFindOne.mockResolvedValue({
+      siteDetails: [mockSite, mockCircleSite]
+    })
+
+    await generateCoordinatesCsvController.handler(mockRequest, mockH)
+
+    expect(mockAdmZip.addFile).toHaveBeenCalledTimes(3)
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      'All_Sites.csv',
+      expect.any(Buffer)
+    )
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      'Site 1.csv',
+      expect.any(Buffer)
+    )
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      `${mockCircleSite.siteName}.csv`,
+      expect.any(Buffer)
+    )
   })
 
   it('should throw when processing a site fails', async () => {

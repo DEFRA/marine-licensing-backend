@@ -6,6 +6,7 @@ import { generateCoordinatesCsvPublicController } from './generate-coordinates-c
 import * as siteDetailsModule from '../csv/site-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
+import { mockCircleSite } from '../../../../tests/test.fixture.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
@@ -99,7 +100,7 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
     )
   })
 
-  it('should call getSiteCoordinates once per site', async () => {
+  it('should call getSiteCoordinates once when there is a single site', async () => {
     const getSiteCoordinatesSpy = vi.spyOn(
       siteDetailsModule,
       'getSiteCoordinates'
@@ -109,6 +110,38 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
 
     expect(getSiteCoordinatesSpy).toHaveBeenCalledTimes(1)
     expect(getSiteCoordinatesSpy).toHaveBeenCalledWith([mockSite])
+  })
+
+  it('should add a single zip entry named after the site when there is only one site', async () => {
+    await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
+
+    expect(mockAdmZip.addFile).toHaveBeenCalledTimes(1)
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      'Site 1.csv',
+      expect.any(Buffer)
+    )
+  })
+
+  it('for multiple sites it should add a combined CSV entry plus one entry per site', async () => {
+    mockFindOne.mockResolvedValue({
+      ...mockDoc,
+      siteDetails: [mockSite, mockCircleSite]
+    })
+    await generateCoordinatesCsvPublicController.handler(mockRequest, mockH)
+
+    expect(mockAdmZip.addFile).toHaveBeenCalledTimes(3)
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      'All_Sites.csv',
+      expect.any(Buffer)
+    )
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      'Site 1.csv',
+      expect.any(Buffer)
+    )
+    expect(mockAdmZip.addFile).toHaveBeenCalledWith(
+      `${mockCircleSite.siteName}.csv`,
+      expect.any(Buffer)
+    )
   })
 
   it('should return the zip with zip content-type and content-disposition headers', async () => {

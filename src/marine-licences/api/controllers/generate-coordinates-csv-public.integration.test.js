@@ -6,7 +6,9 @@ import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { buildCoordinatesCsvPathById } from '../../constants/coordinates-csv.js'
 import {
   createCompleteMarineLicence,
-  mockFileUploadSite
+  mockCircleSite,
+  mockFileUploadSite,
+  mockMultipleSite
 } from '../../../../tests/test.fixture.js'
 
 vi.mock('adm-zip', () => ({
@@ -81,6 +83,29 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
     expect(lines[5]).toBe(`51,28.4981,1,4.561,1`)
     expect(addFile).toHaveBeenCalledWith(
       `${mockSiteName}.csv`,
+      expect.any(Buffer)
+    )
+  })
+
+  test('returns a combined CSV plus one CSV per site for multiple sites', async () => {
+    await insertSubmittedMarineLicence({
+      siteDetails: [mockMultipleSite, mockCircleSite]
+    })
+
+    const response = await getServer().inject({
+      method: 'GET',
+      url: buildCoordinatesCsvPathById(marineLicenceId.toHexString())
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(addFile).toHaveBeenCalledTimes(3)
+    expect(addFile).toHaveBeenCalledWith('All_Sites.csv', expect.any(Buffer))
+    expect(addFile).toHaveBeenCalledWith(
+      `${mockMultipleSite.siteName}.csv`,
+      expect.any(Buffer)
+    )
+    expect(addFile).toHaveBeenCalledWith(
+      `${mockCircleSite.siteName}.csv`,
       expect.any(Buffer)
     )
   })

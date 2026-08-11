@@ -2,7 +2,11 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import AdmZip from 'adm-zip'
 import { setupTestServer } from '../../../../tests/test-server.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import {
+  createCompleteMarineLicence,
+  mockCircleSite,
+  mockMultipleSite
+} from '../../../../tests/test.fixture.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
@@ -101,7 +105,34 @@ describe('Generate coordinates CSV - integration tests', async () => {
     expect(lines[1]).toBe('51,30,0,6,1')
     expect(lines[2]).toBe('51,36,0,12,1')
     expect(lines[3]).toBe('51,30,0,6,1')
+    expect(addFile).toHaveBeenCalledTimes(1)
     expect(addFile).toHaveBeenCalledWith('Test Site.csv', expect.any(Buffer))
+  })
+
+  test('returns a combined CSV plus one CSV per site for multiple sites', async () => {
+    const marineLicenceId = new ObjectId()
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: marineLicenceId,
+      siteDetails: [mockMultipleSite, mockCircleSite]
+    })
+
+    const response = await injectAsEntraIdUser(
+      getServer(),
+      marineLicenceId.toString()
+    )
+
+    expect(response.statusCode).toBe(200)
+    expect(addFile).toHaveBeenCalledTimes(3)
+    expect(addFile).toHaveBeenCalledWith('All_Sites.csv', expect.any(Buffer))
+    expect(addFile).toHaveBeenCalledWith(
+      `${mockMultipleSite.siteName}.csv`,
+      expect.any(Buffer)
+    )
+    expect(addFile).toHaveBeenCalledWith(
+      `${mockCircleSite.siteName}.csv`,
+      expect.any(Buffer)
+    )
   })
 
   test('returns 403 for a non-Entra ID user', async () => {
