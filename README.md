@@ -249,14 +249,12 @@ licence submission. The stub accepts any payload and returns `202`, which is the
 the backend checks — so queued items reach `status: 'success'` instead of retrying into
 `exemption-dynamics-queue-failed`.
 
-To see what was actually sent:
+The stub does not store submissions. To see what was sent, read its logs — each accepted
+submission is logged with the operation and exemption reference:
 
 ```bash
-curl -s http://localhost:3002/dynamics/flows/submissions
+docker compose logs -f marine-licensing-api-stub | grep dynamics_submission_stub_request
 ```
-
-That returns the last 50 submissions (payload, operation and timestamp), newest first. It is
-in-memory, so restarting the stub clears it.
 
 ### SonarCloud
 
