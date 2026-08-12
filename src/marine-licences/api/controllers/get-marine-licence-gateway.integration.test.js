@@ -88,7 +88,8 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
         excludedActivities: 'no',
         documentUrl: `${backendGatewayUrl}/public/marine-licence/${publicId}/water-framework-directive/download-url`,
         fileName: mockWaterFrameworkDirective.uploadedFile.filename
-      }
+      },
+      sites: []
     })
   })
 
