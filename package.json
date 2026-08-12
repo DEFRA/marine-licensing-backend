@@ -33,7 +33,7 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "dependencies": {
-    "@arcgis/core": "5.1.14",
+    "@arcgis/core": "5.1.15",
     "@aws-sdk/client-s3": "^3.1095.0",
     "@aws-sdk/client-sqs": "3.1103.0",
     "@aws-sdk/credential-providers": "3.1102.0",
@@ -48,7 +48,7 @@
     "@hapi/wreck": "18.1.2",
     "@terraformer/arcgis": "2.2.2",
     "@tmcw/togeojson": "^7.1.2",
-    "@turf/turf": "7.3.5",
+    "@turf/turf": "7.4.0",
     "adm-zip": "0.6.0",
     "aws-embedded-metrics": "4.2.1",
     "aws4": "1.13.2",
