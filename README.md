@@ -241,11 +241,22 @@ itself. To hit real Dynamics, replace the values in that file with the commented
 `DYNAMICS_*` values from `.env.template` and recreate the backend container. When running the
 backend outside docker (`npm run dev`), your local `.env` is what counts.
 
-Note that `DYNAMICS_ENABLED` also switches on the exemption submission queue poller. With no
-`DYNAMICS_API_URL` configured it will log a failed submission roughly every five minutes if
-anything is sitting in `exemption-dynamics-queue`; that is expected locally and does not
-affect contact lookups. Set `DYNAMICS_ENABLED=false` in your `.env` to silence it (contact
-names then fall back to empty).
+#### Dynamics submissions
+
+`DYNAMICS_ENABLED` also switches on the exemption submission queue poller, and its four
+endpoints are stubbed too: exemption submit (`DYNAMICS_API_URL`), withdraw, update and marine
+licence submission. The stub accepts any payload and returns `202`, which is the only thing
+the backend checks — so queued items reach `status: 'success'` instead of retrying into
+`exemption-dynamics-queue-failed`.
+
+To see what was actually sent:
+
+```bash
+curl -s http://localhost:3002/dynamics/flows/submissions
+```
+
+That returns the last 50 submissions (payload, operation and timestamp), newest first. It is
+in-memory, so restarting the stub clears it.
 
 ### SonarCloud
 
