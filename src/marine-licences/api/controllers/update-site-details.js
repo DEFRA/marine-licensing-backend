@@ -27,6 +27,8 @@ export const updateSiteDetailsController = {
 
       const { siteDetails, id, updatedAt, updatedBy } = payload
 
+      // Labels are snapshotted by the frontend at save time and stored on the
+      // licence record (activityTypeLabel, etc.). Backend stores the payload as-is.
       const siteDetailsWithActivity = siteDetails.map((site) =>
         site.activityDetails
           ? site

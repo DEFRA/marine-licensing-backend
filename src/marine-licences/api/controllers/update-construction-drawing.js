@@ -6,6 +6,10 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { validateConstructionDrawingUpload } from '../helpers/validateConstructionDrawingUpload.js'
 import { versionedUpdate } from '../helpers/versionedUpdate.js'
+import {
+  collectS3Locations,
+  deleteOrphanedS3Objects
+} from '../helpers/deleteS3Objects.js'
 
 export const updateConstructionDrawingController = {
   options: {
@@ -53,6 +57,12 @@ export const updateConstructionDrawingController = {
         )
       }
 
+      // The drawing being replaced still owns its previous upload - clean it up
+      // once the new location has been written
+      const previousS3Locations = collectS3Locations(
+        site.constructionDrawings?.[drawingIndex]
+      )
+
       // Mongo's $set does not auto-vivify arrays for a purely-numeric dotted
       // path - if constructionDrawings doesn't exist yet, `$set` on
       // "constructionDrawings.0" creates it as a plain object ({ "0": ... })
@@ -82,6 +92,8 @@ export const updateConstructionDrawingController = {
           }
         }
       })
+
+      await deleteOrphanedS3Objects(db, previousS3Locations)
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {

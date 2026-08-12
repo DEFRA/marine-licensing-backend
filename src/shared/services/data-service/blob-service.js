@@ -1,4 +1,8 @@
-import { HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import {
+  HeadObjectCommand,
+  GetObjectCommand,
+  DeleteObjectsCommand
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
@@ -18,6 +22,7 @@ const logger = createLogger()
 const awsConfig = config.get('aws')
 const cdpEnvironment = config.get('cdpEnvironment')
 const FILE_NOT_FOUND_IN_S3 = 'File not found in S3'
+const S3_OPERATION_TIMED_OUT = 'S3 operation timed out'
 
 class BlobService {
   logSystem = 'FileUpload:BlobService'
@@ -62,7 +67,7 @@ class BlobService {
       }
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.clientTimeout('S3 operation timed out')
+        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
       }
 
       throw Boom.internal(`S3 metadata retrieval failed: ${error.message}`)
@@ -114,6 +119,66 @@ class BlobService {
       }
 
       throw Boom.internal(`S3 download failed: ${error.message}`)
+    }
+  }
+
+  async deleteFiles(s3Locations) {
+    const validLocations = (s3Locations ?? []).filter(
+      (location) => location?.s3Bucket && location?.s3Key
+    )
+
+    if (validLocations.length === 0) {
+      return
+    }
+
+    const locationsByBucket = new Map()
+    for (const { s3Bucket, s3Key } of validLocations) {
+      const keys = locationsByBucket.get(s3Bucket) ?? []
+      keys.push(s3Key)
+      locationsByBucket.set(s3Bucket, keys)
+    }
+
+    for (const [s3Bucket, s3Keys] of locationsByBucket) {
+      await this.deleteBucketObjects(s3Bucket, s3Keys)
+    }
+  }
+
+  async deleteBucketObjects(s3Bucket, s3Keys) {
+    logger.info(
+      `${this.logSystem}: Deleting ${s3Keys.length} S3 object(s) from ${s3Bucket}: ${s3Keys.join(', ')}`
+    )
+
+    try {
+      const command = new DeleteObjectsCommand({
+        Bucket: s3Bucket,
+        Delete: { Objects: s3Keys.map((Key) => ({ Key })) }
+      })
+      const response = await this.client.send(command)
+
+      // DeleteObjects reports per-key failures in the response rather than
+      // throwing, so surface them without failing the whole batch
+      for (const failure of response?.Errors ?? []) {
+        logger.error(
+          { event: { action: 'delete', outcome: 'failure' } },
+          `${this.logSystem}: Failed to delete S3 object ${s3Bucket}/${failure.Key}: ${failure.Code} ${failure.Message}`
+        )
+      }
+
+      logger.info(
+        { event: { action: 'delete', outcome: 'success' } },
+        `${this.logSystem}: Deleted ${response?.Deleted?.length ?? 0} S3 object(s) from ${s3Bucket}`
+      )
+    } catch (error) {
+      logger.error(
+        structureErrorForECS(error),
+        `${this.logSystem}: Failed to delete S3 objects from ${s3Bucket}`
+      )
+
+      if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
+        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
+      }
+
+      throw Boom.internal(`S3 batch delete failed: ${error.message}`)
     }
   }
 
@@ -186,7 +251,7 @@ class BlobService {
       )
 
       if (error.name === 'TimeoutError' || error.name === 'RequestTimeout') {
-        throw Boom.clientTimeout('S3 operation timed out')
+        throw Boom.clientTimeout(S3_OPERATION_TIMED_OUT)
       }
 
       throw Boom.internal(

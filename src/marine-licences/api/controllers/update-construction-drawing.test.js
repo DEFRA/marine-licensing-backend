@@ -3,8 +3,15 @@ import { ObjectId } from 'mongodb'
 import { updateConstructionDrawingController } from './update-construction-drawing.js'
 import { validateConstructionDrawingUpload } from '../helpers/validateConstructionDrawingUpload.js'
 import Boom from '@hapi/boom'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
 
 vi.mock('../helpers/validateConstructionDrawingUpload.js')
+
+vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    deleteFiles: vi.fn()
+  }
+}))
 
 describe('PATCH /marine-licence/update-construction-drawing', () => {
   const mockAuditPayload = {
@@ -110,6 +117,68 @@ describe('PATCH /marine-licence/update-construction-drawing', () => {
         })
       )
       expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
+    })
+
+    describe('S3 cleanup of the replaced file', () => {
+      const previousS3Location = {
+        s3Bucket: 'mmo-uploads',
+        s3Key: 'previous-file-key',
+        checksumSha256: 'previous-checksum'
+      }
+
+      // The reference guard's own behaviour is covered by deleteS3Objects.test.js
+      // and, against real mongo, by update-construction-drawing.integration.test.js
+      const mockDbWithReferences = (marineLicence) => ({
+        collection: vi.fn().mockReturnValue({
+          findOne: vi.fn().mockResolvedValueOnce(marineLicence),
+          updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 1 }),
+          find: vi.fn().mockReturnValue({
+            toArray: vi.fn().mockResolvedValue([])
+          })
+        })
+      })
+
+      it('deletes the file the drawing previously pointed at', async () => {
+        const { mockHandler } = global
+        const mockPayload = buildPayload()
+        const mockDb = mockDbWithReferences({
+          _id: mockPayload.id,
+          updatedAt: existingUpdatedAt,
+          siteDetails: [
+            {
+              constructionDrawings: [
+                { filename: 'previous.pdf', s3Location: previousS3Location }
+              ]
+            }
+          ]
+        })
+
+        await updateConstructionDrawingController.handler(
+          { db: mockDb, payload: mockPayload },
+          mockHandler
+        )
+
+        expect(blobService.deleteFiles).toHaveBeenCalledWith([
+          { s3Bucket: 'mmo-uploads', s3Key: 'previous-file-key' }
+        ])
+      })
+
+      it('does not delete anything when the drawing slot was empty', async () => {
+        const { mockHandler } = global
+        const mockPayload = buildPayload()
+        const mockDb = mockDbWithReferences({
+          _id: mockPayload.id,
+          updatedAt: existingUpdatedAt,
+          siteDetails: [{ constructionDrawings: [{}] }]
+        })
+
+        await updateConstructionDrawingController.handler(
+          { db: mockDb, payload: mockPayload },
+          mockHandler
+        )
+
+        expect(blobService.deleteFiles).not.toHaveBeenCalled()
+      })
     })
 
     it('throws 409 when the document was modified by another user between validation and write', async () => {
