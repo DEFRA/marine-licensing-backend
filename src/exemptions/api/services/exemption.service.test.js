@@ -65,32 +65,6 @@ describe('ExemptionService', () => {
       })
     })
 
-    it('should return exemption with organisation name, if requested without a contact ID', async () => {
-      const exemptionWithOrg = buildExemption({
-        organisation: { name: 'Dredging Co' }
-      })
-      const exemptionService = createService(global.mockMongo, exemptionWithOrg)
-      const result = await exemptionService.getExemptionById({
-        id: exemption._id
-      })
-      expect(result).toEqual({
-        ...exemptionWithOrg,
-        whoExemptionIsFor: 'Dredging Co'
-      })
-    })
-
-    it('should return exemption with the contact name for its owner', async () => {
-      const exemptionService = createService(global.mockMongo, exemption)
-      const result = await exemptionService.getExemptionById({
-        id: exemption._id,
-        currentUserId: exemption.contactId
-      })
-      expect(result).toEqual({
-        ...exemption,
-        whoExemptionIsFor: 'Dave Barnett'
-      })
-    })
-
     it('should throw a not found error if exemption not found', async () => {
       const exemptionService = createService(global.mockMongo, exemption)
       await expect(() =>
@@ -173,7 +147,12 @@ describe('ExemptionService', () => {
         expect(getContactNameById).toHaveBeenCalledWith({
           contactId: exemption.contactId
         })
-        expect(result.whoExemptionIsFor).toBe('Dave Barnett')
+        expect(result).toEqual({
+          ...submitted,
+          whoExemptionIsFor: 'Dave Barnett'
+        })
+        // the document read from the database is not mutated
+        expect(submitted).not.toHaveProperty('whoExemptionIsFor')
       })
 
       it('should use the organisation name in preference to the contact name', async () => {
@@ -189,7 +168,10 @@ describe('ExemptionService', () => {
         })
 
         expect(getContactNameById).not.toHaveBeenCalled()
-        expect(result.whoExemptionIsFor).toBe('Dredging Co')
+        expect(result).toEqual({
+          ...submitted,
+          whoExemptionIsFor: 'Dredging Co'
+        })
       })
 
       it('should not look up the contact name for an applicant viewing a draft exemption', async () => {
@@ -203,6 +185,20 @@ describe('ExemptionService', () => {
 
         expect(getContactNameById).not.toHaveBeenCalled()
         expect(result.whoExemptionIsFor).toBeUndefined()
+      })
+
+      it('should omit whoExemptionIsFor when no name is available', async () => {
+        // getContactNameById returns null when Dynamics is disabled or the call fails
+        vi.mocked(getContactNameById).mockResolvedValueOnce(null)
+        const submitted = buildExemption({ status: EXEMPTION_STATUS.ACTIVE })
+        const exemptionService = createService(global.mockMongo, submitted)
+
+        const result = await exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: exemption.contactId
+        })
+
+        expect(result).not.toHaveProperty('whoExemptionIsFor')
       })
 
       it('should look up the contact name for an internal user viewing a draft exemption', async () => {
