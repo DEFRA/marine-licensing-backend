@@ -3,11 +3,14 @@ import {
   getOptionalContactId
 } from '../../helpers/get-contact-id.js'
 
-export const addCreateAuditFields = (auth, payload = {}) => {
+// `payload ?? {}` rather than a default parameter: hapi sets request.payload to
+// null (not undefined) for a request with no body, which a default would not catch.
+export const addCreateAuditFields = (auth, payload) => {
   const userId = getContactId(auth)
   const now = new Date()
 
-  const { createdAt, createdBy, updatedAt, updatedBy, ...payloadData } = payload
+  const { createdAt, createdBy, updatedAt, updatedBy, ...payloadData } =
+    payload ?? {}
 
   return {
     ...payloadData,
@@ -18,11 +21,11 @@ export const addCreateAuditFields = (auth, payload = {}) => {
   }
 }
 
-export const addUpdateAuditFields = (auth, payload = {}) => {
+export const addUpdateAuditFields = (auth, payload) => {
   const userId = getContactId(auth)
   const now = new Date()
 
-  const { updatedAt, updatedBy, ...payloadData } = payload
+  const { updatedAt, updatedBy, ...payloadData } = payload ?? {}
 
   return {
     ...payloadData,
@@ -31,11 +34,12 @@ export const addUpdateAuditFields = (auth, payload = {}) => {
   }
 }
 
-export const addCreateAuditFieldsOptional = (auth, payload = {}) => {
+export const addCreateAuditFieldsOptional = (auth, payload) => {
   const userId = getOptionalContactId(auth)
   const now = new Date()
 
-  const { createdAt, createdBy, updatedAt, updatedBy, ...payloadData } = payload
+  const { createdAt, createdBy, updatedAt, updatedBy, ...payloadData } =
+    payload ?? {}
 
   return {
     ...payloadData,
@@ -46,11 +50,11 @@ export const addCreateAuditFieldsOptional = (auth, payload = {}) => {
   }
 }
 
-export const addUpdateAuditFieldsOptional = (auth, payload = {}) => {
+export const addUpdateAuditFieldsOptional = (auth, payload) => {
   const userId = getOptionalContactId(auth)
   const now = new Date()
 
-  const { updatedAt, updatedBy, ...payloadData } = payload
+  const { updatedAt, updatedBy, ...payloadData } = payload ?? {}
 
   return {
     ...payloadData,

@@ -44,13 +44,18 @@ describe('mongo-audit', () => {
       })
     })
 
-    it('should handle a null payload', () => {
+    // hapi sets request.payload to null for a body-less request, and to undefined
+    // only if the payload was never parsed — both must be tolerated.
+    it.each([
+      ['an omitted payload', undefined],
+      ['a null payload', null]
+    ])('should handle %s', (_description, payload) => {
       const auth = { credentials: { contactId: 'user123' } }
       const expectedDate = new Date('2023-01-01T12:00:00.000Z')
 
       mockedGetContactId.mockReturnValue('user123')
 
-      const result = addCreateAuditFields(auth)
+      const result = addCreateAuditFields(auth, payload)
 
       expect(result).toEqual({
         createdAt: expectedDate,
@@ -78,13 +83,16 @@ describe('mongo-audit', () => {
       })
     })
 
-    it('should handle a null payload', () => {
+    it.each([
+      ['an omitted payload', undefined],
+      ['a null payload', null]
+    ])('should handle %s', (_description, payload) => {
       const auth = { credentials: { contactId: 'user456' } }
       const expectedDate = new Date('2023-01-01T12:00:00.000Z')
 
       mockedGetContactId.mockReturnValue('user456')
 
-      const result = addUpdateAuditFields(auth)
+      const result = addUpdateAuditFields(auth, payload)
 
       expect(result).toEqual({
         updatedAt: expectedDate,
@@ -115,6 +123,15 @@ describe('mongo-audit', () => {
       expect(result.createdBy).toBe('user-1')
       expect(result.updatedBy).toBe('user-1')
     })
+
+    it('should handle a null payload', () => {
+      mockedGetOptionalContactId.mockReturnValue('user-1')
+
+      const result = addCreateAuditFieldsOptional(undefined, null)
+
+      expect(result.createdAt).toBeInstanceOf(Date)
+      expect(result.createdBy).toBe('user-1')
+    })
   })
 
   describe('addUpdateAuditFieldsOptional', () => {
@@ -136,6 +153,15 @@ describe('mongo-audit', () => {
       const auth = { credentials: { contactId: 'user-2' } }
       const result = addUpdateAuditFieldsOptional(auth, { foo: 'bar' })
 
+      expect(result.updatedBy).toBe('user-2')
+    })
+
+    it('should handle a null payload', () => {
+      mockedGetOptionalContactId.mockReturnValue('user-2')
+
+      const result = addUpdateAuditFieldsOptional(undefined, null)
+
+      expect(result.updatedAt).toBeInstanceOf(Date)
       expect(result.updatedBy).toBe('user-2')
     })
   })
