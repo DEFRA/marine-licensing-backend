@@ -3,7 +3,8 @@ export const MARINE_LICENCE_STATUS = {
   ACTIVE: 'ACTIVE',
   REJECTED: 'REJECTED',
   SUBMITTED: 'SUBMITTED',
-  TRANSFERRED: 'TRANSFERRED'
+  TRANSFERRED: 'TRANSFERRED',
+  WITHDRAWN: 'WITHDRAWN'
 }
 
 export const MARINE_LICENCE_STATUS_LABEL = {
@@ -11,7 +12,8 @@ export const MARINE_LICENCE_STATUS_LABEL = {
   ACTIVE: 'Active',
   REJECTED: 'Rejected',
   SUBMITTED: 'Submitted',
-  TRANSFERRED: 'Transferred'
+  TRANSFERRED: 'Transferred',
+  WITHDRAWN: 'Withdrawn'
 }
 
 export const MARINE_PLAN_POLICY_JOB_STATUS = {
