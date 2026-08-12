@@ -67,8 +67,32 @@ describe('Get exemption - integration tests', async () => {
     })
     expect(statusCode).toBe(200)
     compareResponseWithDbExemption(body, exemption)
-    // when requested by an applicant, the contact name is not returned
+    // the contact name is only looked up once an exemption has been submitted
     expect(body.whoExemptionIsFor).toBeUndefined()
+  })
+
+  test('submitted exemption requested by an applicant', async () => {
+    const exemption = createCompleteExemption({
+      _id: new ObjectId(),
+      organisation: null,
+      status: EXEMPTION_STATUS.ACTIVE
+    })
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
+    mockDynamicsContactDetailsApi()
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: `/exemption/${exemption._id}`,
+      contactId: exemption.contactId // request is from an applicant
+    })
+    expect(statusCode).toBe(200)
+    // once submitted, the applicant's own view includes their contact name
+    compareResponseWithDbExemption(body, {
+      ...exemption,
+      whoExemptionIsFor: 'Dave Barnett'
+    })
   })
 
   test('requested by an internal user', async () => {

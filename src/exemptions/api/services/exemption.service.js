@@ -62,7 +62,9 @@ export class ExemptionService {
       }
     }
 
-    if (!currentUserId) {
+    const isSubmittedExemption = exemption.status !== EXEMPTION_STATUS.DRAFT
+
+    if (!currentUserId || isSubmittedExemption) {
       exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
     }
     return exemption
