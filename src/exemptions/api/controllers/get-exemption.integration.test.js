@@ -71,9 +71,9 @@ describe('Get exemption - integration tests', async () => {
     expect(body.whoExemptionIsFor).toBeUndefined()
   })
 
-  test('submitted exemption requested by an applicant', async () => {
+  test('non-draft exemption requested by an applicant', async () => {
     const exemption = createCompleteExemption({
-      _id: new ObjectId(),
+      _id: exemptionId,
       organisation: null,
       status: EXEMPTION_STATUS.ACTIVE
     })
