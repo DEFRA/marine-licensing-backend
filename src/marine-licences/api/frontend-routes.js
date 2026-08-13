@@ -2,6 +2,7 @@ import { createProjectNameController } from './controllers/create-project-name.j
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { getMarineLicenceController } from './controllers/get-marine-licence.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
+import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
@@ -21,6 +22,11 @@ import { calculateMarinePlanPoliciesController } from './controllers/calculate-m
 import { saveMarinePlanPolicyResponseController } from './controllers/save-marine-plan-policy-response.js'
 import { updateInvoicingController } from './controllers/update-invoicing.js'
 import { confirmSiteDetailsController } from './controllers/confirm-site-details.js'
+import { withdrawMarineLicenceController } from './controllers/withdraw-marine-licence.js'
+import { addConstructionDrawingController } from './controllers/add-construction-drawing.js'
+import { updateConstructionDrawingController } from './controllers/update-construction-drawing.js'
+import { deleteConstructionDrawingController } from './controllers/delete-construction-drawing.js'
+import { deleteConstructionDrawingsController } from './controllers/delete-construction-drawings.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -53,8 +59,18 @@ export const marineLicenceFrontendRoutes = [
   },
   {
     method: 'POST',
+    path: '/marine-licence/copy-marine-licence',
+    ...copyMarineLicenceController
+  },
+  {
+    method: 'POST',
     path: '/marine-licence/submit',
     ...submitMarineLicenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/{id}/withdraw',
+    ...withdrawMarineLicenceController
   },
   {
     method: 'PATCH',
@@ -145,5 +161,25 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/confirm-site-details',
     ...confirmSiteDetailsController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/add-construction-drawing',
+    ...addConstructionDrawingController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/update-construction-drawing',
+    ...updateConstructionDrawingController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-construction-drawing',
+    ...deleteConstructionDrawingController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-construction-drawings',
+    ...deleteConstructionDrawingsController
   }
 ]

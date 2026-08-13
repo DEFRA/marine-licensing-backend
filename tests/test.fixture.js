@@ -133,7 +133,17 @@ const completedActivityDetails = [
 
 export const mockCompleteSite = {
   ...mockFileUploadSite,
-  activityDetails: completedActivityDetails
+  activityDetails: completedActivityDetails,
+  constructionDrawings: [
+    {
+      filename: 'tech-drawing.pdf',
+      s3Location: {
+        s3Bucket: 'test-bucket',
+        s3Key: 'test-key',
+        checksumSha256: 'test-checksum'
+      }
+    }
+  ]
 }
 
 export const mockUkInvoicingAddress = {
@@ -161,10 +171,52 @@ export const mockInvoicing = {
   }
 }
 
+export const mockMarinePlanPolicies = [
+  {
+    policyCode: 'E-AGG-3',
+    sector: 'Aggregates',
+    wordingRef: 'E-AGG-3@9e9f836e1cf8'
+  },
+  {
+    policyCode: 'E-MPA-1',
+    sector: 'Marine protected areas',
+    wordingRef: 'E-MPA-1@74fa5919499c'
+  },
+  {
+    policyCode: 'E-BIO-1',
+    sector: 'Biodiversity',
+    wordingRef: 'E-BIO-1@5548bada4132'
+  }
+]
+
+export const mockMarinePlanPolicyResponses = {
+  'E-AGG-3': 'test',
+  'E-MPA-1': 'test',
+  'E-BIO-1': 'test'
+}
+
+export const mockRejectedMarineLicenceFields = {
+  status: MARINE_LICENCE_STATUS.REJECTED,
+  applicationReference: 'MLA/2026/10002',
+  submittedAt: new Date('2026-01-15'),
+  rejectedDate: new Date('2026-02-01'),
+  rejectedReasons: 'reason1,reason2',
+  rejectedInformation: 'Please resubmit',
+  transferredDate: new Date('2026-03-01'),
+  coastalOperationsAreas: ['North East'],
+  marinePlanAreas: ['North East inshore'],
+  marinePlanPolicyJob: 'ready',
+  marinePlanPolicyJobId: 'job-abc',
+  marinePlanPolicies: mockMarinePlanPolicies,
+  marinePlanPoliciesCount: mockMarinePlanPolicies.length,
+  marinePlanPolicyResponses: mockMarinePlanPolicyResponses,
+  marinePlanPolicyResponseCount: Object.keys(mockMarinePlanPolicyResponses)
+    .length
+}
+
 export const createCompleteMarineLicence = (overrides = {}) => {
   const marineLicenceId = overrides._id || new ObjectId()
-  const contactId =
-    overrides.contactId || '123e4567-e89b-12d3-a456-426614174000'
+  const contactId = overrides.contactId || mockCredentials.contactId
 
   return {
     _id: marineLicenceId,

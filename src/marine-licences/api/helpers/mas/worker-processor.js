@@ -6,7 +6,8 @@ import {
   MAS_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
 import { deleteMasMessage } from './sqs-client.js'
-import { updateTransferredMarineLicence } from './update-licence.js'
+import { updateRejectedMarineLicence } from './update-rejected-licence.js'
+import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 
 const discardMalformedMessage = 'Discarding malformed MAS message'
 
@@ -40,6 +41,13 @@ export const processMasMessage = async (server, message) => {
 
   if (status === MARINE_LICENCE_STATUS.TRANSFERRED) {
     await updateTransferredMarineLicence(db, logger, {
+      body,
+      id: message.MessageId
+    })
+  }
+
+  if (status === MARINE_LICENCE_STATUS.REJECTED) {
+    await updateRejectedMarineLicence(db, logger, {
       body,
       id: message.MessageId
     })

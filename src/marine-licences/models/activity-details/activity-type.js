@@ -13,6 +13,7 @@ export const activityTypeFields = {
       'string.empty': 'ACTIVITY_TYPE_REQUIRED',
       'any.required': 'ACTIVITY_TYPE_REQUIRED'
     }),
+  activityTypeLabel: joi.string().optional().allow('', null),
   activitySubType: joi.when('activityType', {
     is: joi
       .string()
@@ -26,6 +27,7 @@ export const activityTypeFields = {
       'string.max': 'ACTIVITY_TYPE_REQUIRED'
     })
   }),
+  activitySubTypeLabel: joi.string().optional().allow('', null),
   activities: joi.when('activitySubType', {
     is: joi.string().min(1).required(),
     then: joi
@@ -40,6 +42,7 @@ export const activityTypeFields = {
             'array.min': 'ACTIVITIES_REQUIRED',
             'any.required': 'ACTIVITIES_REQUIRED'
           }),
+        selectionLabels: joi.array().items(joi.string()).optional(),
         otherActivity: joi.when('selections', {
           is: joi.array().has(joi.string().valid('other')),
           then: joi.string().trim().max(1000).required().messages({
