@@ -51,9 +51,6 @@ export const createCompleteExemption = (overrides = {}) => {
   }
 }
 
-const testLatitude = 51.474968
-const testLongitude = 1.076016
-
 export const mockFileUploadSite = {
   coordinatesType: 'file',
   fileUploadType: 'kml',
@@ -64,8 +61,16 @@ export const mockFileUploadSite = {
       {
         type: 'Feature',
         geometry: {
-          type: 'Point',
-          coordinates: [testLongitude, testLatitude]
+          type: 'Polygon',
+          coordinates: [
+            [
+              [1.076016, 51.474968],
+              [1.076016, 51.475968],
+              [1.077016, 51.475968],
+              [1.077016, 51.474968],
+              [1.076016, 51.474968]
+            ]
+          ]
         },
         properties: {}
       }
