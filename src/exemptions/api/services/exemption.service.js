@@ -36,24 +36,32 @@ export class ExemptionService {
     return result
   }
 
-  async #getWhoExemptionIsFor(exemption) {
-    return (
+  /**
+   * Returns a copy of the exemption with `whoExemptionIsFor` resolved from the
+   * organisation name, falling back to the contact name held in Dynamics.
+   * The key is omitted entirely when neither yields a name, so consumers see
+   * either a name or no field at all - never null.
+   */
+  async #withWhoExemptionIsFor(exemption) {
+    const whoExemptionIsFor =
       exemption.organisation?.name ||
-      getContactNameById({ contactId: exemption.contactId })
-    )
+      (await getContactNameById({ contactId: exemption.contactId }))
+
+    return whoExemptionIsFor ? { ...exemption, whoExemptionIsFor } : exemption
   }
 
   async getExemptionById({ id, currentUserId, currentOrganisationId }) {
     const exemption = await this.#findExemptionById(id)
+
+    const isDraft = exemption.status === EXEMPTION_STATUS.DRAFT
 
     if (currentUserId) {
       const isOwner = currentUserId === exemption.contactId
       const isSameOrganisation =
         currentOrganisationId &&
         exemption.organisation?.id === currentOrganisationId
-      const isSubmitted = exemption.status !== EXEMPTION_STATUS.DRAFT
 
-      if (!isOwner && !(isSameOrganisation && isSubmitted)) {
+      if (!isOwner && !(isSameOrganisation && !isDraft)) {
         this.logger.info(
           { event: { action: 'authorization_check', outcome: 'failure' } },
           `Authorization error in getExemptionById: exemption ${id} status ${exemption.status}, user ${currentUserId} org ${currentOrganisationId}, owner ${exemption.contactId} org ${exemption.organisation?.id}`
@@ -62,10 +70,13 @@ export class ExemptionService {
       }
     }
 
-    if (!currentUserId) {
-      exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
-    }
-    return exemption
+    // An applicant viewing their own draft has no summary card to show the name in;
+    // every other viewer of every other status does
+    const isOwnerViewingDraft = currentUserId && isDraft
+
+    return isOwnerViewingDraft
+      ? exemption
+      : this.#withWhoExemptionIsFor(exemption)
   }
 
   async getPublicExemptionById(id) {
@@ -81,8 +92,7 @@ export class ExemptionService {
       )
       throw Boom.forbidden(notAuthorisedMessage)
     }
-    exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
-    return exemption
+    return this.#withWhoExemptionIsFor(exemption)
   }
 
   async getExemptionByApplicationReference({
@@ -99,7 +109,7 @@ export class ExemptionService {
       throw Boom.forbidden(notAuthorisedMessage)
     }
     if (!currentUserId) {
-      exemption.whoExemptionIsFor = await this.#getWhoExemptionIsFor(exemption)
+      return this.#withWhoExemptionIsFor(exemption)
     }
     return exemption
   }

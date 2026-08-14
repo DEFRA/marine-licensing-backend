@@ -1,5 +1,7 @@
 import { vi, expect } from 'vitest'
 import { ExemptionService } from './exemption.service.js'
+import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
+import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 
 vi.mock(
   '../../../shared/common/helpers/dynamics/get-contact-details.js',
@@ -13,10 +15,12 @@ describe('ExemptionService', () => {
     _id: '6925a4dfc30cd032d1607963',
     contactId: '9687cdd5-49e7-4508-b56c-08a4d02c43c2',
     projectName: 'Test project',
-    status: 'ACTIVE',
+    status: EXEMPTION_STATUS.ACTIVE,
     publicRegister: { consent: 'yes' },
     applicationReference: 'EXE/2026/10006'
   }
+
+  const buildExemption = (overrides = {}) => ({ ...exemption, ...overrides })
 
   const logger = {
     info: vi.fn(),
@@ -61,30 +65,6 @@ describe('ExemptionService', () => {
       })
     })
 
-    it('should return exemption with organisation name, if requested without a contact ID', async () => {
-      const exemptionWithOrg = {
-        ...exemption,
-        organisation: { name: 'Dredging Co' }
-      }
-      const exemptionService = createService(global.mockMongo, exemptionWithOrg)
-      const result = await exemptionService.getExemptionById({
-        id: exemption._id
-      })
-      expect(result).toEqual({
-        ...exemptionWithOrg,
-        whoExemptionIsFor: 'Dredging Co'
-      })
-    })
-
-    it('should return exemption if requested with a contact ID', async () => {
-      const exemptionService = createService(global.mockMongo, exemption)
-      const result = await exemptionService.getExemptionById({
-        id: exemption._id,
-        contactId: exemption.contactId
-      })
-      expect(result).toEqual(exemption)
-    })
-
     it('should throw a not found error if exemption not found', async () => {
       const exemptionService = createService(global.mockMongo, exemption)
       await expect(() =>
@@ -104,27 +84,28 @@ describe('ExemptionService', () => {
 
     it('should allow colleague from same organisation to view submitted exemption', async () => {
       const orgId = 'org-123'
-      const exemptionWithOrg = {
-        ...exemption,
-        status: 'ACTIVE',
+      const exemptionWithOrg = buildExemption({
+        status: EXEMPTION_STATUS.ACTIVE,
         organisation: { id: orgId, name: 'Test Org' }
-      }
+      })
       const exemptionService = createService(global.mockMongo, exemptionWithOrg)
       const result = await exemptionService.getExemptionById({
         id: exemption._id,
         currentUserId: 'different-user',
         currentOrganisationId: orgId
       })
-      expect(result).toEqual(exemptionWithOrg)
+      expect(result).toEqual({
+        ...exemptionWithOrg,
+        whoExemptionIsFor: 'Test Org'
+      })
     })
 
     it('should not allow colleague from same organisation to view draft exemption', async () => {
       const orgId = 'org-123'
-      const draftExemptionWithOrg = {
-        ...exemption,
-        status: 'DRAFT',
+      const draftExemptionWithOrg = buildExemption({
+        status: EXEMPTION_STATUS.DRAFT,
         organisation: { id: orgId, name: 'Test Org' }
-      }
+      })
       const exemptionService = createService(
         global.mockMongo,
         draftExemptionWithOrg
@@ -139,11 +120,10 @@ describe('ExemptionService', () => {
     })
 
     it('should not allow user from different organisation to view exemption', async () => {
-      const exemptionWithOrg = {
-        ...exemption,
-        status: 'ACTIVE',
+      const exemptionWithOrg = buildExemption({
+        status: EXEMPTION_STATUS.ACTIVE,
         organisation: { id: 'org-123', name: 'Test Org' }
-      }
+      })
       const exemptionService = createService(global.mockMongo, exemptionWithOrg)
       await expect(() =>
         exemptionService.getExemptionById({
@@ -153,6 +133,108 @@ describe('ExemptionService', () => {
         })
       ).rejects.toThrow('Not authorised to request this resource')
     })
+
+    describe('whoExemptionIsFor', () => {
+      it('should look up the contact name for an applicant viewing their own submitted exemption', async () => {
+        const submitted = buildExemption({ status: EXEMPTION_STATUS.ACTIVE })
+        const exemptionService = createService(global.mockMongo, submitted)
+
+        const result = await exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: exemption.contactId
+        })
+
+        expect(getContactNameById).toHaveBeenCalledWith({
+          contactId: exemption.contactId
+        })
+        expect(result).toEqual({
+          ...submitted,
+          whoExemptionIsFor: 'Dave Barnett'
+        })
+        // the document read from the database is not mutated
+        expect(submitted).not.toHaveProperty('whoExemptionIsFor')
+      })
+
+      it('should use the organisation name in preference to the contact name', async () => {
+        const submitted = buildExemption({
+          status: EXEMPTION_STATUS.ACTIVE,
+          organisation: { id: 'org-123', name: 'Dredging Co' }
+        })
+        const exemptionService = createService(global.mockMongo, submitted)
+
+        const result = await exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: exemption.contactId
+        })
+
+        expect(getContactNameById).not.toHaveBeenCalled()
+        expect(result).toEqual({
+          ...submitted,
+          whoExemptionIsFor: 'Dredging Co'
+        })
+      })
+
+      it('should not look up the contact name for an applicant viewing a draft exemption', async () => {
+        const draft = buildExemption({ status: EXEMPTION_STATUS.DRAFT })
+        const exemptionService = createService(global.mockMongo, draft)
+
+        const result = await exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: exemption.contactId
+        })
+
+        expect(getContactNameById).not.toHaveBeenCalled()
+        expect(result.whoExemptionIsFor).toBeUndefined()
+      })
+
+      it('should omit whoExemptionIsFor when no name is available', async () => {
+        // getContactNameById returns null when Dynamics is disabled or the call fails
+        vi.mocked(getContactNameById).mockResolvedValueOnce(null)
+        const submitted = buildExemption({ status: EXEMPTION_STATUS.ACTIVE })
+        const exemptionService = createService(global.mockMongo, submitted)
+
+        const result = await exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: exemption.contactId
+        })
+
+        expect(result).not.toHaveProperty('whoExemptionIsFor')
+      })
+
+      it('should look up the contact name for an internal user viewing a draft exemption', async () => {
+        const draft = buildExemption({ status: EXEMPTION_STATUS.DRAFT })
+        const exemptionService = createService(global.mockMongo, draft)
+
+        const result = await exemptionService.getExemptionById({
+          id: exemption._id
+        })
+
+        expect(getContactNameById).toHaveBeenCalledWith({
+          contactId: exemption.contactId
+        })
+        expect(result.whoExemptionIsFor).toBe('Dave Barnett')
+      })
+
+      it('should look up the contact name for a colleague viewing a submitted organisation exemption', async () => {
+        const orgId = 'org-123'
+        const submitted = buildExemption({
+          status: EXEMPTION_STATUS.ACTIVE,
+          organisation: { id: orgId }
+        })
+        const exemptionService = createService(global.mockMongo, submitted)
+
+        const result = await exemptionService.getExemptionById({
+          id: exemption._id,
+          currentUserId: 'different-user',
+          currentOrganisationId: orgId
+        })
+
+        expect(getContactNameById).toHaveBeenCalledWith({
+          contactId: exemption.contactId
+        })
+        expect(result.whoExemptionIsFor).toBe('Dave Barnett')
+      })
+    })
   })
 
   describe('getPublicExemptionById', () => {
@@ -161,7 +243,10 @@ describe('ExemptionService', () => {
       const result = await exemptionService.getPublicExemptionById(
         exemption._id
       )
-      expect(result).toEqual(exemption)
+      expect(result).toEqual({
+        ...exemption,
+        whoExemptionIsFor: 'Dave Barnett'
+      })
     })
 
     it('should throw a not found error if exemption not found', async () => {
@@ -174,31 +259,30 @@ describe('ExemptionService', () => {
     })
 
     it('should throw an unauthorized error if exemption is not public', async () => {
-      const exemptionService = createService(global.mockMongo, {
-        ...exemption,
-        publicRegister: { consent: 'no' }
-      })
+      const exemptionService = createService(
+        global.mockMongo,
+        buildExemption({ publicRegister: { consent: 'no' } })
+      )
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)
       ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should throw an unauthorized error if exemption is not active', async () => {
-      const exemptionService = createService(global.mockMongo, {
-        ...exemption,
-        status: 'DRAFT'
-      })
+      const exemptionService = createService(
+        global.mockMongo,
+        buildExemption({ status: EXEMPTION_STATUS.DRAFT })
+      )
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)
       ).rejects.toThrow('Not authorised to request this resource')
     })
 
     it('should return withdrawn exemption with public consent', async () => {
-      const withdrawnExemption = {
-        ...exemption,
-        status: 'WITHDRAWN',
+      const withdrawnExemption = buildExemption({
+        status: EXEMPTION_STATUS.WITHDRAWN,
         publicRegister: { consent: 'yes' }
-      }
+      })
       const exemptionService = createService(
         global.mockMongo,
         withdrawnExemption
@@ -213,11 +297,13 @@ describe('ExemptionService', () => {
     })
 
     it('should throw forbidden for withdrawn exemption without public consent', async () => {
-      const exemptionService = createService(global.mockMongo, {
-        ...exemption,
-        status: 'WITHDRAWN',
-        publicRegister: { consent: 'no' }
-      })
+      const exemptionService = createService(
+        global.mockMongo,
+        buildExemption({
+          status: EXEMPTION_STATUS.WITHDRAWN,
+          publicRegister: { consent: 'no' }
+        })
+      )
       await expect(() =>
         exemptionService.getPublicExemptionById(exemption._id)
       ).rejects.toThrow('Not authorised to request this resource')
@@ -237,10 +323,9 @@ describe('ExemptionService', () => {
     })
 
     it('should return exemption with organisation name, if requested without a contact ID', async () => {
-      const exemptionWithOrg = {
-        ...exemption,
+      const exemptionWithOrg = buildExemption({
         organisation: { name: 'Dredging Co' }
-      }
+      })
       const exemptionService = createService(global.mockMongo, exemptionWithOrg)
       const result = await exemptionService.getExemptionByApplicationReference({
         applicationReference: exemption.applicationReference
@@ -251,11 +336,11 @@ describe('ExemptionService', () => {
       })
     })
 
-    it('should return exemption if requested with a contact ID', async () => {
+    it('should return exemption without a contact name for its owner', async () => {
       const exemptionService = createService(global.mockMongo, exemption)
       const result = await exemptionService.getExemptionByApplicationReference({
         applicationReference: exemption.applicationReference,
-        contactId: exemption.contactId
+        currentUserId: exemption.contactId
       })
       expect(result).toEqual(exemption)
     })
