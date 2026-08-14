@@ -1,29 +1,43 @@
+import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
+import AdmZip from 'adm-zip'
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-import { mockMarineLicence } from '../../models/test-fixtures.js'
 import { buildCoordinatesCsvPathById } from '../../constants/coordinates-csv.js'
+import {
+  createCompleteMarineLicence,
+  mockCircleSite,
+  mockFileUploadSite,
+  mockMultipleSite
+} from '../../../../tests/test.fixture.js'
+
+vi.mock('adm-zip', () => ({
+  default: vi.fn(function () {})
+}))
 
 describe('Generate coordinates CSV by id - public integration tests', async () => {
   const getServer = await setupTestServer()
   const marineLicenceId = new ObjectId()
 
+  const addFile = vi.fn()
+
+  beforeEach(() => {
+    addFile.mockClear()
+    AdmZip.mockImplementation(function () {
+      return { addFile, toBuffer: vi.fn(() => Buffer.from('zip-bytes')) }
+    })
+  })
+
+  const csvFromLastZip = () => addFile.mock.calls[0][1].toString()
+
+  const mockLicence = createCompleteMarineLicence({
+    _id: marineLicenceId,
+    status: MARINE_LICENCE_STATUS.SUBMITTED
+  })
+
   const insertSubmittedMarineLicence = async (overrides = {}) => {
     await globalThis.mockMongo.collection('marine-licences').insertOne({
-      ...mockMarineLicence,
-      _id: marineLicenceId,
-      status: MARINE_LICENCE_STATUS.SUBMITTED,
-      siteDetails: [
-        {
-          coordinatesType: 'polygon',
-          coordinatesEntry: 'multiple',
-          coordinateSystem: 'wgs84',
-          coordinates: [
-            { latitude: '51.5', longitude: '-0.1' },
-            { latitude: '51.6', longitude: '-0.2' }
-          ]
-        }
-      ],
+      ...mockLicence,
       ...overrides
     })
   }
@@ -37,18 +51,20 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.headers['content-type']).toContain('text/csv')
+    expect(response.headers['content-type']).toContain('application/zip')
     expect(response.headers['content-disposition']).toBe(
-      'attachment; filename="locationForCSV.csv"'
+      'attachment; filename="Download CSV.zip"'
     )
 
-    const firstLine = response.payload.split('\n')[0]
+    const firstLine = csvFromLastZip().split('\n')[0]
     expect(firstLine).toBe(
       'Lat Degree,Lat Dec Min,Long Degree,Long Dec Min,objectid'
     )
   })
 
   test('returns CSV rows for a submitted marine licence', async () => {
+    const mockSiteName = mockFileUploadSite.siteName
+
     await insertSubmittedMarineLicence()
 
     const response = await getServer().inject({
@@ -58,11 +74,40 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
 
     expect(response.statusCode).toBe(200)
 
-    const lines = response.payload.split('\n').filter(Boolean)
-    expect(lines).toHaveLength(4)
-    expect(lines[1]).toBe('51,30,0,6,1')
-    expect(lines[2]).toBe('51,36,0,12,1')
-    expect(lines[3]).toBe('51,30,0,6,1')
+    const lines = csvFromLastZip().split('\n').filter(Boolean)
+    expect(lines).toHaveLength(6)
+    expect(lines[1]).toBe(`51,28.4981,1,4.561,1`)
+    expect(lines[2]).toBe(`51,28.5581,1,4.561,1`)
+    expect(lines[3]).toBe(`51,28.5581,1,4.621,1`)
+    expect(lines[4]).toBe(`51,28.4981,1,4.621,1`)
+    expect(lines[5]).toBe(`51,28.4981,1,4.561,1`)
+    expect(addFile).toHaveBeenCalledWith(
+      `${mockSiteName}.csv`,
+      expect.any(Buffer)
+    )
+  })
+
+  test('returns a combined CSV plus one CSV per site for multiple sites', async () => {
+    await insertSubmittedMarineLicence({
+      siteDetails: [mockMultipleSite, mockCircleSite]
+    })
+
+    const response = await getServer().inject({
+      method: 'GET',
+      url: buildCoordinatesCsvPathById(marineLicenceId.toHexString())
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(addFile).toHaveBeenCalledTimes(3)
+    expect(addFile).toHaveBeenCalledWith('All_Sites.csv', expect.any(Buffer))
+    expect(addFile).toHaveBeenCalledWith(
+      `${mockMultipleSite.siteName}.csv`,
+      expect.any(Buffer)
+    )
+    expect(addFile).toHaveBeenCalledWith(
+      `${mockCircleSite.siteName}.csv`,
+      expect.any(Buffer)
+    )
   })
 
   test('returns 404 when the marine licence id is not found', async () => {
@@ -107,6 +152,6 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
     })
 
     expect(response.statusCode).toBe(200)
-    expect(response.headers['content-type']).toContain('text/csv')
+    expect(response.headers['content-type']).toContain('application/zip')
   })
 })

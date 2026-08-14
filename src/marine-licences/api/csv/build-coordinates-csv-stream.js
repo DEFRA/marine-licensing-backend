@@ -1,10 +1,14 @@
 import { Transform } from 'node:stream'
 import { stringify } from 'csv-stringify'
+import AdmZip from 'adm-zip'
 import { getSiteCoordinates } from './site-details.js'
 import { convertCoordinatesToDdm } from './coordinates-to-ddm.js'
 import { csvOutput } from './csv-output.js'
 import { coordinatesToCsvObject } from './coordinates-to-csv.js'
-import { COORDINATES_CSV_FILENAME } from '../../constants/coordinates-csv.js'
+import {
+  COORDINATES_CSV_FILENAME,
+  COORDINATES_ZIP_FILENAME
+} from '../../constants/coordinates-csv.js'
 
 const csvHeaders = [
   'Lat Degree',
@@ -40,11 +44,50 @@ export const buildCoordinatesCsvStream = (siteDetails) => {
   return csvStream
 }
 
-export const coordinatesCsvResponse = (h, csvStream) =>
-  h
-    .response(csvStream)
-    .type('text/csv')
+const formatCsvName = (site, index) => {
+  const { siteName } = site
+
+  const filename = siteName ?? `Site ${index + 1}.csv`
+
+  return `${filename}.csv`
+}
+
+const bufferCsvStream = async (csvStream) => {
+  const chunks = await csvStream.toArray()
+  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)))
+}
+
+const buildCoordinatesZip = async (csvStream, siteDetails) => {
+  const zip = new AdmZip()
+  const csvBuffer = await bufferCsvStream(csvStream)
+
+  const isSingleSite = siteDetails.length === 1
+
+  zip.addFile(
+    isSingleSite ? formatCsvName(siteDetails[0], 0) : COORDINATES_CSV_FILENAME,
+    csvBuffer
+  )
+
+  if (isSingleSite) {
+    return zip
+  }
+
+  for (const [index, site] of siteDetails.entries()) {
+    const siteBuffer = await bufferCsvStream(buildCoordinatesCsvStream([site]))
+    zip.addFile(formatCsvName(site, index), siteBuffer)
+  }
+
+  return zip
+}
+
+export const coordinatesCsvResponse = async (h, csvStream, siteDetails) => {
+  const zip = await buildCoordinatesZip(csvStream, siteDetails)
+
+  return h
+    .response(zip.toBuffer())
+    .type('application/zip')
     .header(
       'Content-Disposition',
-      `attachment; filename="${COORDINATES_CSV_FILENAME}"`
+      `attachment; filename="${COORDINATES_ZIP_FILENAME}"`
     )
+}

@@ -28,6 +28,10 @@ export const generateCoordinatesCsvController = {
       throw Boom.notFound('Marine licence not found')
     }
 
-    return coordinatesCsvResponse(h, buildCoordinatesCsvStream(doc.siteDetails))
+    return coordinatesCsvResponse(
+      h,
+      buildCoordinatesCsvStream(doc.siteDetails),
+      doc.siteDetails
+    )
   }
 }

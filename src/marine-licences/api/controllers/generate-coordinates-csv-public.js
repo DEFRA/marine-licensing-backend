@@ -34,6 +34,10 @@ export const generateCoordinatesCsvPublicController = {
       throw Boom.forbidden(notAuthorisedMessage)
     }
 
-    return coordinatesCsvResponse(h, buildCoordinatesCsvStream(doc.siteDetails))
+    return coordinatesCsvResponse(
+      h,
+      buildCoordinatesCsvStream(doc.siteDetails),
+      doc.siteDetails
+    )
   }
 }
