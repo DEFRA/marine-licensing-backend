@@ -5,6 +5,10 @@ import {
   requestFromInternalUser,
   requestFromPublicUser
 } from '../../../../.vite/mocks.js'
+import {
+  EXEMPTION_STATUS,
+  EXEMPTION_STATUS_LABEL
+} from '../../constants/exemption.js'
 vi.mock(
   '../../../shared/common/helpers/dynamics/get-contact-details.js',
   () => ({
@@ -124,7 +128,8 @@ describe('GET /exemption', () => {
           findOne: vi.fn().mockResolvedValue({
             _id: mockId,
             projectName: 'Test project',
-            contactId: userContactId
+            contactId: userContactId,
+            status: EXEMPTION_STATUS.DRAFT
           })
         }
       })
@@ -144,6 +149,7 @@ describe('GET /exemption', () => {
             id: mockId,
             contactId: userContactId,
             projectName: 'Test project',
+            status: EXEMPTION_STATUS_LABEL[EXEMPTION_STATUS.DRAFT],
             taskList: {
               publicRegister: 'INCOMPLETE',
               projectName: 'COMPLETED',

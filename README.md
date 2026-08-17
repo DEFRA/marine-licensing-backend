@@ -198,8 +198,9 @@ A local environment with:
 - Redis
 - MongoDB
 - [marine-licensing-api-stub](https://github.com/DEFRA/marine-licensing-api-stub) (must be
-  checked out as a sibling directory) — stubs the ArcGIS marine-plan-policy lookup only. Policy
-  _wording_ still comes from the real GOV.UK marine-plans-explorer API.
+  checked out as a sibling directory) — stubs the ArcGIS marine-plan-policy lookup and the
+  Dynamics contact details API. Policy _wording_ still comes from the real GOV.UK
+  marine-plans-explorer API.
 - This service.
 - A commented out frontend example.
 
@@ -218,6 +219,42 @@ docker compose up -d marine-licensing-backend
 ```
 
 Remove/blank the line and recreate again to switch back to the stub.
+
+#### Dynamics contact details
+
+The "who is the exemption for" value comes from the Dynamics contacts API. There are no
+Dynamics credentials locally, so `docker compose up` runs with `DYNAMICS_ENABLED=true` and
+points the token endpoint and both contact details endpoints at the stub — the real code
+path (token fetch → contacts GET → `fullname`) runs end to end against fake data.
+
+The stub is seeded with the same five test users as the local CDP defra-id stub
+(Sally Self, Jason Bourne, John Doe, John Silver), so the name shown is the name of the user
+you logged in as. They are keyed on the registration's `contactId` — the value stored on
+exemptions and sent to Dynamics — rather than the `userId` you type on the defra-id stub
+login page, though the `userId` is accepted as an alias. Any other valid GUID resolves to a
+placeholder named after itself (`Test User 3fa85f64`), so pre-existing seeded exemptions
+still show something.
+
+Under docker compose these values come from [compose/dynamics-stub.env](compose/dynamics-stub.env)
+rather than your local `.env` — compose's `env_file` wins over the `.env` the container loads
+itself. To hit real Dynamics, replace the values in that file with the commented-out
+`DYNAMICS_*` values from `.env.template` and recreate the backend container. When running the
+backend outside docker (`npm run dev`), your local `.env` is what counts.
+
+#### Dynamics submissions
+
+`DYNAMICS_ENABLED` also switches on the exemption submission queue poller, and its four
+endpoints are stubbed too: exemption submit (`DYNAMICS_API_URL`), withdraw, update and marine
+licence submission. The stub accepts any payload and returns `202`, which is the only thing
+the backend checks — so queued items reach `status: 'success'` instead of retrying into
+`exemption-dynamics-queue-failed`.
+
+The stub does not store submissions. To see what was sent, read its logs — each accepted
+submission is logged with the operation and exemption reference:
+
+```bash
+docker compose logs -f marine-licensing-api-stub | grep dynamics_submission_stub_request
+```
 
 ### SonarCloud
 
