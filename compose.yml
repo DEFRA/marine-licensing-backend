@@ -101,6 +101,8 @@ services:
         condition: service_healthy
     env_file:
       - 'compose/aws.env'
+      # Points the Dynamics contact details integration at marine-licensing-api-stub
+      - 'compose/dynamics-stub.env'
     environment:
       PORT: 3001
       NODE_ENV: development
