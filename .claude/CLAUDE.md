@@ -289,6 +289,13 @@ logger.warn({ tempDir, error }, 'Cleanup failed')
 - [ ] No sensitive data (tokens, passwords, PII) in log messages
 - [ ] Meaningful context is in the `message` string, not lost in custom keys
 
+### Scheduled jobs
+
+Declared in `src/shared/plugins/scheduler/scheduled-jobs.js`. Every job must be
+idempotent and backward-looking, must not block the event loop, and must tolerate
+being cut off at shutdown. See [docs/scheduled-jobs.md](../docs/scheduled-jobs.md)
+before adding or changing one.
+
 ### Email Notifications
 
 - **Service:** GOV.UK Notify API

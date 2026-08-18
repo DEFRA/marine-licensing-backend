@@ -145,6 +145,15 @@ API routes are defined under the `api` folders in each domain:
 - `src/marine-licences/api/`
 - `src/shared/api/geo-parser/`
 
+## Scheduled jobs
+
+Daily and other recurring jobs run in-process via node-cron, on exactly one
+instance per scheduled fire. They can be switched off globally or per job, and
+each job body can be invoked on demand.
+
+See [docs/scheduled-jobs.md](docs/scheduled-jobs.md) for the contract every job
+must meet.
+
 ## Docker
 
 ### Development image
