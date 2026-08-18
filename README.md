@@ -12,6 +12,7 @@ The Marine Licensing Backend is part of a GDS-compliant replacement of the Marin
   - [Npm scripts](#npm-scripts)
   - [Dependency updates](#dependency-updates)
   - [Authentication](#authentication)
+- [Documentation](#documentation)
 - [API endpoints](#api-endpoints)
 - [Docker](#docker)
   - [Development image](#development-image)
@@ -78,6 +79,14 @@ You may find it easier to manage Node.js versions using a version manager such
 as [nvm](https://github.com/creationix/nvm) or [n](https://www.npmjs.com/package/n). From within the project folder you
 can then either run `nvm use` or `n auto` to install the required version.
 
+### MongoDB
+
+MongoDB `>= 7.0` is required. The nearest-area policy fallback (see
+[docs/nearest-marine-plan-area-fallback.md](./docs/nearest-marine-plan-area-fallback.md))
+uses database-level `$documents` aggregation with `$geoNear` inside `$lookup`,
+which older servers do not support. The in-memory test server is pinned to a
+matching version in `.vite/mongo-memory-server.js`.
+
 ## Local development
 
 ### Setup
@@ -136,6 +145,12 @@ The .env.template file referred to by the instructions is in the root of this re
 
 For most local development, you shouldn't need to override any of the env var defaults that are
 in [config.js](./src/config/config.js).
+
+## Documentation
+
+- [Nearest marine plan area fallback](./docs/nearest-marine-plan-area-fallback.md) —
+  how a marine licence still gets policies when its sites intersect no marine plan area,
+  and why the search is built the way it is.
 
 ## API endpoints
 

@@ -1,6 +1,9 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
-import { queryArcGISPolicies } from './arcgis-client.js'
+import {
+  queryArcGISPolicies,
+  queryNonSpatialPolicies
+} from './arcgis-client.js'
 import { buildEmpGeometries } from '../../../../shared/common/helpers/emp/transforms/site-details.js'
 import { config } from '../../../../config.js'
 
@@ -14,6 +17,11 @@ vi.mock(
 )
 
 const originalConfigGet = config.get.bind(config)
+
+const arcgisSuccess = (features) => ({
+  res: { statusCode: 200 },
+  payload: { features }
+})
 
 describe('queryArcGISPolicies', () => {
   const logger = { info: vi.fn(), error: vi.fn() }
@@ -40,11 +48,6 @@ describe('queryArcGISPolicies', () => {
     ],
     spatialReference: { wkid: 4326 }
   }
-
-  const arcgisSuccess = (features) => ({
-    res: { statusCode: 200 },
-    payload: { features }
-  })
 
   beforeEach(() => {
     vi.mocked(buildEmpGeometries).mockReturnValue([geometryA])
@@ -165,6 +168,112 @@ describe('queryArcGISPolicies', () => {
 
     await expect(queryArcGISPolicies({ siteDetails, logger })).rejects.toThrow(
       'ArcGIS feature-server query returned error 400: Invalid geometry'
+    )
+  })
+})
+
+describe('queryNonSpatialPolicies', () => {
+  const logger = { info: vi.fn(), error: vi.fn() }
+
+  beforeEach(() => {
+    vi.spyOn(config, 'get').mockImplementation((key) =>
+      key === 'marinePlanPolicies'
+        ? {
+            ...originalConfigGet('marinePlanPolicies'),
+            arcgisUrl: 'https://arcgis.example/FeatureServer/0'
+          }
+        : originalConfigGet(key)
+    )
+  })
+
+  it('should query with an attribute-only where clause excluding Land and no geometry', async () => {
+    Wreck.post.mockResolvedValue(
+      arcgisSuccess([
+        {
+          attributes: {
+            PolicyCode: 'NE-BIO-1',
+            Sector: 'Biodiversity',
+            isSpatial: 0
+          }
+        }
+      ])
+    )
+
+    const policies = await queryNonSpatialPolicies({
+      licenceId: 'licence-123',
+      logger
+    })
+
+    expect(policies).toEqual([
+      { policyCode: 'NE-BIO-1', sector: 'Biodiversity' }
+    ])
+    const [url, options] = Wreck.post.mock.calls[0]
+    expect(url).toContain('/query')
+    const params = new URLSearchParams(options.payload.toString())
+    expect(params.get('where')).toBe("isSpatial = 0 AND PolicyCode <> 'Land'")
+    expect(params.get('outFields')).toBe('PolicyCode,Sector')
+    expect(params.get('returnGeometry')).toBe('false')
+    expect(params.has('geometry')).toBe(false)
+  })
+
+  it('should de-duplicate policies by code', async () => {
+    Wreck.post.mockResolvedValue(
+      arcgisSuccess([
+        { attributes: { PolicyCode: 'NE-BIO-1', Sector: 'Biodiversity' } },
+        { attributes: { PolicyCode: 'NE-CC-1', Sector: 'Climate change' } },
+        { attributes: { PolicyCode: 'NE-BIO-1', Sector: 'Biodiversity' } }
+      ])
+    )
+
+    const policies = await queryNonSpatialPolicies({
+      licenceId: 'licence-123',
+      logger
+    })
+
+    expect(policies.map((p) => p.policyCode)).toEqual(['NE-BIO-1', 'NE-CC-1'])
+  })
+
+  it('should skip features without a PolicyCode and default sector to null', async () => {
+    Wreck.post.mockResolvedValue(
+      arcgisSuccess([
+        { attributes: { PolicyCode: 'NE-BIO-1' } },
+        { attributes: { irrelevant: true } },
+        {}
+      ])
+    )
+
+    const policies = await queryNonSpatialPolicies({
+      licenceId: 'licence-123',
+      logger
+    })
+
+    expect(policies).toEqual([{ policyCode: 'NE-BIO-1', sector: null }])
+  })
+
+  it('should return an empty array when the response has no features key', async () => {
+    Wreck.post.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: {}
+    })
+
+    const policies = await queryNonSpatialPolicies({
+      licenceId: 'licence-123',
+      logger
+    })
+
+    expect(policies).toEqual([])
+  })
+
+  it('should throw when ArcGIS reports an error inside a 200 response', async () => {
+    Wreck.post.mockResolvedValue({
+      res: { statusCode: 200 },
+      payload: { error: { code: 400, message: 'Invalid query parameters.' } }
+    })
+
+    await expect(
+      queryNonSpatialPolicies({ licenceId: 'licence-123', logger })
+    ).rejects.toThrow(
+      'ArcGIS non-spatial policy query returned error 400: Invalid query parameters.'
     )
   })
 })

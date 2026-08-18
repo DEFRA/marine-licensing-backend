@@ -5,15 +5,24 @@ import { queryArcGISPolicies } from './arcgis-client.js'
 import { getPoliciesContent } from './policy-content-client.js'
 import { computeWordingRef } from './wording-snapshots.js'
 import { deletePolicyJob } from './sqs-client.js'
+import { runNearestAreaFallback } from './nearest-area-fallback.js'
 
 vi.mock('./arcgis-client.js', () => ({
-  queryArcGISPolicies: vi.fn()
+  queryArcGISPolicies: vi.fn(),
+  queryNonSpatialPolicies: vi.fn()
 }))
 vi.mock('./policy-content-client.js', () => ({
   getPoliciesContent: vi.fn()
 }))
 vi.mock('./sqs-client.js', () => ({
   deletePolicyJob: vi.fn()
+}))
+// Keeps the real trigger predicate (shouldRunNearestAreaFallback) so the
+// wiring test exercises it against mocked ArcGIS results; only the
+// orchestrator itself is stubbed.
+vi.mock('./nearest-area-fallback.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  runNearestAreaFallback: vi.fn()
 }))
 
 const queueName = 'marine_licensing_policies'
@@ -159,7 +168,9 @@ describe('policies-worker-processor', () => {
 
     it('should still delete the message when the result write finds the job stale', async () => {
       const { server, mockUpdateOne } = setupMocks(buildLicence())
-      vi.mocked(queryArcGISPolicies).mockResolvedValue([])
+      vi.mocked(queryArcGISPolicies).mockResolvedValue([
+        { policyCode: 'S-FISH-1', sector: 'Fishing' }
+      ])
       vi.mocked(getPoliciesContent).mockResolvedValue([])
       // computing update matches, ready update does not (site edited mid-flight)
       mockUpdateOne
@@ -169,6 +180,87 @@ describe('policies-worker-processor', () => {
       await processPolicyJob(server, buildMessage())
 
       expect(deletePolicyJob).toHaveBeenCalledWith(queueName, receiptHandle)
+    })
+
+    it('should replace a zero-policy result with the nearest-area fallback policies', async () => {
+      const licence = buildLicence()
+      const { server } = setupMocks(licence)
+      vi.mocked(queryArcGISPolicies).mockResolvedValue([])
+      vi.mocked(runNearestAreaFallback).mockResolvedValue([
+        { policyCode: 'NE-BIO-1', sector: 'Biodiversity' }
+      ])
+      vi.mocked(getPoliciesContent).mockResolvedValue([])
+
+      await processPolicyJob(server, buildMessage())
+
+      expect(runNearestAreaFallback).toHaveBeenCalledWith({
+        db: server.db,
+        siteDetails: licence.siteDetails,
+        licenceId,
+        logger: server.logger
+      })
+      expect(getPoliciesContent).toHaveBeenCalledWith({
+        policies: [{ policyCode: 'NE-BIO-1', sector: 'Biodiversity' }],
+        db: server.db,
+        logger: server.logger
+      })
+    })
+
+    it('should run the fallback when the only policy returned is Land', async () => {
+      const { server } = setupMocks(buildLicence())
+      vi.mocked(queryArcGISPolicies).mockResolvedValue([
+        { policyCode: 'Land', sector: null }
+      ])
+      vi.mocked(runNearestAreaFallback).mockResolvedValue([])
+      vi.mocked(getPoliciesContent).mockResolvedValue([])
+
+      await processPolicyJob(server, buildMessage())
+
+      expect(runNearestAreaFallback).toHaveBeenCalled()
+      expect(getPoliciesContent).toHaveBeenCalledWith({
+        policies: [],
+        db: server.db,
+        logger: server.logger
+      })
+    })
+
+    it('should not run the fallback when real policies are returned', async () => {
+      const { server } = setupMocks(buildLicence())
+      vi.mocked(queryArcGISPolicies).mockResolvedValue([
+        { policyCode: 'E-BIO-1', sector: 'Biodiversity' }
+      ])
+      vi.mocked(getPoliciesContent).mockResolvedValue([])
+
+      await processPolicyJob(server, buildMessage())
+
+      expect(runNearestAreaFallback).not.toHaveBeenCalled()
+    })
+
+    it('should keep the retry path when the fallback throws', async () => {
+      const { server, mockUpdateOne, mockBulkWrite } =
+        setupMocks(buildLicence())
+      vi.mocked(queryArcGISPolicies).mockResolvedValue([])
+      vi.mocked(runNearestAreaFallback).mockRejectedValue(
+        new Error('mongo unavailable')
+      )
+
+      await processPolicyJob(
+        server,
+        buildMessage({ licenceId, policyJobId }, '1')
+      )
+
+      // only the computing write happened; the message is kept for redelivery
+      expect(mockUpdateOne).toHaveBeenCalledTimes(1)
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId
+        },
+        { $set: { marinePlanPolicyJob: 'computing' } }
+      )
+      expect(mockBulkWrite).not.toHaveBeenCalled()
+      expect(deletePolicyJob).not.toHaveBeenCalled()
+      expect(server.logger.error).toHaveBeenCalled()
     })
 
     it('should keep the message and leave the status as computing on transient errors (non-final attempt)', async () => {

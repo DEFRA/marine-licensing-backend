@@ -11,6 +11,7 @@ import { masWorkerPlugin } from './shared/plugins/mas/mas-worker.js'
 import { masDlqWorkerPlugin } from './shared/plugins/mas/mas-dlq-worker.js'
 import { populateCoastalOperationsAreasPlugin } from './shared/plugins/geo-areas/populate-coastal-operations-areas.js'
 import { populateMarinePlanAreasPlugin } from './shared/plugins/geo-areas/populate-marine-plan-areas.js'
+import { simplifyMarinePlanAreasPlugin } from './shared/plugins/geo-areas/simplify-marine-plan-areas.js'
 import { requestLogger } from './shared/common/helpers/logging/request-logger.js'
 import { mongoDb } from './shared/common/helpers/mongodb.js'
 import { failAction } from './shared/common/helpers/fail-action.js'
@@ -56,6 +57,7 @@ async function createServer() {
   // mongoDb        - sets up mongo connection pool and attaches to `server` and `request` objects
   // populateCoastalOperationsAreasPlugin - checks if coastal-operations-areas collection is empty and populates it
   // populateMarinePlanAreasPlugin - checks if marine-plan-areas collection is empty and populates it
+  // simplifyMarinePlanAreasPlugin - rebuilds a simplified copy of marine-plan-areas for the nearest-area fallback
   // auth           - JWT authentication strategy
   // router         - routes used in the app
   // processDynamicsQueuePlugin - polls exemption queue and syncs to Dynamics 365
@@ -75,6 +77,7 @@ async function createServer() {
     },
     populateCoastalOperationsAreasPlugin,
     populateMarinePlanAreasPlugin,
+    simplifyMarinePlanAreasPlugin,
     hapiAuthJwt2,
     auth,
     router,
