@@ -63,27 +63,7 @@ const warnSiteGeometryInvalid = ({ logger, site, error, message }) =>
 /**
  * Self-derived search bound. NOT a distance cap: nothing is
  * ever excluded from the result, however far the nearest area turns out to be.
- *
- * The pipeline returns only the global minimum across every vertex, and that
- * minimum is by construction no greater than the phase-1 anchor distance,
- * because the anchor vertex is itself one of the vertices being searched. The
- * bound is anchor + diameter, which is never below the anchor distance, so the
- * vertex that ultimately wins always survives the cut. Any vertex the bound
- * does exclude had every area farther away than the anchor distance, and so
- * could never have been the minimum. Excluding it provably cannot change the
- * answer; it only spares the index expanding across empty ocean (measured
- * 5.5x).
- *
- * The diameter term is headroom rather than load-bearing — the bound would
- * still be correct at exactly the anchor distance. It is deliberately not
- * justified as a span across the site's bounding box: densified vertices
- * follow great-circle paths that bulge slightly outside that box.
- *
- * References: https://en.wikipedia.org/wiki/Branch_and_bound
- *             https://www.mongodb.com/docs/manual/reference/operator/aggregation/geoNear/
- *             https://www.youtube.com/watch?v=Glp7THUpGow
- *.            https://www.cs.cmu.edu/~ckingsf/bioinfo-lectures/kdtrees.pdf
- *.            https://blog.christianperone.com/2015/08/googles-s2-geometry-on-the-sphere-cells-and-hilbert-curve/
+ * Up to 5.5x speedup
  */
 export const deriveNearestAreaSearchBound = ({
   anchorDistanceMetres,
