@@ -190,4 +190,15 @@ describe('applyExtractedSiteNames', () => {
 
     expect(feature.properties.name).toBe('Single site')
   })
+
+  it('returns geoJSON unchanged when features is not an array', () => {
+    const invalidGeoJSON = {
+      type: 'FeatureCollection',
+      features: null
+    }
+
+    const result = applyExtractedSiteNames(invalidGeoJSON, 'kml')
+
+    expect(result).toBe(invalidGeoJSON)
+  })
 })
