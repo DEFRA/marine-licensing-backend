@@ -130,13 +130,6 @@ export const attachScheduledJobLogging = (task, jobName, logger) => {
   })
 }
 
-// The counterpart to logScheduledJobDisabled: without it, a job that is armed
-// leaves no trace at startup, so "is this job actually running in this
-// environment?" cannot be answered from the logs — only the disabled case could.
-//
-// The schedule and timezone go in the message rather than event.reason. reason
-// stays one of two constant values across the fleet, which keeps it usable as an
-// aggregation facet for splitting enabled from disabled at a deploy.
 export const logScheduledJobEnabled = (jobName, schedule, timezone, logger) => {
   logger.info(
     {
