@@ -22,18 +22,12 @@ const withDuration = (event, execution) => {
   return duration === undefined ? event : { ...event, duration }
 }
 
-// Fields every line about a particular fire carries. `reference` is the fire
-// slot, which is also the suffix of that fire's `scheduled-job-runs` `_id`.
 const runEvent = (jobName, outcome, date, extra) => ({
   action: jobAction(jobName),
   outcome,
   reference: date.toISOString(),
   ...extra
 })
-
-// Each of these builds one node-cron event handler. They are factories rather
-// than plain handlers so the job name and logger are closed over, leaving
-// attachScheduledJobLogging as a wiring list.
 
 const onStarted = (jobName, logger) => (context) => {
   logger.info(
@@ -116,13 +110,6 @@ export const attachScheduledJobLogging = (task, jobName, logger) => {
   task.on('execution:overlap', onOverlap(jobName, logger))
 }
 
-// The counterpart to logScheduledJobDisabled: without it, a job that is armed
-// leaves no trace at startup, so "is this job actually running in this
-// environment?" cannot be answered from the logs — only the disabled case could.
-//
-// The schedule and timezone go in the message rather than event.reason. reason
-// stays one of two constant values across the fleet, which keeps it usable as an
-// aggregation facet for splitting enabled from disabled at a deploy.
 export const logScheduledJobEnabled = (jobName, schedule, timezone, logger) => {
   logger.info(
     {
