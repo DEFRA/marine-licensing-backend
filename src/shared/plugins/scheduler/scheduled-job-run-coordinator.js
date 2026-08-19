@@ -14,7 +14,10 @@ import { structureErrorForECS } from '../../common/helpers/logging/logger.js'
 // Deliberately not configurable. A job that would want a longer window is a job
 // that should not be sharing the API's event loop at all — it belongs in a
 // dedicated scheduled-job service. See docs/scheduled-jobs.md.
-export const RUN_RECORD_TTL_MS = 5 * 60 * 1000
+const ONE_MINUTE = 60 * 1000
+const FIVE = 5
+const FIVE_MINUTES = ONE_MINUTE * FIVE
+export const RUN_RECORD_TTL_MS = FIVE_MINUTES
 
 /**
  * Builds the node-cron `RunCoordinator` that elects a single instance per
