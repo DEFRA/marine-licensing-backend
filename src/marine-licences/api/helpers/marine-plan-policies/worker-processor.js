@@ -11,6 +11,10 @@ import { queryArcGISPolicies } from './arcgis-client.js'
 import { getPoliciesContent } from './policy-content-client.js'
 import { pinWordingSnapshots } from './wording-snapshots.js'
 import { deletePolicyJob } from './sqs-client.js'
+import {
+  runNearestAreaFallback,
+  shouldRunNearestAreaFallback
+} from './nearest-area-fallback.js'
 
 const discardMalformedMessage = 'Discarding malformed policy job message'
 
@@ -24,7 +28,20 @@ const parsePolicyJobBody = (message, logger) =>
   })
 
 const fetchPolicies = async ({ siteDetails, licenceId, db, logger }) => {
-  const policies = await queryArcGISPolicies({ siteDetails, licenceId, logger })
+  let policies = await queryArcGISPolicies({ siteDetails, licenceId, logger })
+
+  // Zero policies (or Land only) means the sites sit outside every
+  // plan-area boundary — assign the nearest area's non-spatial policies
+  // instead. A fallback failure throws into the existing retry path.
+  if (shouldRunNearestAreaFallback(policies)) {
+    policies = await runNearestAreaFallback({
+      db,
+      siteDetails,
+      licenceId,
+      logger
+    })
+  }
+
   return getPoliciesContent({ policies, db, logger })
 }
 

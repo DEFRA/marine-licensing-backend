@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 540" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
+  <rect x="0" y="0" width="1240" height="540" fill="#f9f9f7"/>
+
+  <text x="40" y="42" font-size="19" font-weight="650" fill="#0b0b0b">Densifying a site boundary, and what happens when the vertex cap bites</text>
+  <text x="40" y="64" font-size="13" fill="#52514e">A long, thin site: 0.28° × 0.02° ≈ 18.3 × 2.2 km at latitude 54, drawn to scale (3,000 px/°).</text>
+
+  <!-- ===== A: raw ===== -->
+  <text x="50" y="104" font-size="13" font-weight="650" fill="#0b0b0b">A — as drawn: 4 vertices</text>
+  <rect x="50" y="110" width="860" height="80" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1"/>
+  <rect x="60" y="120" width="840" height="60" fill="#eb6834" fill-opacity="0.12" stroke="#eb6834" stroke-width="1.5"/>
+  <g fill="#eb6834">
+    <circle cx="60" cy="120" r="5"/><circle cx="900" cy="120" r="5"/>
+    <circle cx="60" cy="180" r="5"/><circle cx="900" cy="180" r="5"/>
+  </g>
+  <circle cx="480" cy="120" r="4" fill="none" stroke="#0b0b0b" stroke-width="1.5"/>
+  <line x1="480" y1="116" x2="480" y2="98" stroke="#898781" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="492" y="104" font-size="11.5" fill="#52514e">the nearest point to an area can be mid-edge — a vertex-only query would never see it</text>
+  <text x="50" y="207" font-size="12" fill="#52514e">consecutive vertices up to 18.3 km apart</text>
+
+  <!-- ===== B: densified ===== -->
+  <text x="50" y="234" font-size="13" font-weight="650" fill="#0b0b0b">B — densified to ≤ 500 m spacing</text>
+  <rect x="50" y="240" width="860" height="80" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1"/>
+  <rect x="60" y="250" width="840" height="60" fill="#eb6834" fill-opacity="0.12" stroke="#eb6834" stroke-width="1"/>
+  <!-- dots: 500 m = 22.9 px along lon edges, 13.5 px along lat edges at this scale -->
+  <g stroke="#eb6834" stroke-width="6" stroke-linecap="round">
+    <line x1="60" y1="250" x2="900" y2="250" stroke-dasharray="0 22.9"/>
+    <line x1="60" y1="310" x2="900" y2="310" stroke-dasharray="0 22.9"/>
+    <line x1="60" y1="250" x2="60" y2="310" stroke-dasharray="0 13.5"/>
+    <line x1="900" y1="250" x2="900" y2="310" stroke-dasharray="0 13.5"/>
+  </g>
+  <text x="50" y="337" font-size="12" fill="#52514e">86 vertices, largest consecutive gap exactly 500 m — so the edge-distance error is bounded at ~250 m, half the spacing</text>
+
+  <!-- ===== C: capped ===== -->
+  <text x="50" y="364" font-size="13" font-weight="650" fill="#0b0b0b">C — when the cap bites: 100 m spacing, capped at 50 vertices</text>
+  <rect x="50" y="370" width="860" height="80" fill="#fcfcfb" stroke="#c3c2b7" stroke-width="1"/>
+  <rect x="60" y="380" width="840" height="60" fill="#eb6834" fill-opacity="0.12" stroke="none"/>
+  <!-- faded: the 414 pre-cap vertices at 100 m = 4.6 px pitch -->
+  <g stroke="#eb6834" stroke-opacity="0.3" stroke-width="3" stroke-linecap="round">
+    <line x1="60" y1="380" x2="900" y2="380" stroke-dasharray="0 4.6"/>
+    <line x1="60" y1="440" x2="900" y2="440" stroke-dasharray="0 4.6"/>
+    <line x1="60" y1="380" x2="60" y2="440" stroke-dasharray="0 2.7"/>
+    <line x1="900" y1="380" x2="900" y2="440" stroke-dasharray="0 2.7"/>
+  </g>
+  <!-- kept: every 9th vertex, ~900 m = 41.2 px pitch -->
+  <g stroke="#eb6834" stroke-width="7" stroke-linecap="round">
+    <line x1="60" y1="380" x2="900" y2="380" stroke-dasharray="0 41.2"/>
+    <line x1="60" y1="440" x2="900" y2="440" stroke-dasharray="0 41.2"/>
+    <line x1="60" y1="380" x2="60" y2="440" stroke-dasharray="0 24.3"/>
+    <line x1="900" y1="380" x2="900" y2="440" stroke-dasharray="0 24.3"/>
+  </g>
+  <text x="50" y="467" font-size="12" fill="#52514e">414 densified → N = ceil(414 / 50) = 9 → 46 kept (faded = dropped): effective spacing ~900 m, so the error bound grows to ~450 m</text>
+
+  <!-- ===== Explanation panel ===== -->
+  <rect x="940" y="110" width="260" height="340" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)" stroke-width="1" rx="6"/>
+  <text x="956" y="136" font-size="13" font-weight="650" fill="#0b0b0b">Why there is a cap</text>
+  <g font-size="11.5" fill="#0b0b0b">
+    <text x="956" y="160">Every vertex is one $geoNear —</text>
+    <text x="956" y="176">measured ~6.6 ms for a site far</text>
+    <text x="956" y="192">from any area. 226 vertices hold</text>
+    <text x="956" y="208">one site's lookup near 1.5 s.</text>
+  </g>
+  <g font-size="11.5" fill="#52514e">
+    <text x="956" y="234">That is a latency budget set by</text>
+    <text x="956" y="250">the product owner, not a figure</text>
+    <text x="956" y="266">derived from precision needs.</text>
+    <text x="956" y="292">Above the cap the list is</text>
+    <text x="956" y="308">downsampled evenly, coarsening</text>
+    <text x="956" y="324">the spacing and the error bound</text>
+    <text x="956" y="340">by the same factor.</text>
+  </g>
+  <text x="956" y="370" font-size="11.5" font-weight="600" fill="#0b0b0b">Config (marinePlanPolicies)</text>
+  <g font-size="9.5" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#0b0b0b">
+    <text x="956" y="390">nearestAreaMaxVertexSpacingMetres</text>
+    <text x="968" y="404" fill="#52514e">default 500</text>
+    <text x="956" y="426">nearestAreaMaxVerticesPerSite</text>
+    <text x="968" y="440" fill="#52514e">default 226</text>
+  </g>
+
+  <text x="50" y="490" font-size="12" fill="#898781">Counts measured by running the implementation's densification (polygonToLine → lineChunk → coordAll) over this geometry.</text>
+  <text x="50" y="508" font-size="12" fill="#898781">Strip C uses a deliberately small cap of 50 so the coarsening is visible; the production default is 226.</text>
+  <text x="50" y="526" font-size="12" fill="#898781">Degrees are anisotropic on the ground at this latitude (longitude shrinks by cos 54° ≈ 0.59) — the sizes quoted above are the ground-truth equivalents.</text>
+</svg>
