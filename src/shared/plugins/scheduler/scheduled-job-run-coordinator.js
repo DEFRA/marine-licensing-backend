@@ -35,11 +35,6 @@ export const RUN_RECORD_TTL_MS = FIVE_MINUTES
  * `node-cron` will execute `.shouldRun()` from whatever object it is passed.
  */
 export const createScheduledJobRunCoordinator = (db, logger) => ({
-  /**
-   * @returns true when this instance won the election for `key`. Throws on any
-   * error other than a duplicate claim; node-cron treats a throw as fail-closed
-   * and skips the run rather than risking a concurrent execution.
-   */
   async shouldRun(key) {
     try {
       await db.collection(collectionScheduledJobRuns).insertOne({
@@ -52,11 +47,6 @@ export const createScheduledJobRunCoordinator = (db, logger) => ({
       if (err?.code === MONGO_DUPLICATE_KEY_CODE) {
         return false
       }
-
-      // node-cron catches this, logs it unstructured and emits
-      // execution:skipped with reason 'coordinator-error' — but the context it
-      // emits carries no error, so this is the only place the cause reaches ECS
-      // error fields.
       logger.error(
         structureErrorForECS(err),
         `Scheduled job run coordinator failed for ${key}`
