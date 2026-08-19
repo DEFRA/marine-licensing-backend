@@ -3,7 +3,8 @@ import { config } from '../../../config.js'
 import { createScheduledJobRunCoordinator } from './scheduled-job-run-coordinator.js'
 import {
   attachScheduledJobLogging,
-  logScheduledJobDisabled
+  logScheduledJobDisabled,
+  logScheduledJobEnabled
 } from './scheduled-job-logging.js'
 import { scheduledJobs } from './scheduled-jobs.js'
 
@@ -66,6 +67,12 @@ const schedulerPlugin = {
             )
 
             attachScheduledJobLogging(task, job.name, server.logger)
+            logScheduledJobEnabled(
+              job.name,
+              jobs[job.name].schedule,
+              timezone,
+              server.logger
+            )
             return task
           })
       })

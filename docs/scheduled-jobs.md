@@ -93,20 +93,27 @@ timestamp, which is also the suffix of the `scheduled-job-runs` `_id` for that
 fire — so a log line and the record of which instance claimed it can be matched
 up directly.
 
-| `event.outcome` | `event.reason`                   | Level | Meaning                                                                                 |
-| --------------- | -------------------------------- | ----- | --------------------------------------------------------------------------------------- |
-| `unknown`       | —                                | info  | The run started. Not an outcome; see below.                                             |
-| `success`       | —                                | info  | Completed. Carries `event.duration` in nanoseconds, and the job's summary in `message`. |
-| `failure`       | —                                | error | The job threw. Carries `event.duration` and the ECS `error.*` fields.                   |
-| `unknown`       | `not-elected`                    | info  | Another instance won this fire. Normal on every instance but one.                       |
-| `failure`       | `coordinator-error`              | error | The coordinator itself failed, so the run was abandoned rather than risked.             |
-| `failure`       | `Missed fires are not retried…`  | warn  | The fire was missed entirely and will not be retried.                                   |
-| `failure`       | `Previous run had not finished…` | warn  | The previous run was still going, so this fire was blocked.                             |
-| `unknown`       | `Disabled by configuration`      | info  | The job was not scheduled. No `event.reference`, since there is no fire.                |
+| `event.outcome` | `event.reason`                   | Level | Meaning                                                                                                                                                 |
+| --------------- | -------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unknown`       | —                                | info  | The run started. Not an outcome; see below.                                                                                                             |
+| `success`       | —                                | info  | Completed. Carries `event.duration` in nanoseconds, and the job's summary in `message`.                                                                 |
+| `failure`       | —                                | error | The job threw. Carries `event.duration` and the ECS `error.*` fields.                                                                                   |
+| `unknown`       | `not-elected`                    | info  | Another instance won this fire. Normal on every instance but one.                                                                                       |
+| `failure`       | `coordinator-error`              | error | The coordinator itself failed, so the run was abandoned rather than risked.                                                                             |
+| `failure`       | `Missed fires are not retried…`  | warn  | The fire was missed entirely and will not be retried.                                                                                                   |
+| `failure`       | `Previous run had not finished…` | warn  | The previous run was still going, so this fire was blocked.                                                                                             |
+| `unknown`       | `Enabled by configuration`       | info  | Logged once at startup for each job that was armed. `message` names the cron expression and timezone. No `event.reference`, since there is no fire yet. |
+| `unknown`       | `Disabled by configuration`      | info  | The job was not scheduled. No `event.reference`, since there is no fire.                                                                                |
 
 Switching the scheduler off globally logs once at startup under
 `event.action` `scheduler:startup` rather than under a job name, since no job
 got as far as being considered.
+
+Between them the enabled and disabled lines mean every job accounts for itself at
+every boot, so "is this job actually armed in this environment, and when does it
+fire?" is answerable from the logs alone. `event.reason` is deliberately one of
+two constant values rather than carrying the schedule, so it stays usable as an
+aggregation facet; the schedule lives in `message`.
 
 **The start line is deliberately not an outcome.** A run killed mid-flight — a
 deployment overlapping the fire, an OOM — emits no outcome event at all, so

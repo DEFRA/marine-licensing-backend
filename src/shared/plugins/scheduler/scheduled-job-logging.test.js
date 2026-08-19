@@ -1,7 +1,8 @@
 import { vi } from 'vitest'
 import {
   attachScheduledJobLogging,
-  logScheduledJobDisabled
+  logScheduledJobDisabled,
+  logScheduledJobEnabled
 } from './scheduled-job-logging.js'
 
 const FIRE_DATE = new Date('2026-08-15T00:05:00.000Z')
@@ -193,6 +194,36 @@ describe('attachScheduledJobLogging', () => {
       },
       'Scheduled job heartbeat skipped: the previous run was still in progress'
     )
+  })
+})
+
+describe('logScheduledJobEnabled', () => {
+  it('records the job name, its schedule and the timezone it runs in', () => {
+    const logger = createLogger()
+
+    logScheduledJobEnabled('heartbeat', '5 0 * * *', 'Europe/London', logger)
+
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        event: {
+          action: 'scheduler:heartbeat',
+          outcome: 'unknown',
+          reason: 'Enabled by configuration'
+        }
+      },
+      'Scheduled job heartbeat scheduled: 5 0 * * * (Europe/London)'
+    )
+  })
+
+  // The schedule varies per job, so keeping it out of event.reason leaves that
+  // field with two values across the fleet and therefore still aggregatable.
+  it('keeps the varying detail out of event.reason', () => {
+    const logger = createLogger()
+
+    logScheduledJobEnabled('heartbeat', '5 0 * * *', 'Europe/London', logger)
+
+    const [fields] = logger.info.mock.calls[0]
+    expect(fields.event.reason).not.toContain('5 0 * * *')
   })
 })
 

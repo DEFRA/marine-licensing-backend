@@ -131,6 +131,23 @@ describe('scheduler plugin', () => {
     )
   })
 
+  it('logs each job it scheduled, naming the cron expression it armed', async () => {
+    vi.spyOn(config, 'get').mockReturnValue(schedulerConfig())
+
+    await schedulerPlugin.plugin.register(server)
+    await runExt(server, 'onPostStart')
+
+    expect(server.logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'scheduler:heartbeat',
+          reason: 'Enabled by configuration'
+        })
+      }),
+      'Scheduled job heartbeat scheduled: 5 0 * * * (Europe/London)'
+    )
+  })
+
   it('gives every task a coordinator so only one instance runs a fire', async () => {
     vi.spyOn(config, 'get').mockReturnValue(schedulerConfig())
 
