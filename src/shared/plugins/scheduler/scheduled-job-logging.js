@@ -22,114 +22,107 @@ const withDuration = (event, execution) => {
   return duration === undefined ? event : { ...event, duration }
 }
 
-export const attachScheduledJobLogging = (task, jobName, logger) => {
-  task.on('execution:started', ({ date }) => {
-    logger.info(
-      {
-        event: {
-          action: jobAction(jobName),
-          outcome: 'unknown',
-          reference: date.toISOString()
-        }
-      },
-      `Scheduled job ${jobName} started`
-    )
-  })
+// Fields every line about a particular fire carries. `reference` is the fire
+// slot, which is also the suffix of that fire's `scheduled-job-runs` `_id`.
+const runEvent = (jobName, outcome, date, extra) => ({
+  action: jobAction(jobName),
+  outcome,
+  reference: date.toISOString(),
+  ...extra
+})
 
-  task.on('execution:finished', ({ date, execution }) => {
+// Each of these builds one node-cron event handler. They are factories rather
+// than plain handlers so the job name and logger are closed over, leaving
+// attachScheduledJobLogging as a wiring list.
+
+const onStarted = (jobName, logger) => (context) => {
+  logger.info(
+    { event: runEvent(jobName, 'unknown', context.date) },
+    `Scheduled job ${jobName} started`
+  )
+}
+
+const onFinished =
+  (jobName, logger) =>
+  ({ date, execution }) => {
     logger.info(
-      {
-        event: withDuration(
-          {
-            action: jobAction(jobName),
-            outcome: 'success',
-            reference: date.toISOString()
-          },
-          execution
-        )
-      },
+      { event: withDuration(runEvent(jobName, 'success', date), execution) },
       `Scheduled job ${jobName} completed: ${execution?.result?.summary ?? 'no summary reported'}`
     )
-  })
+  }
 
-  task.on('execution:failed', ({ date, execution }) => {
+const onFailed =
+  (jobName, logger) =>
+  ({ date, execution }) => {
     logger.error(
       {
         ...structureErrorForECS(execution?.error),
-        event: withDuration(
-          {
-            action: jobAction(jobName),
-            outcome: 'failure',
-            reference: date.toISOString()
-          },
-          execution
-        )
+        event: withDuration(runEvent(jobName, 'failure', date), execution)
       },
       `Scheduled job ${jobName} failed`
     )
-  })
+  }
 
-  task.on('execution:skipped', ({ date, reason }) => {
+const onSkipped =
+  (jobName, logger) =>
+  ({ date, reason }) => {
     if (reason === 'coordinator-error') {
       logger.error(
-        {
-          event: {
-            action: jobAction(jobName),
-            outcome: 'failure',
-            reference: date.toISOString(),
-            reason
-          }
-        },
+        { event: runEvent(jobName, 'failure', date, { reason }) },
         `Scheduled job ${jobName} skipped: the run coordinator failed, so the run was abandoned to avoid concurrent execution`
       )
       return
     }
 
     logger.info(
-      {
-        event: {
-          action: jobAction(jobName),
-          outcome: 'unknown',
-          reference: date.toISOString(),
-          reason
-        }
-      },
+      { event: runEvent(jobName, 'unknown', date, { reason }) },
       `Scheduled job ${jobName} skipped: another instance is running this fire`
     )
-  })
+  }
+
+const onMissed = (jobName, logger) => (context) => {
+  logger.warn(
+    {
+      event: runEvent(jobName, 'failure', context.date, {
+        reason: MISSED_FIRE_REASON
+      })
+    },
+    `Scheduled job ${jobName} missed its scheduled fire`
+  )
+}
+
+const onOverlap = (jobName, logger) => (context) => {
+  logger.warn(
+    {
+      event: runEvent(jobName, 'failure', context.date, {
+        reason: OVERLAP_REASON
+      })
+    },
+    `Scheduled job ${jobName} skipped: the previous run was still in progress`
+  )
+}
+
+export const attachScheduledJobLogging = (task, jobName, logger) => {
+  task.on('execution:started', onStarted(jobName, logger))
+  task.on('execution:finished', onFinished(jobName, logger))
+  task.on('execution:failed', onFailed(jobName, logger))
+  task.on('execution:skipped', onSkipped(jobName, logger))
 
   // Attaching this listener also suppresses node-cron's own console warning.
-  task.on('execution:missed', ({ date }) => {
-    logger.warn(
-      {
-        event: {
-          action: jobAction(jobName),
-          outcome: 'failure',
-          reference: date.toISOString(),
-          reason: MISSED_FIRE_REASON
-        }
-      },
-      `Scheduled job ${jobName} missed its scheduled fire`
-    )
-  })
+  task.on('execution:missed', onMissed(jobName, logger))
 
   // `noOverlap: true` blocks the fire rather than queueing it. node-cron logs
   // its own warning for this, but unstructured — hence a proper ECS line here.
-  task.on('execution:overlap', ({ date }) => {
-    logger.warn(
-      {
-        event: {
-          action: jobAction(jobName),
-          outcome: 'failure',
-          reference: date.toISOString(),
-          reason: OVERLAP_REASON
-        }
-      },
-      `Scheduled job ${jobName} skipped: the previous run was still in progress`
-    )
-  })
+  task.on('execution:overlap', onOverlap(jobName, logger))
 }
 
+// The counterpart to logScheduledJobDisabled: without it, a job that is armed
+// leaves no trace at startup, so "is this job actually running in this
+// environment?" cannot be answered from the logs — only the disabled case could.
+//
+// The schedule and timezone go in the message rather than event.reason. reason
+// stays one of two constant values across the fleet, which keeps it usable as an
+// aggregation facet for splitting enabled from disabled at a deploy.
 export const logScheduledJobEnabled = (jobName, schedule, timezone, logger) => {
   logger.info(
     {
