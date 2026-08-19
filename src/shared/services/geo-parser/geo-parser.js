@@ -7,6 +7,7 @@ import {
 } from '../../common/helpers/logging/logger.js'
 import { blobService } from '../data-service/blob-service.js'
 import { GEO_PARSER_ERROR_CODES, isGeoParserErrorCode } from './error-codes.js'
+import { applyExtractedSiteNames } from './extract-site-name.js'
 
 const logger = createLogger()
 
@@ -82,6 +83,8 @@ export class GeoParser {
       if (singleSiteOnly) {
         this.validateSingleSite(geoJSON)
       }
+
+      applyExtractedSiteNames(geoJSON, fileType)
 
       logger.info(
         `${this.logSystem}: Successfully extracted GeoJSON for ${fileType} from ${s3Bucket}/${s3Key}, ${geoJSON.features?.length || 0} features`
