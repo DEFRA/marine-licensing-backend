@@ -130,6 +130,48 @@ describe('GeoParser', () => {
       )
     })
 
+    it('should copy KML placemark names onto feature properties.name', async () => {
+      const kmlGeoJSON = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: [] },
+            properties: { name: 'North Harbour' }
+          },
+          {
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: [] },
+            properties: {}
+          }
+        ]
+      }
+      geoParser.parseFile.mockResolvedValue(kmlGeoJSON)
+
+      const result = await geoParser.extract(s3Bucket, s3Key, 'kml')
+
+      expect(result.features[0].properties.name).toBe('North Harbour')
+      expect(result.features[1].properties.name).toBeUndefined()
+    })
+
+    it('should copy shapefile Site_name onto feature properties.name', async () => {
+      const shapefileGeoJSON = {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: [] },
+            properties: { Site_name: 'East Pier' }
+          }
+        ]
+      }
+      geoParser.parseFile.mockResolvedValue(shapefileGeoJSON)
+
+      const result = await geoParser.extract(s3Bucket, s3Key, 'shapefile')
+
+      expect(result.features[0].properties.name).toBe('East Pier')
+    })
+
     it('should cleanup temp directory after successful processing', async () => {
       await geoParser.extract(s3Bucket, s3Key, fileType)
 
