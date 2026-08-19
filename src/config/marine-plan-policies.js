@@ -69,5 +69,17 @@ export const marinePlanPoliciesSchema = {
     format: String,
     default: 'Defra / MMO / Get permission for marine work',
     env: 'MARINE_PLAN_POLICIES_USER_AGENT'
+  },
+  nearestAreaMaxVertexSpacingMetres: {
+    doc: 'Nearest-area fallback: site boundary edges are densified so no two consecutive vertices are further apart than this. Sets the BEST achievable edge-distance error (half this value) — nearestAreaMaxVerticesPerSite can make the effective spacing coarser',
+    format: Number,
+    default: 500,
+    env: 'MARINE_PLAN_POLICIES_NEAREST_AREA_MAX_VERTEX_SPACING_METRES'
+  },
+  nearestAreaMaxVerticesPerSite: {
+    doc: 'Nearest-area fallback: cap on vertices queried per site after densification (downsampled evenly above this). A LATENCY budget, not a precision one — every vertex is one $geoNear, measured at ~6.6ms for a site far from any area, so this holds a single-site query near 1.5s',
+    format: Number,
+    default: 226,
+    env: 'MARINE_PLAN_POLICIES_NEAREST_AREA_MAX_VERTICES_PER_SITE'
   }
 }

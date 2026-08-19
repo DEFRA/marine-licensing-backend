@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto'
 import { collectionMarinePlanPolicyWordingSnapshots } from '../../../../shared/common/constants/db-collections.js'
+import { MONGO_DUPLICATE_KEY_CODE } from '../../../../shared/common/constants/mongo.js'
 import { MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS } from '../../../constants/marine-licence.js'
 
 const WORDING_REF_HASH_LENGTH = 12
-const DUPLICATE_KEY_ERROR_CODE = 11000
 
 // Fixed field order, values verbatim. JSON.stringify keeps null ('null') distinct
 // from empty wording ('""') so the two hash to different snapshots.
@@ -25,9 +25,9 @@ export const computeWordingRef = (policyCode, wording) => {
 // Concurrent workers can race the same upsert and still hit a duplicate-key
 // error; the row already holds identical content, so that is a success.
 const isOnlyDuplicateKeyErrors = (error) =>
-  error.code === DUPLICATE_KEY_ERROR_CODE ||
+  error.code === MONGO_DUPLICATE_KEY_CODE ||
   (error.writeErrors?.length > 0 &&
-    error.writeErrors.every((e) => e.code === DUPLICATE_KEY_ERROR_CODE))
+    error.writeErrors.every((e) => e.code === MONGO_DUPLICATE_KEY_CODE))
 
 const toWordingFields = (wording) =>
   CONTENT_FIELDS.reduce((fields, field) => {

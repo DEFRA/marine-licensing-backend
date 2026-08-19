@@ -16,6 +16,13 @@ export const collectionCoastalOperationsAreas = 'coastal-operations-areas'
 
 export const collectionMarinePlanAreas = 'marine-plan-areas'
 
+// The '0001' suffix encodes the hardcoded simplify
+// tolerance (0.001°) with the decimal point removed. Name and tolerance
+// (simplify-marine-plan-areas.js) change ONLY together, dropping the old
+// collection in the same change.
+export const collectionMarinePlanAreasSimplified =
+  'marine-plan-areas-simple-0001'
+
 export const collectionMarineLicences = 'marine-licences'
 
 export const collectionMarinePlanPolicyWording = 'marine-plan-policy-wording'
