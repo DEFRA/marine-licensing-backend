@@ -82,9 +82,6 @@ describe('attachScheduledJobLogging', () => {
     )
   })
 
-  // Defensive rather than a live path: the real task sets finishedAt before
-  // emitting either outcome, so this guards against a shape change in node-cron,
-  // not against something that happens today.
   it('omits duration when the execution did not report both timestamps', () => {
     task.emit('execution:finished', {
       date: FIRE_DATE,
