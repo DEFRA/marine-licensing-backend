@@ -301,10 +301,14 @@ logger.warn({ tempDir, error }, 'Cleanup failed')
 
 ### Scheduled jobs
 
-Declared in `src/shared/plugins/scheduler/scheduled-jobs.js`. Every job must be
-idempotent and backward-looking, must not block the event loop, and must tolerate
-being cut off at shutdown. See [docs/scheduled-jobs.md](../docs/scheduled-jobs.md)
-before adding or changing one.
+Recurring jobs are declared in
+`src/shared/plugins/scheduler/scheduled-jobs.js` and run in-process via
+node-cron, on exactly one instance per scheduled fire. A missed fire is never
+retried, so every job must be idempotent and backward-looking; jobs share the
+API's event loop, and a deployment can cut one off mid-run. The contract, the
+reasons behind it and the log lines each run emits are documented in
+[docs/scheduled-jobs.md](../docs/scheduled-jobs.md) — that page is the canonical
+explainer; keep it accurate if you change the mechanism.
 
 ### Email Notifications
 

@@ -151,6 +151,9 @@ in [config.js](./src/config/config.js).
 - [Nearest marine plan area fallback](./docs/nearest-marine-plan-area-fallback.md) —
   how a marine licence still gets policies when its sites intersect no marine plan area,
   and why the search is built the way it is.
+- [Scheduled jobs](./docs/scheduled-jobs.md) —
+  how recurring jobs run on exactly one instance per scheduled fire, and the
+  contract a job body has to meet to be safe under it.
 
 ## API endpoints
 
@@ -159,15 +162,6 @@ API routes are defined under the `api` folders in each domain:
 - `src/exemptions/api/`
 - `src/marine-licences/api/`
 - `src/shared/api/geo-parser/`
-
-## Scheduled jobs
-
-Daily and other recurring jobs run in-process via node-cron, on exactly one
-instance per scheduled fire. They can be switched off globally or per job, and
-each job body can be invoked on demand.
-
-See [docs/scheduled-jobs.md](docs/scheduled-jobs.md) for the contract every job
-must meet.
 
 ## Docker
 

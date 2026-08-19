@@ -53,12 +53,20 @@ its own guard; the scheduler does not provide one.
 
 ## Configuration
 
-| Variable                   | Purpose                                                                                                   |
-| -------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `SCHEDULER_ENABLED`        | Master switch. When false nothing is scheduled, but every job body stays invokable via its server method. |
-| `SCHEDULER_TIMEZONE`       | Canonical IANA timezone every schedule is interpreted in. Defaults to `Europe/London`.                    |
-| `SCHEDULER_<JOB>_ENABLED`  | Per-job switch, e.g. `SCHEDULER_HEARTBEAT_ENABLED`.                                                       |
-| `SCHEDULER_<JOB>_SCHEDULE` | Per-job cron expression, e.g. `SCHEDULER_HEARTBEAT_SCHEDULE`.                                             |
+Everything lives in the `scheduler` config, `src/config/scheduler.js`, which is
+canonical — the values below are a snapshot for orientation:
+
+| Key                        | Default         | Environment variable           |
+| -------------------------- | --------------- | ------------------------------ |
+| `isEnabled`                | `true`          | `SCHEDULER_ENABLED`            |
+| `timezone`                 | `Europe/London` | `SCHEDULER_TIMEZONE`           |
+| `jobs.heartbeat.isEnabled` | `true`          | `SCHEDULER_HEARTBEAT_ENABLED`  |
+| `jobs.heartbeat.schedule`  | `5 0 * * *`     | `SCHEDULER_HEARTBEAT_SCHEDULE` |
+
+`isEnabled` is the master switch: when false nothing is scheduled, but every job
+body stays invokable via its server method. Each job adds its own
+`isEnabled`/`schedule` pair, so a job can be switched off without touching the
+rest.
 
 Schedules are validated at startup for syntax only. Any cadence is allowed — the
 scheduler is shared infrastructure and does not police how often a job runs.
@@ -76,6 +84,43 @@ that hour therefore misses a fire once a year and may double up once a year.
 Because jobs are idempotent and backward-looking a missed fire is normally picked
 up by the next run — but if that is not acceptable for your job, pick an hour
 outside 01:00-01:59. 00:05 is a safe default.
+
+## Observability
+
+Every line a run emits uses `event.action` `scheduler:<jobName>`, so one filter
+gets a job's whole history. `event.reference` is the fire slot as an ISO
+timestamp, which is also the suffix of the `scheduled-job-runs` `_id` for that
+fire — so a log line and the record of which instance claimed it can be matched
+up directly.
+
+| `event.outcome` | `event.reason`                   | Level | Meaning                                                                                 |
+| --------------- | -------------------------------- | ----- | --------------------------------------------------------------------------------------- |
+| `unknown`       | —                                | info  | The run started. Not an outcome; see below.                                             |
+| `success`       | —                                | info  | Completed. Carries `event.duration` in nanoseconds, and the job's summary in `message`. |
+| `failure`       | —                                | error | The job threw. Carries `event.duration` and the ECS `error.*` fields.                   |
+| `unknown`       | `not-elected`                    | info  | Another instance won this fire. Normal on every instance but one.                       |
+| `failure`       | `coordinator-error`              | error | The coordinator itself failed, so the run was abandoned rather than risked.             |
+| `failure`       | `Missed fires are not retried…`  | warn  | The fire was missed entirely and will not be retried.                                   |
+| `failure`       | `Previous run had not finished…` | warn  | The previous run was still going, so this fire was blocked.                             |
+| `unknown`       | `Disabled by configuration`      | info  | The job was not scheduled. No `event.reference`, since there is no fire.                |
+
+Switching the scheduler off globally logs once at startup under
+`event.action` `scheduler:startup` rather than under a job name, since no job
+got as far as being considered.
+
+**The start line is deliberately not an outcome.** A run killed mid-flight — a
+deployment overlapping the fire, an OOM — emits no outcome event at all, so
+without it that case is indistinguishable from an instance that was never
+elected. A start with no matching completion is the only signal that something
+died holding the run. Election happens before the start line, so only the
+instance that actually took the fire logs one.
+
+**Expect two lines per failure.** node-cron is given the same logger, and logs
+the raw error itself before emitting the event this maps. That line has no
+`event.*` fields; the ECS line is the one to query on.
+
+There is no allowlisted numeric ECS field for "items processed", so counts go in
+the `message` string, which always survives the CDP ingestion pipeline.
 
 ## Triggering a job by hand
 
