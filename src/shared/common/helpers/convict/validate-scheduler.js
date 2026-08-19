@@ -4,7 +4,7 @@ export const convictValidateCronExpression = {
   name: 'cron-expression',
   validate: function validateCronExpression(value) {
     if (typeof value !== 'string') {
-      throw new Error(
+      throw new TypeError(
         `Schedule must be a cron expression string, received ${typeof value}`
       )
     }
