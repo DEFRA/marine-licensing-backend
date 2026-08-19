@@ -1,6 +1,9 @@
 import { config } from '../../../../config.js'
 import { buildEmpGeometries } from '../../../../shared/common/helpers/emp/transforms/site-details.js'
-import { MARINE_PLAN_POLICY_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import {
+  LAND_POLICY_CODE,
+  MARINE_PLAN_POLICY_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
 import { timedJsonFetch } from './policy-http.js'
 
 // Field names come from the PolicyData_MDP ArcGIS layer schema.
@@ -58,6 +61,48 @@ export const queryArcGISPolicies = async ({
   if (json.error) {
     throw new Error(
       `ArcGIS feature-server query returned error ${json.error.code}: ${json.error.message}`
+    )
+  }
+
+  const policiesByCode = new Map()
+  for (const feature of json.features ?? []) {
+    const policy = extractPolicy(feature.attributes)
+    if (policy) {
+      policiesByCode.set(policy.policyCode, policy)
+    }
+  }
+  return [...policiesByCode.values()]
+}
+
+// Attribute-only query — no geometry at all, so it behaves
+// identically however far the site is from any area.
+// Land is excluded server-side; prefix filtering happens
+// client-side with the anchored match in region-prefix.js.
+export const queryNonSpatialPolicies = async ({ licenceId, logger }) => {
+  const { arcgisUrl, arcgisTimeoutMs } = config.get('marinePlanPolicies')
+
+  const json = await timedJsonFetch({
+    url: `${arcgisUrl}/query`,
+    options: {
+      method: 'POST',
+      body: new URLSearchParams({
+        f: 'json',
+        where: `isSpatial = 0 AND PolicyCode <> '${LAND_POLICY_CODE}'`,
+        outFields: 'PolicyCode,Sector',
+        returnGeometry: 'false'
+      }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' }
+    },
+    timeoutMs: arcgisTimeoutMs,
+    eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.ARCGIS_NONSPATIAL_QUERY,
+    upstreamName: 'ArcGIS non-spatial policy query',
+    logger,
+    reference: licenceId
+  })
+
+  if (json.error) {
+    throw new Error(
+      `ArcGIS non-spatial policy query returned error ${json.error.code}: ${json.error.message}`
     )
   }
 
