@@ -29,11 +29,7 @@ export const RUN_RECORD_TTL_MS = 5 * 60 * 1000
  * Because nothing is held open, there is no lock to strand when an instance is
  * killed mid-deployment.
  *
- * `RunCoordinator` is a structural TypeScript interface, not a base class —
- * node-cron only reads `.shouldRun` off whatever object it is given. A closure
- * over the dependencies is therefore enough, matches the factory style used
- * elsewhere in this codebase (`helpers/sqs/create-poller-plugin.js`), and has no
- * `this` to lose if the method is ever destructured or passed as a callback.
+ * `node-cron` will execute `.shouldRun()` from whatever object it is passed.
  */
 export const createScheduledJobRunCoordinator = (db, logger) => ({
   /**
