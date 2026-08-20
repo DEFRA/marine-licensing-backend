@@ -19,6 +19,7 @@ import {
 
 const MAX_LONGITUDE = 180
 const MAX_LATITUDE = 90
+const NANOSECONDS_PER_MILLISECOND = 1_000_000
 
 // Every way the simplified collection can be unusable rather than merely
 // empty: never built (the source collection was empty at startup), or its
@@ -235,11 +236,40 @@ const deriveSiteQueryGeometry = (site, logger) => {
   }
 }
 
+const logQueryDuration = ({
+  logger,
+  site,
+  licenceId,
+  vertexCount,
+  startedAt,
+  nearest
+}) => {
+  const durationNs = Number(process.hrtime.bigint() - startedAt)
+  const durationMs = Math.round(durationNs / NANOSECONDS_PER_MILLISECOND)
+  const siteName = site.siteName ?? 'unknown site'
+  const distance = nearest
+    ? `${Math.round(nearest.distanceMetres)}m`
+    : 'no area found'
+
+  logger.info(
+    {
+      event: {
+        action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_QUERY,
+        outcome: nearest ? 'success' : 'failure',
+        duration: durationNs,
+        reference: `${licenceId ?? 'unknown licence'} site: ${siteName}, vertices: ${vertexCount}`
+      }
+    },
+    `Nearest marine plan area query for site ${siteName} completed in ${durationMs}ms (${vertexCount} vertices, ${distance})`
+  )
+}
+
 // applySearchBound exists only so tests can prove that equivalence.
 export const findNearestMarinePlanArea = async ({
   db,
   site,
   logger,
+  licenceId,
   applySearchBound = true
 }) => {
   const queryGeometry = deriveSiteQueryGeometry(site, logger)
@@ -247,6 +277,16 @@ export const findNearestMarinePlanArea = async ({
     return null
   }
   const { vertices, diameterMetres } = queryGeometry
+  const startedAt = process.hrtime.bigint()
+  const logDuration = (nearest) =>
+    logQueryDuration({
+      logger,
+      site,
+      licenceId,
+      vertexCount: vertices.length,
+      startedAt,
+      nearest
+    })
 
   const anchor = await nearestAreaToPoint({
     db,
@@ -254,6 +294,7 @@ export const findNearestMarinePlanArea = async ({
     logger
   })
   if (!anchor) {
+    logDuration(null)
     return null
   }
 
@@ -267,5 +308,6 @@ export const findNearestMarinePlanArea = async ({
   const [nearest] = await db
     .aggregate(perVertexNearestPipeline(vertices, searchBound))
     .toArray()
+  logDuration(nearest ?? null)
   return nearest ?? null
 }

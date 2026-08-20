@@ -133,6 +133,10 @@ Both values live in the `marinePlanPolicies` config:
 Raising the cap buys precision on large sites at a directly proportional cost
 in latency.
 
+Every site's lookup logs its own duration alongside the vertex count it
+queried with (see [section 4](#4-observability)), so the cost of the cap as it
+is currently set is checkable against production traffic.
+
 ### 2.4 A simplified copy of the plan areas, tolerance 0.001°
 
 The published plan area geometry is very detailed — around 834,000 vertices
@@ -230,24 +234,38 @@ carries this argument, and the two should stay consistent.
 ## 4. Observability
 
 Nothing about the fallback is persisted, so **the log is the record**. It is
-deliberately loud: every path through it, successful or not, emits a `warn`
-with an ECS `event.action`.
+deliberately loud: every outcome, successful or not, emits a `warn` with an ECS
+`event.action`, and every site that reaches the database emits an `info` line
+timing its own query.
 
-| `event.action`                         | `event.outcome` | Meaning                                                                                                                                                                      | `event.reference`                                                               |
-| -------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `mp-policies:nearest-area-fallback`    | `success`       | The fallback ran and assigned policies. This is the provenance record, and a data-quality signal about plan boundary accuracy near those sites.                              | licence id, site coverage, and per-site `area: <regionref>, distance: <metres>` |
-| `mp-policies:nearest-area-cannot-run`  | `failure`       | No site yielded a nearest marine plan area. The licence completes with zero policies.                                                                                        | the licence id                                                                  |
-| `mp-policies:nearest-area-unavailable` | `failure`       | The simplified collection or its `2dsphere` index is missing — check whether the reference-data build succeeded.                                                             | the simplified collection name                                                  |
-| `mp-policies:region-prefix-no-match`   | `failure`       | A derived policy-code prefix matched no non-spatial policies — the `regionref`/policy-code naming convention has drifted, and the data owners need telling.                  | licence id and the unmatched prefix                                             |
-| `mp-policies:site-geometry-invalid`    | `failure`       | One site's stored geometry could not be turned into vertices, or carries a coordinate outside the valid longitude/latitude range. That site is skipped; the others continue. | the site name                                                                   |
+| `event.action`                         | Level  | `event.outcome`        | Meaning                                                                                                                                                                      | `event.reference`                                                               |
+| -------------------------------------- | ------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `mp-policies:nearest-area-fallback`    | `warn` | `success`              | The fallback ran and assigned policies. This is the provenance record, and a data-quality signal about plan boundary accuracy near those sites.                              | licence id, site coverage, and per-site `area: <regionref>, distance: <metres>` |
+| `mp-policies:nearest-area-query`       | `info` | `success` or `failure` | One site's nearest-area query finished. Carries `event.duration`; `failure` means the query ran but matched no area.                                                         | licence id, site name and the vertex count queried with                         |
+| `mp-policies:nearest-area-cannot-run`  | `warn` | `failure`              | No site yielded a nearest marine plan area. The licence completes with zero policies.                                                                                        | the licence id                                                                  |
+| `mp-policies:nearest-area-unavailable` | `warn` | `failure`              | The simplified collection or its `2dsphere` index is missing — check whether the reference-data build succeeded.                                                             | the simplified collection name                                                  |
+| `mp-policies:region-prefix-no-match`   | `warn` | `failure`              | A derived policy-code prefix matched no non-spatial policies — the `regionref`/policy-code naming convention has drifted, and the data owners need telling.                  | licence id and the unmatched prefix                                             |
+| `mp-policies:site-geometry-invalid`    | `warn` | `failure`              | One site's stored geometry could not be turned into vertices, or carries a coordinate outside the valid longitude/latitude range. That site is skipped; the others continue. | the site name                                                                   |
 
-Two things worth knowing when reading these:
+Things worth knowing when reading these:
 
 - The provenance line reports site coverage as `n/m sites`, because an
   individual site can be skipped without the whole fallback failing. A partial
   result is distinguishable from a full one from that single line.
 - Distance is reported per site, rounded to the metre. A large distance is the
   signal that either the plan boundaries or the site data deserve a look.
+- The timing line is emitted **once per site the query ran for**, so a
+  five-site licence produces five of them. It covers the two `$geoNear` phases
+  only — densification and the vertex cap happen before the timer starts, and a
+  site rejected by the geometry guards never reaches the database, so it
+  produces a `site-geometry-invalid` warn and no timing line at all. A
+  retryable database error propagates untimed, and the worker's own failure
+  handling is the record of it.
+- `event.duration` is in **nanoseconds**, which is what ECS specifies; the
+  message string carries the same figure in milliseconds for reading by eye.
+  The vertex count sits beside it because the query is one `$geoNear` per
+  vertex, so it is the term that explains an outlying duration — without it a
+  slow site cannot be told apart from a slow database.
 
 ## 5. Where the code lives
 

@@ -36,7 +36,12 @@ export const runNearestAreaFallback = async ({
   // Sequential by design: each lookup is up to ~1.5s of $geoNear work, and
   // running sites concurrently would contend for the same index.
   for (const site of siteDetails ?? []) {
-    const nearest = await findNearestMarinePlanArea({ db, site, logger })
+    const nearest = await findNearestMarinePlanArea({
+      db,
+      site,
+      logger,
+      licenceId
+    })
     if (nearest) {
       siteAreas.push(nearest)
     }

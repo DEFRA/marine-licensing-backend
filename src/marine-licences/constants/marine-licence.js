@@ -39,6 +39,7 @@ export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   ARCGIS_QUERY: 'mp-policies:arcgis-query',
   ARCGIS_NONSPATIAL_QUERY: 'mp-policies:arcgis-nonspatial-query',
   NEAREST_AREA_FALLBACK: 'mp-policies:nearest-area-fallback',
+  NEAREST_AREA_QUERY: 'mp-policies:nearest-area-query',
   NEAREST_AREA_CANNOT_RUN: 'mp-policies:nearest-area-cannot-run',
   NEAREST_AREA_UNAVAILABLE: 'mp-policies:nearest-area-unavailable',
   SITE_GEOMETRY_INVALID: 'mp-policies:site-geometry-invalid',
