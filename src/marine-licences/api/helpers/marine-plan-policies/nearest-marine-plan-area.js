@@ -278,14 +278,14 @@ export const findNearestMarinePlanArea = async ({
   }
   const { vertices, diameterMetres } = queryGeometry
   const startedAt = process.hrtime.bigint()
-  const logDuration = (nearest) =>
+  const logDuration = (nearestArea) =>
     logQueryDuration({
       logger,
       site,
       licenceId,
       vertexCount: vertices.length,
       startedAt,
-      nearest
+      nearest: nearestArea
     })
 
   const anchor = await nearestAreaToPoint({
