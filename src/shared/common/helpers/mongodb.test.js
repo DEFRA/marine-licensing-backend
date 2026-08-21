@@ -220,11 +220,11 @@ describe('#mongoDb', () => {
     })
 
     test('MongoDb should have expected database name', () => {
-      expect(server.db.databaseName).toBe('marine-licensing-backend')
+      expect(server.db.databaseName).toBe(process.env.MONGO_DATABASE)
     })
 
     test('MongoDb should have expected namespace', () => {
-      expect(server.db.namespace).toBe('marine-licensing-backend')
+      expect(server.db.namespace).toBe(process.env.MONGO_DATABASE)
     })
   })
 

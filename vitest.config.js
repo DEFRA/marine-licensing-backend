@@ -5,12 +5,15 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
-    // Test files run one at a time; they share a single mongod and the same
-    // database name, so concurrent files would clobber each other's fixtures.
-    fileParallelism: false,
-    maxWorkers: 1,
+    // Files run concurrently. They share one mongod, so setup-files.js gives
+    // each worker slot its own database to keep them from clobbering each other.
+    fileParallelism: true,
     // MMS may download/extract mongod on cold CI caches; default 10s is too short
     hookTimeout: 60_000,
+    // Running files concurrently saturates the CPU, so tests that boot a server
+    // can exceed the 5s default while still being healthy. High enough to absorb
+    // that contention, low enough to still catch a genuinely hung test.
+    testTimeout: 15_000,
     coverage: {
       provider: 'v8',
       reportsDirectory: './coverage',
