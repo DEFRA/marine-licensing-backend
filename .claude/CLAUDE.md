@@ -214,8 +214,9 @@ by `src/shared/plugins/marine-plan-policies/worker.js` via
 `src/marine-licences/api/helpers/marine-plan-policies/worker-processor.js`.
 If the spatial intersect returns zero policies (or only the onshore `Land`
 placeholder), the worker assigns the nearest marine plan area's non-spatial
-policies instead — the ECS `warn` it logs is the only record of the fallback;
-nothing else is persisted about it. The design, the numbers behind it, and
+policies instead — the ECS `warn` it logs is the only record of the fallback,
+plus one `info` line per site timing that site's query; nothing else is
+persisted about it. The design, the numbers behind it, and
 the observability contract are documented in
 [docs/nearest-marine-plan-area-fallback.md](../docs/nearest-marine-plan-area-fallback.md)
 — that page is the canonical explainer; keep it accurate if you change the
