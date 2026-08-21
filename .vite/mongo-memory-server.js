@@ -1,17 +1,20 @@
-import { setup, teardown } from 'vitest-mongodb'
+import { MongoMemoryServer } from 'mongodb-memory-server'
 
-beforeAll(async () => {
-  // Setup mongo mock
-  await setup({
-    binary: {
-      version: 'latest'
-    },
-    serverOptions: {},
-    autoStart: false
-  })
-  process.env.MONGO_URI = globalThis.__MONGO_URI__
-})
+let mongoServer
 
-afterAll(async () => {
-  await teardown()
-})
+/**
+ * Runs once per test run, in the main process, before any worker is forked.
+ * Workers inherit `process.env`, so `MONGO_URI` is visible to config.js at
+ * import time rather than only after a per-file `beforeAll`.
+ */
+export async function setup({ provide }) {
+  mongoServer = await MongoMemoryServer.create()
+  const uri = mongoServer.getUri()
+
+  process.env.MONGO_URI = uri
+  provide('mongoUri', uri)
+}
+
+export async function teardown() {
+  await mongoServer?.stop()
+}
