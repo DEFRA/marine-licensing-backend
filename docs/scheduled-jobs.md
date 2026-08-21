@@ -35,10 +35,10 @@ correct job needs it raised.
 `onPreStop` calls node-cron's `shutdown()`, which stops the timers and then waits
 up to `SCHEDULER_SHUTDOWN_TIMEOUT_MS` in
 `src/shared/common/constants/job-scheduler.js` (5s, inside hapi-pulse's 10s
-budget) for a
-job that is mid-run. `task.destroy()` alone would abandon it, and the Mongo client
-is force-closed when the server stops — so a job that cannot finish inside that
-window must still be safe to cut off partway. Idempotency covers that.
+budget) for a job that is mid-run. `task.destroy()` alone would abandon it, and
+the Mongo client is force-closed when the server stops — so a job that cannot
+finish inside that window must still be safe to cut off partway. Idempotency
+covers that.
 
 ## Overlap protection is per instance, not per fleet
 
