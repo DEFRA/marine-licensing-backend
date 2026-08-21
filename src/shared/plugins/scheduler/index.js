@@ -7,10 +7,7 @@ import {
   logScheduledJobEnabled
 } from './scheduled-job-logging.js'
 import { scheduledJobs } from './scheduled-jobs.js'
-
-// How long node-cron waits for a job that is mid-run before destroying tasks.
-// Must stay inside hapi-pulse's 10s shutdown budget (see helpers/pulse.js).
-export const SCHEDULER_SHUTDOWN_TIMEOUT_MS = 5000
+import { SCHEDULER_SHUTDOWN_TIMEOUT_MS } from '../../common/constants/job-scheduler.js'
 
 const schedulerPlugin = {
   plugin: {

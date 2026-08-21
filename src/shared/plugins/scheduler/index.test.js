@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { schedule, shutdown } from 'node-cron'
-import { schedulerPlugin, SCHEDULER_SHUTDOWN_TIMEOUT_MS } from './index.js'
+import { schedulerPlugin } from './index.js'
+import { SCHEDULER_SHUTDOWN_TIMEOUT_MS } from '../../common/constants/job-scheduler.js'
 import { scheduledJobs } from './scheduled-jobs.js'
 import { config } from '../../../config.js'
 
