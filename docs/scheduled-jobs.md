@@ -33,7 +33,9 @@ correct job needs it raised.
 ## Shutdown
 
 `onPreStop` calls node-cron's `shutdown()`, which stops the timers and then waits
-up to `SCHEDULER_SHUTDOWN_TIMEOUT_MS` (5s, inside hapi-pulse's 10s budget) for a
+up to `SCHEDULER_SHUTDOWN_TIMEOUT_MS` in
+`src/shared/common/constants/job-scheduler.js` (5s, inside hapi-pulse's 10s
+budget) for a
 job that is mid-run. `task.destroy()` alone would abandon it, and the Mongo client
 is force-closed when the server stops — so a job that cannot finish inside that
 window must still be safe to cut off partway. Idempotency covers that.
@@ -56,12 +58,11 @@ its own guard; the scheduler does not provide one.
 Everything lives in the `scheduler` config, `src/config/scheduler.js`, which is
 canonical — the values below are a snapshot for orientation:
 
-| Key                        | Default         | Environment variable           |
-| -------------------------- | --------------- | ------------------------------ |
-| `isEnabled`                | `true`          | `SCHEDULER_ENABLED`            |
-| `timezone`                 | `Europe/London` | `SCHEDULER_TIMEZONE`           |
-| `jobs.heartbeat.isEnabled` | `true`          | `SCHEDULER_HEARTBEAT_ENABLED`  |
-| `jobs.heartbeat.schedule`  | `5 0 * * *`     | `SCHEDULER_HEARTBEAT_SCHEDULE` |
+| Key                        | Default     | Environment variable           |
+| -------------------------- | ----------- | ------------------------------ |
+| `isEnabled`                | `true`      | `SCHEDULER_ENABLED`            |
+| `jobs.heartbeat.isEnabled` | `true`      | `SCHEDULER_HEARTBEAT_ENABLED`  |
+| `jobs.heartbeat.schedule`  | `5 0 * * *` | `SCHEDULER_HEARTBEAT_SCHEDULE` |
 
 `isEnabled` is the master switch: when false nothing is scheduled, but every job
 body stays invokable via its server method. Each job adds its own
@@ -71,10 +72,13 @@ rest.
 Schedules are validated at startup for syntax only. Any cadence is allowed — the
 scheduler is shared infrastructure and does not police how often a job runs.
 
-`SCHEDULER_TIMEZONE` must be a canonical IANA name. Abbreviations are rejected
-deliberately: `Intl` accepts them and resolves them somewhere unrelated (`BST` is
-`Asia/Dhaka`, not `Europe/London`), so accepting one would run every job in a
-timezone nobody chose.
+Schedules are always interpreted in `Europe/London`. That is fixed in code as
+`SCHEDULER_TIMEZONE` in `src/shared/common/constants/job-scheduler.js` rather
+than configured: no environment of this service should run its jobs on another
+country's clock. If it ever becomes configurable again it needs validation with
+it — `Intl` accepts legacy abbreviations and resolves them somewhere unrelated
+(`BST` is `Asia/Dhaka`), so a bad value would run jobs at the wrong time rather
+than fail at startup.
 
 ### British Summer Time caveat, not enforced
 
