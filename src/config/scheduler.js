@@ -20,8 +20,9 @@
 //
 // British Summer Time caveat, deliberately not enforced by validation.
 //
-// Schedules are interpreted in `timezone` below (Europe/London by default), and
-// two days a year that timezone has no 01:00-01:59 or has it twice:
+// Schedules are interpreted in Europe/London, fixed as SCHEDULER_TIMEZONE in
+// src/shared/common/constants/job-scheduler.js, and two days a year that
+// timezone has no 01:00-01:59 or has it twice:
 //
 //   - Last Sunday in March, the clock goes 00:59:59 GMT -> 02:00:00 BST, so a
 //     schedule naming that hour does not fire at all that day.
@@ -38,12 +39,6 @@ export const schedulerSchema = {
     default: true,
     env: 'SCHEDULER_ENABLED'
   },
-  timezone: {
-    doc: 'Canonical IANA timezone every job schedule is interpreted in. Europe/London keeps the run tied to the UK calendar date rather than UTC. Abbreviations are rejected — BST is not Europe/London, it is Asia/Dhaka.',
-    format: 'iana-timezone',
-    default: 'Europe/London',
-    env: 'SCHEDULER_TIMEZONE'
-  },
   jobs: {
     heartbeat: {
       isEnabled: {
@@ -53,7 +48,7 @@ export const schedulerSchema = {
         env: 'SCHEDULER_HEARTBEAT_ENABLED'
       },
       schedule: {
-        doc: 'Cron schedule for the heartbeat job, interpreted in scheduler.timezone. See the cron format reference and the British Summer Time note at the top of this file.',
+        doc: 'Cron schedule for the heartbeat job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
         format: 'cron-expression',
         default: '5 0 * * *',
         env: 'SCHEDULER_HEARTBEAT_SCHEDULE'

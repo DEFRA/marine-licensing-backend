@@ -1,4 +1,5 @@
 import { structureErrorForECS } from '../../common/helpers/logging/logger.js'
+import { SCHEDULER_TIMEZONE } from '../../common/constants/job-scheduler.js'
 
 const jobAction = (jobName) => `scheduler:${jobName}`
 
@@ -110,7 +111,7 @@ export const attachScheduledJobLogging = (task, jobName, logger) => {
   task.on('execution:overlap', onOverlap(jobName, logger))
 }
 
-export const logScheduledJobEnabled = (jobName, schedule, timezone, logger) => {
+export const logScheduledJobEnabled = (jobName, schedule, logger) => {
   logger.info(
     {
       event: {
@@ -119,7 +120,7 @@ export const logScheduledJobEnabled = (jobName, schedule, timezone, logger) => {
         reason: 'Enabled by configuration'
       }
     },
-    `Scheduled job ${jobName} scheduled: ${schedule} (${timezone})`
+    `Scheduled job ${jobName} scheduled: ${schedule} (${SCHEDULER_TIMEZONE})`
   )
 }
 

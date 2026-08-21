@@ -1,7 +1,4 @@
-import {
-  convictValidateCronExpression,
-  convictValidateTimezone
-} from './validate-scheduler.js'
+import { convictValidateCronExpression } from './validate-scheduler.js'
 
 describe('convictValidateCronExpression', () => {
   it('has the expected format name', () => {
@@ -42,40 +39,4 @@ describe('convictValidateCronExpression', () => {
       /must be a cron expression string/
     )
   })
-})
-
-describe('convictValidateTimezone', () => {
-  it('has the expected format name', () => {
-    expect(convictValidateTimezone.name).toBe('iana-timezone')
-  })
-
-  it.each(['Europe/London', 'UTC', 'europe/london'])(
-    'accepts %s',
-    (timezone) => {
-      expect(() => convictValidateTimezone.validate(timezone)).not.toThrow()
-    }
-  )
-
-  it.each(['Europe/Nowhere', '', 500, undefined])('rejects %s', (timezone) => {
-    expect(() => convictValidateTimezone.validate(timezone)).toThrow(
-      /not a recognised IANA timezone/
-    )
-  })
-
-  // Intl.DateTimeFormat accepts these and silently maps them somewhere else, so
-  // a validator that only checks "does this construct?" would let
-  // SCHEDULER_TIMEZONE=BST through and run every job on Bangladesh time. These
-  // cases fail if the check is ever loosened back to that.
-  it.each([
-    ['BST', 'Asia/Dhaka'],
-    ['EST', 'America/Panama'],
-    ['GMT', 'UTC']
-  ])(
-    'rejects the abbreviation %s, which resolves to %s',
-    (timezone, resolved) => {
-      expect(() => convictValidateTimezone.validate(timezone)).toThrow(
-        new RegExp(`resolves to ${resolved}`)
-      )
-    }
-  )
 })

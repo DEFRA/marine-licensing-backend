@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import { schedule, shutdown } from 'node-cron'
 import { schedulerPlugin } from './index.js'
-import { SCHEDULER_SHUTDOWN_TIMEOUT_MS } from '../../common/constants/job-scheduler.js'
+import {
+  SCHEDULER_SHUTDOWN_TIMEOUT_MS,
+  SCHEDULER_TIMEZONE
+} from '../../common/constants/job-scheduler.js'
 import { scheduledJobs } from './scheduled-jobs.js'
 import { config } from '../../../config.js'
 
@@ -19,7 +22,6 @@ vi.mock('node-cron', async (importOriginal) => {
 
 const schedulerConfig = (overrides = {}) => ({
   isEnabled: true,
-  timezone: 'Europe/London',
   jobs: { heartbeat: { isEnabled: true, schedule: '5 0 * * *' } },
   ...overrides
 })
@@ -93,7 +95,7 @@ describe('scheduler plugin', () => {
       expect.any(Function),
       expect.objectContaining({
         name: 'heartbeat',
-        timezone: 'Europe/London',
+        timezone: SCHEDULER_TIMEZONE,
         distributed: true,
         noOverlap: true
       })

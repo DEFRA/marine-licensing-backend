@@ -7,13 +7,16 @@ import {
   logScheduledJobEnabled
 } from './scheduled-job-logging.js'
 import { scheduledJobs } from './scheduled-jobs.js'
-import { SCHEDULER_SHUTDOWN_TIMEOUT_MS } from '../../common/constants/job-scheduler.js'
+import {
+  SCHEDULER_SHUTDOWN_TIMEOUT_MS,
+  SCHEDULER_TIMEZONE
+} from '../../common/constants/job-scheduler.js'
 
 const schedulerPlugin = {
   plugin: {
     name: 'scheduler',
     register: async (server) => {
-      const { isEnabled, timezone, jobs } = config.get('scheduler')
+      const { isEnabled, jobs } = config.get('scheduler')
 
       // Registered unconditionally: a job body must stay invokable by hand in
       // environments where scheduling itself is switched off.
@@ -55,7 +58,7 @@ const schedulerPlugin = {
               () => job.run(server),
               {
                 name: job.name,
-                timezone,
+                timezone: SCHEDULER_TIMEZONE,
                 distributed: true,
                 runCoordinator: coordinator,
                 noOverlap: true,
@@ -67,7 +70,6 @@ const schedulerPlugin = {
             logScheduledJobEnabled(
               job.name,
               jobs[job.name].schedule,
-              timezone,
               server.logger
             )
             return task

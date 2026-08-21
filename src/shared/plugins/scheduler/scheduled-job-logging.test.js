@@ -198,7 +198,7 @@ describe('logScheduledJobEnabled', () => {
   it('records the job name, its schedule and the timezone it runs in', () => {
     const logger = createLogger()
 
-    logScheduledJobEnabled('heartbeat', '5 0 * * *', 'Europe/London', logger)
+    logScheduledJobEnabled('heartbeat', '5 0 * * *', logger)
 
     expect(logger.info).toHaveBeenCalledWith(
       {
@@ -217,7 +217,7 @@ describe('logScheduledJobEnabled', () => {
   it('keeps the varying detail out of event.reason', () => {
     const logger = createLogger()
 
-    logScheduledJobEnabled('heartbeat', '5 0 * * *', 'Europe/London', logger)
+    logScheduledJobEnabled('heartbeat', '5 0 * * *', logger)
 
     const [fields] = logger.info.mock.calls[0]
     expect(fields.event.reason).not.toContain('5 0 * * *')
