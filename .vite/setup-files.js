@@ -1,4 +1,4 @@
-import { vi, afterAll, beforeAll, beforeEach } from 'vitest'
+import { vi, afterAll, beforeAll, beforeEach, inject } from 'vitest'
 import { MongoClient } from 'mongodb'
 import createFetchMock from 'vitest-fetch-mock'
 import {
@@ -18,8 +18,12 @@ beforeAll(async () => {
     response: vi.fn().mockReturnThis(),
     code: vi.fn().mockReturnThis()
   }
-  client = await MongoClient.connect(globalThis.__MONGO_URI__)
+  client = await MongoClient.connect(inject('mongoUri'))
   globalThis.mockMongo = client.db('marine-licensing-backend')
+
+  // The mongod instance is shared across the whole run, so drop the database to
+  // give each test file the pristine state it would get from its own server.
+  await globalThis.mockMongo.dropDatabase()
 })
 
 // Empty exemptions collection before each integration test

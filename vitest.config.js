@@ -5,7 +5,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     clearMocks: true,
-    // Single worker so vitest-mongodb setup runs once (replaces deprecated threads: false)
+    // Test files run one at a time; they share a single mongod and the same
+    // database name, so concurrent files would clobber each other's fixtures.
     fileParallelism: false,
     maxWorkers: 1,
     // MMS may download/extract mongod on cold CI caches; default 10s is too short
@@ -17,6 +18,7 @@ export default defineConfig({
       include: ['src/**/*.js'],
       exclude: [...configDefaults.exclude, 'coverage', 'src/index.js']
     },
-    setupFiles: ['.vite/mongo-memory-server.js', '.vite/setup-files.js']
+    globalSetup: ['.vite/mongo-memory-server.js'],
+    setupFiles: ['.vite/setup-files.js']
   }
 })
