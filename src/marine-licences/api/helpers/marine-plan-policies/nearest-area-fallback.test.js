@@ -81,6 +81,26 @@ describe('runNearestAreaFallback', () => {
     ])
   })
 
+  it('should pass the licence id to each site lookup so its duration line is attributable', async () => {
+    findNearestMarinePlanArea.mockResolvedValue({
+      name: 'NE inshore',
+      regionref: 'NE_i',
+      distanceMetres: 1200
+    })
+
+    await runNearestAreaFallback({
+      db: global.mockMongo,
+      siteDetails: [site(1), site(2)],
+      licenceId: 'abc123',
+      logger
+    })
+
+    expect(findNearestMarinePlanArea).toHaveBeenCalledTimes(2)
+    for (const [args] of findNearestMarinePlanArea.mock.calls) {
+      expect(args.licenceId).toBe('abc123')
+    }
+  })
+
   it('should collapse inshore and offshore of the same region to one prefix', async () => {
     findNearestMarinePlanArea
       .mockResolvedValueOnce({
