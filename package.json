@@ -68,6 +68,7 @@
     "migrate-mongo": "14.0.7",
     "mongo-locks": "3.2.0",
     "mongodb": "7.5.0",
+    "node-cron": "4.6.0",
     "node-fetch": "3.3.2",
     "notifications-node-client": "8.4.0",
     "pino": "10.3.1",

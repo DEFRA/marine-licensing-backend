@@ -300,6 +300,17 @@ logger.warn({ tempDir, error }, 'Cleanup failed')
 - [ ] No sensitive data (tokens, passwords, PII) in log messages
 - [ ] Meaningful context is in the `message` string, not lost in custom keys
 
+### Scheduled jobs
+
+Recurring jobs are declared in
+`src/shared/plugins/scheduler/scheduled-jobs.js` and run in-process via
+node-cron, on exactly one instance per scheduled fire. A missed fire is never
+retried, so every job must be idempotent and backward-looking; jobs share the
+API's event loop, and a deployment can cut one off mid-run. The contract, the
+reasons behind it and the log lines each run emits are documented in
+[docs/scheduled-jobs.md](../docs/scheduled-jobs.md) — that page is the canonical
+explainer; keep it accurate if you change the mechanism.
+
 ### Email Notifications
 
 - **Service:** GOV.UK Notify API
