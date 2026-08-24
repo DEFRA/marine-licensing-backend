@@ -8,6 +8,7 @@ import {
 } from './shared/common/helpers/convict/required-from-env-in-cdp.js'
 import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
 import { masSchema } from './config/mas.js'
+import { publicRegisterSchema } from './config/public-register.js'
 import { configDotenv } from 'dotenv'
 
 export {
@@ -212,6 +213,14 @@ const config = convict({
         format: requiredFromEnvInCdp,
         default: 'http://localhost:4566',
         env: 'SQS_ENDPOINT' // defined globally in CDP
+      }
+    },
+    sns: {
+      endpoint: {
+        doc: 'AWS SNS Endpoint',
+        format: requiredFromEnvInCdp,
+        default: 'http://localhost:4566',
+        env: 'SNS_ENDPOINT' // defined globally in CDP
       }
     }
   },
@@ -478,6 +487,7 @@ const config = convict({
   },
   marinePlanPolicies: marinePlanPoliciesSchema,
   mas: masSchema,
+  publicRegister: publicRegisterSchema,
   iat: {
     inFlightTtlMs: {
       doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',
