@@ -82,6 +82,13 @@ describe('findNearestMarinePlanArea', () => {
     global.mockMongo.collection(collectionMarinePlanAreasSimplified)
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
+  const queryDurationCalls = () =>
+    logger.info.mock.calls.filter(
+      ([payload]) =>
+        payload?.event?.action ===
+        MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_QUERY
+    )
+
   beforeEach(async () => {
     await simplified().deleteMany({})
     await simplified().insertMany([
@@ -379,5 +386,135 @@ describe('findNearestMarinePlanArea', () => {
     })
 
     expect(nearest).toBeNull()
+  })
+
+  it('should log the query duration, vertex count and distance for a site', async () => {
+    await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: { ...siteNearWest, siteName: 'Site A' },
+      logger,
+      licenceId: 'ML-2026-0001'
+    })
+
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        event: {
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.NEAREST_AREA_QUERY,
+          outcome: 'success',
+          duration: expect.any(Number),
+          reference: expect.stringMatching(
+            /^ML-2026-0001 site: Site A, vertices: \d+$/
+          )
+        }
+      },
+      expect.stringMatching(
+        /^Nearest marine plan area query for site Site A completed in \d+ms \(\d+ vertices, \d+m\)$/
+      )
+    )
+  })
+
+  it('should log one duration line per site queried', async () => {
+    const sites = ['Site A', 'Site B', 'Site C'].map((siteName) => ({
+      ...siteNearWest,
+      siteName
+    }))
+
+    for (const site of sites) {
+      await findNearestMarinePlanArea({
+        db: global.mockMongo,
+        site,
+        logger,
+        licenceId: 'ML-2026-0001'
+      })
+    }
+
+    expect(queryDurationCalls()).toHaveLength(3)
+    expect(
+      queryDurationCalls().map(([payload]) => payload.event.reference)
+    ).toEqual([
+      expect.stringContaining('site: Site A'),
+      expect.stringContaining('site: Site B'),
+      expect.stringContaining('site: Site C')
+    ])
+  })
+
+  it('should log a failure duration when the query runs but finds no area', async () => {
+    await simplified().deleteMany({})
+
+    await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: { ...siteNearWest, siteName: 'Site A' },
+      logger,
+      licenceId: 'ML-2026-0001'
+    })
+
+    // The query still ran and still cost time, so it is still measured — the
+    // distance the message would otherwise carry is what is missing.
+    expect(queryDurationCalls()).toHaveLength(1)
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        event: expect.objectContaining({
+          outcome: 'failure',
+          duration: expect.any(Number)
+        })
+      },
+      expect.stringContaining('no area found')
+    )
+  })
+
+  it('should not log a duration for a site whose geometry never reaches the query', async () => {
+    await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: fileSite({ type: 'Polygon', coordinates: [] }),
+      logger,
+      licenceId: 'ML-2026-0001'
+    })
+
+    // Nothing was queried, so there is no query duration to report; the
+    // geometry warning above is the record of that site.
+    expect(queryDurationCalls()).toHaveLength(0)
+  })
+
+  it('should not log a duration when the query throws a retryable error', async () => {
+    const failing = {
+      collection: () => ({
+        aggregate: () => ({
+          toArray: async () => {
+            const error = new Error('connection reset')
+            error.code = 6
+            throw error
+          }
+        })
+      })
+    }
+
+    await expect(
+      findNearestMarinePlanArea({
+        db: failing,
+        site: siteNearWest,
+        logger,
+        licenceId: 'ML-2026-0001'
+      })
+    ).rejects.toThrow('connection reset')
+    expect(queryDurationCalls()).toHaveLength(0)
+  })
+
+  it('should fall back to placeholders when the licence and site are unnamed', async () => {
+    await findNearestMarinePlanArea({
+      db: global.mockMongo,
+      site: siteNearWest,
+      logger
+    })
+
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        event: expect.objectContaining({
+          reference: expect.stringMatching(
+            /^unknown licence site: unknown site, vertices: \d+$/
+          )
+        })
+      },
+      expect.stringContaining('for site unknown site')
+    )
   })
 })
