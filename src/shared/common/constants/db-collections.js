@@ -32,3 +32,5 @@ export const collectionMarinePlanPolicyWordingSnapshots =
 
 export const collectionIatContexts = 'iat-contexts'
 export const collectionIatOutcomeDocuments = 'iat-outcome-documents'
+
+export const collectionScheduledJobRuns = 'scheduled-job-runs'
