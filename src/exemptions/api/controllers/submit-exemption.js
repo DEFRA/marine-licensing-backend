@@ -20,6 +20,7 @@ import {
   DYNAMICS_REQUEST_ACTIONS,
   EMP_REQUEST_ACTIONS
 } from '../../../shared/common/constants/request-queue.js'
+import { publishPublicRegisterSubmittedEvent } from '../helpers/publish-public-register-event.js'
 
 const checkForIncompleteTasks = (exemption) => {
   const taskList = createTaskList(exemption)
@@ -206,6 +207,14 @@ export const submitExemptionController = {
         viewDetailsUrl: `${frontEndBaseUrl}/exemption/view-details/${id}`,
         projectType: 'exemption'
       })
+
+      if (exemption.publicRegister?.consent === 'yes') {
+        publishPublicRegisterSubmittedEvent({
+          exemptionId: id,
+          applicationReference,
+          logger: request.logger
+        })
+      }
 
       return h
         .response({

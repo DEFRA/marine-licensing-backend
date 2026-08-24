@@ -1,0 +1,77 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest'
+import {
+  publishPublicRegisterSubmittedEvent,
+  PUBLIC_REGISTER_APPLICATION_TYPE,
+  PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED
+} from './publish-public-register-event.js'
+import { publishMessage } from '../../../shared/common/helpers/sns/sns-client.js'
+import { config } from '../../../config.js'
+
+vi.mock('../../../shared/common/helpers/sns/sns-client.js', () => ({
+  publishMessage: vi.fn()
+}))
+
+vi.mock('../../../config.js', () => ({
+  config: {
+    get: vi.fn()
+  }
+}))
+
+describe('publishPublicRegisterSubmittedEvent', () => {
+  let logger
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    config.get.mockReturnValue('marine_licensing_public_register')
+    logger = { info: vi.fn(), error: vi.fn() }
+    publishMessage.mockResolvedValue({ MessageId: 'msg-1' })
+  })
+
+  it('publishes the simple payload with SNS message attributes', async () => {
+    await publishPublicRegisterSubmittedEvent({
+      exemptionId: '64f1abc',
+      applicationReference: 'EXE/2026/00012',
+      logger
+    })
+
+    expect(publishMessage).toHaveBeenCalledWith(
+      'marine_licensing_public_register',
+      JSON.stringify({
+        applicationType: PUBLIC_REGISTER_APPLICATION_TYPE,
+        eventType: PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED,
+        exemptionId: '64f1abc',
+        applicationReference: 'EXE/2026/00012'
+      }),
+      {
+        applicationType: {
+          DataType: 'String',
+          StringValue: PUBLIC_REGISTER_APPLICATION_TYPE
+        },
+        eventType: {
+          DataType: 'String',
+          StringValue: PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED
+        }
+      }
+    )
+    expect(logger.info).toHaveBeenCalled()
+  })
+
+  it('logs and does not throw when SNS publish fails', async () => {
+    publishMessage.mockRejectedValueOnce(new Error('SNS unavailable'))
+
+    await expect(
+      publishPublicRegisterSubmittedEvent({
+        exemptionId: '64f1abc',
+        applicationReference: 'EXE/2026/00012',
+        logger
+      })
+    ).resolves.toBeUndefined()
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.objectContaining({ message: 'SNS unavailable' })
+      }),
+      'Failed to publish public register event for EXE/2026/00012'
+    )
+  })
+})
