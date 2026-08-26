@@ -3,6 +3,11 @@ import { scheduledJobs } from './scheduled-jobs.js'
 import { config } from '../../../config.js'
 import { EXEMPTION_STATUS } from '../../../exemptions/constants/exemption.js'
 import { collectionExemptions } from '../../common/constants/db-collections.js'
+import { londonToday } from '../../common/helpers/london-today.js'
+import { updateExemptionStatuses } from '../../../exemptions/api/helpers/update-exemption-statuses.js'
+
+vi.mock('../../common/helpers/london-today.js')
+vi.mock('../../../exemptions/api/helpers/update-exemption-statuses.js')
 
 describe('scheduledJobs', () => {
   it('every job has a name, a server method name and a run function', () => {
@@ -49,6 +54,35 @@ describe('scheduledJobs', () => {
         status: EXEMPTION_STATUS.ACTIVE
       })
       expect(result).toEqual({ summary: '12 active exemptions' })
+    })
+  })
+
+  describe('exemption-status', () => {
+    const exemptionStatus = () =>
+      scheduledJobs.find((job) => job.name === 'exemption-status')
+
+    it('is registered', () => {
+      expect(exemptionStatus()).toBeDefined()
+      expect(exemptionStatus().methodName).toBe('runSchedulerExemptionStatus')
+    })
+
+    it('derives today from the London clock and delegates to the status updater', async () => {
+      const today = new Date('2026-08-25T00:00:00.000Z')
+      vi.mocked(londonToday).mockReturnValue(today)
+      vi.mocked(updateExemptionStatuses).mockResolvedValue({
+        summary:
+          '0 exemptions updated — 0 scheduled; 0 active; 0 expired; 0 unchanged'
+      })
+      const server = { db: { collection: vi.fn() }, logger: { warn: vi.fn() } }
+
+      const result = await exemptionStatus().run(server)
+
+      expect(updateExemptionStatuses).toHaveBeenCalledWith(
+        server.db,
+        today,
+        server.logger
+      )
+      expect(result.summary).toContain('exemptions updated')
     })
   })
 })

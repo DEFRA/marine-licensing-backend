@@ -1,5 +1,7 @@
 import { collectionExemptions } from '../../common/constants/db-collections.js'
 import { EXEMPTION_STATUS } from '../../../exemptions/constants/exemption.js'
+import { londonToday } from '../../common/helpers/london-today.js'
+import { updateExemptionStatuses } from '../../../exemptions/api/helpers/update-exemption-statuses.js'
 
 /**
  * Every scheduled job is declared here.
@@ -29,5 +31,11 @@ export const scheduledJobs = [
 
       return { summary: `${activeCount} active exemptions` }
     }
+  },
+  {
+    name: 'exemption-status',
+    methodName: 'runSchedulerExemptionStatus',
+    run: async (server) =>
+      updateExemptionStatuses(server.db, londonToday(), server.logger)
   }
 ]

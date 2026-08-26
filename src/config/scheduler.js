@@ -53,6 +53,20 @@ export const schedulerSchema = {
         default: '5 0 * * *',
         env: 'SCHEDULER_HEARTBEAT_SCHEDULE'
       }
+    },
+    'exemption-status': {
+      isEnabled: {
+        doc: 'Enable the daily exemption status transition job',
+        format: Boolean,
+        default: true,
+        env: 'SCHEDULER_EXEMPTION_STATUS_ENABLED'
+      },
+      schedule: {
+        doc: 'Cron schedule for the exemption status job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
+        format: 'cron-expression',
+        default: '5 0 * * *',
+        env: 'SCHEDULER_EXEMPTION_STATUS_SCHEDULE'
+      }
     }
   }
 }

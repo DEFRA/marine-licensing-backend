@@ -20,9 +20,19 @@ vi.mock('node-cron', async (importOriginal) => {
   }
 })
 
-const schedulerConfig = (overrides = {}) => ({
+// Every real job defaults to enabled, so the suite keeps covering new jobs as
+// they are added instead of crashing on a config lookup the fixture forgot.
+const allJobsEnabled = () =>
+  Object.fromEntries(
+    scheduledJobs.map((job) => [
+      job.name,
+      { isEnabled: true, schedule: '5 0 * * *' }
+    ])
+  )
+
+const schedulerConfig = ({ jobs, ...overrides } = {}) => ({
   isEnabled: true,
-  jobs: { heartbeat: { isEnabled: true, schedule: '5 0 * * *' } },
+  jobs: { ...allJobsEnabled(), ...jobs },
   ...overrides
 })
 
@@ -171,7 +181,11 @@ describe('scheduler plugin', () => {
     await schedulerPlugin.plugin.register(server)
     await runExt(server, 'onPostStart')
 
-    expect(schedule).not.toHaveBeenCalled()
+    expect(schedule).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ name: 'heartbeat' })
+    )
     expect(server.logger.info).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({ action: 'scheduler:heartbeat' })
