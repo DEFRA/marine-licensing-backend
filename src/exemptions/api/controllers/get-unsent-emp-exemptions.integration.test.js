@@ -436,4 +436,28 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
       newerFailedDate.toISOString()
     )
   })
+
+  test('includes an EXPIRED exemption in the unsent list', async () => {
+    const expiredExemption = createCompleteExemption({
+      _id: new ObjectId(),
+      status: EXEMPTION_STATUS.EXPIRED,
+      projectName: 'Expired Project',
+      applicationReference: 'EXEMPTION-2024-004'
+    })
+
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(expiredExemption)
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: '/exemptions/send-to-emp',
+      isInternalUser: true
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body.unsentExemptions.map((e) => e.projectName)).toContain(
+      'Expired Project'
+    )
+  })
 })

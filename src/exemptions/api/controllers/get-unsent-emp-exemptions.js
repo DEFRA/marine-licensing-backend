@@ -4,19 +4,20 @@ import {
   collectionEmpQueueFailed,
   collectionExemptions
 } from '../../../shared/common/constants/db-collections.js'
+import { SUBMITTED_STATUSES } from '../../constants/exemption.js'
 
 export const getUnsentEmpExemptionsController = {
   handler: async (request, h) => {
     const { db } = request
 
     // get exemptions that meet all the following:
-    // - status is ACTIVE
+    // - status is one of the submitted statuses
     // - exemption in not in the exemption-emp-queue collection - ie it's not currently being sent or waiting for another retry
     // also, if an exemption in the returned list has previously failed to send to EMP after retries, then include the date-time that it was added to the exemption-emp-queue-failed collection.
     const unsentExemptions = await db
       .collection(collectionExemptions)
       .aggregate([
-        { $match: { status: 'ACTIVE' } },
+        { $match: { status: { $in: SUBMITTED_STATUSES } } },
         {
           $lookup: {
             from: collectionEmpQueue,

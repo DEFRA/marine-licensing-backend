@@ -308,6 +308,38 @@ describe('ExemptionService', () => {
         exemptionService.getPublicExemptionById(exemption._id)
       ).rejects.toThrow('Not authorised to request this resource')
     })
+
+    it.each([
+      EXEMPTION_STATUS.SCHEDULED,
+      EXEMPTION_STATUS.ACTIVE,
+      EXEMPTION_STATUS.EXPIRED,
+      EXEMPTION_STATUS.WITHDRAWN
+    ])('serves a %s exemption on the public register', async (status) => {
+      const submittedExemption = buildExemption({
+        status,
+        publicRegister: { consent: 'yes' }
+      })
+      const exemptionService = createService(
+        global.mockMongo,
+        submittedExemption
+      )
+
+      await expect(
+        exemptionService.getPublicExemptionById(exemption._id)
+      ).resolves.toBeDefined()
+    })
+
+    it('still refuses a draft on the public register', async () => {
+      const draftExemption = buildExemption({
+        status: EXEMPTION_STATUS.DRAFT,
+        publicRegister: { consent: 'yes' }
+      })
+      const exemptionService = createService(global.mockMongo, draftExemption)
+
+      await expect(
+        exemptionService.getPublicExemptionById(exemption._id)
+      ).rejects.toMatchObject({ output: { statusCode: 403 } })
+    })
   })
 
   describe('getExemptionByApplicationReference', () => {

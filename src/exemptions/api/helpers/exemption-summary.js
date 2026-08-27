@@ -1,15 +1,18 @@
 import { COORDINATE_SYSTEMS } from '../../../shared/common/constants/coordinates.js'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import {
+  EXEMPTION_STATUS,
+  SUBMITTED_STATUSES
+} from '../../constants/exemption.js'
 
 const SUMMARY_STATUSES = [
-  EXEMPTION_STATUS.ACTIVE,
+  ...SUBMITTED_STATUSES,
   EXEMPTION_STATUS.SUBMITTED,
   EXEMPTION_STATUS.DRAFT,
   EXEMPTION_STATUS.WITHDRAWN
 ]
 
 const REPORTING_STATUSES = [
-  EXEMPTION_STATUS.ACTIVE,
+  ...SUBMITTED_STATUSES,
   EXEMPTION_STATUS.SUBMITTED,
   EXEMPTION_STATUS.WITHDRAWN
 ]
@@ -143,8 +146,10 @@ export const buildExemptionSummaryValue = ({
   const countsByStatus = groupedCountsToRecord(statusCounts)
 
   const submittedExemptions =
-    (countsByStatus[EXEMPTION_STATUS.ACTIVE] ?? 0) +
-    (countsByStatus[EXEMPTION_STATUS.SUBMITTED] ?? 0)
+    SUBMITTED_STATUSES.reduce(
+      (total, status) => total + (countsByStatus[status] ?? 0),
+      0
+    ) + (countsByStatus[EXEMPTION_STATUS.SUBMITTED] ?? 0)
 
   return {
     submittedExemptions,

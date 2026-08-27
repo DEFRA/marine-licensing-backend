@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import { SUBMITTED_STATUSES } from '../../constants/exemption.js'
 
 export const getBackfillAreasExemptionsController = {
   handler: async (request, h) => {
@@ -9,7 +9,7 @@ export const getBackfillAreasExemptionsController = {
     const backfillAreas = await db
       .collection(collectionExemptions)
       .find({
-        status: EXEMPTION_STATUS.ACTIVE,
+        status: { $in: SUBMITTED_STATUSES },
         areaBackfillCompleteAt: { $exists: false },
         $or: [
           { coastalOperationsAreas: { $exists: false } },
