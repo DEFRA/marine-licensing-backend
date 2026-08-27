@@ -1,7 +1,7 @@
 describe('Health Endpoint', () => {
   let server
   beforeAll(async () => {
-    // Dynamic import needed due to config being updated by vitest-mongodb
+    // Dynamic import needed because config reads MONGO_URI at import time
     const { createServer } = await import('../../server.js')
     server = await createServer()
     await server.initialize()

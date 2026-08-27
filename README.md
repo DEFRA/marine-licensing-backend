@@ -151,6 +151,9 @@ in [config.js](./src/config/config.js).
 - [Nearest marine plan area fallback](./docs/nearest-marine-plan-area-fallback.md) —
   how a marine licence still gets policies when its sites intersect no marine plan area,
   and why the search is built the way it is.
+- [Scheduled jobs](./docs/scheduled-jobs.md) —
+  how recurring jobs run on exactly one instance per scheduled fire, and the
+  contract a job body has to meet to be safe under it.
 
 ## API endpoints
 

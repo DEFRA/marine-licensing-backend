@@ -9,6 +9,7 @@ import { marinePlanPoliciesWorkerPlugin } from './shared/plugins/marine-plan-pol
 import { marinePlanPoliciesDlqWorkerPlugin } from './shared/plugins/marine-plan-policies/dlq-worker.js'
 import { masWorkerPlugin } from './shared/plugins/mas/mas-worker.js'
 import { masDlqWorkerPlugin } from './shared/plugins/mas/mas-dlq-worker.js'
+import { schedulerPlugin } from './shared/plugins/scheduler/index.js'
 import { populateCoastalOperationsAreasPlugin } from './shared/plugins/geo-areas/populate-coastal-operations-areas.js'
 import { populateMarinePlanAreasPlugin } from './shared/plugins/geo-areas/populate-marine-plan-areas.js'
 import { simplifyMarinePlanAreasPlugin } from './shared/plugins/geo-areas/simplify-marine-plan-areas.js'
@@ -66,6 +67,7 @@ async function createServer() {
   // marinePlanPoliciesDlqWorkerPlugin - marks dead-lettered policy jobs as failed
   // masWorkerPlugin - reads change notifications from the MAS SQS queue
   // masDlqWorkerPlugin - logs dead-lettered MAS messages
+  // schedulerPlugin - runs daily jobs on one instance per fire
   await server.register([
     requestTracing,
     requestLogger,
@@ -86,7 +88,8 @@ async function createServer() {
     marinePlanPoliciesWorkerPlugin,
     marinePlanPoliciesDlqWorkerPlugin,
     masWorkerPlugin,
-    masDlqWorkerPlugin
+    masDlqWorkerPlugin,
+    schedulerPlugin
   ])
 
   return server

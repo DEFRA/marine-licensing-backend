@@ -6,9 +6,11 @@ import {
   convictRequiredFromEnvInCdp,
   requiredFromEnvInCdp
 } from './shared/common/helpers/convict/required-from-env-in-cdp.js'
+import { convictValidateCronExpression } from './shared/common/helpers/convict/validate-scheduler.js'
 import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
 import { masSchema } from './config/mas.js'
 import { publicRegisterSchema } from './config/public-register.js'
+import { schedulerSchema } from './config/scheduler.js'
 import { configDotenv } from 'dotenv'
 
 export {
@@ -18,6 +20,7 @@ export {
 
 convict.addFormat(convictValidateMongoUri)
 convict.addFormat(convictRequiredFromEnvInCdp)
+convict.addFormat(convictValidateCronExpression)
 convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -488,6 +491,7 @@ const config = convict({
   marinePlanPolicies: marinePlanPoliciesSchema,
   mas: masSchema,
   publicRegister: publicRegisterSchema,
+  scheduler: schedulerSchema,
   iat: {
     inFlightTtlMs: {
       doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',
