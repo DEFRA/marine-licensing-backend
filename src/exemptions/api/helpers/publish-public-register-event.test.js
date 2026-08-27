@@ -17,12 +17,15 @@ vi.mock('../../../config.js', () => ({
   }
 }))
 
+const topicArn =
+  'arn:aws:sns:eu-west-2:000000000000:marine_licensing_public_register'
+
 describe('publishPublicRegisterSubmittedEvent', () => {
   let logger
 
   beforeEach(() => {
     vi.clearAllMocks()
-    config.get.mockReturnValue('marine_licensing_public_register')
+    config.get.mockReturnValue(topicArn)
     logger = { info: vi.fn(), error: vi.fn() }
     publishMessage.mockResolvedValue({ MessageId: 'msg-1' })
   })
@@ -34,8 +37,9 @@ describe('publishPublicRegisterSubmittedEvent', () => {
       logger
     })
 
+    expect(config.get).toHaveBeenCalledWith('publicRegister.snsTopicArn')
     expect(publishMessage).toHaveBeenCalledWith(
-      'marine_licensing_public_register',
+      topicArn,
       JSON.stringify({
         applicationType: PUBLIC_REGISTER_APPLICATION_TYPE,
         eventType: PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED,
@@ -53,7 +57,14 @@ describe('publishPublicRegisterSubmittedEvent', () => {
         }
       }
     )
-    expect(logger.info).toHaveBeenCalled()
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        topicArn,
+        exemptionId: '64f1abc',
+        applicationReference: 'EXE/2026/00012'
+      },
+      'Published public register submitted event to SNS'
+    )
   })
 
   it('logs and does not throw when SNS publish fails', async () => {

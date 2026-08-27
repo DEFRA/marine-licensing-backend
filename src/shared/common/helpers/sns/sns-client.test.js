@@ -1,13 +1,9 @@
 import { vi } from 'vitest'
-import {
-  SNSClient,
-  CreateTopicCommand,
-  PublishCommand
-} from '@aws-sdk/client-sns'
+import { SNSClient, PublishCommand } from '@aws-sdk/client-sns'
 import { getSnsClient, resetSnsClient, publishMessage } from './sns-client.js'
 
-const topicName = 'marine_licensing_public_register'
-const topicArn = `arn:aws:sns:eu-west-2:000000000000:${topicName}`
+const topicArn =
+  'arn:aws:sns:eu-west-2:000000000000:marine_licensing_public_register'
 
 const findCommand = (mockSend, CommandType) =>
   mockSend.mock.calls.map((c) => c[0]).find((c) => c instanceof CommandType)
@@ -19,12 +15,7 @@ describe('sns-client', () => {
     resetSnsClient()
     mockSend = vi
       .spyOn(SNSClient.prototype, 'send')
-      .mockImplementation((command) => {
-        if (command instanceof CreateTopicCommand) {
-          return Promise.resolve({ TopicArn: topicArn })
-        }
-        return Promise.resolve({ MessageId: 'msg-1' })
-      })
+      .mockResolvedValue({ MessageId: 'msg-1' })
   })
 
   describe('getSnsClient', () => {
@@ -42,32 +33,16 @@ describe('sns-client', () => {
       const b = getSnsClient()
       expect(a).not.toBe(b)
     })
-
-    it('clears the ARN cache so the topic ARN is re-fetched', async () => {
-      await publishMessage(topicName, '{}')
-      const createCallsAfterFirst = mockSend.mock.calls.filter(
-        (c) => c[0] instanceof CreateTopicCommand
-      ).length
-      expect(createCallsAfterFirst).toBe(1)
-
-      resetSnsClient()
-      await publishMessage(topicName, '{}')
-
-      const createCallsAfterReset = mockSend.mock.calls.filter(
-        (c) => c[0] instanceof CreateTopicCommand
-      ).length
-      expect(createCallsAfterReset).toBe(2)
-    })
   })
 
   describe('publishMessage', () => {
-    it('resolves the topic ARN and sends a PublishCommand', async () => {
+    it('sends a PublishCommand with the provided topic ARN', async () => {
       const body = JSON.stringify({ applicationType: 'exemption' })
       const attributes = {
         applicationType: { DataType: 'String', StringValue: 'exemption' }
       }
 
-      await publishMessage(topicName, body, attributes)
+      await publishMessage(topicArn, body, attributes)
 
       const cmd = findCommand(mockSend, PublishCommand)
       expect(cmd.input).toEqual({
@@ -77,18 +52,8 @@ describe('sns-client', () => {
       })
     })
 
-    it('uses the cached ARN on a second call, skipping CreateTopicCommand', async () => {
-      await publishMessage(topicName, 'first')
-      await publishMessage(topicName, 'second')
-
-      const createCalls = mockSend.mock.calls.filter(
-        (c) => c[0] instanceof CreateTopicCommand
-      )
-      expect(createCalls).toHaveLength(1)
-    })
-
     it('omits MessageAttributes when not provided', async () => {
-      await publishMessage(topicName, 'plain')
+      await publishMessage(topicArn, 'plain')
 
       const cmd = findCommand(mockSend, PublishCommand)
       expect(cmd.input).toEqual({

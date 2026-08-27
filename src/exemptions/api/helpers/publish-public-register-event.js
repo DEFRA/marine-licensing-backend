@@ -20,7 +20,7 @@ export const publishPublicRegisterSubmittedEvent = async ({
   applicationReference,
   logger
 }) => {
-  const topicName = config.get('publicRegister.snsTopicName')
+  const topicArn = config.get('publicRegister.snsTopicArn')
   const message = {
     applicationType: PUBLIC_REGISTER_APPLICATION_TYPE,
     eventType: PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED,
@@ -29,7 +29,7 @@ export const publishPublicRegisterSubmittedEvent = async ({
   }
 
   try {
-    await publishMessage(topicName, JSON.stringify(message), {
+    await publishMessage(topicArn, JSON.stringify(message), {
       applicationType: {
         DataType: 'String',
         StringValue: PUBLIC_REGISTER_APPLICATION_TYPE
@@ -40,7 +40,7 @@ export const publishPublicRegisterSubmittedEvent = async ({
       }
     })
     logger.info?.(
-      { topicName, exemptionId, applicationReference },
+      { topicArn, exemptionId, applicationReference },
       'Published public register submitted event to SNS'
     )
   } catch (error) {
