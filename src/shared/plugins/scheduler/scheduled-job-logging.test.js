@@ -78,7 +78,56 @@ describe('attachScheduledJobLogging', () => {
           duration: 250_000_000
         }
       },
-      'Scheduled job heartbeat completed: 12 active exemptions'
+      'Scheduled job heartbeat completed in 250ms: 12 active exemptions'
+    )
+  })
+
+  it('reports the duration in the completion message as well as event.duration', () => {
+    task.emit('execution:finished', {
+      date: FIRE_DATE,
+      execution: {
+        startedAt: 1000,
+        finishedAt: 1006,
+        result: { summary: '2 exemptions — 1 active; 1 expired' }
+      }
+    })
+
+    expect(logger.info).toHaveBeenCalledWith(
+      {
+        event: {
+          action: 'scheduler:heartbeat',
+          outcome: 'success',
+          reference: '2026-08-15T00:05:00.000Z',
+          duration: 6_000_000
+        }
+      },
+      'Scheduled job heartbeat completed in 6ms: 2 exemptions — 1 active; 1 expired'
+    )
+  })
+
+  it('separates thousands in a slow run', () => {
+    task.emit('execution:finished', {
+      date: FIRE_DATE,
+      execution: {
+        startedAt: 0,
+        finishedAt: 12000,
+        result: { summary: 'done' }
+      }
+    })
+
+    expect(logger.info.mock.calls[0][1]).toBe(
+      'Scheduled job heartbeat completed in 12,000ms: done'
+    )
+  })
+
+  it('omits a duration when the run never executed', () => {
+    task.emit('execution:finished', {
+      date: FIRE_DATE,
+      execution: { result: { summary: 'done' } }
+    })
+
+    expect(logger.info.mock.calls[0][1]).toBe(
+      'Scheduled job heartbeat completed: done'
     )
   })
 
@@ -121,7 +170,18 @@ describe('attachScheduledJobLogging', () => {
       duration: 1_500_000_000
     })
     expect(fields.error.message).toBe('mongo unavailable')
-    expect(message).toBe('Scheduled job heartbeat failed')
+    expect(message).toBe('Scheduled job heartbeat failed after 1,500ms')
+  })
+
+  it('reports how long a failing run took before it threw', () => {
+    task.emit('execution:failed', {
+      date: FIRE_DATE,
+      execution: { startedAt: 1000, finishedAt: 1084, error: new Error('boom') }
+    })
+
+    expect(logger.error.mock.calls[0][1]).toBe(
+      'Scheduled job heartbeat failed after 84ms'
+    )
   })
 
   it('logs an info line when another instance won the election', () => {
