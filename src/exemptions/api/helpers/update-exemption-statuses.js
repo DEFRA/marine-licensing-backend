@@ -18,6 +18,23 @@ const buildSummary = ({ counts, unchanged }) =>
     `${formatNumber(unchanged)} unchanged`
   ].join('; ')}`
 
+const logUndatedExemption = (logger, exemption) => {
+  const id = exemption._id.toString()
+
+  logger.warn(
+    {
+      event: {
+        action: MISSING_DATES_ACTION,
+        outcome: 'failure',
+        reference: id,
+        reason:
+          'Submitted exemption has no usable activity dates, so its status cannot be derived'
+      }
+    },
+    `Cannot derive status for exemption ${id}: no activity dates`
+  )
+}
+
 /**
  * Recomputes the date-derived status of every submitted exemption and writes
  * back the ones that have moved on.
@@ -54,40 +71,25 @@ export const updateExemptionStatuses = async (db, today, logger) => {
     const newStatus = deriveExemptionStatus(exemption.siteDetails, today)
 
     if (newStatus === null) {
-      logger.warn(
-        {
-          event: {
-            action: MISSING_DATES_ACTION,
-            outcome: 'failure',
-            reference: exemption._id.toString(),
-            reason:
-              'Submitted exemption has no usable activity dates, so its status cannot be derived'
-          }
-        },
-        `Cannot derive status for exemption ${exemption._id.toString()}: no activity dates`
-      )
-      continue
-    }
-
-    if (newStatus === exemption.status) {
+      logUndatedExemption(logger, exemption)
+    } else if (newStatus === exemption.status) {
       unchanged++
-      continue
-    }
+    } else {
+      counts.updated++
+      counts[newStatus]++
+      // Compare-and-swap on the status the cursor observed. A withdrawal that
+      // lands between the read and the flush changes the status, so this write
+      // matches nothing and the withdrawal stands rather than being reverted.
+      operations.push({
+        updateOne: {
+          filter: { _id: exemption._id, status: exemption.status },
+          update: { $set: { status: newStatus, updatedAt } }
+        }
+      })
 
-    counts.updated++
-    counts[newStatus]++
-    // Compare-and-swap on the status the cursor observed. A withdrawal that
-    // lands between the read and the flush changes the status, so this write
-    // matches nothing and the withdrawal stands rather than being reverted.
-    operations.push({
-      updateOne: {
-        filter: { _id: exemption._id, status: exemption.status },
-        update: { $set: { status: newStatus, updatedAt } }
+      if (operations.length >= BATCH_SIZE) {
+        await flush()
       }
-    })
-
-    if (operations.length >= BATCH_SIZE) {
-      await flush()
     }
   }
 

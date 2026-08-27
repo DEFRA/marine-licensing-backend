@@ -17,9 +17,9 @@ const londonDateParts = new Intl.DateTimeFormat('en-GB', {
  */
 export const londonToday = (now = new Date()) => {
   const parts = londonDateParts.formatToParts(now)
-  const valueOf = (type) => parts.find((part) => part.type === type).value
+  const datePart = (type) => parts.find((part) => part.type === type).value
 
   return new Date(
-    `${valueOf('year')}-${valueOf('month')}-${valueOf('day')}T00:00:00.000Z`
+    `${datePart('year')}-${datePart('month')}-${datePart('day')}T00:00:00.000Z`
   )
 }
