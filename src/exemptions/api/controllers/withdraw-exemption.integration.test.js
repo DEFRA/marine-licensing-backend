@@ -14,7 +14,7 @@ describe('Withdraw exemption - integration tests', async () => {
     const exemption = createCompleteExemption({
       _id: exemptionId,
       contactId,
-      status: EXEMPTION_STATUS.SUBMITTED
+      status: EXEMPTION_STATUS.ACTIVE
     })
     await globalThis.mockMongo
       .collection(collectionExemptions)
@@ -39,6 +39,32 @@ describe('Withdraw exemption - integration tests', async () => {
     expect(withdrawnExemption.withdrawnAt).toBeDefined()
     expect(withdrawnExemption.updatedAt).toBeDefined()
     expect(withdrawnExemption.updatedBy).toBe(contactId)
+  })
+
+  test('returns a conflict when the exemption is no longer withdrawable', async () => {
+    const exemption = createCompleteExemption({
+      _id: exemptionId,
+      contactId,
+      status: EXEMPTION_STATUS.EXPIRED
+    })
+    await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .insertOne(exemption)
+
+    const { statusCode } = await makePostRequest({
+      server: getServer(),
+      url: `/exemption/${exemptionId}/withdraw`,
+      contactId,
+      payload: {}
+    })
+
+    expect(statusCode).toBe(409)
+
+    const unchangedExemption = await globalThis.mockMongo
+      .collection(collectionExemptions)
+      .findOne({ _id: exemptionId })
+    expect(unchangedExemption.status).toBe(EXEMPTION_STATUS.EXPIRED)
+    expect(unchangedExemption.withdrawnAt).toBeUndefined()
   })
 
   test('returns 404 when attempting to withdraw a non-existent exemption', async () => {
