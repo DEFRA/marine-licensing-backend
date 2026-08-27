@@ -156,9 +156,12 @@ export const controllerName = {
 
 ### Exemption Workflow
 
-Status progression: **DRAFT** → **ACTIVE** → **SUBMITTED** (Dynamics synced).
-The `EXEMPTION_STATUS` constants in `src/exemptions/constants/exemption.js`
-are canonical.
+Status progression: **DRAFT** → **SCHEDULED** / **ACTIVE** / **EXPIRED**
+(date-derived, see `docs/scheduled-jobs.md`) → **WITHDRAWN**. The
+`EXEMPTION_STATUS` constants in `src/exemptions/constants/exemption.js` are
+canonical; `SUBMITTED_STATUSES` groups the three that mean "submitted", and
+consumers that need "is this submitted?" test against it rather than against
+a single status.
 
 ### Error Response Format
 
