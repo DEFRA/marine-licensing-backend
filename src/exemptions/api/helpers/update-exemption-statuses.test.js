@@ -13,6 +13,21 @@ const exemption = (status, start, end) => ({
   ]
 })
 
+// Records the size of every batched write, so a test can assert the mid-loop
+// flush fires rather than everything landing in one final write.
+const dbRecordingFlushes = (realDb, batchSizes) => ({
+  collection: (name) => {
+    const collection = realDb.collection(name)
+    return {
+      find: (...args) => collection.find(...args),
+      bulkWrite: (operations) => {
+        batchSizes.push(operations.length)
+        return collection.bulkWrite(operations)
+      }
+    }
+  }
+})
+
 // Stands in for a concurrent writer landing between the cursor read and the
 // batched write: the supplied work runs immediately before every flush.
 const dbFlushingAfter = (realDb, concurrentWrite) => ({
@@ -128,6 +143,32 @@ describe('updateExemptionStatuses', () => {
     )
 
     expect(await statusOf('ACTIVE-2026-07-01')).toBe(EXEMPTION_STATUS.WITHDRAWN)
+  })
+
+  it('writes in batches and loses nothing across a batch boundary', async () => {
+    const total = 501
+    const documents = Array.from({ length: total }, (_, index) => ({
+      ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+      projectName: `batched-${index}`
+    }))
+    await db.collection(collectionExemptions).insertMany(documents)
+
+    const batchSizes = []
+
+    const { summary } = await updateExemptionStatuses(
+      dbRecordingFlushes(db, batchSizes),
+      TODAY,
+      logger
+    )
+
+    // One full batch mid-loop, then the remainder flushed after it.
+    expect(batchSizes).toEqual([500, 1])
+    expect(
+      await db
+        .collection(collectionExemptions)
+        .countDocuments({ status: EXEMPTION_STATUS.EXPIRED })
+    ).toBe(total)
+    expect(summary).toContain('501 exemptions updated')
   })
 
   it('warns about an exemption with no activity dates instead of skipping silently', async () => {
