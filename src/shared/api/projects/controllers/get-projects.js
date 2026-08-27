@@ -11,6 +11,7 @@ import {
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
+import { getProjects } from '../models/get-projects.js'
 
 const logger = createLogger()
 const logSystem = 'Projects:GetProjects'
@@ -138,6 +139,11 @@ const getCitizenProjects = async (db, contactId, organisationId) => {
 }
 
 export const getProjectsController = {
+  options: {
+    validate: {
+      payload: getProjects
+    }
+  },
   handler: async (request, h) => {
     const { db, auth } = request
     const contactId = getContactId(auth)

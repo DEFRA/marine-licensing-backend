@@ -114,6 +114,16 @@ describe('getProjectsController', () => {
     vi.spyOn(logger, 'info')
   })
 
+  describe('payload validation', () => {
+    const payloadValidator = getProjectsController.options.validate.payload
+
+    it('should accept an empty payload', () => {
+      const result = payloadValidator.validate({})
+
+      expect(result.error).toBeUndefined()
+    })
+  })
+
   describe('handler', () => {
     it('should query employee collection with organisation filter', async () => {
       await getProjectsController.handler(mockRequest, mockH)

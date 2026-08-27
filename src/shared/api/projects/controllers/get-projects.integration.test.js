@@ -1,5 +1,5 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
-import { makeGetRequest } from '../../../../../tests/server-requests.js'
+import { makePostRequest } from '../../../../../tests/server-requests.js'
 import {
   createCompleteExemption,
   createCompleteMarineLicence
@@ -49,9 +49,10 @@ describe('Get projects - integration tests', async () => {
         .collection(collectionMarineLicences)
         .insertOne(marineLicence)
 
-      const { statusCode, body, isEmployee } = await makeGetRequest({
+      const { statusCode, body, isEmployee } = await makePostRequest({
         server: getServer(),
         url: '/projects',
+        payload: {},
         contactId: exemption1.contactId
       })
 
@@ -120,9 +121,10 @@ describe('Get projects - integration tests', async () => {
         .insertOne(colleagueMarineLicence)
 
       const { statusCode, body, isEmployee, organisationId } =
-        await makeGetRequest({
+        await makePostRequest({
           server: getServer(),
           url: '/projects',
+          payload: {},
           contactId: employeeContactId,
           relationships: employeeRelationships,
           currentRelationshipId: relationshipId
@@ -174,9 +176,10 @@ describe('Get projects - integration tests', async () => {
         .collection(collectionMarineLicences)
         .insertOne(otherOrgMarineLicence)
 
-      const { statusCode, body } = await makeGetRequest({
+      const { statusCode, body } = await makePostRequest({
         server: getServer(),
         url: '/projects',
+        payload: {},
         contactId: employeeContactId,
         relationships: employeeRelationships,
         currentRelationshipId: relationshipId
@@ -188,9 +191,10 @@ describe('Get projects - integration tests', async () => {
     })
 
     test('returns empty array when no projects exist for organisation', async () => {
-      const { statusCode, body, isEmployee } = await makeGetRequest({
+      const { statusCode, body, isEmployee } = await makePostRequest({
         server: getServer(),
         url: '/projects',
+        payload: {},
         contactId: employeeContactId,
         relationships: employeeRelationships,
         currentRelationshipId: relationshipId
@@ -237,9 +241,10 @@ describe('Get projects - integration tests', async () => {
         .collection(collectionMarineLicences)
         .insertOne(draftMarineLicence)
 
-      const { body } = await makeGetRequest({
+      const { body } = await makePostRequest({
         server: getServer(),
         url: '/projects',
+        payload: {},
         contactId: employeeContactId,
         relationships: employeeRelationships,
         currentRelationshipId: relationshipId
@@ -288,9 +293,10 @@ describe('Get projects - integration tests', async () => {
         .collection(collectionMarineLicences)
         .insertOne(colleagueMarineLicence)
 
-      const { statusCode, body, isEmployee } = await makeGetRequest({
+      const { statusCode, body, isEmployee } = await makePostRequest({
         server: getServer(),
         url: '/projects',
+        payload: {},
         contactId: agentContactId,
         relationships: agentRelationships,
         currentRelationshipId: relationshipId
