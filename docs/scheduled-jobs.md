@@ -58,11 +58,11 @@ its own guard; the scheduler does not provide one.
 Everything lives in the `scheduler` config, `src/config/scheduler.js`, which is
 canonical — the values below are a snapshot for orientation:
 
-| Key                        | Default     | Environment variable           |
-| -------------------------- | ----------- | ------------------------------ |
-| `isEnabled`                | `true`      | `SCHEDULER_ENABLED`            |
-| `jobs.heartbeat.isEnabled` | `true`      | `SCHEDULER_HEARTBEAT_ENABLED`  |
-| `jobs.heartbeat.schedule`  | `5 0 * * *` | `SCHEDULER_HEARTBEAT_SCHEDULE` |
+| Key                        | Default      | Environment variable           |
+| -------------------------- | ------------ | ------------------------------ |
+| `isEnabled`                | `true`       | `SCHEDULER_ENABLED`            |
+| `jobs.heartbeat.isEnabled` | `true`       | `SCHEDULER_HEARTBEAT_ENABLED`  |
+| `jobs.heartbeat.schedule`  | `15 0 * * *` | `SCHEDULER_HEARTBEAT_SCHEDULE` |
 
 `isEnabled` is the master switch: when false nothing is scheduled, but every job
 body stays invokable via its server method. Each job adds its own

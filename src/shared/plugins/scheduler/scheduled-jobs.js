@@ -2,6 +2,7 @@ import { collectionExemptions } from '../../common/constants/db-collections.js'
 import { EXEMPTION_STATUS } from '../../../exemptions/constants/exemption.js'
 import { londonToday } from '../../common/helpers/london-today.js'
 import { updateExemptionStatuses } from '../../../exemptions/api/helpers/update-exemption-statuses.js'
+import { formatNumber } from '../../common/helpers/format-number.js'
 
 /**
  * Every scheduled job is declared here.
@@ -20,16 +21,39 @@ import { updateExemptionStatuses } from '../../../exemptions/api/helpers/update-
  * - `run` should resolve to `{ summary }`; the summary is the human-readable
  *   part of the completion log line.
  */
+const HEARTBEAT_STATUS_ORDER = [
+  [EXEMPTION_STATUS.SCHEDULED, 'scheduled'],
+  [EXEMPTION_STATUS.ACTIVE, 'active'],
+  [EXEMPTION_STATUS.EXPIRED, 'expired'],
+  [EXEMPTION_STATUS.DRAFT, 'draft'],
+  [EXEMPTION_STATUS.WITHDRAWN, 'withdrawn']
+]
+
+// Rendered from the known status list rather than from the query result, so a
+// status with no documents reports 0 instead of vanishing from the line.
+const buildHeartbeatSummary = (groupedCounts) => {
+  const countsByStatus = Object.fromEntries(
+    groupedCounts.map(({ _id, count }) => [_id, count])
+  )
+  const total = groupedCounts.reduce((sum, { count }) => sum + count, 0)
+  const breakdown = HEARTBEAT_STATUS_ORDER.map(
+    ([status, label]) => `${formatNumber(countsByStatus[status] ?? 0)} ${label}`
+  ).join('; ')
+
+  return `${formatNumber(total)} exemptions — ${breakdown}`
+}
+
 export const scheduledJobs = [
   {
     name: 'heartbeat',
     methodName: 'runSchedulerHeartbeat',
     run: async (server) => {
-      const activeCount = await server.db
+      const groupedCounts = await server.db
         .collection(collectionExemptions)
-        .countDocuments({ status: EXEMPTION_STATUS.ACTIVE })
+        .aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+        .toArray()
 
-      return { summary: `${activeCount} active exemptions` }
+      return { summary: buildHeartbeatSummary(groupedCounts) }
     }
   },
   {
