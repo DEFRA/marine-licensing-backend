@@ -30,6 +30,19 @@ If you find yourself wanting to widen `RUN_RECORD_TTL_MS`, that is the signal to
 re-home the job. The TTL is a garbage collection horizon, not a lease, and no
 correct job needs it raised.
 
+### Jobs write alongside live traffic
+
+A job that reads a batch and writes it back later is racing every request handler
+touching the same documents, because both run against the same database while the
+API is serving. Filter such writes on the value the read observed rather than on
+`_id` alone, so a user's change made in between wins instead of being silently
+reverted. The exemption-status job does this: its status update matches only
+documents still holding the status its cursor saw, which is what stops it
+overwriting a withdrawal that landed mid-run.
+
+Counts reported in the completion summary are what the job intended to write, so
+in that rare race the summary can name one more document than actually changed.
+
 ## Shutdown
 
 `onPreStop` calls node-cron's `shutdown()`, which stops the timers and then waits

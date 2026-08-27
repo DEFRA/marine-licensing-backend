@@ -13,6 +13,21 @@ const exemption = (status, start, end) => ({
   ]
 })
 
+// Stands in for a concurrent writer landing between the cursor read and the
+// batched write: the supplied work runs immediately before every flush.
+const dbFlushingAfter = (realDb, concurrentWrite) => ({
+  collection: (name) => {
+    const collection = realDb.collection(name)
+    return {
+      find: (...args) => collection.find(...args),
+      bulkWrite: async (operations) => {
+        await concurrentWrite()
+        return collection.bulkWrite(operations)
+      }
+    }
+  }
+})
+
 describe('updateExemptionStatuses', () => {
   let db
   let logger
@@ -90,6 +105,29 @@ describe('updateExemptionStatuses', () => {
     expect(summary).toBe(
       '2 exemptions updated — 0 scheduled; 1 active; 1 expired; 1 unchanged'
     )
+  })
+
+  it('leaves an exemption alone when its status changed between the read and the flush', async () => {
+    await db
+      .collection(collectionExemptions)
+      .insertOne(exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'))
+
+    const withdrawDuringFlush = async () => {
+      await db
+        .collection(collectionExemptions)
+        .updateOne(
+          { projectName: 'ACTIVE-2026-07-01' },
+          { $set: { status: EXEMPTION_STATUS.WITHDRAWN } }
+        )
+    }
+
+    await updateExemptionStatuses(
+      dbFlushingAfter(db, withdrawDuringFlush),
+      TODAY,
+      logger
+    )
+
+    expect(await statusOf('ACTIVE-2026-07-01')).toBe(EXEMPTION_STATUS.WITHDRAWN)
   })
 
   it('warns about an exemption with no activity dates instead of skipping silently', async () => {

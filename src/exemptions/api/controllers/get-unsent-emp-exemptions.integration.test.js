@@ -16,7 +16,7 @@ describe('Get unsent EMP exemptions - integration tests', async () => {
       .deleteMany({})
   })
 
-  test('returns only ACTIVE exemptions sorted by submitted date (newest first)', async () => {
+  test('returns submitted exemptions, excluding drafts, sorted by submitted date (newest first)', async () => {
     const exemptionId1 = new ObjectId()
     const activeExemption1 = createCompleteExemption({
       _id: exemptionId1,

@@ -76,9 +76,12 @@ export const updateExemptionStatuses = async (db, today, logger) => {
 
     counts.updated++
     counts[newStatus]++
+    // Compare-and-swap on the status the cursor observed. A withdrawal that
+    // lands between the read and the flush changes the status, so this write
+    // matches nothing and the withdrawal stands rather than being reverted.
     operations.push({
       updateOne: {
-        filter: { _id: exemption._id },
+        filter: { _id: exemption._id, status: exemption.status },
         update: { $set: { status: newStatus, updatedAt } }
       }
     })
