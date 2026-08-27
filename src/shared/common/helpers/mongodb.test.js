@@ -2,7 +2,8 @@ import { vi } from 'vitest'
 import { Db, MongoClient } from 'mongodb'
 import { LockManager } from 'mongo-locks'
 // mongodb.js must NOT be statically imported — it pulls in logger.js → config.js,
-// which reads MONGO_URI at import time, before vitest-mongodb's beforeAll has set it.
+// which reads MONGO_URI at import time. Imports are kept dynamic so this file
+// controls when that read happens.
 import { addCreateAuditFields, addUpdateAuditFields } from './mongo-audit.js'
 
 vi.mock('./mongo-audit.js')
@@ -195,8 +196,8 @@ describe('#mongoDb', () => {
   let addAuditFields
 
   // Dynamic import needed — mongodb.js pulls in logger.js → config.js, which
-  // reads MONGO_URI at import time. vitest-mongodb's beforeAll sets MONGO_URI,
-  // but that runs after static imports, so we must import dynamically.
+  // reads MONGO_URI at import time, so the import is deferred until the shared
+  // mongod's URI is in the environment.
   beforeAll(async () => {
     const mongodb = await import('./mongodb.js')
     addAuditFields = mongodb.addAuditFields
@@ -205,7 +206,7 @@ describe('#mongoDb', () => {
     server = await createServer()
     await server.initialize()
     // LockManager fires a createIndex during construction that isn't awaited.
-    // Wait for it to settle so it doesn't reject during vitest-mongodb teardown.
+    // Wait for it to settle so it doesn't reject during teardown.
     await server.db
       .collection('mongo-locks')
       .createIndex({ action: 1 }, { unique: true })
@@ -219,11 +220,11 @@ describe('#mongoDb', () => {
     })
 
     test('MongoDb should have expected database name', () => {
-      expect(server.db.databaseName).toBe('marine-licensing-backend')
+      expect(server.db.databaseName).toBe(process.env.MONGO_DATABASE)
     })
 
     test('MongoDb should have expected namespace', () => {
-      expect(server.db.namespace).toBe('marine-licensing-backend')
+      expect(server.db.namespace).toBe(process.env.MONGO_DATABASE)
     })
   })
 
