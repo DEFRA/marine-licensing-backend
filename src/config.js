@@ -37,6 +37,8 @@ const oneMinuteInMS = 60 * 1000
 /** Default minutes before a stuck `in_progress` Dynamics queue item may be reclaimed. */
 const dynamicsQueueClaimStaleDefaultMinutes = 30
 
+const localAwsEndpoint = 'http://localhost:4566'
+
 const config = convict({
   serviceVersion: {
     doc: 'The service version, this variable is injected into your docker container in CDP environments',
@@ -200,7 +202,7 @@ const config = convict({
       endpoint: {
         doc: 'AWS S3 Endpoint',
         format: requiredFromEnvInCdp,
-        default: 'http://localhost:4566',
+        default: localAwsEndpoint,
         env: 'S3_ENDPOINT' // defined globally in CDP
       },
       timeout: {
@@ -214,7 +216,7 @@ const config = convict({
       endpoint: {
         doc: 'AWS SQS Endpoint',
         format: requiredFromEnvInCdp,
-        default: 'http://localhost:4566',
+        default: localAwsEndpoint,
         env: 'SQS_ENDPOINT' // defined globally in CDP
       }
     },
@@ -222,7 +224,7 @@ const config = convict({
       endpoint: {
         doc: 'AWS SNS Endpoint',
         format: requiredFromEnvInCdp,
-        default: 'http://localhost:4566',
+        default: localAwsEndpoint,
         env: 'SNS_ENDPOINT' // defined globally in CDP
       }
     }
