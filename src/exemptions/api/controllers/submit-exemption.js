@@ -210,7 +210,7 @@ export const submitExemptionController = {
 
       if (exemption.publicRegister?.consent === 'yes') {
         publishPublicRegisterSubmittedEvent({
-          exemptionId: id,
+          applicationId: id,
           applicationReference,
           logger: request.logger
         })

@@ -10,13 +10,13 @@ export const PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED = 'submitted'
  * with public register consent. Failures are logged and do not fail submission.
  *
  * @param {{
- *   exemptionId: string,
+ *   applicationId: string,
  *   applicationReference: string,
  *   logger: { error: Function, info?: Function }
  * }} params
  */
 export const publishPublicRegisterSubmittedEvent = async ({
-  exemptionId,
+  applicationId,
   applicationReference,
   logger
 }) => {
@@ -24,7 +24,7 @@ export const publishPublicRegisterSubmittedEvent = async ({
   const message = {
     applicationType: PUBLIC_REGISTER_APPLICATION_TYPE,
     eventType: PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED,
-    exemptionId,
+    applicationId,
     applicationReference
   }
 
@@ -40,7 +40,7 @@ export const publishPublicRegisterSubmittedEvent = async ({
       }
     })
     logger.info?.(
-      { topicArn, exemptionId, applicationReference },
+      { topicArn, applicationId, applicationReference },
       'Published public register submitted event to SNS'
     )
   } catch (error) {

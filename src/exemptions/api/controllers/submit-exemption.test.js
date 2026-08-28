@@ -189,7 +189,7 @@ describe('POST /exemption/submit', () => {
       )
 
       expect(publishPublicRegisterSubmittedEvent).toHaveBeenCalledWith({
-        exemptionId: mockExemptionId,
+        applicationId: mockExemptionId,
         applicationReference: 'EXE/2025/10001',
         logger: mockLogger
       })

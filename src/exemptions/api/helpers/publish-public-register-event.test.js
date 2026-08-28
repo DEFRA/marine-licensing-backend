@@ -32,7 +32,7 @@ describe('publishPublicRegisterSubmittedEvent', () => {
 
   it('publishes the simple payload with SNS message attributes', async () => {
     await publishPublicRegisterSubmittedEvent({
-      exemptionId: '64f1abc',
+      applicationId: '64f1abc',
       applicationReference: 'EXE/2026/00012',
       logger
     })
@@ -43,7 +43,7 @@ describe('publishPublicRegisterSubmittedEvent', () => {
       JSON.stringify({
         applicationType: PUBLIC_REGISTER_APPLICATION_TYPE,
         eventType: PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED,
-        exemptionId: '64f1abc',
+        applicationId: '64f1abc',
         applicationReference: 'EXE/2026/00012'
       }),
       {
@@ -60,7 +60,7 @@ describe('publishPublicRegisterSubmittedEvent', () => {
     expect(logger.info).toHaveBeenCalledWith(
       {
         topicArn,
-        exemptionId: '64f1abc',
+        applicationId: '64f1abc',
         applicationReference: 'EXE/2026/00012'
       },
       'Published public register submitted event to SNS'
@@ -72,7 +72,7 @@ describe('publishPublicRegisterSubmittedEvent', () => {
 
     await expect(
       publishPublicRegisterSubmittedEvent({
-        exemptionId: '64f1abc',
+        applicationId: '64f1abc',
         applicationReference: 'EXE/2026/00012',
         logger
       })
