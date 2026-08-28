@@ -124,7 +124,7 @@ describe('Get projects - integration tests', async () => {
         await makePostRequest({
           server: getServer(),
           url: '/projects',
-          payload: {},
+          payload: { show: 'all-projects' },
           contactId: employeeContactId,
           relationships: employeeRelationships,
           currentRelationshipId: relationshipId

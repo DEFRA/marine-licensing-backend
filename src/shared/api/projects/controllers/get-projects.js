@@ -68,8 +68,11 @@ export const sortByStatus = (a, b) => {
   return aSortIndex - bSortIndex
 }
 
-const getEmployeeProjects = async (db, organisationId, contactId) => {
-  const orgFilter = { 'organisation.id': organisationId }
+const getEmployeeProjects = async (db, organisationId, contactId, show) => {
+  const orgFilter = {
+    'organisation.id': organisationId,
+    ...(show === 'all-projects' ? {} : { contactId })
+  }
 
   const dbStartedAt = Date.now()
   const [empExemptions, empMarineLicences] = await Promise.all([
@@ -145,7 +148,7 @@ export const getProjectsController = {
     }
   },
   handler: async (request, h) => {
-    const { db, auth } = request
+    const { db, auth, payload } = request
     const contactId = getContactId(auth)
     const { organisationId, userRelationshipType } =
       getOrganisationDetailsFromAuthToken(auth)
@@ -156,8 +159,10 @@ export const getProjectsController = {
       const employeeProjects = await getEmployeeProjects(
         db,
         organisationId,
-        contactId
+        contactId,
+        payload?.show
       )
+
       return h
         .response({
           message: 'success',
