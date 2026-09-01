@@ -52,6 +52,7 @@ export const withdrawExemptionController = {
     try {
       const { params, payload } = request
       const { isDynamicsEnabled } = config.get('dynamics')
+      const { isSnsEnabled } = config.get('publicRegister')
 
       const withdrawnAt = new Date()
       const exemption = await updateExemptionRecord({
@@ -78,7 +79,7 @@ export const withdrawExemptionController = {
         })
       }
 
-      if (exemption.publicRegister?.consent === 'yes') {
+      if (isSnsEnabled && exemption.publicRegister?.consent === 'yes') {
         publishPublicRegisterWithdrawnEvent({
           applicationId: params.id,
           applicationReference: exemption.applicationReference,
