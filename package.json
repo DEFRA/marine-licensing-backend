@@ -63,7 +63,7 @@
     "hapi-pulse": "4.0.0",
     "http-status-codes": "2.3.0",
     "https-proxy-agent": "7.0.6",
-    "joi": "18.2.3",
+    "joi": "18.2.5",
     "jsdom": "^29.1.0",
     "migrate-mongo": "14.0.7",
     "mongo-locks": "3.2.0",
