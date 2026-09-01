@@ -14,5 +14,9 @@ export const getProjects = joi.object({
   status: joi
     .array()
     .items(joi.string().valid(...PROJECT_STATUS_VALUES))
+    .single(),
+  type: joi
+    .array()
+    .items(joi.string().valid('exemptions', 'marine-licence'))
     .single()
 })

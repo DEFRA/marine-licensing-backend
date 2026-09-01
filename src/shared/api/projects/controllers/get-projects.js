@@ -10,12 +10,8 @@ import {
 } from '../../../constants/project-status.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
-import { createLogger } from '../../../common/helpers/logging/logger.js'
 import { getProjects } from '../models/get-projects.js'
-import { getStatusFilter } from './utils.js'
-
-const logger = createLogger()
-const logSystem = 'Projects:GetProjects'
+import { getStatusFilter, queryEmployeeCollections } from './utils.js'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
@@ -75,7 +71,7 @@ const getEmployeeProjects = async (
   contactId,
   payload = {}
 ) => {
-  const { show, status } = payload
+  const { show, status, type } = payload
 
   const orgFilter = {
     'organisation.id': organisationId,
@@ -83,21 +79,10 @@ const getEmployeeProjects = async (
     ...(status && getStatusFilter(status))
   }
 
-  const dbStartedAt = Date.now()
-  const [empExemptions, empMarineLicences] = await Promise.all([
-    db
-      .collection(collectionExemptions)
-      .find(orgFilter)
-      .sort({ projectName: 1 })
-      .toArray(),
-    db
-      .collection(collectionMarineLicences)
-      .find(orgFilter)
-      .sort({ projectName: 1 })
-      .toArray()
-  ])
-  logger.info(
-    `${logSystem}: Employee projects database query completed in ${Date.now() - dbStartedAt}ms (exemptions: ${empExemptions.length}, marineLicences: ${empMarineLicences.length})`
+  const [empExemptions, empMarineLicences] = await queryEmployeeCollections(
+    db,
+    orgFilter,
+    type
   )
 
   const contactIds = [

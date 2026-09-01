@@ -126,7 +126,8 @@ describe('getProjectsController', () => {
     it('should accept a fully formed payload', () => {
       const result = payloadValidator.validate({
         show: 'my-projects',
-        status: ['ACTIVE', 'DRAFT']
+        status: ['ACTIVE', 'DRAFT'],
+        type: ['exemptions', 'marine-licence']
       })
 
       expect(result.error).toBeUndefined()
@@ -178,6 +179,34 @@ describe('getProjectsController', () => {
       expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
         'organisation.id': testOrgId
       })
+    })
+
+    it('should only query the exemptions collection when type narrows to exemptions', async () => {
+      mockRequest.payload = { type: ['exemptions'] }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalled()
+      expect(mockMarineLicenceCollection.find).not.toHaveBeenCalled()
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(responseValue.every((p) => p.projectType === 'EXEMPTION')).toBe(
+        true
+      )
+    })
+
+    it('should only query the marine licence collection when type narrows to marine-licence', async () => {
+      mockRequest.payload = { type: ['marine-licence'] }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalled()
+      expect(mockExemptionCollection.find).not.toHaveBeenCalled()
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(
+        responseValue.every((p) => p.projectType === 'MARINE_LICENCE')
+      ).toBe(true)
     })
 
     it('should query citizen collection with contactId and no-org filter', async () => {
