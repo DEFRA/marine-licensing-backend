@@ -173,6 +173,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test marine activity'
       }
 
+      updateMarinePlanningAreas.mockResolvedValueOnce(['South'])
+
       mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
       mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
@@ -188,9 +190,14 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
+      await flushPromises()
+
       expect(publishPublicRegisterSubmittedEvent).toHaveBeenCalledWith({
         applicationId: mockExemptionId,
         applicationReference: 'EXE/2025/10001',
+        projectName: 'Test Marine Project',
+        marinePlanAreas: ['South'],
+        submittedAt: mockDate,
         logger: mockLogger
       })
     })
