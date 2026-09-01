@@ -181,6 +181,7 @@ export const submitExemptionController = {
       const { id, updatedAt, updatedBy, userEmail, userName } = payload
       const { isDynamicsEnabled } = config.get('dynamics')
       const { isEmpEnabled } = config.get('exploreMarinePlanning')
+      const { isSnsEnabled } = config.get('publicRegister')
       const frontEndBaseUrl = config.get('frontEndBaseUrl')
       const declarationAcceptedByContactId = getContactId(request.auth)
       const exemption = await getExemptionFromDb(request, id)
@@ -215,7 +216,7 @@ export const submitExemptionController = {
         isDynamicsEnabled,
         isEmpEnabled,
         shouldPublishToPublicRegister:
-          exemption.publicRegister?.consent === 'yes'
+          isSnsEnabled && exemption.publicRegister?.consent === 'yes'
       })
 
       sendEmailConfirmation({
