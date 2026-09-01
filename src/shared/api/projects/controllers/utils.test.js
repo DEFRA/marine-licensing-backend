@@ -69,14 +69,14 @@ describe('queryEmployeeCollections', () => {
     expect(empMarineLicences).toEqual([{ id: 'licence-1' }])
   })
 
-  test('only queries exemptions when type narrows to exemptions', async () => {
+  test('only queries exemptions when type narrows to exemption', async () => {
     const { db, mockExemptionCollection, mockMarineLicenceCollection } =
       createMockDb([{ id: 'exemption-1' }], [])
 
     const [empExemptions, empMarineLicences] = await queryEmployeeCollections(
       db,
       orgFilter,
-      ['exemptions']
+      ['exemption']
     )
 
     expect(mockExemptionCollection.find).toHaveBeenCalledWith(orgFilter)
@@ -108,7 +108,7 @@ describe('queryEmployeeCollections', () => {
     const [empExemptions, empMarineLicences] = await queryEmployeeCollections(
       db,
       orgFilter,
-      ['exemptions', 'marine-licence']
+      ['exemption', 'marine-licence']
     )
 
     expect(mockExemptionCollection.find).toHaveBeenCalledWith(orgFilter)

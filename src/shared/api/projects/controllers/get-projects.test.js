@@ -127,7 +127,7 @@ describe('getProjectsController', () => {
       const result = payloadValidator.validate({
         show: 'my-projects',
         status: ['ACTIVE', 'DRAFT'],
-        type: ['exemptions', 'marine-licence']
+        type: ['exemption', 'marine-licence']
       })
 
       expect(result.error).toBeUndefined()
@@ -181,8 +181,8 @@ describe('getProjectsController', () => {
       })
     })
 
-    it('should only query the exemptions collection when type narrows to exemptions', async () => {
-      mockRequest.payload = { type: ['exemptions'] }
+    it('should only query the exemptions collection when type narrows to exemption', async () => {
+      mockRequest.payload = { type: ['exemption'] }
 
       await getProjectsController.handler(mockRequest, mockH)
 

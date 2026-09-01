@@ -17,6 +17,6 @@ export const getProjects = joi.object({
     .single(),
   type: joi
     .array()
-    .items(joi.string().valid('exemptions', 'marine-licence'))
+    .items(joi.string().valid('exemption', 'marine-licence'))
     .single()
 })

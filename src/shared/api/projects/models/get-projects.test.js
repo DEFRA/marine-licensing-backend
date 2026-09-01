@@ -95,7 +95,7 @@ describe('getProjects validation schema', () => {
   })
 
   describe('type param validation', () => {
-    it.each(['exemptions', 'marine-licence'])(
+    it.each(['exemption', 'marine-licence'])(
       'should accept and wrap a single type value: %s',
       (singleType) => {
         const result = getProjects.validate({ type: singleType })
@@ -107,11 +107,11 @@ describe('getProjects validation schema', () => {
 
     it('should accept multiple type values', () => {
       const result = getProjects.validate({
-        type: ['exemptions', 'marine-licence']
+        type: ['exemption', 'marine-licence']
       })
 
       expect(result.error).toBeUndefined()
-      expect(result.value.type).toEqual(['exemptions', 'marine-licence'])
+      expect(result.value.type).toEqual(['exemption', 'marine-licence'])
     })
 
     it('should not require type', () => {
@@ -122,10 +122,10 @@ describe('getProjects validation schema', () => {
     })
 
     it('should accept a single type value already wrapped in an array', () => {
-      const result = getProjects.validate({ type: ['exemptions'] })
+      const result = getProjects.validate({ type: ['exemption'] })
 
       expect(result.error).toBeUndefined()
-      expect(result.value.type).toEqual(['exemptions'])
+      expect(result.value.type).toEqual(['exemption'])
     })
 
     it('should reject an unrecognised type value', () => {
@@ -136,7 +136,7 @@ describe('getProjects validation schema', () => {
 
     it('should reject an array containing an unrecognised type value', () => {
       const result = getProjects.validate({
-        type: ['exemptions', 'not-a-valid-value']
+        type: ['exemption', 'not-a-valid-value']
       })
 
       expect(result.error).toBeDefined()

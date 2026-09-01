@@ -20,7 +20,7 @@ export const getStatusFilter = (status) => {
 }
 
 export const queryEmployeeCollections = async (db, orgFilter, type) => {
-  const requestingExemptions = !type || type.includes('exemptions')
+  const requestingExemptions = !type || type.includes('exemption')
   const requestingMarineLicences = !type || type.includes('marine-licence')
 
   const dbStartedAt = Date.now()
