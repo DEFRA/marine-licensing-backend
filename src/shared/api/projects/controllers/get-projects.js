@@ -12,6 +12,7 @@ import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organi
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
 import { getProjects } from '../models/get-projects.js'
+import { getStatusFilter } from './utils.js'
 
 const logger = createLogger()
 const logSystem = 'Projects:GetProjects'
@@ -68,10 +69,18 @@ export const sortByStatus = (a, b) => {
   return aSortIndex - bSortIndex
 }
 
-const getEmployeeProjects = async (db, organisationId, contactId, show) => {
+const getEmployeeProjects = async (
+  db,
+  organisationId,
+  contactId,
+  payload = {}
+) => {
+  const { show, status } = payload
+
   const orgFilter = {
     'organisation.id': organisationId,
-    ...(show === 'all-projects' ? {} : { contactId })
+    ...(show === 'all-projects' ? {} : { contactId }),
+    ...(status && getStatusFilter(status))
   }
 
   const dbStartedAt = Date.now()
@@ -160,7 +169,7 @@ export const getProjectsController = {
         db,
         organisationId,
         contactId,
-        payload?.show
+        payload
       )
 
       return h

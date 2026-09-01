@@ -124,7 +124,10 @@ describe('getProjectsController', () => {
     })
 
     it('should accept a fully formed payload', () => {
-      const result = payloadValidator.validate({ show: 'my-projects' })
+      const result = payloadValidator.validate({
+        show: 'my-projects',
+        status: ['ACTIVE', 'DRAFT']
+      })
 
       expect(result.error).toBeUndefined()
     })

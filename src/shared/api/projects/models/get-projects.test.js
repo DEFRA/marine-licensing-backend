@@ -1,4 +1,6 @@
 import { getProjects } from './get-projects.js'
+import { EXEMPTION_STATUS } from '../../../../exemptions/constants/exemption.js'
+import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
 
 describe('getProjects validation schema', () => {
   describe('empty payload', () => {
@@ -30,6 +32,63 @@ describe('getProjects validation schema', () => {
 
     it('should reject an unrecognised show value', () => {
       const result = getProjects.validate({ show: 'not-a-valid-value' })
+
+      expect(result.error).toBeDefined()
+    })
+  })
+
+  describe('status param validation', () => {
+    it.each([
+      ...Object.values(EXEMPTION_STATUS),
+      ...Object.values(MARINE_LICENCE_STATUS)
+    ])(
+      'should accept and wrap a single status checkbox value: %s',
+      (singleStatus) => {
+        const result = getProjects.validate({ status: singleStatus })
+
+        expect(result.error).toBeUndefined()
+        expect(result.value.status).toEqual([singleStatus])
+      }
+    )
+
+    it('should accept multiple status values from checkboxes', () => {
+      const result = getProjects.validate({
+        status: [EXEMPTION_STATUS.DRAFT, MARINE_LICENCE_STATUS.SUBMITTED]
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.status).toEqual([
+        EXEMPTION_STATUS.DRAFT,
+        MARINE_LICENCE_STATUS.SUBMITTED
+      ])
+    })
+
+    it('should not require status', () => {
+      const result = getProjects.validate({})
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.status).toBeUndefined()
+    })
+
+    it('should accept a single status value already wrapped in an array', () => {
+      const result = getProjects.validate({
+        status: [EXEMPTION_STATUS.ACTIVE]
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.status).toEqual([EXEMPTION_STATUS.ACTIVE])
+    })
+
+    it('should reject an unrecognised status value', () => {
+      const result = getProjects.validate({ status: 'NOT_A_REAL_STATUS' })
+
+      expect(result.error).toBeDefined()
+    })
+
+    it('should reject an array containing an unrecognised status value', () => {
+      const result = getProjects.validate({
+        status: [EXEMPTION_STATUS.DRAFT, 'NOT_A_REAL_STATUS']
+      })
 
       expect(result.error).toBeDefined()
     })
