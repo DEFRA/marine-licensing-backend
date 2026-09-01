@@ -157,6 +157,34 @@ describe('POST /exemption/submit', () => {
   })
 
   describe('Public register SNS publish', () => {
+    beforeEach(() => {
+      config.get.mockImplementation(function (key) {
+        if (key === 'publicRegister') {
+          return { isSnsEnabled: true }
+        }
+        if (key === 'dynamics') {
+          return {
+            isDynamicsEnabled: true,
+            apiKey: 'test-api-key',
+            retryIntervalSeconds: 1,
+            retries: 1
+          }
+        }
+        if (key === 'exploreMarinePlanning') {
+          return {
+            isEmpEnabled: true,
+            apiKey: 'test-api-key',
+            retryIntervalSeconds: 1,
+            retries: 1
+          }
+        }
+        if (key === 'frontEndBaseUrl') {
+          return 'http://localhost:3000'
+        }
+        return {}
+      })
+    })
+
     it('publishes to SNS when publicRegister.consent is yes', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
@@ -201,6 +229,56 @@ describe('POST /exemption/submit', () => {
         contactId: 'test-contact-id',
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+
+      expect(publishPublicRegisterSubmittedEvent).not.toHaveBeenCalled()
+    })
+
+    it('does not publish to SNS when PUBLIC_REGISTER_SNS_ENABLED is false', async () => {
+      config.get.mockImplementation(function (key) {
+        if (key === 'publicRegister') {
+          return { isSnsEnabled: false }
+        }
+        if (key === 'dynamics') {
+          return { isDynamicsEnabled: false, isEmpEnabled: false }
+        }
+        if (key === 'exploreMarinePlanning') {
+          return { isEmpEnabled: false }
+        }
+        if (key === 'frontEndBaseUrl') {
+          return 'http://localhost:3000'
+        }
+        return {}
+      })
+
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'yes' },
         multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [
           {
