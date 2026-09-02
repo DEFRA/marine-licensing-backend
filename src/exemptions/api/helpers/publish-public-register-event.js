@@ -104,8 +104,14 @@ export const publishPublicRegisterEvent = async ({
       }
     })
     logger.info?.(
-      { topicArn, applicationId, applicationReference, eventType },
-      'Published public register event to SNS'
+      {
+        event: {
+          action: 'public-register-publish',
+          outcome: 'success',
+          reference: applicationId
+        }
+      },
+      `Published public register ${eventType} event for ${applicationReference}`
     )
   } catch (error) {
     logger.error(

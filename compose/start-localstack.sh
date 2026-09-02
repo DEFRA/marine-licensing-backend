@@ -59,4 +59,5 @@ aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_li
 aws --endpoint-url=http://localhost:4566 sns subscribe \
   --topic-arn arn:aws:sns:eu-west-2:000000000000:marine_licensing_public_register \
   --protocol sqs \
-  --notification-endpoint arn:aws:sqs:eu-west-2:000000000000:marine_licensing_public_register
+  --notification-endpoint arn:aws:sqs:eu-west-2:000000000000:marine_licensing_public_register \
+  --attributes RawMessageDelivery=true
