@@ -8,6 +8,10 @@ updates:
 
     # Group packages into shared PR
     groups:
+      aws-sdk:
+        patterns:
+          - '@aws-sdk/*'
+
       build:
         patterns:
           - 'autoprefixer'
