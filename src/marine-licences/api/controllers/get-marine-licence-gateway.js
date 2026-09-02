@@ -9,6 +9,9 @@ import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../constants/wat
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { formatPreferredDates } from '../helpers/format-preferred-dates.js'
 import { formatSitesForGateway } from '../helpers/format-sites-for-gateway.js'
+import { formatMarinePlanPoliciesForGateway } from '../helpers/format-marine-plan-policies-for-gateway.js'
+import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
+import { hydrateMarinePlanPolicies } from '../helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
 
 export const getMarineLicenceGatewayController = {
   options: {
@@ -34,6 +37,8 @@ export const getMarineLicenceGatewayController = {
           publicConsultation: 1,
           waterFrameworkDirective: 1,
           siteDetails: 1,
+          marinePlanPolicies: 1,
+          marinePlanPolicyResponses: 1,
           status: 1
         }
       }
@@ -48,6 +53,16 @@ export const getMarineLicenceGatewayController = {
     }
 
     const sites = await formatSitesForGateway(doc.siteDetails)
+    await hydrateMarinePlanPolicies(request.db, doc)
+    const { responses: marinePlanPolicyResponses } =
+      filterCurrentPolicyResponses(
+        doc.marinePlanPolicies,
+        doc.marinePlanPolicyResponses
+      )
+    const marinePlanPolicies = formatMarinePlanPoliciesForGateway(
+      doc.marinePlanPolicies,
+      marinePlanPolicyResponses
+    )
 
     return h
       .response({
@@ -64,7 +79,8 @@ export const getMarineLicenceGatewayController = {
           config.get('backendGatewayUrl'),
           id
         ),
-        sites
+        sites,
+        marinePlanPolicies
       })
       .code(StatusCodes.OK)
   }
