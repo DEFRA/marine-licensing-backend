@@ -1,9 +1,52 @@
 import { vi } from 'vitest'
-import { getStatusFilter, queryEmployeeCollections } from './utils'
+import {
+  getStatusFilter,
+  getUserFilter,
+  queryEmployeeCollections
+} from './utils'
 import {
   collectionExemptions,
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
+
+describe('getUserFilter', () => {
+  const testContactId = 'contact-123-abc'
+  const testUsers = ['9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d']
+
+  test('returns a contactId filter for the current user when show is my-projects', () => {
+    const result = getUserFilter('my-projects', testContactId, testUsers)
+    expect(result).toEqual({ contactId: testContactId })
+  })
+
+  test('returns a contactId filter for the current user when show is missing', () => {
+    const result = getUserFilter(undefined, testContactId, undefined)
+    expect(result).toEqual({ contactId: testContactId })
+  })
+
+  test('returns a filter over the specified users when show is specific-user', () => {
+    const result = getUserFilter('specific-user', testContactId, testUsers)
+    expect(result).toEqual({ contactId: { $in: testUsers } })
+  })
+
+  test('returns a $in filter over multiple specified users', () => {
+    const multipleUsers = [
+      '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+      'e2c1a2a0-6b1a-4c1a-8b1a-6b1a4c1a8b1a'
+    ]
+    const result = getUserFilter('specific-user', testContactId, multipleUsers)
+    expect(result).toEqual({ contactId: { $in: multipleUsers } })
+  })
+
+  test('returns no filter when show is specific-user but no user is checked', () => {
+    const result = getUserFilter('specific-user', testContactId, undefined)
+    expect(result).toEqual({})
+  })
+
+  test('returns no filter when show is specific-user and user is an empty array', () => {
+    const result = getUserFilter('specific-user', testContactId, [])
+    expect(result).toEqual({})
+  })
+})
 
 describe('getStatusFilter', async () => {
   test('handle no status', async () => {

@@ -184,6 +184,39 @@ describe('getProjectsController', () => {
       })
     })
 
+    it('should query employee collection scoped to the specified user(s) when scope is specific-user', async () => {
+      const otherContactId = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+      const anotherContactId = 'e2c1a2a0-6b1a-4c1a-8b1a-6b1a4c1a8b1a'
+      mockRequest.payload = {
+        show: 'specific-user',
+        user: [otherContactId, anotherContactId]
+      }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: { $in: [otherContactId, anotherContactId] }
+      })
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: { $in: [otherContactId, anotherContactId] }
+      })
+    })
+
+    it('should query employee collection with organisation filter only when scope is specific-user but no user is checked', async () => {
+      mockRequest.payload = { show: 'specific-user' }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId
+      })
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId
+      })
+    })
+
     it('should only query the exemptions collection when type narrows to exemption', async () => {
       mockRequest.payload = { type: ['exemption'] }
 

@@ -13,7 +13,7 @@ export const getProjects = joi.object({
   show: joi.string().valid('all-projects', 'my-projects', 'specific-user'),
   user: joi.when('show', {
     is: 'specific-user',
-    then: joi.array().items(joi.string().uuid()).single().min(1).required(),
+    then: joi.array().items(joi.string().uuid()).single(),
     otherwise: joi.forbidden()
   }),
   status: joi

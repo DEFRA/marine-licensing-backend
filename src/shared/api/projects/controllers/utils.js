@@ -7,6 +7,14 @@ import { createLogger } from '../../../common/helpers/logging/logger.js'
 const logger = createLogger()
 const logSystem = 'Projects:GetProjects'
 
+export const getUserFilter = (show, contactId, user) => {
+  if (show === 'specific-user') {
+    return user?.length ? { contactId: { $in: user } } : {}
+  }
+
+  return { contactId }
+}
+
 export const getStatusFilter = (status) => {
   if (!status) {
     return {}

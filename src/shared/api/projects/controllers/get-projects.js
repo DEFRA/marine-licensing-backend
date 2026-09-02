@@ -11,7 +11,11 @@ import {
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 import { getProjects } from '../models/get-projects.js'
-import { getStatusFilter, queryEmployeeCollections } from './utils.js'
+import {
+  getStatusFilter,
+  getUserFilter,
+  queryEmployeeCollections
+} from './utils.js'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
@@ -71,11 +75,11 @@ const getEmployeeProjects = async (
   contactId,
   payload = {}
 ) => {
-  const { show, status, type } = payload
+  const { show, status, type, user } = payload
 
   const orgFilter = {
     'organisation.id': organisationId,
-    ...(show === 'all-projects' ? {} : { contactId }),
+    ...(show === 'all-projects' ? {} : getUserFilter(show, contactId, user)),
     ...(status && getStatusFilter(status))
   }
 

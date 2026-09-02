@@ -161,8 +161,34 @@ describe('Get projects - integration tests', async () => {
       expect(statusCode).toBe(400)
     })
 
-    test('rejects specific-user scope when user is missing', async () => {
-      const { statusCode } = await makePostRequest({
+    test('returns all organisation projects when specific-user scope has no user checked', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenceId = new ObjectId()
+
+      const myExemption = createCompleteExemption({
+        _id: exemptionId,
+        contactId: employeeContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'My Exemption',
+        status: EXEMPTION_STATUS.DRAFT
+      })
+
+      const colleagueMarineLicence = createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId: colleagueContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'Colleague Marine Licence',
+        status: MARINE_LICENCE_STATUS.SUBMITTED
+      })
+
+      await globalThis.mockMongo
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .insertOne(colleagueMarineLicence)
+
+      const { statusCode, body } = await makePostRequest({
         server: getServer(),
         url: '/projects',
         payload: { show: 'specific-user' },
@@ -171,7 +197,50 @@ describe('Get projects - integration tests', async () => {
         currentRelationshipId: relationshipId
       })
 
-      expect(statusCode).toBe(400)
+      expect(statusCode).toBe(200)
+      expect(body).toHaveLength(2)
+    })
+
+    test('returns only the specified user projects when show is specific-user', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenceId = new ObjectId()
+
+      const myExemption = createCompleteExemption({
+        _id: exemptionId,
+        contactId: employeeContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'My Exemption',
+        status: EXEMPTION_STATUS.DRAFT
+      })
+
+      const colleagueMarineLicence = createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId: colleagueContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'Colleague Marine Licence',
+        status: MARINE_LICENCE_STATUS.SUBMITTED
+      })
+
+      await globalThis.mockMongo
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .insertOne(colleagueMarineLicence)
+
+      const { statusCode, body } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'specific-user', user: colleagueContactId },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(200)
+      expect(body).toHaveLength(1)
+      expect(body[0].projectName).toBe('Colleague Marine Licence')
+      expect(body[0].contactId).toBe(colleagueContactId)
     })
 
     test('returns only organisation projects, not other orgs', async () => {

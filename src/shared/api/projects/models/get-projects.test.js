@@ -61,19 +61,21 @@ describe('getProjects validation schema', () => {
       expect(result.value.user).toEqual([VALID_UUID, OTHER_VALID_UUID])
     })
 
-    it('should reject specific-user without a user', () => {
+    it('should accept specific-user without a user (none checked)', () => {
       const result = getProjects.validate({ show: 'specific-user' })
 
-      expect(result.error).toBeDefined()
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toBeUndefined()
     })
 
-    it('should reject specific-user with an empty user array', () => {
+    it('should accept specific-user with an empty user array', () => {
       const result = getProjects.validate({
         show: 'specific-user',
         user: []
       })
 
-      expect(result.error).toBeDefined()
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toEqual([])
     })
 
     it('should reject an array containing an unrecognised user value', () => {
