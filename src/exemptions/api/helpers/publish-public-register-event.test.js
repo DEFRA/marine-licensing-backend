@@ -24,7 +24,6 @@ describe('publishPublicRegisterSubmittedEvent', () => {
   let logger
 
   beforeEach(() => {
-    vi.clearAllMocks()
     config.get.mockReturnValue(topicArn)
     logger = { info: vi.fn(), error: vi.fn() }
     publishMessage.mockResolvedValue({ MessageId: 'msg-1' })
@@ -59,11 +58,13 @@ describe('publishPublicRegisterSubmittedEvent', () => {
     )
     expect(logger.info).toHaveBeenCalledWith(
       {
-        topicArn,
-        applicationId: '64f1abc',
-        applicationReference: 'EXE/2026/00012'
+        event: {
+          action: 'public-register-publish',
+          outcome: 'success',
+          reference: '64f1abc'
+        }
       },
-      'Published public register submitted event to SNS'
+      'Published public register submitted event for EXE/2026/00012'
     )
   })
 
