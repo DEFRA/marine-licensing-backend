@@ -129,6 +129,17 @@ describe('getProjectsController', () => {
 
       expect(result.error).toBeUndefined()
     })
+
+    it('should accept a fully formed payload for a specific user', () => {
+      const result = payloadValidator.validate({
+        show: 'specific-user',
+        user: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
+        status: ['ACTIVE', 'DRAFT'],
+        type: ['exemption', 'marine-licence']
+      })
+
+      expect(result.error).toBeUndefined()
+    })
   })
 
   describe('handler', () => {

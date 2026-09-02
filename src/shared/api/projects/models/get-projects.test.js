@@ -37,6 +37,70 @@ describe('getProjects validation schema', () => {
     })
   })
 
+  describe('user param validation', () => {
+    const VALID_UUID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+    const OTHER_VALID_UUID = 'e2c1a2a0-6b1a-4c1a-8b1a-6b1a4c1a8b1a'
+
+    it('should accept a single value', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: VALID_UUID
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toEqual([VALID_UUID])
+    })
+
+    it('should accept multiple user values from checkboxes', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: [VALID_UUID, OTHER_VALID_UUID]
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toEqual([VALID_UUID, OTHER_VALID_UUID])
+    })
+
+    it('should reject specific-user without a user', () => {
+      const result = getProjects.validate({ show: 'specific-user' })
+
+      expect(result.error).toBeDefined()
+    })
+
+    it('should reject specific-user with an empty user array', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: []
+      })
+
+      expect(result.error).toBeDefined()
+    })
+
+    it('should reject an array containing an unrecognised user value', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: [VALID_UUID, 'not-a-uuid']
+      })
+
+      expect(result.error).toBeDefined()
+    })
+
+    it.each(['all-projects', 'my-projects'])(
+      'should reject a user field when show: %s',
+      (show) => {
+        const result = getProjects.validate({ show, user: VALID_UUID })
+
+        expect(result.error).toBeDefined()
+      }
+    )
+
+    it('should reject a user field when show is not set', () => {
+      const result = getProjects.validate({ user: VALID_UUID })
+
+      expect(result.error).toBeDefined()
+    })
+  })
+
   describe('status param validation', () => {
     it.each([
       ...Object.values(EXEMPTION_STATUS),

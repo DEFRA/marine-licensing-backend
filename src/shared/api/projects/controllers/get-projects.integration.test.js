@@ -148,6 +148,32 @@ describe('Get projects - integration tests', async () => {
       expect(colleagueProject.contactId).toBe(colleagueContactId)
     })
 
+    test('rejects specific-user scope when user is not a valid uuid', async () => {
+      const { statusCode } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'specific-user', user: 'not-a-uuid' },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(400)
+    })
+
+    test('rejects specific-user scope when user is missing', async () => {
+      const { statusCode } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'specific-user' },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(400)
+    })
+
     test('returns only organisation projects, not other orgs', async () => {
       const exemptionId = new ObjectId()
       const marineLicenceId = new ObjectId()

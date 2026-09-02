@@ -10,7 +10,12 @@ const PROJECT_STATUS_VALUES = [
 ]
 
 export const getProjects = joi.object({
-  show: joi.string().valid('all-projects', 'my-projects'),
+  show: joi.string().valid('all-projects', 'my-projects', 'specific-user'),
+  user: joi.when('show', {
+    is: 'specific-user',
+    then: joi.array().items(joi.string().uuid()).single().min(1).required(),
+    otherwise: joi.forbidden()
+  }),
   status: joi
     .array()
     .items(joi.string().valid(...PROJECT_STATUS_VALUES))
