@@ -161,7 +161,8 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           documentUrl: `${backendGatewayUrl}/public/marine-licence/${mockId}/water-framework-directive/download-url`,
           fileName: 'wfd-assessment.docx'
         },
-        sites: []
+        sites: [],
+        marinePlanPolicies: []
       })
     })
 
@@ -290,8 +291,61 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           documentUrl: null,
           fileName: null
         },
-        sites: []
+        sites: [],
+        marinePlanPolicies: []
       })
+    })
+
+    it('should include marine plan policies with applicant answers for Dynamics', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Pontoon installation',
+        status: MARINE_LICENCE_STATUS.SUBMITTED,
+        marinePlanPolicies: [
+          {
+            policyCode: 'SW-CC-1',
+            sector: 'Cross-cutting',
+            policy: '<p>Proposals that conserve habitats will be supported.</p>'
+          },
+          {
+            policyCode: 'SW-AQ-2',
+            sector: 'Aquaculture',
+            policy: '<p>Aquaculture policy statement.</p>'
+          }
+        ],
+        marinePlanPolicyResponses: {
+          'SW-CC-1':
+            'This project will not affect any habitats that provide flood defence services.',
+          'SW-AQ-2': '',
+          'OLD-1': 'stale answer from a previous policy set'
+        }
+      })
+
+      await getMarineLicenceGatewayController.handler(
+        mockRequest(),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          marinePlanPolicies: [
+            {
+              policyCode: 'SW-CC-1',
+              policyInformation:
+                '<p>Proposals that conserve habitats will be supported.</p>',
+              applicantAnswer:
+                'This project will not affect any habitats that provide flood defence services.'
+            },
+            {
+              policyCode: 'SW-AQ-2',
+              policyInformation: '<p>Aquaculture policy statement.</p>',
+              applicantAnswer: ''
+            }
+          ]
+        })
+      )
     })
   })
 })
