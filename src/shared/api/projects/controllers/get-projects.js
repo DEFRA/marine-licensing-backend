@@ -12,6 +12,10 @@ import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organi
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 import { getProjects } from '../models/get-projects.js'
 import { getStatusFilter, queryEmployeeCollections } from './utils.js'
+import { createLogger } from '../../../common/helpers/logging/logger.js'
+
+const logger = createLogger()
+const logSystem = 'Projects:GetProjects'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
