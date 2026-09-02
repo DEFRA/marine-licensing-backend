@@ -2,7 +2,7 @@ import { getProjectsController } from './controllers/get-projects.js'
 
 export const projects = [
   {
-    method: 'GET',
+    method: 'POST',
     path: '/projects',
     ...getProjectsController
   }

@@ -114,8 +114,59 @@ describe('getProjectsController', () => {
     vi.spyOn(logger, 'info')
   })
 
+  describe('payload validation', () => {
+    const payloadValidator = getProjectsController.options.validate.payload
+
+    it('should accept an empty payload', () => {
+      const result = payloadValidator.validate({})
+
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should accept a fully formed payload', () => {
+      const result = payloadValidator.validate({ show: 'my-projects' })
+
+      expect(result.error).toBeUndefined()
+    })
+  })
+
   describe('handler', () => {
-    it('should query employee collection with organisation filter', async () => {
+    it('should query employee collection scoped to own projects when show value is missing', async () => {
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /^Projects:GetProjects: Employee projects database query completed in \d+ms \(exemptions: 2, marineLicences: 1\)$/
+        )
+      )
+    })
+
+    it('should query employee collection scoped to own projects', async () => {
+      mockRequest.payload = { show: 'my-projects' }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+    })
+
+    it('should query employee collection with organisation filter only when scope is is all-projects', async () => {
+      mockRequest.payload = { show: 'all-projects' }
+
       await getProjectsController.handler(mockRequest, mockH)
 
       expect(mockExemptionCollection.find).toHaveBeenCalledWith({
@@ -124,11 +175,6 @@ describe('getProjectsController', () => {
       expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
         'organisation.id': testOrgId
       })
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /^Projects:GetProjects: Employee projects database query completed in \d+ms \(exemptions: 2, marineLicences: 1\)$/
-        )
-      )
     })
 
     it('should query citizen collection with contactId and no-org filter', async () => {
