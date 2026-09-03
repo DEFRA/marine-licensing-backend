@@ -274,6 +274,76 @@ describe('POST /exemption/{id}/withdraw', () => {
     expect(publishPublicRegisterWithdrawnEvent).not.toHaveBeenCalled()
   })
 
+  it('does not publish a withdrawn event when publicRegister field is missing from exemption', async () => {
+    const { mockMongo, mockHandler } = global
+
+    const mockPayload = {
+      updatedAt: new Date(),
+      updatedBy: 'user123'
+    }
+
+    const mockExemption = {
+      id: 'test',
+      applicationReference: 'EXE/2026/00012',
+      projectName: 'South coast sea samples'
+    }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOneAndUpdate: vi.fn().mockResolvedValue(mockExemption)
+      }
+    })
+
+    const mockRequest = {
+      db: mockMongo,
+      params: { id: mockId },
+      payload: mockPayload,
+      logger: { info: vi.fn(), error: vi.fn() }
+    }
+
+    await withdrawExemptionController.handler(mockRequest, mockHandler)
+
+    expect(publishPublicRegisterWithdrawnEvent).not.toHaveBeenCalled()
+  })
+
+  it('uses empty array for marinePlanAreas when exemption has no marinePlanAreas', async () => {
+    const { mockMongo, mockHandler } = global
+
+    const mockPayload = {
+      updatedAt: new Date(),
+      updatedBy: 'user123'
+    }
+
+    const mockExemption = {
+      id: 'test',
+      applicationReference: 'EXE/2026/00012',
+      projectName: 'South coast sea samples',
+      submittedAt: new Date('2026-03-18T10:00:00.000Z'),
+      publicRegister: { consent: 'yes' }
+    }
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOneAndUpdate: vi.fn().mockResolvedValue(mockExemption)
+      }
+    })
+
+    const mockRequest = {
+      db: mockMongo,
+      params: { id: mockId },
+      payload: mockPayload,
+      logger: { info: vi.fn(), error: vi.fn() }
+    }
+
+    await withdrawExemptionController.handler(mockRequest, mockHandler)
+
+    expect(publishPublicRegisterWithdrawnEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        marinePlanAreas: []
+      })
+    )
+  })
+
   it('does not publish a withdrawn event when PUBLIC_REGISTER_SNS_ENABLED is false', async () => {
     config.get.mockImplementation(function (key) {
       if (key === 'publicRegister') {

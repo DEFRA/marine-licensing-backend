@@ -160,6 +160,51 @@ describe('publish public register events', () => {
     })
   })
 
+  describe('buildPublicRegisterSubmittedPayload - string submittedAt', () => {
+    it('passes through a string submittedAt without conversion', () => {
+      const result = buildPublicRegisterSubmittedPayload({
+        applicationId: '64f1abc',
+        applicationReference: 'EXE/2026/00012',
+        projectName: 'Test project',
+        submittedAt: '2026-03-18T10:00:00.000Z'
+      })
+
+      expect(result.dateSubmitted).toBe('2026-03-18T10:00:00.000Z')
+    })
+  })
+
+  describe('buildPublicRegisterWithdrawnPayload - Date submittedAt', () => {
+    it('converts a Date submittedAt to ISO string', () => {
+      const submittedAt = new Date('2026-03-18T10:00:00.000Z')
+      const result = buildPublicRegisterWithdrawnPayload({
+        applicationId: '64f1abc',
+        applicationReference: 'EXE/2026/00012',
+        projectName: 'Test project',
+        submittedAt
+      })
+
+      expect(result.dateSubmitted).toBe(submittedAt.toISOString())
+    })
+  })
+
+  describe('publishPublicRegisterEvent - logger without info', () => {
+    it('does not throw when logger has no info method', async () => {
+      const loggerWithoutInfo = { error: vi.fn() }
+
+      await expect(
+        publishPublicRegisterEvent({
+          applicationType: PUBLIC_REGISTER_APPLICATION_TYPE,
+          eventType: PUBLIC_REGISTER_EVENT_TYPE_SUBMITTED,
+          applicationId: '64f1abc',
+          applicationReference: 'EXE/2026/00012',
+          logger: loggerWithoutInfo
+        })
+      ).resolves.toBeUndefined()
+
+      expect(publishMessage).toHaveBeenCalled()
+    })
+  })
+
   describe('publishPublicRegisterEvent', () => {
     it('logs and does not throw when SNS publish fails', async () => {
       publishMessage.mockRejectedValueOnce(new Error('SNS unavailable'))
