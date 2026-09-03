@@ -141,7 +141,7 @@ export const getProjectsController = {
     if (isEmployee && organisationId) {
       const [projects, users] = await Promise.all([
         getEmployeeProjects(db, organisationId, contactId, payload),
-        !payload?.skipUsers
+        payload?.skipUsers
           ? Promise.resolve({})
           : getOrganisationUserNames(db, organisationId)
       ])
