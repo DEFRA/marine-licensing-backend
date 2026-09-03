@@ -77,7 +77,8 @@ describe('Dynamics Processor integration', () => {
         warn: vi.fn(),
         error: vi.fn()
       },
-      db
+      db,
+      mongoClient: globalThis.mockMongoClient
     }
 
     mockGetDynamicsAccessToken.mockReset()
@@ -255,6 +256,54 @@ describe('Dynamics Processor integration', () => {
         status: REQUEST_QUEUE_STATUS.FAILED
       })
       expect(dead).not.toHaveProperty('_sourceCollection')
+    })
+
+    it('should leave the item in the source queue and not in the dead letter queue when the delete fails mid-move', async () => {
+      const db = globalThis.mockMongo
+      const _id = new ObjectId()
+      const base = {
+        _id,
+        ...queueDocBase,
+        type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+        applicationReferenceNumber: 'EXE/DL/ROLLBACK',
+        status: REQUEST_QUEUE_STATUS.FAILED
+      }
+      await db.collection(EXEMPTION_QUEUE).insertOne({ ...base, retries: 2 })
+
+      // The dead letter move writes two collections; failing the second
+      // write must roll back the first, or the item exists in both queues.
+      const dbWithFailingDelete = {
+        collection: (name) => {
+          const real = db.collection(name)
+          if (name !== EXEMPTION_QUEUE) {
+            return real
+          }
+          return {
+            insertOne: (...args) => real.insertOne(...args),
+            updateOne: (...args) => real.updateOne(...args),
+            findOne: (...args) => real.findOne(...args),
+            deleteOne: () =>
+              Promise.reject(new Error('simulated delete failure'))
+          }
+        }
+      }
+
+      await expect(
+        dynamicsModule.handleDynamicsQueueItemFailure(
+          { ...mockServer, db: dbWithFailingDelete },
+          {
+            ...base,
+            retries: 2,
+            _sourceCollection: EXEMPTION_QUEUE
+          }
+        )
+      ).rejects.toThrow('simulated delete failure')
+
+      const dead = await db.collection(EXEMPTION_QUEUE_FAILED).findOne({ _id })
+      expect(dead).toBeNull()
+
+      const main = await db.collection(EXEMPTION_QUEUE).findOne({ _id })
+      expect(main).toMatchObject({ retries: 2 })
     })
 
     it('should move marine licence item to marine licence dead letter queue after max retries', async () => {

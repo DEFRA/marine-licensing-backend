@@ -13,6 +13,7 @@ import {
   collectionMarineLicenceDynamicsQueueFailed
 } from '../../constants/db-collections.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
+import { withMongoTransaction } from '../mongo-transactions.js'
 
 /** Bounds work per `processDynamicsQueue` run when the queue is large (avoids overlap with the polling interval). */
 export const DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN = 50
@@ -120,16 +121,24 @@ export const handleDynamicsQueueItemFailure = async (server, item) => {
 
   if (retries >= maxRetries) {
     const { _sourceCollection, ...itemToStore } = item
-    await server.db.collection(failedCollection).insertOne({
-      ...itemToStore,
-      retries: maxRetries,
-      status: REQUEST_QUEUE_STATUS.FAILED,
-      updatedAt: new Date()
-    })
+    // Insert-then-delete across two collections: without a transaction a
+    // crash between the writes leaves the item in both queues, and the
+    // duplicate _id blocks every later move attempt.
+    await withMongoTransaction(server.mongoClient, async (session) => {
+      await server.db.collection(failedCollection).insertOne(
+        {
+          ...itemToStore,
+          retries: maxRetries,
+          status: REQUEST_QUEUE_STATUS.FAILED,
+          updatedAt: new Date()
+        },
+        { session }
+      )
 
-    await server.db
-      .collection(item._sourceCollection)
-      .deleteOne({ _id: item._id })
+      await server.db
+        .collection(item._sourceCollection)
+        .deleteOne({ _id: item._id }, { session })
+    })
 
     server.logger.error(
       `Moved item ${item._id} for application ${item.applicationReferenceNumber} to dead letter queue after ${retries} retries`
