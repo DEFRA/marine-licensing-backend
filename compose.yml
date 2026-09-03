@@ -35,8 +35,7 @@ services:
     # matching the replica sets in all deployed environments. The healthcheck
     # initiates the set: it retries until mongod is up, rs.initiate() runs
     # once, and rs.status() succeeds thereafter, so healthy implies the set
-    # is initiated and writable. Do not enable auth here - a replica set
-    # with auth requires a shared keyfile, which is overkill for local dev.
+    # is initiated and writable.
     image: mongo:7.0.24
     command: ['--replSet', 'rs0', '--bind_ip_all']
     networks:
