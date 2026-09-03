@@ -33,7 +33,7 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "dependencies": {
-    "@arcgis/core": "5.1.17",
+    "@arcgis/core": "5.1.20",
     "@aws-sdk/client-s3": "^3.1117.0",
     "@aws-sdk/client-sns": "3.1117.0",
     "@aws-sdk/client-sqs": "3.1117.0",
