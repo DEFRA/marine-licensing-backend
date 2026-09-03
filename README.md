@@ -84,8 +84,26 @@ can then either run `nvm use` or `n auto` to install the required version.
 MongoDB `>= 7.0` is required. The nearest-area policy fallback (see
 [docs/nearest-marine-plan-area-fallback.md](./docs/nearest-marine-plan-area-fallback.md))
 uses database-level `$documents` aggregation with `$geoNear` inside `$lookup`,
-which older servers do not support. The in-memory test server is pinned to a
-matching version in `.vite/mongo-memory-server.js`.
+which older servers do not support.
+
+The composed MongoDB runs as a single-member replica set (`rs0`) so that
+multi-document transactions work locally, matching the replica sets in all
+deployed environments. The in-memory test server is also a single-member
+replica set, with its binary version pinned in
+`.vite/mongo-memory-server.js` to match the `mongo` image version in
+`compose.yml`.
+
+The replica set advertises its member as `mongodb:27017`, which only
+resolves inside the Docker network. Clients running on the host (mongosh,
+MongoDB Compass, `npm run dev`, `npm run migrate:status`) must skip topology
+discovery by connecting with:
+
+    mongodb://localhost:27017/?directConnection=true
+
+The replica set is initiated automatically by the `mongodb` service
+healthcheck. Existing `mongodb-data` volumes survive the upgrade; if a local
+instance ever ends up in a broken replica-set state, reset it with
+`docker compose down -v` (this deletes local data).
 
 ## Local development
 
