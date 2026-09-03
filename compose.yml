@@ -31,7 +31,14 @@ services:
       - cdp-tenant
 
   mongodb:
+    # Single-member replica set so local dev supports Mongo transactions,
+    # matching the replica sets in all deployed environments. The healthcheck
+    # initiates the set: it retries until mongod is up, rs.initiate() runs
+    # once, and rs.status() succeeds thereafter, so healthy implies the set
+    # is initiated and writable. Do not enable auth here - a replica set
+    # with auth requires a shared keyfile, which is overkill for local dev.
     image: mongo:7.0.24
+    command: ['--replSet', 'rs0', '--bind_ip_all']
     networks:
       - cdp-tenant
     ports:
@@ -39,6 +46,20 @@ services:
     volumes:
       - mongodb-data:/data
     restart: always
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mongosh',
+          '--quiet',
+          '--eval',
+          "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}).ok }"
+        ]
+      interval: 5s
+      timeout: 30s
+      start_period: 5s
+      start_interval: 1s
+      retries: 30
 
   ################################################################################
 
@@ -96,7 +117,7 @@ services:
       localstack:
         condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
       marine-licensing-api-stub:
         condition: service_healthy
     env_file:
