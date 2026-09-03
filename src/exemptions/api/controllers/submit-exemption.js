@@ -229,6 +229,14 @@ export const submitExemptionController = {
         projectType: 'exemption'
       })
 
+      if (isSnsEnabled && exemption.publicRegister?.consent === 'yes') {
+        publishPublicRegisterSubmittedEvent({
+          applicationId: id,
+          applicationReference,
+          logger: request.logger
+        })
+      }
+
       return h
         .response({
           message: 'success',
