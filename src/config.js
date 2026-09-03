@@ -9,6 +9,7 @@ import {
 import { convictValidateCronExpression } from './shared/common/helpers/convict/validate-scheduler.js'
 import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
 import { masSchema } from './config/mas.js'
+import { publicRegisterSchema } from './config/public-register.js'
 import { schedulerSchema } from './config/scheduler.js'
 import { configDotenv } from 'dotenv'
 
@@ -35,6 +36,8 @@ const oneMinuteInMS = 60 * 1000
 
 /** Default minutes before a stuck `in_progress` Dynamics queue item may be reclaimed. */
 const dynamicsQueueClaimStaleDefaultMinutes = 30
+
+const localAwsEndpoint = 'http://localhost:4566'
 
 const config = convict({
   serviceVersion: {
@@ -199,7 +202,7 @@ const config = convict({
       endpoint: {
         doc: 'AWS S3 Endpoint',
         format: requiredFromEnvInCdp,
-        default: 'http://localhost:4566',
+        default: localAwsEndpoint,
         env: 'S3_ENDPOINT' // defined globally in CDP
       },
       timeout: {
@@ -213,8 +216,16 @@ const config = convict({
       endpoint: {
         doc: 'AWS SQS Endpoint',
         format: requiredFromEnvInCdp,
-        default: 'http://localhost:4566',
+        default: localAwsEndpoint,
         env: 'SQS_ENDPOINT' // defined globally in CDP
+      }
+    },
+    sns: {
+      endpoint: {
+        doc: 'AWS SNS Endpoint',
+        format: requiredFromEnvInCdp,
+        default: localAwsEndpoint,
+        env: 'SNS_ENDPOINT' // defined globally in CDP
       }
     }
   },
@@ -481,6 +492,7 @@ const config = convict({
   },
   marinePlanPolicies: marinePlanPoliciesSchema,
   mas: masSchema,
+  publicRegister: publicRegisterSchema,
   scheduler: schedulerSchema,
   iat: {
     inFlightTtlMs: {
