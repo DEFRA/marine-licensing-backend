@@ -22,6 +22,7 @@ import {
   DYNAMICS_REQUEST_ACTIONS,
   EMP_REQUEST_ACTIONS
 } from '../../../shared/common/constants/request-queue.js'
+import { publishPublicRegisterSubmittedEvent } from '../helpers/publish-public-register-event.js'
 
 const checkForIncompleteTasks = (exemption) => {
   const taskList = createTaskList(exemption)
@@ -168,6 +169,7 @@ export const submitExemptionController = {
       const { id, updatedAt, updatedBy, userEmail, userName } = payload
       const { isDynamicsEnabled } = config.get('dynamics')
       const { isEmpEnabled } = config.get('exploreMarinePlanning')
+      const { isSnsEnabled } = config.get('publicRegister')
       const frontEndBaseUrl = config.get('frontEndBaseUrl')
       const declarationAcceptedByContactId = getContactId(request.auth)
       const exemption = await getExemptionFromDb(request, id)
@@ -210,6 +212,14 @@ export const submitExemptionController = {
         viewDetailsUrl: `${frontEndBaseUrl}/exemption/view-details/${id}`,
         projectType: 'exemption'
       })
+
+      if (isSnsEnabled && exemption.publicRegister?.consent === 'yes') {
+        publishPublicRegisterSubmittedEvent({
+          applicationId: id,
+          applicationReference,
+          logger: request.logger
+        })
+      }
 
       return h
         .response({
