@@ -8,7 +8,7 @@ describe('getProjects validation schema', () => {
       const result = getProjects.validate({})
 
       expect(result.error).toBeUndefined()
-      expect(result.value).toEqual({})
+      expect(result.value).toEqual({ skipUsers: false })
     })
   })
 
@@ -205,6 +205,30 @@ describe('getProjects validation schema', () => {
         type: ['exemption', 'not-a-valid-value']
       })
 
+      expect(result.error).toBeDefined()
+    })
+  })
+
+  describe('skipUsers validation', () => {
+    it('should default to false when omitted', () => {
+      const result = getProjects.validate({})
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.skipUsers).toBe(false)
+    })
+
+    it.each([true, false])(
+      'should accept an explicit boolean: %s',
+      (skipUsers) => {
+        const result = getProjects.validate({ skipUsers })
+
+        expect(result.error).toBeUndefined()
+        expect(result.value.skipUsers).toBe(skipUsers)
+      }
+    )
+
+    it('should reject a non-boolean value', () => {
+      const result = getProjects.validate({ skipUsers: 'yes' })
       expect(result.error).toBeDefined()
     })
   })

@@ -3,6 +3,7 @@ import {
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
 import { createLogger } from '../../../common/helpers/logging/logger.js'
+import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 
 const logger = createLogger()
 const logSystem = 'Projects:GetProjects'
@@ -25,6 +26,31 @@ export const getStatusFilter = (status) => {
       $in: status
     }
   }
+}
+
+export const getOrganisationContactIds = async (db, organisationId) => {
+  const orgFilter = { 'organisation.id': organisationId }
+  const dbStartedAt = Date.now()
+
+  const [exemptionContactIds, marineLicenceContactIds] = await Promise.all([
+    db.collection(collectionExemptions).distinct('contactId', orgFilter),
+    db.collection(collectionMarineLicences).distinct('contactId', orgFilter)
+  ])
+
+  logger.info(
+    `${logSystem}: Organisation contactId query completed in ${Date.now() - dbStartedAt}ms`
+  )
+
+  return [
+    ...new Set(
+      [...exemptionContactIds, ...marineLicenceContactIds].filter(Boolean)
+    )
+  ]
+}
+
+export const getOrganisationUserNames = async (db, organisationId) => {
+  const contactIds = await getOrganisationContactIds(db, organisationId)
+  return batchGetContactNames(contactIds)
 }
 
 export const queryEmployeeCollections = async (db, orgFilter, type) => {

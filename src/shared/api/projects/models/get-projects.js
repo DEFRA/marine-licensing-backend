@@ -23,5 +23,6 @@ export const getProjects = joi.object({
   type: joi
     .array()
     .items(joi.string().valid('exemption', 'marine-licence'))
-    .single()
+    .single(),
+  skipUsers: joi.boolean().default(false)
 })

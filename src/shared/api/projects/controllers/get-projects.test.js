@@ -51,7 +51,8 @@ describe('getProjectsController', () => {
         sort: vi.fn().mockReturnValue({
           toArray: vi.fn().mockResolvedValue(toArrayResult)
         })
-      })
+      }),
+      distinct: vi.fn().mockResolvedValue([])
     }
     return mock
   }
@@ -217,6 +218,36 @@ describe('getProjectsController', () => {
       })
     })
 
+    it('should resolve users via an organisation-wide query by default', async () => {
+      mockRequest.payload = { show: 'my-projects', status: ['ACTIVE'] }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.distinct).toHaveBeenCalledWith(
+        'contactId',
+        { 'organisation.id': testOrgId }
+      )
+      expect(mockMarineLicenceCollection.distinct).toHaveBeenCalledWith(
+        'contactId',
+        { 'organisation.id': testOrgId }
+      )
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(responseValue.users).toEqual({})
+    })
+
+    it('should not resolve users when skipUsers is true', async () => {
+      mockRequest.payload = { skipUsers: true }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.distinct).not.toHaveBeenCalled()
+      expect(mockMarineLicenceCollection.distinct).not.toHaveBeenCalled()
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(responseValue.users).toEqual({})
+    })
+
     it('should only query the exemptions collection when type narrows to exemption', async () => {
       mockRequest.payload = { type: ['exemption'] }
 
@@ -226,9 +257,9 @@ describe('getProjectsController', () => {
       expect(mockMarineLicenceCollection.find).not.toHaveBeenCalled()
 
       const responseValue = mockH.response.mock.calls[0][0].value
-      expect(responseValue.every((p) => p.projectType === 'EXEMPTION')).toBe(
-        true
-      )
+      expect(
+        responseValue.projects.every((p) => p.projectType === 'EXEMPTION')
+      ).toBe(true)
     })
 
     it('should only query the marine licence collection when type narrows to marine-licence', async () => {
@@ -241,7 +272,7 @@ describe('getProjectsController', () => {
 
       const responseValue = mockH.response.mock.calls[0][0].value
       expect(
-        responseValue.every((p) => p.projectType === 'MARINE_LICENCE')
+        responseValue.projects.every((p) => p.projectType === 'MARINE_LICENCE')
       ).toBe(true)
     })
 
@@ -258,6 +289,9 @@ describe('getProjectsController', () => {
       expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith(
         citizenFilter
       )
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(responseValue.users).toEqual({})
     })
 
     it('should exclude null entries when a query is rejected', async () => {
@@ -285,7 +319,7 @@ describe('getProjectsController', () => {
 
       const responseValue = mockH.response.mock.calls[0][0].value
       expect(
-        responseValue.some((p) => p.projectType === 'MARINE_LICENCE')
+        responseValue.projects.some((p) => p.projectType === 'MARINE_LICENCE')
       ).toBe(true)
     })
 
