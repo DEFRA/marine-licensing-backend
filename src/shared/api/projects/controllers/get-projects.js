@@ -139,7 +139,7 @@ export const getProjectsController = {
     const isEmployee = userRelationshipType === 'Employee'
 
     if (isEmployee && organisationId) {
-      const [projects, users] = await Promise.all([
+      const [employeeProjects, users] = await Promise.all([
         getEmployeeProjects(db, organisationId, contactId, payload),
         payload?.skipUsers
           ? Promise.resolve({})
@@ -149,7 +149,7 @@ export const getProjectsController = {
       return h
         .response({
           message: 'success',
-          value: { projects, users },
+          value: { projects: employeeProjects, users },
           isEmployee: true,
           organisationId
         })
