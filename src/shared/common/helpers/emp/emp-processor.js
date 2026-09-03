@@ -6,7 +6,6 @@ import {
 import { config } from '../../../../config.js'
 import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
 import { structureErrorForECS } from '../logging/logger.js'
-import { withMongoTransaction } from '../mongo-transactions.js'
 
 import {
   collectionEmpQueue,
@@ -59,24 +58,14 @@ export const handleEmpQueueItemFailure = async (
 
   const retries = item.retries + 1
   if (hardFail || retries >= maxRetries) {
-    // Insert-then-delete across two collections: without a transaction a
-    // crash between the writes leaves the item in both queues, and the
-    // duplicate _id blocks every later move attempt.
-    await withMongoTransaction(server.mongoClient, async (session) => {
-      await server.db.collection(collectionEmpQueueFailed).insertOne(
-        {
-          ...item,
-          retries: hardFail ? item.retries : maxRetries,
-          status: REQUEST_QUEUE_STATUS.FAILED,
-          updatedAt: new Date()
-        },
-        { session }
-      )
-
-      await server.db
-        .collection(collectionEmpQueue)
-        .deleteOne({ _id: item._id }, { session })
+    await server.db.collection(collectionEmpQueueFailed).insertOne({
+      ...item,
+      retries: hardFail ? item.retries : maxRetries,
+      status: REQUEST_QUEUE_STATUS.FAILED,
+      updatedAt: new Date()
     })
+
+    await server.db.collection(collectionEmpQueue).deleteOne({ _id: item._id })
 
     const failureReason = hardFail ? '(hard fail)' : `after ${retries} retries`
     server.logger.error(

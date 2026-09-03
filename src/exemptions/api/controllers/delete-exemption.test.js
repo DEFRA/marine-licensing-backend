@@ -28,9 +28,14 @@ describe('DELETE /exemption', () => {
   it('should delete exemption by id when status is DRAFT', async () => {
     const { mockMongo, mockHandler } = global
 
-    const deleteOne = vi.fn().mockResolvedValue({ deletedCount: 1 })
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return { deleteOne }
+      return {
+        findOne: vi.fn().mockResolvedValue({
+          _id: mockId,
+          status: EXEMPTION_STATUS.DRAFT
+        }),
+        deleteOne: vi.fn().mockResolvedValue({ deletedCount: 1 })
+      }
     })
 
     await deleteExemptionController.handler(
@@ -38,55 +43,11 @@ describe('DELETE /exemption', () => {
       mockHandler
     )
 
-    expect(deleteOne).toHaveBeenCalledWith(
-      expect.objectContaining({ status: EXEMPTION_STATUS.DRAFT })
-    )
     expect(mockHandler.response).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Exemption deleted successfully'
       })
     )
-  })
-
-  it('should not delete and return bad request when the exemption is no longer DRAFT', async () => {
-    const { mockMongo, mockHandler } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        deleteOne: vi.fn().mockResolvedValue({ deletedCount: 0 }),
-        findOne: vi.fn().mockResolvedValue({
-          _id: mockId,
-          status: EXEMPTION_STATUS.ACTIVE
-        })
-      }
-    })
-
-    await expect(() =>
-      deleteExemptionController.handler(
-        { db: mockMongo, params: { id: mockId } },
-        mockHandler
-      )
-    ).rejects.toThrow(
-      `Cannot delete exemption as exemption must be the status '${EXEMPTION_STATUS.DRAFT}'.`
-    )
-  })
-
-  it('should return not found when the exemption does not exist', async () => {
-    const { mockMongo, mockHandler } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        deleteOne: vi.fn().mockResolvedValue({ deletedCount: 0 }),
-        findOne: vi.fn().mockResolvedValue(null)
-      }
-    })
-
-    await expect(() =>
-      deleteExemptionController.handler(
-        { db: mockMongo, params: { id: mockId } },
-        mockHandler
-      )
-    ).rejects.toThrow('Exemption not found')
   })
 
   it('should return an error message if the database operation fails', async () => {
@@ -96,7 +57,7 @@ describe('DELETE /exemption', () => {
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
-        deleteOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
+        findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 

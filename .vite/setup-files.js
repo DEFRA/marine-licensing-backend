@@ -29,8 +29,6 @@ beforeAll(async () => {
   }
   client = await MongoClient.connect(inject('mongoUri'))
   globalThis.mockMongo = client.db(databaseName)
-  // For code under test that starts sessions/transactions (server.mongoClient)
-  globalThis.mockMongoClient = client
 
   // The worker slot's database outlives the files that ran before this one, so
   // drop it to give each test file the pristine state it would get from its own

@@ -232,7 +232,7 @@ A local environment with:
 
 - Localstack for AWS services (S3, SQS)
 - Redis
-- MongoDB
+- MongoDB (single-member replica set — see [MongoDB](#mongodb))
 - [marine-licensing-api-stub](https://github.com/DEFRA/marine-licensing-api-stub) (must be
   checked out as a sibling directory) — stubs the ArcGIS marine-plan-policy lookup and the
   Dynamics contact details API. Policy _wording_ still comes from the real GOV.UK
