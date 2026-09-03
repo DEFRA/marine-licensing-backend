@@ -19,24 +19,27 @@ export const deleteExemptionController = {
   handler: async (request, h) => {
     try {
       const { params, db } = request
+      const _id = ObjectId.createFromHexString(params.id)
 
-      const exemption = await db
+      // Status guard in the delete filter so a concurrent submit cannot
+      // land between a status check and the delete.
+      const { deletedCount } = await db
         .collection(collectionExemptions)
-        .findOne({ _id: ObjectId.createFromHexString(params.id) })
+        .deleteOne({ _id, status: EXEMPTION_STATUS.DRAFT })
 
-      if (!exemption) {
-        throw Boom.notFound('Exemption not found')
-      }
+      if (deletedCount === 0) {
+        const exemption = await db
+          .collection(collectionExemptions)
+          .findOne({ _id })
 
-      if (exemption.status !== EXEMPTION_STATUS.DRAFT) {
+        if (!exemption) {
+          throw Boom.notFound('Exemption not found')
+        }
+
         throw Boom.badRequest(
           `Cannot delete exemption as exemption must be the status '${EXEMPTION_STATUS.DRAFT}'.`
         )
       }
-
-      await db
-        .collection(collectionExemptions)
-        .deleteOne({ _id: ObjectId.createFromHexString(params.id) })
 
       logger.info(
         { event: { action: 'delete', outcome: 'success' } },

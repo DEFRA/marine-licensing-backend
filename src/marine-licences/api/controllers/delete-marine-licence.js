@@ -19,19 +19,27 @@ export const deleteMarineLicenceController = {
   handler: async (request, h) => {
     try {
       const { params, db } = request
-      const marineLicence = await db
-        .collection(collectionMarineLicences)
-        .findOne({ _id: ObjectId.createFromHexString(params.id) })
+      const _id = ObjectId.createFromHexString(params.id)
 
-      if (marineLicence.status !== MARINE_LICENCE_STATUS.DRAFT) {
+      // Status guard in the delete filter so a concurrent submit cannot
+      // land between a status check and the delete.
+      const { deletedCount } = await db
+        .collection(collectionMarineLicences)
+        .deleteOne({ _id, status: MARINE_LICENCE_STATUS.DRAFT })
+
+      if (deletedCount === 0) {
+        const marineLicence = await db
+          .collection(collectionMarineLicences)
+          .findOne({ _id })
+
+        if (!marineLicence) {
+          throw Boom.notFound('Marine licence not found')
+        }
+
         throw Boom.badRequest(
           `Cannot delete marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.DRAFT}'.`
         )
       }
-
-      await db
-        .collection(collectionMarineLicences)
-        .deleteOne({ _id: ObjectId.createFromHexString(params.id) })
 
       logger.info(
         { event: { action: 'delete', outcome: 'success' } },
