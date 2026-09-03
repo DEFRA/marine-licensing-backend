@@ -393,7 +393,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 ### MongoDB Connection Issues
 
 - Check MongoDB is running: `docker compose up -d` (includes MongoDB)
-- Test connection: `mongosh mongodb://127.0.0.1:27017/marine-licensing-backend`
+- Test connection: `mongosh "mongodb://127.0.0.1:27017/marine-licensing-backend?directConnection=true"` (the composed mongo is a single-member replica set advertising a Docker-network hostname, so host clients must skip topology discovery — see README "MongoDB")
 
 ### S3/LocalStack Issues
 
