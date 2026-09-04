@@ -75,6 +75,37 @@ describe('PATCH /marine-licence/invoicing', () => {
     )
   })
 
+  test('should persist invoiceAddressSource when it is provided', async () => {
+    const { mockMongo, mockHandler } = global
+    const mockPayload = {
+      id: new ObjectId().toHexString(),
+      invoiceAddressType: 'uk',
+      invoiceAddress: mockUkInvoicingAddress,
+      invoiceAddressSource: 'lookup',
+      invoiceContactDetails: mockInvoiceContactDetails,
+      ...mockAuditPayload
+    }
+
+    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        updateOne: mockUpdateOne
+      }
+    })
+
+    await updateInvoicingController.handler(
+      {
+        db: mockMongo,
+        payload: mockPayload
+      },
+      mockHandler
+    )
+
+    expect(mockUpdateOne.mock.calls[0][1].$set.invoicing).toEqual(
+      expect.objectContaining({ invoiceAddressSource: 'lookup' })
+    )
+  })
+
   test('should require organisationName for a non-citizen', async () => {
     const { mockMongo, mockHandler } = global
     const mockPurchaseOrderDetails = { requiresPurchaseOrder: 'no' }
