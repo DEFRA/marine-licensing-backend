@@ -28,14 +28,9 @@ describe('DELETE /marine-licence', () => {
   it('should delete marine licence by id when status is DRAFT', async () => {
     const { mockMongo, mockHandler } = global
 
+    const deleteOne = vi.fn().mockResolvedValue({ deletedCount: 1 })
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        findOne: vi.fn().mockResolvedValue({
-          _id: mockId,
-          status: MARINE_LICENCE_STATUS.DRAFT
-        }),
-        deleteOne: vi.fn().mockResolvedValue({ deletedCount: 1 })
-      }
+      return { deleteOne }
     })
 
     await deleteMarineLicenceController.handler(
@@ -43,11 +38,55 @@ describe('DELETE /marine-licence', () => {
       mockHandler
     )
 
+    expect(deleteOne).toHaveBeenCalledWith(
+      expect.objectContaining({ status: MARINE_LICENCE_STATUS.DRAFT })
+    )
     expect(mockHandler.response).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Marine licence deleted successfully'
       })
     )
+  })
+
+  it('should not delete and return bad request when the marine licence is no longer DRAFT', async () => {
+    const { mockMongo, mockHandler } = global
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        deleteOne: vi.fn().mockResolvedValue({ deletedCount: 0 }),
+        findOne: vi.fn().mockResolvedValue({
+          _id: mockId,
+          status: MARINE_LICENCE_STATUS.SUBMITTED
+        })
+      }
+    })
+
+    await expect(() =>
+      deleteMarineLicenceController.handler(
+        { db: mockMongo, params: { id: mockId } },
+        mockHandler
+      )
+    ).rejects.toThrow(
+      `Cannot delete marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.DRAFT}'.`
+    )
+  })
+
+  it('should return not found when the marine licence does not exist', async () => {
+    const { mockMongo, mockHandler } = global
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        deleteOne: vi.fn().mockResolvedValue({ deletedCount: 0 }),
+        findOne: vi.fn().mockResolvedValue(null)
+      }
+    })
+
+    await expect(() =>
+      deleteMarineLicenceController.handler(
+        { db: mockMongo, params: { id: mockId } },
+        mockHandler
+      )
+    ).rejects.toThrow('Marine licence not found')
   })
 
   it('should return an error message if the database operation fails', async () => {
@@ -57,7 +96,7 @@ describe('DELETE /marine-licence', () => {
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
-        findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
+        deleteOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 
