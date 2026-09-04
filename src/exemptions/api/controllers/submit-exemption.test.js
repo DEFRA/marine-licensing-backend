@@ -201,6 +201,8 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'Test marine activity'
       }
 
+      updateMarinePlanningAreas.mockResolvedValueOnce(['South'])
+
       mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
       mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
 
@@ -216,9 +218,14 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
+      await flushPromises()
+
       expect(publishPublicRegisterSubmittedEvent).toHaveBeenCalledWith({
         applicationId: mockExemptionId,
         applicationReference: 'EXE/2025/10001',
+        projectName: 'Test Marine Project',
+        marinePlanAreas: ['South'],
+        submittedAt: mockDate,
         logger: mockLogger
       })
     })
@@ -279,6 +286,40 @@ describe('POST /exemption/submit', () => {
         contactId: 'test-contact-id',
         projectName: 'Test Marine Project',
         publicRegister: { consent: 'yes' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+
+      expect(publishPublicRegisterSubmittedEvent).not.toHaveBeenCalled()
+    })
+
+    it('does not publish to SNS when publicRegister exists but consent is undefined', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        publicRegister: {},
         multipleSiteDetails: { multipleSitesEnabled: false },
         siteDetails: [
           {

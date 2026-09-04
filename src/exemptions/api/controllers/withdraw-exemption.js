@@ -12,6 +12,7 @@ import {
   EMP_REQUEST_ACTIONS
 } from '../../../shared/common/constants/request-queue.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
+import { publishPublicRegisterWithdrawnEvent } from '../helpers/publish-public-register-event.js'
 
 const updateExemptionRecord = async ({
   request,
@@ -51,6 +52,7 @@ export const withdrawExemptionController = {
     try {
       const { params, payload } = request
       const { isDynamicsEnabled } = config.get('dynamics')
+      const { isSnsEnabled } = config.get('publicRegister')
 
       const withdrawnAt = new Date()
       const exemption = await updateExemptionRecord({
@@ -74,6 +76,17 @@ export const withdrawExemptionController = {
           request,
           applicationReference: exemption.applicationReference,
           action: EMP_REQUEST_ACTIONS.WITHDRAW
+        })
+      }
+
+      if (isSnsEnabled && exemption.publicRegister?.consent === 'yes') {
+        publishPublicRegisterWithdrawnEvent({
+          applicationId: params.id,
+          applicationReference: exemption.applicationReference,
+          projectName: exemption.projectName,
+          marinePlanAreas: exemption.marinePlanAreas ?? [],
+          submittedAt: exemption.submittedAt,
+          logger: request.logger
         })
       }
 
