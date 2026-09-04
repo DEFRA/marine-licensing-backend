@@ -8,7 +8,7 @@ describe('getProjects validation schema', () => {
       const result = getProjects.validate({})
 
       expect(result.error).toBeUndefined()
-      expect(result.value).toEqual({})
+      expect(result.value).toEqual({ skipUsers: false })
     })
   })
 
@@ -32,6 +32,72 @@ describe('getProjects validation schema', () => {
 
     it('should reject an unrecognised show value', () => {
       const result = getProjects.validate({ show: 'not-a-valid-value' })
+
+      expect(result.error).toBeDefined()
+    })
+  })
+
+  describe('user param validation', () => {
+    const VALID_UUID = '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
+    const OTHER_VALID_UUID = 'e2c1a2a0-6b1a-4c1a-8b1a-6b1a4c1a8b1a'
+
+    it('should accept a single value', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: VALID_UUID
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toEqual([VALID_UUID])
+    })
+
+    it('should accept multiple user values from checkboxes', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: [VALID_UUID, OTHER_VALID_UUID]
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toEqual([VALID_UUID, OTHER_VALID_UUID])
+    })
+
+    it('should accept specific-user without a user (none checked)', () => {
+      const result = getProjects.validate({ show: 'specific-user' })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toBeUndefined()
+    })
+
+    it('should accept specific-user with an empty user array', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: []
+      })
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.user).toEqual([])
+    })
+
+    it('should reject an array containing an unrecognised user value', () => {
+      const result = getProjects.validate({
+        show: 'specific-user',
+        user: [VALID_UUID, 'not-a-uuid']
+      })
+
+      expect(result.error).toBeDefined()
+    })
+
+    it.each(['all-projects', 'my-projects'])(
+      'should reject a user field when show: %s',
+      (show) => {
+        const result = getProjects.validate({ show, user: VALID_UUID })
+
+        expect(result.error).toBeDefined()
+      }
+    )
+
+    it('should reject a user field when show is not set', () => {
+      const result = getProjects.validate({ user: VALID_UUID })
 
       expect(result.error).toBeDefined()
     })
@@ -139,6 +205,30 @@ describe('getProjects validation schema', () => {
         type: ['exemption', 'not-a-valid-value']
       })
 
+      expect(result.error).toBeDefined()
+    })
+  })
+
+  describe('skipUsers validation', () => {
+    it('should default to false when omitted', () => {
+      const result = getProjects.validate({})
+
+      expect(result.error).toBeUndefined()
+      expect(result.value.skipUsers).toBe(false)
+    })
+
+    it.each([true, false])(
+      'should accept an explicit boolean: %s',
+      (skipUsers) => {
+        const result = getProjects.validate({ skipUsers })
+
+        expect(result.error).toBeUndefined()
+        expect(result.value.skipUsers).toBe(skipUsers)
+      }
+    )
+
+    it('should reject a non-boolean value', () => {
+      const result = getProjects.validate({ skipUsers: 'yes' })
       expect(result.error).toBeDefined()
     })
   })

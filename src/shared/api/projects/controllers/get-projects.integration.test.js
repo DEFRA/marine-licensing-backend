@@ -14,7 +14,11 @@ import {
 import { PROJECT_TYPES } from '../../../constants/project-status.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
-  batchGetContactNames: vi.fn().mockResolvedValue({})
+  batchGetContactNames: vi.fn((contactIds) =>
+    Promise.resolve(
+      Object.fromEntries(contactIds.map((id) => [id, `Name for ${id}`]))
+    )
+  )
 }))
 
 describe('Get projects - integration tests', async () => {
@@ -58,9 +62,10 @@ describe('Get projects - integration tests', async () => {
 
       expect(statusCode).toBe(200)
       expect(isEmployee).toBe(false)
-      expect(body).toHaveLength(3)
+      expect(body.projects).toHaveLength(3)
+      expect(body.users).toEqual({})
 
-      body.forEach((project) => {
+      body.projects.forEach((project) => {
         expect(project).toHaveProperty('projectType')
         expect(Object.values(PROJECT_TYPES)).toContain(project.projectType)
         expect(project).toHaveProperty('id')
@@ -68,12 +73,12 @@ describe('Get projects - integration tests', async () => {
         expect(project).toHaveProperty('projectName')
       })
 
-      const exemptionProjects = body.filter(
+      const exemptionProjects = body.projects.filter(
         (p) => p.projectType === PROJECT_TYPES.EXEMPTION
       )
       expect(exemptionProjects).toHaveLength(2)
 
-      const marineLicenceProjects = body.filter(
+      const marineLicenceProjects = body.projects.filter(
         (p) => p.projectType === PROJECT_TYPES.MARINE_LICENCE
       )
       expect(marineLicenceProjects).toHaveLength(1)
@@ -133,19 +138,204 @@ describe('Get projects - integration tests', async () => {
       expect(statusCode).toBe(200)
       expect(isEmployee).toBe(true)
       expect(organisationId).toBe(testOrgId)
-      expect(body).toHaveLength(2)
+      expect(body.projects).toHaveLength(2)
 
-      const myProject = body.find((e) => e.projectName === 'My Exemption')
+      const myProject = body.projects.find(
+        (e) => e.projectName === 'My Exemption'
+      )
       expect(myProject.projectType).toBe(PROJECT_TYPES.EXEMPTION)
       expect(myProject.isOwnProject).toBe(true)
       expect(myProject.contactId).toBe(employeeContactId)
 
-      const colleagueProject = body.find(
+      const colleagueProject = body.projects.find(
         (e) => e.projectName === 'Colleague Marine Licence'
       )
       expect(colleagueProject.projectType).toBe(PROJECT_TYPES.MARINE_LICENCE)
       expect(colleagueProject.isOwnProject).toBe(false)
       expect(colleagueProject.contactId).toBe(colleagueContactId)
+
+      expect(body.users).toEqual({
+        [employeeContactId]: `Name for ${employeeContactId}`,
+        [colleagueContactId]: `Name for ${colleagueContactId}`
+      })
+    })
+
+    test('rejects specific-user scope when user is not a valid uuid', async () => {
+      const { statusCode } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'specific-user', user: 'not-a-uuid' },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(400)
+    })
+
+    test('returns all organisation projects when specific-user scope has no user checked', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenceId = new ObjectId()
+
+      const myExemption = createCompleteExemption({
+        _id: exemptionId,
+        contactId: employeeContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'My Exemption',
+        status: EXEMPTION_STATUS.DRAFT
+      })
+
+      const colleagueMarineLicence = createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId: colleagueContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'Colleague Marine Licence',
+        status: MARINE_LICENCE_STATUS.SUBMITTED
+      })
+
+      await globalThis.mockMongo
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .insertOne(colleagueMarineLicence)
+
+      const { statusCode, body } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'specific-user' },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(200)
+      expect(body.projects).toHaveLength(2)
+    })
+
+    test('returns only the specified user projects when show is specific-user', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenceId = new ObjectId()
+
+      const myExemption = createCompleteExemption({
+        _id: exemptionId,
+        contactId: employeeContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'My Exemption',
+        status: EXEMPTION_STATUS.DRAFT
+      })
+
+      const colleagueMarineLicence = createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId: colleagueContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'Colleague Marine Licence',
+        status: MARINE_LICENCE_STATUS.SUBMITTED
+      })
+
+      await globalThis.mockMongo
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .insertOne(colleagueMarineLicence)
+
+      const { statusCode, body } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'specific-user', user: colleagueContactId },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(200)
+      expect(body.projects).toHaveLength(1)
+      expect(body.projects[0].projectName).toBe('Colleague Marine Licence')
+      expect(body.projects[0].contactId).toBe(colleagueContactId)
+
+      // users sees the full org roster, unaffected by the user filter
+      expect(body.users).toEqual({
+        [employeeContactId]: `Name for ${employeeContactId}`,
+        [colleagueContactId]: `Name for ${colleagueContactId}`
+      })
+    })
+
+    test('users sees the full org roster even when type/status filters out a colleague from projects', async () => {
+      const exemptionId = new ObjectId()
+      const marineLicenceId = new ObjectId()
+
+      const myExemption = createCompleteExemption({
+        _id: exemptionId,
+        contactId: employeeContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'My Exemption',
+        status: EXEMPTION_STATUS.DRAFT
+      })
+
+      const colleagueMarineLicence = createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId: colleagueContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'Colleague Marine Licence',
+        status: MARINE_LICENCE_STATUS.SUBMITTED
+      })
+
+      await globalThis.mockMongo
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .insertOne(colleagueMarineLicence)
+
+      const { statusCode, body } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'all-projects', type: ['exemption'] },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(200)
+      // colleague's marine licence is excluded from `projects` by the type filter
+      expect(body.projects).toHaveLength(1)
+      expect(body.projects[0].contactId).toBe(employeeContactId)
+
+      // but the colleague still appears in `users` - it's independent of type/status
+      expect(body.users).toEqual({
+        [employeeContactId]: `Name for ${employeeContactId}`,
+        [colleagueContactId]: `Name for ${colleagueContactId}`
+      })
+    })
+
+    test('users is empty and no Dynamics resolution happens when skipUsers is true', async () => {
+      const exemptionId = new ObjectId()
+
+      const myExemption = createCompleteExemption({
+        _id: exemptionId,
+        contactId: employeeContactId,
+        organisation: { id: testOrgId, name: 'Test Org' },
+        projectName: 'My Exemption',
+        status: EXEMPTION_STATUS.DRAFT
+      })
+
+      await globalThis.mockMongo
+        .collection(collectionExemptions)
+        .insertOne(myExemption)
+
+      const { statusCode, body } = await makePostRequest({
+        server: getServer(),
+        url: '/projects',
+        payload: { show: 'all-projects', skipUsers: true },
+        contactId: employeeContactId,
+        relationships: employeeRelationships,
+        currentRelationshipId: relationshipId
+      })
+
+      expect(statusCode).toBe(200)
+      expect(body.projects).toHaveLength(1)
+      expect(body.users).toEqual({})
     })
 
     test('returns only organisation projects, not other orgs', async () => {
@@ -186,8 +376,8 @@ describe('Get projects - integration tests', async () => {
       })
 
       expect(statusCode).toBe(200)
-      expect(body).toHaveLength(1)
-      expect(body[0].projectName).toBe('Org Exemption')
+      expect(body.projects).toHaveLength(1)
+      expect(body.projects[0].projectName).toBe('Org Exemption')
     })
 
     test('returns empty array when no projects exist for organisation', async () => {
@@ -202,7 +392,8 @@ describe('Get projects - integration tests', async () => {
 
       expect(statusCode).toBe(200)
       expect(isEmployee).toBe(true)
-      expect(body).toHaveLength(0)
+      expect(body.projects).toHaveLength(0)
+      expect(body.users).toEqual({})
     })
 
     test('sorts projects by status (Draft first, then Active)', async () => {
@@ -250,9 +441,9 @@ describe('Get projects - integration tests', async () => {
         currentRelationshipId: relationshipId
       })
 
-      expect(body[0].status).toBe('Draft')
-      expect(body[1].status).toBe('Active')
-      expect(body[2].status).toBe('Active')
+      expect(body.projects[0].status).toBe('Draft')
+      expect(body.projects[1].status).toBe('Active')
+      expect(body.projects[2].status).toBe('Active')
     })
   })
 
@@ -304,8 +495,9 @@ describe('Get projects - integration tests', async () => {
 
       expect(statusCode).toBe(200)
       expect(isEmployee).toBe(false)
-      expect(body).toHaveLength(1)
-      expect(body[0].projectName).toBe('My Agent Exemption')
+      expect(body.projects).toHaveLength(1)
+      expect(body.projects[0].projectName).toBe('My Agent Exemption')
+      expect(body.users).toEqual({})
     })
   })
 })

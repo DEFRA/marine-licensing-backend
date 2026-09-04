@@ -9,9 +9,13 @@ import {
   PROJECT_TYPES
 } from '../../../constants/project-status.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
-import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
 import { getProjects } from '../models/get-projects.js'
-import { getStatusFilter, queryEmployeeCollections } from './utils.js'
+import {
+  getOrganisationUserNames,
+  getStatusFilter,
+  getUserFilter,
+  queryEmployeeCollections
+} from './utils.js'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
@@ -27,19 +31,13 @@ const transformProjectBase = (project, projectType) => {
   }
 }
 
-const transformProject = (
-  project,
-  projectType,
-  currentContactId,
-  ownerNames = {}
-) => {
+const transformProject = (project, projectType, currentContactId) => {
   const { contactId } = project
 
   return {
     ...transformProjectBase(project, projectType),
     contactId,
-    isOwnProject: contactId === currentContactId,
-    ownerName: ownerNames[contactId] || '-'
+    isOwnProject: contactId === currentContactId
   }
 }
 
@@ -71,11 +69,11 @@ const getEmployeeProjects = async (
   contactId,
   payload = {}
 ) => {
-  const { show, status, type } = payload
+  const { show, status, type, user } = payload
 
   const orgFilter = {
     'organisation.id': organisationId,
-    ...(show === 'all-projects' ? {} : { contactId }),
+    ...(show === 'all-projects' ? {} : getUserFilter(show, contactId, user)),
     ...(status && getStatusFilter(status))
   }
 
@@ -85,21 +83,12 @@ const getEmployeeProjects = async (
     type
   )
 
-  const contactIds = [
-    ...new Set(
-      [...empExemptions, ...empMarineLicences]
-        .map((e) => e.contactId)
-        .filter(Boolean)
-    )
-  ]
-  const ownerNames = await batchGetContactNames(contactIds)
-
   return [
     ...empExemptions.map((e) =>
-      transformProject(e, PROJECT_TYPES.EXEMPTION, contactId, ownerNames)
+      transformProject(e, PROJECT_TYPES.EXEMPTION, contactId)
     ),
     ...empMarineLicences.map((m) =>
-      transformProject(m, PROJECT_TYPES.MARINE_LICENCE, contactId, ownerNames)
+      transformProject(m, PROJECT_TYPES.MARINE_LICENCE, contactId)
     )
   ].sort(sortByStatus)
 }
@@ -150,17 +139,17 @@ export const getProjectsController = {
     const isEmployee = userRelationshipType === 'Employee'
 
     if (isEmployee && organisationId) {
-      const employeeProjects = await getEmployeeProjects(
-        db,
-        organisationId,
-        contactId,
-        payload
-      )
+      const [employeeProjects, users] = await Promise.all([
+        getEmployeeProjects(db, organisationId, contactId, payload),
+        payload?.skipUsers
+          ? Promise.resolve({})
+          : getOrganisationUserNames(db, organisationId)
+      ])
 
       return h
         .response({
           message: 'success',
-          value: employeeProjects,
+          value: { projects: employeeProjects, users },
           isEmployee: true,
           organisationId
         })
@@ -169,7 +158,11 @@ export const getProjectsController = {
 
     const projects = await getCitizenProjects(db, contactId, organisationId)
     return h
-      .response({ message: 'success', value: projects, isEmployee: false })
+      .response({
+        message: 'success',
+        value: { projects, users: {} },
+        isEmployee: false
+      })
       .code(StatusCodes.OK)
   }
 }
