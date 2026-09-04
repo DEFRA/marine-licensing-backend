@@ -2,7 +2,7 @@ import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ExemptionService } from '../services/exemption.service.js'
 import { exemptionIdOnly } from '../../models/shared-models.js'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import { SUBMITTED_STATUSES } from '../../constants/exemption.js'
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
@@ -29,8 +29,8 @@ export const backfillAreasController = {
       const exemptionService = new ExemptionService({ db, logger })
       const exemption = await exemptionService.getExemptionById({ id })
 
-      if (exemption.status !== EXEMPTION_STATUS.ACTIVE) {
-        throw Boom.badRequest(`Exemption is not in ${EXEMPTION_STATUS.ACTIVE}`)
+      if (!SUBMITTED_STATUSES.includes(exemption.status)) {
+        throw Boom.badRequest('Exemption has not been submitted')
       }
 
       if (exemption.marinePlanAreas && exemption.coastalOperationsAreas) {

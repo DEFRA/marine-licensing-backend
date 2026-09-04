@@ -1,6 +1,9 @@
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import {
+  EXEMPTION_STATUS,
+  SUBMITTED_STATUSES
+} from '../../constants/exemption.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
@@ -82,7 +85,7 @@ export class ExemptionService {
   async getPublicExemptionById(id) {
     const exemption = await this.#findExemptionById(id)
     const isViewableStatus =
-      exemption.status === EXEMPTION_STATUS.ACTIVE ||
+      SUBMITTED_STATUSES.includes(exemption.status) ||
       exemption.status === EXEMPTION_STATUS.WITHDRAWN
 
     if (!isViewableStatus || exemption.publicRegister?.consent !== 'yes') {

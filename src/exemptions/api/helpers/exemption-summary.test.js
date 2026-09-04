@@ -3,7 +3,8 @@ import { EXEMPTION_STATUS } from '../../constants/exemption.js'
 import {
   buildCoordinateSystemVolume,
   buildExemptionSummaryPipeline,
-  buildExemptionSummaryValue
+  buildExemptionSummaryValue,
+  EMPTY_EXEMPTION_SUMMARY_FACET
 } from './exemption-summary.js'
 
 describe('exemption-summary helper', () => {
@@ -13,7 +14,9 @@ describe('exemption-summary helper', () => {
 
       expect(pipeline).toHaveLength(2)
       expect(pipeline[0].$match.status.$in).toEqual([
+        EXEMPTION_STATUS.SCHEDULED,
         EXEMPTION_STATUS.ACTIVE,
+        EXEMPTION_STATUS.EXPIRED,
         EXEMPTION_STATUS.SUBMITTED,
         EXEMPTION_STATUS.DRAFT,
         EXEMPTION_STATUS.WITHDRAWN
@@ -22,7 +25,9 @@ describe('exemption-summary helper', () => {
         $match: {
           status: {
             $in: [
+              EXEMPTION_STATUS.SCHEDULED,
               EXEMPTION_STATUS.ACTIVE,
+              EXEMPTION_STATUS.EXPIRED,
               EXEMPTION_STATUS.SUBMITTED,
               EXEMPTION_STATUS.WITHDRAWN
             ]
@@ -39,6 +44,19 @@ describe('exemption-summary helper', () => {
         byMarinePlanArea: expect.any(Array),
         byCoastalOperationsArea: expect.any(Array)
       })
+    })
+
+    it('includes every submitted status in the outer match, or facets lose data', () => {
+      const pipeline = buildExemptionSummaryPipeline()
+
+      expect(pipeline[0].$match.status.$in).toEqual([
+        EXEMPTION_STATUS.SCHEDULED,
+        EXEMPTION_STATUS.ACTIVE,
+        EXEMPTION_STATUS.EXPIRED,
+        EXEMPTION_STATUS.SUBMITTED,
+        EXEMPTION_STATUS.DRAFT,
+        EXEMPTION_STATUS.WITHDRAWN
+      ])
     })
   })
 
@@ -136,6 +154,19 @@ describe('exemption-summary helper', () => {
           manualCoordinates: 2
         }
       })
+    })
+
+    it('counts all submitted statuses as submitted exemptions', () => {
+      const value = buildExemptionSummaryValue({
+        ...EMPTY_EXEMPTION_SUMMARY_FACET,
+        statusCounts: [
+          { _id: EXEMPTION_STATUS.SCHEDULED, count: 2 },
+          { _id: EXEMPTION_STATUS.ACTIVE, count: 3 },
+          { _id: EXEMPTION_STATUS.EXPIRED, count: 4 }
+        ]
+      })
+
+      expect(value.submittedExemptions).toBe(9)
     })
 
     it('returns zero counts when facet results are empty', () => {

@@ -3,6 +3,7 @@ import { withdrawExemptionController } from './withdraw-exemption'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
 import { config } from '../../../config.js'
+import { WITHDRAWABLE_STATUSES } from '../../constants/exemption.js'
 
 vi.mock('../../../config.js')
 vi.mock('../../../shared/common/helpers/dynamics/index.js')
@@ -38,6 +39,23 @@ describe('POST /exemption/{id}/withdraw', () => {
 
   const mockId = '123456789123456789123456'
 
+  const withdrawWith = async (findOneAndUpdate) => {
+    const { mockMongo, mockHandler } = global
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return { findOneAndUpdate }
+    })
+
+    return withdrawExemptionController.handler(
+      {
+        db: mockMongo,
+        params: { id: mockId },
+        payload: { updatedAt: new Date(), updatedBy: 'user123' }
+      },
+      mockHandler
+    )
+  }
+
   it('should fail if fields are missing', () => {
     const result = paramsValidator.validate({})
 
@@ -56,26 +74,35 @@ describe('POST /exemption/{id}/withdraw', () => {
     expect(result.error.message).toContain('EXEMPTION_ID_INVALID')
   })
 
-  it('should return not found error if exemption does not exist', async () => {
-    const { mockMongo, mockHandler } = global
+  it('rejects withdrawal when the status does not qualify', async () => {
+    const findOneAndUpdate = vi.fn().mockResolvedValue(null)
 
-    const mockPayload = {
-      updatedAt: new Date(),
-      updatedBy: 'user123'
-    }
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        findOneAndUpdate: vi.fn().mockResolvedValue(null)
-      }
+    await expect(withdrawWith(findOneAndUpdate)).rejects.toMatchObject({
+      output: { statusCode: 409 }
     })
+  })
 
-    await expect(() =>
-      withdrawExemptionController.handler(
-        { db: mockMongo, params: { id: mockId }, payload: mockPayload },
-        mockHandler
-      )
-    ).rejects.toThrow('Exemption not found during update')
+  it('filters on withdrawable statuses so the check cannot race the write', async () => {
+    const findOneAndUpdate = vi
+      .fn()
+      .mockResolvedValue({ applicationReference: 'EXE/2026/00001' })
+
+    await withdrawWith(findOneAndUpdate)
+
+    const [filter] = findOneAndUpdate.mock.calls[0]
+    expect(filter.status).toEqual({ $in: WITHDRAWABLE_STATUSES })
+  })
+
+  it('does not queue Dynamics or EMP messages when withdrawal is rejected', async () => {
+    config.get.mockImplementation((key) =>
+      key === 'dynamics' ? { isDynamicsEnabled: true } : { isEmpEnabled: true }
+    )
+    const findOneAndUpdate = vi.fn().mockResolvedValue(null)
+
+    await expect(withdrawWith(findOneAndUpdate)).rejects.toThrow()
+
+    expect(dynamicsMock).not.toHaveBeenCalled()
+    expect(empMock).not.toHaveBeenCalled()
   })
 
   it('should return an error message if the database operation fails', async () => {

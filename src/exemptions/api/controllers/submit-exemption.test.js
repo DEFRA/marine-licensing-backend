@@ -374,6 +374,72 @@ describe('POST /exemption/submit', () => {
     })
   })
 
+  describe('derived status on submission', () => {
+    beforeEach(() => {
+      // The outer setup stubs the Date constructor, which would collapse every
+      // parsed activity date onto the same instant.
+      global.Date.mockRestore()
+    })
+
+    const completeExemption = {
+      contactId: 'test-contact-id',
+      projectName: 'Test Marine Project',
+      publicRegister: { consent: 'no' },
+      multipleSiteDetails: { multipleSitesEnabled: false },
+      activityDescription: 'Test marine activity'
+    }
+
+    const completeSite = {
+      coordinatesType: 'point',
+      coordinates: { latitude: '54.978', longitude: '-1.617' }
+    }
+
+    const submitWithActivityDates = async (start, end) => {
+      mockExemptionsCollection.findOne.mockResolvedValue({
+        ...completeExemption,
+        _id: new ObjectId(mockExemptionId),
+        siteDetails: [{ ...completeSite, activityDates: { start, end } }]
+      })
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+
+      await submitExemptionController.handler(
+        {
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger,
+          payload: { id: mockExemptionId, ...mockAuditPayload }
+        },
+        mockHandler
+      )
+
+      const [, update] = mockExemptionsCollection.updateOne.mock.calls.at(-1)
+      return update.$set.status
+    }
+
+    it('submits a future-dated exemption as scheduled, not active', async () => {
+      const start = new Date()
+      start.setFullYear(start.getFullYear() + 1)
+      const end = new Date(start)
+      end.setMonth(end.getMonth() + 1)
+
+      expect(await submitWithActivityDates(start, end)).toBe(
+        EXEMPTION_STATUS.SCHEDULED
+      )
+    })
+
+    it('submits an in-progress exemption as active', async () => {
+      const start = new Date()
+      start.setMonth(start.getMonth() - 1)
+      const end = new Date()
+      end.setMonth(end.getMonth() + 1)
+
+      expect(await submitWithActivityDates(start, end)).toBe(
+        EXEMPTION_STATUS.ACTIVE
+      )
+    })
+  })
+
   describe('Happy Path - Successful Submission', () => {
     it('should insert request queue document when exemption is submitted', async () => {
       const mockExemption = {

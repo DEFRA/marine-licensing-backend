@@ -6,7 +6,7 @@ describe('scheduler config', () => {
 
     expect(scheduler.isEnabled).toBe(true)
     expect(scheduler.jobs.heartbeat.isEnabled).toBe(true)
-    expect(scheduler.jobs.heartbeat.schedule).toBe('5 0 * * *')
+    expect(scheduler.jobs.heartbeat.schedule).toBe('15 0 * * *')
   })
 
   // The timezone is fixed in code, so there is deliberately nothing to

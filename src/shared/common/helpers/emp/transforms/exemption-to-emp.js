@@ -1,5 +1,5 @@
 import { format } from 'date-fns'
-import { getProjectStartEndDates } from './get-project-start-end-dates.js'
+import { getProjectStartEndDates } from '../../../../../exemptions/api/helpers/get-project-start-end-dates.js'
 import { shortIsoDate } from './short-iso-date.js'
 import { buildEmpGeometries } from './site-details.js'
 import { config } from '../../../../../config.js'

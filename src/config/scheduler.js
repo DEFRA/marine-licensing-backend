@@ -13,7 +13,7 @@
 // nicknames `@hourly`, `@daily`, `@weekly`, `@monthly`, `@yearly` — nothing here
 // needs sub-minute scheduling.
 //
-//   '5 0 * * *'    00:05 every day, the heartbeat default below
+//   '5 0 * * *'    00:05 every day, the exemption status job default below
 //   '0 */4 * * *'  every four hours, on the hour
 //   '30 6 * * 1'   06:30 every Monday
 //   '0 0 1 * *'    midnight on the 1st of each month
@@ -48,10 +48,24 @@ export const schedulerSchema = {
         env: 'SCHEDULER_HEARTBEAT_ENABLED'
       },
       schedule: {
-        doc: 'Cron schedule for the heartbeat job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
+        doc: "Cron schedule for the heartbeat job, interpreted in Europe/London. Runs after the exemption status job so its breakdown reflects that day's transitions rather than racing them. See the cron format reference and the British Summer Time note at the top of this file.",
+        format: 'cron-expression',
+        default: '15 0 * * *',
+        env: 'SCHEDULER_HEARTBEAT_SCHEDULE'
+      }
+    },
+    'exemption-status': {
+      isEnabled: {
+        doc: 'Enable the daily exemption status transition job',
+        format: Boolean,
+        default: true,
+        env: 'SCHEDULER_EXEMPTION_STATUS_ENABLED'
+      },
+      schedule: {
+        doc: 'Cron schedule for the exemption status job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
         format: 'cron-expression',
         default: '5 0 * * *',
-        env: 'SCHEDULER_HEARTBEAT_SCHEDULE'
+        env: 'SCHEDULER_EXEMPTION_STATUS_SCHEDULE'
       }
     }
   }
