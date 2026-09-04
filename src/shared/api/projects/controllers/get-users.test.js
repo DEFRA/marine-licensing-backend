@@ -6,7 +6,6 @@ import {
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
 import { randomUUID } from 'node:crypto'
-import Boom from '@hapi/boom'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn().mockResolvedValue({})
@@ -118,11 +117,13 @@ describe('getUsersController', () => {
       expect(batchGetContactNames).toHaveBeenCalledWith([])
     })
 
-    test('should return an empty map without querying anything when the caller is not an employee', async () => {
+    test('should throw forbidden without querying anything when the caller is not an employee', async () => {
       mockRequest.auth = createAuthWithoutOrg()
 
-      expect(getUsersController.handler(mockRequest, mockH)).rejects.toThrow(
-        Boom.forbidden(`Not authorised to get user names for this organisation`)
+      await expect(
+        getUsersController.handler(mockRequest, mockH)
+      ).rejects.toThrow(
+        'Not authorised to get user names for this organisation'
       )
 
       expect(mockExemptionCollection.distinct).not.toHaveBeenCalled()
