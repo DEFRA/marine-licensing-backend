@@ -10,10 +10,8 @@ import {
 } from '../../../constants/project-status.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
-import { createLogger } from '../../../common/helpers/logging/logger.js'
-
-const logger = createLogger()
-const logSystem = 'Projects:GetProjects'
+import { getProjects } from '../models/get-projects.js'
+import { getStatusFilter, queryEmployeeCollections } from './utils.js'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
@@ -67,24 +65,24 @@ export const sortByStatus = (a, b) => {
   return aSortIndex - bSortIndex
 }
 
-const getEmployeeProjects = async (db, organisationId, contactId) => {
-  const orgFilter = { 'organisation.id': organisationId }
+const getEmployeeProjects = async (
+  db,
+  organisationId,
+  contactId,
+  payload = {}
+) => {
+  const { show, status, type } = payload
 
-  const dbStartedAt = Date.now()
-  const [empExemptions, empMarineLicences] = await Promise.all([
-    db
-      .collection(collectionExemptions)
-      .find(orgFilter)
-      .sort({ projectName: 1 })
-      .toArray(),
-    db
-      .collection(collectionMarineLicences)
-      .find(orgFilter)
-      .sort({ projectName: 1 })
-      .toArray()
-  ])
-  logger.info(
-    `${logSystem}: Employee projects database query completed in ${Date.now() - dbStartedAt}ms (exemptions: ${empExemptions.length}, marineLicences: ${empMarineLicences.length})`
+  const orgFilter = {
+    'organisation.id': organisationId,
+    ...(show === 'all-projects' ? {} : { contactId }),
+    ...(status && getStatusFilter(status))
+  }
+
+  const [empExemptions, empMarineLicences] = await queryEmployeeCollections(
+    db,
+    orgFilter,
+    type
   )
 
   const contactIds = [
@@ -138,8 +136,13 @@ const getCitizenProjects = async (db, contactId, organisationId) => {
 }
 
 export const getProjectsController = {
+  options: {
+    validate: {
+      payload: getProjects
+    }
+  },
   handler: async (request, h) => {
-    const { db, auth } = request
+    const { db, auth, payload } = request
     const contactId = getContactId(auth)
     const { organisationId, userRelationshipType } =
       getOrganisationDetailsFromAuthToken(auth)
@@ -150,8 +153,10 @@ export const getProjectsController = {
       const employeeProjects = await getEmployeeProjects(
         db,
         organisationId,
-        contactId
+        contactId,
+        payload
       )
+
       return h
         .response({
           message: 'success',

@@ -6,7 +6,6 @@ import {
   collectionExemptions,
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
-import { createLogger } from '../../../common/helpers/logging/logger.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn().mockResolvedValue({})
@@ -20,7 +19,6 @@ describe('getProjectsController', () => {
   let mockMarineLicenceCollection
   const testContactId = 'contact-123-abc'
   const testOrgId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
-  const logger = createLogger()
 
   const createAuthWithOrg = (organisationId = testOrgId) => ({
     credentials: {
@@ -111,11 +109,60 @@ describe('getProjectsController', () => {
 
   beforeEach(() => {
     setupMocks(mockExemptions, mockMarineLicences)
-    vi.spyOn(logger, 'info')
+  })
+
+  describe('payload validation', () => {
+    const payloadValidator = getProjectsController.options.validate.payload
+
+    it('should accept an empty payload', () => {
+      const result = payloadValidator.validate({})
+
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should accept a fully formed payload', () => {
+      const result = payloadValidator.validate({
+        show: 'my-projects',
+        status: ['ACTIVE', 'DRAFT'],
+        type: ['exemption', 'marine-licence']
+      })
+
+      expect(result.error).toBeUndefined()
+    })
   })
 
   describe('handler', () => {
-    it('should query employee collection with organisation filter', async () => {
+    it('should query employee collection scoped to own projects when show value is missing', async () => {
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+    })
+
+    it('should query employee collection scoped to own projects', async () => {
+      mockRequest.payload = { show: 'my-projects' }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
+        'organisation.id': testOrgId,
+        contactId: testContactId
+      })
+    })
+
+    it('should query employee collection with organisation filter only when scope is is all-projects', async () => {
+      mockRequest.payload = { show: 'all-projects' }
+
       await getProjectsController.handler(mockRequest, mockH)
 
       expect(mockExemptionCollection.find).toHaveBeenCalledWith({
@@ -124,11 +171,34 @@ describe('getProjectsController', () => {
       expect(mockMarineLicenceCollection.find).toHaveBeenCalledWith({
         'organisation.id': testOrgId
       })
-      expect(logger.info).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /^Projects:GetProjects: Employee projects database query completed in \d+ms \(exemptions: 2, marineLicences: 1\)$/
-        )
+    })
+
+    it('should only query the exemptions collection when type narrows to exemption', async () => {
+      mockRequest.payload = { type: ['exemption'] }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockExemptionCollection.find).toHaveBeenCalled()
+      expect(mockMarineLicenceCollection.find).not.toHaveBeenCalled()
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(responseValue.every((p) => p.projectType === 'EXEMPTION')).toBe(
+        true
       )
+    })
+
+    it('should only query the marine licence collection when type narrows to marine-licence', async () => {
+      mockRequest.payload = { type: ['marine-licence'] }
+
+      await getProjectsController.handler(mockRequest, mockH)
+
+      expect(mockMarineLicenceCollection.find).toHaveBeenCalled()
+      expect(mockExemptionCollection.find).not.toHaveBeenCalled()
+
+      const responseValue = mockH.response.mock.calls[0][0].value
+      expect(
+        responseValue.every((p) => p.projectType === 'MARINE_LICENCE')
+      ).toBe(true)
     })
 
     it('should query citizen collection with contactId and no-org filter', async () => {
