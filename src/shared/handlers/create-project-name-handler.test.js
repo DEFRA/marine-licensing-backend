@@ -333,4 +333,35 @@ describe('createProjectNameHandler', () => {
       })
     })
   })
+  it('should persist the audit fields from the payload rather than fixed values', async () => {
+    const { mockMongo, mockHandler } = global
+    // Distinct from the shared mockAuditPayload so a hardcoded user id would
+    // not satisfy this assertion.
+    const auditPayload = {
+      createdAt: new Date('2024-03-04T09:15:00Z'),
+      createdBy: 'created-by-contact-id',
+      updatedAt: new Date('2024-03-05T11:45:00Z'),
+      updatedBy: 'updated-by-contact-id'
+    }
+
+    await handler(
+      {
+        db: mockMongo,
+        payload: { projectName: 'Project', ...auditPayload },
+        auth,
+        logger: mockLogger
+      },
+      mockHandler
+    )
+
+    expect(mockInsertOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        createdBy: 'created-by-contact-id',
+        createdAt: auditPayload.createdAt,
+        updatedBy: 'updated-by-contact-id',
+        updatedAt: auditPayload.updatedAt,
+        contactId: auth.credentials.contactId
+      })
+    )
+  })
 })

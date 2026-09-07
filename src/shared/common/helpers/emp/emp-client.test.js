@@ -3,6 +3,7 @@ import { expect, vi } from 'vitest'
 import { config } from '../../../../config.js'
 import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
 import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
+import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 
 vi.mock('../../../../config.js')
 vi.mock('@esri/arcgis-rest-feature-service')
@@ -205,6 +206,36 @@ describe('Emp Client', () => {
       )
     })
 
+    it('should claim the queue item as IN_PROGRESS with a fresh updatedAt before sending', async () => {
+      vi.mocked(addFeatures).mockResolvedValue({
+        addResults: [{ success: true, objectId: 'emp-record-id' }]
+      })
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+      const before = Date.now()
+
+      await sendExemptionToEmp(mockServer, {
+        ...mockQueueItem,
+        _id: 'send-queue-id'
+      })
+
+      expect(mockServer.db.collection).toHaveBeenCalledWith(
+        'exemption-emp-queue'
+      )
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        { _id: 'send-queue-id' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+            updatedAt: expect.any(Date)
+          }
+        }
+      )
+
+      const [, update] = mockServer.db.collection().updateOne.mock.calls[0]
+      expect(update.$set.updatedAt.getTime()).toBeGreaterThanOrEqual(before)
+      expect(update.$set.updatedAt.getTime()).toBeLessThanOrEqual(Date.now())
+    })
+
     it('should throw error if no coordinates are passed to transformExemptionToEmpRequest', async () => {
       mockServer.db.collection().findOne.mockResolvedValue({
         ...mockExemption,
@@ -261,6 +292,32 @@ describe('Emp Client', () => {
         ],
         params: { token: 'test-api-key', rollbackOnFailure: true }
       })
+    })
+
+    it('should claim the queue item as IN_PROGRESS with a fresh updatedAt before withdrawing', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        empFeatureIds: ['emp-object-id']
+      })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [{ success: true, objectId: 'emp-object-id' }]
+      })
+      const before = Date.now()
+
+      await withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
+
+      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
+        { _id: 'withdraw-queue-id' },
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+            updatedAt: expect.any(Date)
+          }
+        }
+      )
+
+      const [, update] = mockServer.db.collection().updateOne.mock.calls[0]
+      expect(update.$set.updatedAt.getTime()).toBeGreaterThanOrEqual(before)
+      expect(update.$set.updatedAt.getTime()).toBeLessThanOrEqual(Date.now())
     })
 
     it('should withdraw all features when multiple ids were stored', async () => {

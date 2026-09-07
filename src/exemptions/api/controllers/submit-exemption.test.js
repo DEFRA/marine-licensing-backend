@@ -11,6 +11,7 @@ import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/up
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 import { flushPromises } from '../../../../tests/test-helpers.js'
 import { publishPublicRegisterSubmittedEvent } from '../helpers/publish-public-register-event.js'
+import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
 
 vi.mock('notifications-node-client', () => ({
   NotifyClient: vi.fn().mockImplementation(function () {
@@ -1349,6 +1350,148 @@ describe('POST /exemption/submit', () => {
           }
         }
       )
+    })
+  })
+  describe('Email confirmation', () => {
+    const mockExemption = {
+      _id: ObjectId.createFromHexString('000000000000000000000000'),
+      contactId: 'test-contact-id',
+      projectName: 'Test Marine Project',
+      publicRegister: { consent: 'no' },
+      organisation: { id: 'org-1', name: 'Test Org' },
+      multipleSiteDetails: { multipleSitesEnabled: false },
+      siteDetails: [
+        {
+          coordinatesType: 'point',
+          coordinates: { latitude: '54.978', longitude: '-1.617' }
+        }
+      ],
+      activityDescription: 'Test marine activity'
+    }
+
+    const submit = (payloadOverrides = {}) =>
+      submitExemptionController.handler(
+        {
+          payload: {
+            id: mockExemptionId,
+            userEmail: 'applicant@example.com',
+            ...mockAuditPayload,
+            ...payloadOverrides
+          },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+
+    beforeEach(() => {
+      mockExemptionsCollection.findOne.mockResolvedValue({
+        ...mockExemption,
+        _id: ObjectId.createFromHexString(mockExemptionId)
+      })
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+    })
+
+    it('should send the confirmation email exactly once with the submitted application details', async () => {
+      await submit()
+      await flushPromises()
+
+      expect(sendEmailConfirmation).toHaveBeenCalledTimes(1)
+      expect(sendEmailConfirmation).toHaveBeenCalledWith({
+        db: mockDb,
+        userName: mockAuditPayload.userName,
+        userEmail: 'applicant@example.com',
+        organisation: mockExemption.organisation,
+        applicationReference: 'EXE/2025/10001',
+        viewDetailsUrl: `http://localhost:3000/exemption/view-details/${mockExemptionId}`,
+        projectType: 'exemption'
+      })
+    })
+
+    it('should build viewDetailsUrl from the configured frontEndBaseUrl', async () => {
+      config.get.mockImplementation(function (key) {
+        if (key === 'frontEndBaseUrl') {
+          return 'https://marine-licensing.example.gov.uk'
+        }
+        return {}
+      })
+
+      await submit()
+      await flushPromises()
+
+      expect(sendEmailConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          viewDetailsUrl: `https://marine-licensing.example.gov.uk/exemption/view-details/${mockExemptionId}`
+        })
+      )
+    })
+
+    it('should pass organisation as undefined for an exemption with no organisation', async () => {
+      const { organisation, ...withoutOrganisation } = mockExemption
+      mockExemptionsCollection.findOne.mockResolvedValue({
+        ...withoutOrganisation,
+        _id: ObjectId.createFromHexString(mockExemptionId)
+      })
+
+      await submit()
+      await flushPromises()
+
+      expect(sendEmailConfirmation).toHaveBeenCalledWith(
+        expect.objectContaining({ organisation: undefined })
+      )
+    })
+
+    it('should not send a confirmation email when the exemption does not exist', async () => {
+      mockExemptionsCollection.findOne.mockResolvedValue(null)
+
+      await expect(submit()).rejects.toThrow()
+      await flushPromises()
+
+      expect(sendEmailConfirmation).not.toHaveBeenCalled()
+    })
+
+    it('should not send a confirmation email when the exemption has incomplete tasks', async () => {
+      createTaskList.mockReturnValue({
+        projectName: 'COMPLETED',
+        publicRegister: 'COMPLETED',
+        siteDetails: 'INCOMPLETE',
+        activityDescription: 'COMPLETED'
+      })
+
+      await expect(submit()).rejects.toThrow()
+      await flushPromises()
+
+      expect(sendEmailConfirmation).not.toHaveBeenCalled()
+    })
+
+    it('should not send a confirmation email when reference generation fails', async () => {
+      generateApplicationReference.mockRejectedValue(
+        new Error('reference generation failed')
+      )
+
+      await expect(submit()).rejects.toThrow()
+      await flushPromises()
+
+      expect(sendEmailConfirmation).not.toHaveBeenCalled()
+    })
+
+    it('should still return a successful submission when sending the email rejects', async () => {
+      sendEmailConfirmation.mockRejectedValue(new Error('Notify unavailable'))
+
+      await submit()
+      await flushPromises()
+
+      expect(sendEmailConfirmation).toHaveBeenCalledTimes(1)
+      expect(mockHandler.response).toHaveBeenCalledWith({
+        message: 'success',
+        value: {
+          applicationReference: 'EXE/2025/10001',
+          submittedAt: mockDate.toISOString()
+        }
+      })
     })
   })
 })

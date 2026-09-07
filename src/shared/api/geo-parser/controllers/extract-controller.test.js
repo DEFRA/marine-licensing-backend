@@ -403,4 +403,17 @@ describe('Extract Controller', () => {
       ).rejects.toThrow(sizeError)
     })
   })
+  it('should read the allowed bucket from the cdp.uploadBucket config key', async () => {
+    const { mockHandler } = global
+    // config.get is mocked to answer any key, so the key itself is asserted.
+    config.get.mockImplementation((key) =>
+      key === 'cdp.uploadBucket' ? 'mmo-uploads' : undefined
+    )
+    geoParser.extract.mockResolvedValue(mockGeoJSON)
+
+    await extractController.handler({ payload: validPayload }, mockHandler)
+
+    expect(config.get).toHaveBeenCalledWith('cdp.uploadBucket')
+    expect(geoParser.extract).toHaveBeenCalled()
+  })
 })
