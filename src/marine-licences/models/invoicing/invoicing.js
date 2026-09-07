@@ -21,6 +21,7 @@ export const invoicingSchema = joi
       then: ukInvoiceAddressSchema.required(),
       otherwise: internationalInvoiceAddressSchema.required()
     }),
+    invoiceAddressSource: joi.string().valid('lookup', 'manual').optional(),
     invoiceContactDetails: invoiceContactDetailsSchema.required().messages({
       'any.required': 'INVOICING_CONTACT_DETAILS_REQUIRED'
     }),
