@@ -45,6 +45,38 @@ describe('invoicingSchema', () => {
     expect(error.message).toContain('INVOICE_ADDRESS_TYPE_REQUIRED')
   })
 
+  test('should pass when invoiceAddressSource is lookup or manual', () => {
+    expect(
+      invoicingSchema.validate({
+        ...validPayload,
+        invoiceAddressSource: 'lookup'
+      }).error
+    ).toBeUndefined()
+
+    expect(
+      invoicingSchema.validate({
+        ...validPayload,
+        invoiceAddressSource: 'manual'
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('should pass when invoiceAddressSource is missing', () => {
+    const { error } = invoicingSchema.validate({
+      ...validPayload,
+      invoiceAddressSource: undefined
+    })
+    expect(error).toBeUndefined()
+  })
+
+  test('should error when invoiceAddressSource is invalid', () => {
+    const { error } = invoicingSchema.validate({
+      ...validPayload,
+      invoiceAddressSource: 'somewhere-else'
+    })
+    expect(error.message).toContain('"invoiceAddressSource" must be one of')
+  })
+
   test('should error when id is missing', () => {
     const { error } = invoicingSchema.validate({
       invoiceAddressType: 'uk',
