@@ -43,7 +43,9 @@ export const siteDetailsSchema = joi
             then: siteNameFieldSchema,
             otherwise: siteNameFieldSchema.optional()
           }),
-          otherwise: joi.forbidden()
+          // Single-site file uploads may include an extracted siteName in the
+          // payload; strip it rather than rejecting (forbidden would 400).
+          otherwise: joi.any().strip()
         }),
         ...fileUploadConditionalSiteItemFields,
         ...manualCoordinatesConditionalSiteItemFields,
