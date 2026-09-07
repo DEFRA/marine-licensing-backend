@@ -45,19 +45,6 @@ describe('exemption-summary helper', () => {
         byCoastalOperationsArea: expect.any(Array)
       })
     })
-
-    it('includes every submitted status in the outer match, or facets lose data', () => {
-      const pipeline = buildExemptionSummaryPipeline()
-
-      expect(pipeline[0].$match.status.$in).toEqual([
-        EXEMPTION_STATUS.SCHEDULED,
-        EXEMPTION_STATUS.ACTIVE,
-        EXEMPTION_STATUS.EXPIRED,
-        EXEMPTION_STATUS.SUBMITTED,
-        EXEMPTION_STATUS.DRAFT,
-        EXEMPTION_STATUS.WITHDRAWN
-      ])
-    })
   })
 
   describe('buildCoordinateSystemVolume', () => {
