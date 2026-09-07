@@ -143,6 +143,11 @@ export const controllerName = {
 
 - Use `request.db.collection('name')` to access MongoDB collections
 - **Audit fields** automatically added on POST (createdBy, createdAt, updatedBy, updatedAt)
+- **Multi-collection writes** that must succeed or fail together use
+  `withMongoTransaction` (`src/shared/common/helpers/mongo-transactions.js`)
+  with `server.mongoClient` — pass `{ session }` to every operation in the
+  callback. All environments (Docker, Vitest in-memory, CDP) run replica
+  sets, so transactions work everywhere.
 - **Distributed locking** for critical sections:
   ```javascript
   const lock = await request.locker.lock('resource-key')
@@ -393,7 +398,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 ### MongoDB Connection Issues
 
 - Check MongoDB is running: `docker compose up -d` (includes MongoDB)
-- Test connection: `mongosh mongodb://127.0.0.1:27017/marine-licensing-backend`
+- Test connection: `mongosh "mongodb://127.0.0.1:27017/marine-licensing-backend?directConnection=true"` (the composed mongo is a single-member replica set advertising a Docker-network hostname, so host clients must skip topology discovery — see README "MongoDB")
 
 ### S3/LocalStack Issues
 
