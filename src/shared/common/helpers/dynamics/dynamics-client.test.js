@@ -452,6 +452,7 @@ describe('Dynamics Client', () => {
             },
             marinePlanAreas: [],
             coastalOperationsAreas: [],
+            marinePlanPolicies: [],
             status: 'SUBMITTED'
           },
           headers: {
@@ -496,6 +497,7 @@ describe('Dynamics Client', () => {
             },
             marinePlanAreas: [],
             coastalOperationsAreas: [],
+            marinePlanPolicies: [],
             status: 'SUBMITTED'
           },
           headers: {
@@ -581,6 +583,49 @@ describe('Dynamics Client', () => {
           marinePlanAreas: [{ name: 'South Marine Plan Area' }],
           coastalOperationsAreas: [{ name: 'Coastal Ops Area 1' }]
         })
+      )
+    })
+
+    it('should include formatted marinePlanPolicies with applicant answers', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        marinePlanPolicies: [
+          {
+            policyCode: 'E-AGG-3',
+            sector: 'Aggregates',
+            policy: '<p>Proposals for aggregates extraction.</p>'
+          },
+          {
+            policyCode: 'E-BIO-1',
+            sector: 'Biodiversity',
+            policy: '<p>Proposals should protect biodiversity.</p>'
+          }
+        ],
+        marinePlanPolicyResponses: {
+          'E-AGG-3': 'We will avoid extraction in designated areas.',
+          'E-OLD-1': 'Stale answer for a previous policy set'
+        }
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1].payload.marinePlanPolicies).toEqual(
+        [
+          {
+            policyCode: 'E-AGG-3',
+            policyInformation: '<p>Proposals for aggregates extraction.</p>',
+            applicantAnswer: 'We will avoid extraction in designated areas.'
+          },
+          {
+            policyCode: 'E-BIO-1',
+            policyInformation: '<p>Proposals should protect biodiversity.</p>',
+            applicantAnswer: null
+          }
+        ]
       )
     })
 

@@ -18,6 +18,9 @@ import { createLogger } from '../../helpers/logging/logger.js'
 import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
 import { buildCoordinatesCsvUrlById } from '../../../../marine-licences/constants/coordinates-csv.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../../../marine-licences/constants/water-framework-directive.js'
+import { formatMarinePlanPoliciesForGateway } from '../../../../marine-licences/api/helpers/format-marine-plan-policies-for-gateway.js'
+import { filterCurrentPolicyResponses } from '../../../../marine-licences/api/helpers/marine-plan-policies/filter-current-policy-responses.js'
+import { hydrateMarinePlanPolicies } from '../../../../marine-licences/api/helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
 
 const logger = createLogger()
 
@@ -305,6 +308,16 @@ export const sendMarineLicenceToDynamics = async (
     applicationReferenceNumber
   )
 
+  await hydrateMarinePlanPolicies(server.db, marineLicence)
+  const { responses: marinePlanPolicyResponses } = filterCurrentPolicyResponses(
+    marineLicence.marinePlanPolicies,
+    marineLicence.marinePlanPolicyResponses
+  )
+  const marinePlanPolicies = formatMarinePlanPoliciesForGateway(
+    marineLicence.marinePlanPolicies,
+    marinePlanPolicyResponses
+  )
+
   const { feeEstimate = {} } = marineLicence
 
   const feeBand = feeEstimate.feeBand ?? '2A'
@@ -327,6 +340,7 @@ export const sendMarineLicenceToDynamics = async (
     ),
     marinePlanAreas: marineLicence.marinePlanAreas ?? [],
     coastalOperationsAreas: marineLicence.coastalOperationsAreas ?? [],
+    marinePlanPolicies,
     ...(marineLicence.organisation?.id
       ? { applicantOrganisationId: marineLicence.organisation.id }
       : {}),
