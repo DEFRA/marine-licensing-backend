@@ -178,11 +178,17 @@ describe('EMP Processor', () => {
   })
 
   describe('processEmpQueue', () => {
-    it('should call handleQueueItemSuccess for each queue item', async () => {
+    it('should send ADD items and record the returned feature ids for each queue item', async () => {
       const mockQueueItems = [
-        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 },
+        {
+          _id: '1',
+          action: EMP_REQUEST_ACTIONS.ADD,
+          status: REQUEST_QUEUE_STATUS.PENDING,
+          retries: 0
+        },
         {
           _id: '2',
+          action: EMP_REQUEST_ACTIONS.ADD,
           status: REQUEST_QUEUE_STATUS.FAILED,
           retries: 1,
           updatedAt: new Date(Date.now() - 70000)
@@ -201,6 +207,7 @@ describe('EMP Processor', () => {
 
       await empModule.processEmpQueue(mockServer)
 
+      expect(empClient.withdrawExemptionFromEmp).not.toHaveBeenCalled()
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledTimes(2)
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         { _id: '1' },
@@ -407,91 +414,10 @@ describe('EMP Processor', () => {
       ).rejects.toThrow('Database connection failed')
     })
   })
-  describe('queue write freshness and routing', () => {
-    // A range rather than exact equality, so the assertion still holds if this
-    // file ever stops running on fake timers.
-    const expectFreshDate = (value, since) => {
-      expect(value).toBeInstanceOf(Date)
-      expect(value.getTime()).toBeGreaterThanOrEqual(since)
-      expect(value.getTime()).toBeLessThanOrEqual(Date.now())
-    }
-
-    it('should stamp handleEmpQueueItemSuccess with the current time', async () => {
-      const before = Date.now()
-
-      await empModule.handleEmpQueueItemSuccess(mockServer, mockItem, ['1'])
-
-      const [, update] = mockServer.db.collection().updateOne.mock.calls[0]
-      expect(update.$set.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
-      expectFreshDate(update.$set.updatedAt, before)
-    })
-
-    it('should stamp a retried failure with the current time', async () => {
-      const before = Date.now()
-
-      await empModule.handleEmpQueueItemFailure(mockServer, {
-        ...mockItem,
-        retries: 1
-      })
-
-      const [, update] = mockServer.db.collection().updateOne.mock.calls[0]
-      expect(update.$set.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
-      expectFreshDate(update.$set.updatedAt, before)
-    })
-
-    it('should stamp the dead letter queue document with the current time', async () => {
-      const insertOne = vi.fn().mockResolvedValue({})
-      const deleteOne = vi.fn().mockResolvedValue({})
-      mockServer.db.collection.mockImplementation(function (name) {
-        if (name === 'exemption-emp-queue') return { deleteOne }
-        if (name === 'exemption-emp-queue-failed') return { insertOne }
-        throw new Error('Unexpected collection')
-      })
-      const before = Date.now()
-
-      await empModule.handleEmpQueueItemFailure(mockServer, {
-        ...mockItem,
-        retries: 2
-      })
-
-      const [doc] = insertOne.mock.calls[0]
-      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
-      expectFreshDate(doc.updatedAt, before)
-    })
-
-    it('should route ADD items to sendExemptionToEmp and record the returned feature ids', async () => {
-      const item = {
-        _id: 'add-1',
-        action: EMP_REQUEST_ACTIONS.ADD,
-        status: REQUEST_QUEUE_STATUS.PENDING,
-        retries: 0
-      }
-      vi.mocked(empClient.sendExemptionToEmp).mockResolvedValue({
-        objectIds: ['emp-1']
-      })
-      mockServer.db.collection().find.mockReturnValueOnce({
-        toArray: vi.fn().mockResolvedValue([item])
-      })
-
-      await empModule.processEmpQueue(mockServer)
-
-      expect(empClient.sendExemptionToEmp).toHaveBeenCalledWith(
-        mockServer,
-        item
-      )
-      expect(empClient.withdrawExemptionFromEmp).not.toHaveBeenCalled()
-      expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
-        { _id: 'add-1' },
-        {
-          $set: {
-            status: REQUEST_QUEUE_STATUS.SUCCESS,
-            updatedAt: expect.any(Date),
-            empFeatureIds: ['emp-1']
-          }
-        }
-      )
-    })
-
+  describe('claim filter', () => {
+    // Asserts the query rather than the outcome, because find() is stubbed in
+    // this file and the exclusion cannot be exercised behaviourally here. The
+    // behavioural version lives in the dynamics integration suite.
     it('should claim only pending items and failed items past the retry delay', async () => {
       const find = vi.fn().mockReturnValue({
         toArray: vi.fn().mockResolvedValue([])

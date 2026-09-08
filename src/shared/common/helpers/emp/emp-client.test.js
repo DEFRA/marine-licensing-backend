@@ -4,6 +4,7 @@ import { config } from '../../../../config.js'
 import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
 import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
 import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
+import { expectRecentDate } from '../../../../../tests/test-helpers.js'
 import {
   collectionEmpQueue,
   collectionExemptions
@@ -260,8 +261,7 @@ describe('Emp Client', () => {
       )
 
       const [, update] = empQueue.updateOne.mock.calls[0]
-      expect(update.$set.updatedAt.getTime()).toBeGreaterThanOrEqual(before)
-      expect(update.$set.updatedAt.getTime()).toBeLessThanOrEqual(Date.now())
+      expectRecentDate(update.$set.updatedAt, before)
     })
 
     it('should throw error if no coordinates are passed to transformExemptionToEmpRequest', async () => {
@@ -346,8 +346,7 @@ describe('Emp Client', () => {
       )
 
       const [, update] = empQueue.updateOne.mock.calls[0]
-      expect(update.$set.updatedAt.getTime()).toBeGreaterThanOrEqual(before)
-      expect(update.$set.updatedAt.getTime()).toBeLessThanOrEqual(Date.now())
+      expectRecentDate(update.$set.updatedAt, before)
     })
 
     it('should withdraw all features when multiple ids were stored', async () => {

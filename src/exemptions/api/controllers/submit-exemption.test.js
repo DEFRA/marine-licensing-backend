@@ -816,6 +816,11 @@ describe('POST /exemption/submit', () => {
           mockHandler
         )
       ).rejects.toThrow(Boom.notFound('Exemption not found during update'))
+
+      // The controller fires the confirmation email without awaiting it, so
+      // the microtask queue has to drain before this assertion is meaningful.
+      await flushPromises()
+      expect(sendEmailConfirmation).not.toHaveBeenCalled()
     })
   })
 
@@ -891,6 +896,11 @@ describe('POST /exemption/submit', () => {
       )
 
       expect(generateApplicationReference).not.toHaveBeenCalled()
+
+      // The controller fires the confirmation email without awaiting it, so
+      // the microtask queue has to drain before this assertion is meaningful.
+      await flushPromises()
+      expect(sendEmailConfirmation).not.toHaveBeenCalled()
     })
 
     it('should prevent submission with multiple incomplete sections', async () => {
@@ -1047,6 +1057,11 @@ describe('POST /exemption/submit', () => {
       ).rejects.toThrow('Unable to acquire lock for reference generation')
 
       expect(mockExemptionsCollection.updateOne).not.toHaveBeenCalled()
+
+      // The controller fires the confirmation email without awaiting it, so
+      // the microtask queue has to drain before this assertion is meaningful.
+      await flushPromises()
+      expect(sendEmailConfirmation).not.toHaveBeenCalled()
     })
 
     it('should handle database connection errors during reference generation', async () => {
@@ -1444,54 +1459,14 @@ describe('POST /exemption/submit', () => {
       )
     })
 
-    it('should not send a confirmation email when the exemption does not exist', async () => {
-      mockExemptionsCollection.findOne.mockResolvedValue(null)
-
-      await expect(submit()).rejects.toThrow(
-        Boom.notFound(`#findExemptionById not found for id ${mockExemptionId}`)
-      )
-      await flushPromises()
-
-      expect(sendEmailConfirmation).not.toHaveBeenCalled()
-    })
-
-    it('should not send a confirmation email when the exemption has incomplete tasks', async () => {
-      createTaskList.mockReturnValue({
-        projectName: 'COMPLETED',
-        publicRegister: 'COMPLETED',
-        siteDetails: 'INCOMPLETE',
-        activityDescription: 'COMPLETED'
-      })
-
-      await expect(submit()).rejects.toThrow(
-        Boom.badRequest(
-          'Exemption is incomplete. Missing sections: siteDetails'
-        )
-      )
-      await flushPromises()
-
-      expect(sendEmailConfirmation).not.toHaveBeenCalled()
-    })
-
-    it('should not send a confirmation email when reference generation fails', async () => {
-      generateApplicationReference.mockRejectedValue(
-        new Error('reference generation failed')
-      )
-
-      await expect(submit()).rejects.toThrow(
-        Boom.internal('Error submitting exemption: reference generation failed')
-      )
-      await flushPromises()
-
-      expect(sendEmailConfirmation).not.toHaveBeenCalled()
-    })
-
     // The controller calls sendEmailConfirmation without awaiting it and
     // without a .catch(), so a rejection here is an unhandled rejection in
     // production rather than a handled failure - nothing is logged and no
-    // email-queue record is written. This test pins the current behaviour
-    // (submission still succeeds); the missing .catch() in
-    // submit-exemption.js is tracked separately.
+    // email-queue record is written.
+    //
+    // This test pins current behaviour, NOT intended behaviour. When the
+    // missing .catch() in submit-exemption.js is added, replace this with a
+    // test asserting the failure is logged. Follow-up ticket: TODO-TICKET.
     it('should still return a successful submission when sending the email rejects', async () => {
       const rejection = Promise.reject(new Error('Notify unavailable'))
       // Handled here only to keep the rejection the controller drops from
