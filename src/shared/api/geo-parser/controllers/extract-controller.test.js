@@ -321,9 +321,14 @@ describe('Extract Controller', () => {
       expect(geoParser.extract).not.toHaveBeenCalled()
     })
 
-    it('should validate against configured bucket name', async () => {
+    it('should validate against the bucket configured under cdp.uploadBucket', async () => {
       const { mockHandler } = global
-      config.get.mockReturnValue('different-bucket')
+      // Keyed rather than blanket, so the allowed bucket is proved to come
+      // from cdp.uploadBucket specifically - any other key reads as undefined
+      // and would fail the comparison in the handler.
+      config.get.mockImplementation((key) =>
+        key === 'cdp.uploadBucket' ? 'different-bucket' : undefined
+      )
       const payload = {
         ...validPayload,
         s3Bucket: 'different-bucket'
@@ -402,18 +407,5 @@ describe('Extract Controller', () => {
         extractController.handler(mockRequest, mockHandler)
       ).rejects.toThrow(sizeError)
     })
-  })
-  it('should read the allowed bucket from the cdp.uploadBucket config key', async () => {
-    const { mockHandler } = global
-    // config.get is mocked to answer any key, so the key itself is asserted.
-    config.get.mockImplementation((key) =>
-      key === 'cdp.uploadBucket' ? 'mmo-uploads' : undefined
-    )
-    geoParser.extract.mockResolvedValue(mockGeoJSON)
-
-    await extractController.handler({ payload: validPayload }, mockHandler)
-
-    expect(config.get).toHaveBeenCalledWith('cdp.uploadBucket')
-    expect(geoParser.extract).toHaveBeenCalled()
   })
 })

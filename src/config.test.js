@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import convict from 'convict'
 import {
   config,
@@ -60,9 +61,22 @@ describe('Config helper functions', () => {
 
   describe('requiredFromEnvInCdp format', () => {
     const originalEnv = process.env.ENVIRONMENT
+    const originalTestValue = process.env.TEST_VALUE
+
+    // Assigning undefined to process.env stores the string "undefined", which
+    // leaks into anything that reads ENVIRONMENT later, so an unset variable
+    // has to be restored by deleting it.
+    const restore = (key, value) => {
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
+    }
 
     afterEach(() => {
-      process.env.ENVIRONMENT = originalEnv
+      restore('ENVIRONMENT', originalEnv)
+      restore('TEST_VALUE', originalTestValue)
     })
 
     test('Should not throw for non-production-like environment with default value', () => {
@@ -129,8 +143,75 @@ describe('Config helper functions', () => {
   })
 })
 
-// Schema defaults are asserted rather than resolved values, so the assertions
-// hold regardless of what is set in the environment running the tests.
+// Reloading the module re-runs the convict schema against a modified
+// environment, so these exercise the env plumbing rather than restating the
+// literals that already live in config.js.
+const loadConfigWithEnv = async (env) => {
+  // Each key is restored individually - replacing process.env wholesale swaps
+  // the live environment object for a plain one and convict then reads nothing
+  // back from it.
+  const previousEnv = Object.fromEntries(
+    Object.keys(env).map((key) => [key, process.env[key]])
+  )
+  Object.assign(process.env, env)
+  vi.resetModules()
+
+  try {
+    return (await import('./config.js')).config
+  } finally {
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
+    }
+  }
+}
+
+describe('Config environment plumbing', () => {
+  afterAll(() => {
+    vi.resetModules()
+  })
+
+  test.each([
+    ['frontEndBaseUrl', 'FRONTEND_BASE_URL', 'https://frontend.example.gov.uk'],
+    [
+      'backendGatewayUrl',
+      'BACKEND_GATEWAY_URL',
+      'https://gateway.example.gov.uk'
+    ],
+    [
+      'defraId.jwksUri',
+      'DEFRA_ID_JWKS_URI',
+      'https://defra.example.gov.uk/jwks'
+    ],
+    [
+      'entraId.jwksUri',
+      'ENTRA_ID_JWKS_URI',
+      'https://entra.example.gov.uk/jwks'
+    ],
+    ['cdp.uploadBucket', 'CDP_UPLOAD_BUCKET', 'some-other-bucket'],
+    ['aws.s3.endpoint', 'S3_ENDPOINT', 'https://s3.example.gov.uk'],
+    ['cdpEnvironment', 'ENVIRONMENT', 'dev']
+  ])('Should read %s from %s', async (key, envVar, value) => {
+    const reloaded = await loadConfigWithEnv({ [envVar]: value })
+
+    expect(reloaded.get(key)).toBe(value)
+  })
+
+  test('Should coerce MAX_FILE_SIZE to a number', async () => {
+    const reloaded = await loadConfigWithEnv({ MAX_FILE_SIZE: '1234' })
+
+    expect(reloaded.get('cdp.maxFileSize')).toBe(1234)
+  })
+})
+
+// These deliberately restate the literals in config.js. Duplication is the
+// point: a silently changed default is exactly the failure being guarded
+// against, and nothing else in the suite reads a default rather than a mocked
+// value. Schema defaults are asserted rather than resolved values, so the
+// assertions hold regardless of what is set in the environment running them.
 describe('Config schema defaults', () => {
   test('Should point the front end at the local dev server by default', () => {
     expect(config.default('frontEndBaseUrl')).toBe('http://localhost:3000')

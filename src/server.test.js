@@ -26,7 +26,8 @@ import hapiAuthJwt2 from 'hapi-auth-jwt2'
 
 // Every plugin is replaced by a sentinel so the assertions below are about
 // server wiring only - what gets registered, in what order, with what options.
-// Factories are hoisted above the imports, so each sentinel is inlined.
+// `vi.mock` calls are hoisted above the imports, so each sentinel is inlined
+// rather than referenced from a shared variable.
 
 vi.mock('@hapi/hapi')
 vi.mock('./config.js')
@@ -172,30 +173,14 @@ describe('createServer', () => {
     expect(routerOptions).toEqual({ stripTrailingSlash: true })
   })
 
+  // The registration order matters, so the tests below assert the ordering
+  // constraints that carry a reason rather than pinning the whole array -
+  // a list assertion would have to be edited for every plugin added, without
+  // catching anything the ordering tests miss.
   it('should register every plugin in a single call', async () => {
     await createServer()
 
     expect(mockServer.register).toHaveBeenCalledTimes(1)
-    expect(registered()).toEqual([
-      requestTracing,
-      requestLogger,
-      secureContext,
-      pulse,
-      { plugin: mongoDb, options: mongoOptions },
-      populateCoastalOperationsAreasPlugin,
-      populateMarinePlanAreasPlugin,
-      simplifyMarinePlanAreasPlugin,
-      hapiAuthJwt2,
-      auth,
-      router,
-      processDynamicsQueuePlugin,
-      processEmpQueuePlugin,
-      marinePlanPoliciesWorkerPlugin,
-      marinePlanPoliciesDlqWorkerPlugin,
-      masWorkerPlugin,
-      masDlqWorkerPlugin,
-      schedulerPlugin
-    ])
   })
 
   // indexOf returns -1 for a plugin that was never registered, which would
@@ -257,14 +242,30 @@ describe('createServer', () => {
     }
   })
 
-  it('should register mongoDb with the mongo config so later plugins have a db', async () => {
+  it('should register mongoDb with the mongo config before the plugins that need a db', async () => {
     await createServer()
 
     const plugins = registered()
     const mongoEntry = plugins.find((entry) => entry?.plugin === mongoDb)
     expect(mongoEntry.options).toBe(mongoOptions)
-    expect(positionOf(plugins, mongoEntry)).toBeLessThan(
-      positionOf(plugins, populateCoastalOperationsAreasPlugin)
+
+    for (const geoAreaPlugin of [
+      populateCoastalOperationsAreasPlugin,
+      populateMarinePlanAreasPlugin,
+      simplifyMarinePlanAreasPlugin
+    ]) {
+      expect(positionOf(plugins, mongoEntry)).toBeLessThan(
+        positionOf(plugins, geoAreaPlugin)
+      )
+    }
+  })
+
+  it('should build the simplified marine plan areas after the source collection is populated', async () => {
+    await createServer()
+
+    const plugins = registered()
+    expect(positionOf(plugins, populateMarinePlanAreasPlugin)).toBeLessThan(
+      positionOf(plugins, simplifyMarinePlanAreasPlugin)
     )
   })
 

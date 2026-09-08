@@ -1430,7 +1430,7 @@ describe('POST /exemption/submit', () => {
     })
 
     it('should pass organisation as undefined for an exemption with no organisation', async () => {
-      const { organisation, ...withoutOrganisation } = mockExemption
+      const { organisation: _unused, ...withoutOrganisation } = mockExemption
       mockExemptionsCollection.findOne.mockResolvedValue({
         ...withoutOrganisation,
         _id: ObjectId.createFromHexString(mockExemptionId)
@@ -1447,7 +1447,9 @@ describe('POST /exemption/submit', () => {
     it('should not send a confirmation email when the exemption does not exist', async () => {
       mockExemptionsCollection.findOne.mockResolvedValue(null)
 
-      await expect(submit()).rejects.toThrow()
+      await expect(submit()).rejects.toThrow(
+        Boom.notFound(`#findExemptionById not found for id ${mockExemptionId}`)
+      )
       await flushPromises()
 
       expect(sendEmailConfirmation).not.toHaveBeenCalled()
@@ -1461,7 +1463,11 @@ describe('POST /exemption/submit', () => {
         activityDescription: 'COMPLETED'
       })
 
-      await expect(submit()).rejects.toThrow()
+      await expect(submit()).rejects.toThrow(
+        Boom.badRequest(
+          'Exemption is incomplete. Missing sections: siteDetails'
+        )
+      )
       await flushPromises()
 
       expect(sendEmailConfirmation).not.toHaveBeenCalled()
@@ -1472,14 +1478,26 @@ describe('POST /exemption/submit', () => {
         new Error('reference generation failed')
       )
 
-      await expect(submit()).rejects.toThrow()
+      await expect(submit()).rejects.toThrow(
+        Boom.internal('Error submitting exemption: reference generation failed')
+      )
       await flushPromises()
 
       expect(sendEmailConfirmation).not.toHaveBeenCalled()
     })
 
+    // The controller calls sendEmailConfirmation without awaiting it and
+    // without a .catch(), so a rejection here is an unhandled rejection in
+    // production rather than a handled failure - nothing is logged and no
+    // email-queue record is written. This test pins the current behaviour
+    // (submission still succeeds); the missing .catch() in
+    // submit-exemption.js is tracked separately.
     it('should still return a successful submission when sending the email rejects', async () => {
-      sendEmailConfirmation.mockRejectedValue(new Error('Notify unavailable'))
+      const rejection = Promise.reject(new Error('Notify unavailable'))
+      // Handled here only to keep the rejection the controller drops from
+      // surfacing as an unhandled rejection in the test run.
+      rejection.catch(() => {})
+      sendEmailConfirmation.mockReturnValue(rejection)
 
       await submit()
       await flushPromises()

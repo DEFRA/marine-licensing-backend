@@ -408,20 +408,27 @@ describe('EMP Processor', () => {
     })
   })
   describe('queue write freshness and routing', () => {
-    const expectFreshDate = (value) => {
+    // A range rather than exact equality, so the assertion still holds if this
+    // file ever stops running on fake timers.
+    const expectFreshDate = (value, since) => {
       expect(value).toBeInstanceOf(Date)
-      expect(value.getTime()).toBe(Date.now())
+      expect(value.getTime()).toBeGreaterThanOrEqual(since)
+      expect(value.getTime()).toBeLessThanOrEqual(Date.now())
     }
 
     it('should stamp handleEmpQueueItemSuccess with the current time', async () => {
+      const before = Date.now()
+
       await empModule.handleEmpQueueItemSuccess(mockServer, mockItem, ['1'])
 
       const [, update] = mockServer.db.collection().updateOne.mock.calls[0]
       expect(update.$set.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
-      expectFreshDate(update.$set.updatedAt)
+      expectFreshDate(update.$set.updatedAt, before)
     })
 
     it('should stamp a retried failure with the current time', async () => {
+      const before = Date.now()
+
       await empModule.handleEmpQueueItemFailure(mockServer, {
         ...mockItem,
         retries: 1
@@ -429,7 +436,7 @@ describe('EMP Processor', () => {
 
       const [, update] = mockServer.db.collection().updateOne.mock.calls[0]
       expect(update.$set.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
-      expectFreshDate(update.$set.updatedAt)
+      expectFreshDate(update.$set.updatedAt, before)
     })
 
     it('should stamp the dead letter queue document with the current time', async () => {
@@ -440,6 +447,7 @@ describe('EMP Processor', () => {
         if (name === 'exemption-emp-queue-failed') return { insertOne }
         throw new Error('Unexpected collection')
       })
+      const before = Date.now()
 
       await empModule.handleEmpQueueItemFailure(mockServer, {
         ...mockItem,
@@ -448,17 +456,17 @@ describe('EMP Processor', () => {
 
       const [doc] = insertOne.mock.calls[0]
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
-      expectFreshDate(doc.updatedAt)
+      expectFreshDate(doc.updatedAt, before)
     })
 
-    it('should send add items to sendExemptionToEmp and record the returned feature ids', async () => {
+    it('should route ADD items to sendExemptionToEmp and record the returned feature ids', async () => {
       const item = {
         _id: 'add-1',
         action: EMP_REQUEST_ACTIONS.ADD,
         status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0
       }
-      vi.spyOn(empClient, 'sendExemptionToEmp').mockResolvedValue({
+      vi.mocked(empClient.sendExemptionToEmp).mockResolvedValue({
         objectIds: ['emp-1']
       })
       mockServer.db.collection().find.mockReturnValueOnce({
@@ -488,7 +496,10 @@ describe('EMP Processor', () => {
       const find = vi.fn().mockReturnValue({
         toArray: vi.fn().mockResolvedValue([])
       })
-      mockServer.db.collection().find = find
+      mockServer.db.collection.mockReturnValue({
+        find,
+        updateOne: vi.fn().mockResolvedValue({})
+      })
 
       await empModule.processEmpQueue(mockServer)
 

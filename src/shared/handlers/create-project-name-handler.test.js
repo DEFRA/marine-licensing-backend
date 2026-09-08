@@ -333,6 +333,12 @@ describe('createProjectNameHandler', () => {
       })
     })
   })
+  // The handler reads createdBy/updatedBy straight off request.payload, which
+  // is safe only because the onPreHandler ext registered in
+  // shared/common/helpers/mongodb.js overwrites those fields server-side before
+  // any handler runs. Calling the handler directly bypasses that ext, so the
+  // payload values below stand in for what the ext would have stamped - the API
+  // does not accept client-supplied audit fields.
   it('should persist the audit fields from the payload rather than fixed values', async () => {
     const { mockMongo, mockHandler } = global
     // Distinct from the shared mockAuditPayload so a hardcoded user id would
