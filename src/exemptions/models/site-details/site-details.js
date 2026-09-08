@@ -43,7 +43,7 @@ export const siteDetailsSchema = joi
             then: siteNameFieldSchema,
             otherwise: siteNameFieldSchema.optional()
           }),
-          otherwise: joi.forbidden()
+          otherwise: joi.any().strip()
         }),
         ...fileUploadConditionalSiteItemFields,
         ...manualCoordinatesConditionalSiteItemFields,

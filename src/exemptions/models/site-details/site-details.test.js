@@ -205,8 +205,9 @@ describe('#siteDetails schema', () => {
 
   describe('#siteName', () => {
     describe('when coordinatesType is "coordinates" and multipleSitesEnabled is false', () => {
-      test('Should not allow siteName field to be present when multipleSitesEnabled is false', () => {
+      test('Should strip siteName when multipleSitesEnabled is false', () => {
         const result = siteDetailsSchema.validate({
+          ...mockSiteDetailsRequest,
           multipleSiteDetails: { multipleSitesEnabled: false },
           siteDetails: [
             {
@@ -215,9 +216,8 @@ describe('#siteDetails schema', () => {
             }
           ]
         })
-        expect(result.error.message).toBe(
-          '"siteDetails[0].siteName" is not allowed'
-        )
+        expect(result.error).toBeUndefined()
+        expect(result.value.siteDetails[0].siteName).toBeUndefined()
       })
 
       test('Should not fail when siteName is missing', () => {
@@ -298,6 +298,21 @@ describe('#siteDetails schema', () => {
           mockFileUploadSiteDetailsRequest
         )
         expect(result.error).toBeUndefined()
+      })
+
+      test('Should strip extracted siteName on single-site file upload', () => {
+        const result = siteDetailsSchema.validate({
+          ...mockFileUploadSiteDetailsRequest,
+          multipleSiteDetails: { multipleSitesEnabled: false },
+          siteDetails: [
+            {
+              ...mockFileUploadSiteDetailsRequest.siteDetails[0],
+              siteName: 'Morgan'
+            }
+          ]
+        })
+        expect(result.error).toBeUndefined()
+        expect(result.value.siteDetails[0].siteName).toBeUndefined()
       })
     })
   })
