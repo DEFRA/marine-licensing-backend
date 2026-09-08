@@ -659,6 +659,52 @@ describe('POST /exemption/submit', () => {
       expect(mockHandler.code).toHaveBeenCalledWith(200)
     })
 
+    it('should log ECS-formatted error and still succeed if sending the confirmation email fails', async () => {
+      const mockExemption = {
+        _id: ObjectId.createFromHexString(mockExemptionId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project',
+        publicRegister: { consent: 'no' },
+        multipleSiteDetails: { multipleSitesEnabled: false },
+        siteDetails: [
+          {
+            coordinatesType: 'point',
+            coordinates: { latitude: '54.978', longitude: '-1.617' }
+          }
+        ],
+        activityDescription: 'Test marine activity'
+      }
+
+      mockExemptionsCollection.findOne.mockResolvedValue(mockExemption)
+      mockExemptionsCollection.updateOne.mockResolvedValue({ matchedCount: 1 })
+      vi.mocked(sendEmailConfirmation).mockRejectedValueOnce(
+        new Error('Notify API key is not set')
+      )
+
+      await submitExemptionController.handler(
+        {
+          payload: { id: mockExemptionId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          server: mockServer,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({
+            message: 'Notify API key is not set'
+          })
+        }),
+        'Failed to send confirmation email for EXE/2025/10001'
+      )
+      expect(mockHandler.code).toHaveBeenCalledWith(200)
+    })
+
     it('should log ECS-formatted error if queue inserts fail after geo operations succeed', async () => {
       const mockExemption = {
         _id: ObjectId.createFromHexString(mockExemptionId),
