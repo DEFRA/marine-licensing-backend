@@ -50,6 +50,7 @@ describe('POST /exemption/submit', () => {
   }
 
   beforeEach(() => {
+    vi.mocked(sendEmailConfirmation).mockResolvedValue(undefined)
     config.get.mockImplementation(function (key) {
       if (key === 'dynamics') {
         return {
