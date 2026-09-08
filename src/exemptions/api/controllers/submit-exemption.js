@@ -8,6 +8,8 @@ import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { ExemptionService } from '../services/exemption.service.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import { deriveExemptionStatus } from '../helpers/derive-exemption-status.js'
+import { londonToday } from '../../../shared/common/helpers/london-today.js'
 import { config } from '../../../config.js'
 import { sendEmailConfirmation } from '../../../shared/helpers/send-email-confirmation.js'
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
@@ -77,7 +79,9 @@ const updateExemptionRecord = async ({
         applicationReference,
         multipleSiteDetails: updateMultiSiteEnabled(exemption),
         submittedAt,
-        status: EXEMPTION_STATUS.ACTIVE,
+        status:
+          deriveExemptionStatus(exemption.siteDetails, londonToday()) ??
+          EXEMPTION_STATUS.ACTIVE,
         updatedAt,
         updatedBy,
         declarationAcceptedByContactId

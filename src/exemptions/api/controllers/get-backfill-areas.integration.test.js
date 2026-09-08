@@ -38,10 +38,23 @@ describe('Get backfill for exemptions - integration tests', async () => {
     })
   })
 
-  test('returns only ACTIVE exemptions sorted by submitted date (newest first)', async () => {
+  test('returns exemptions in every submitted status, newest first', async () => {
+    const expiredExemption = createCompleteExemption({
+      _id: new ObjectId(),
+      status: EXEMPTION_STATUS.EXPIRED,
+      projectName: 'Expired Project',
+      applicationReference: 'EXEMPTION-2026-003',
+      submittedAt: '2026-03-01'
+    })
+
     await globalThis.mockMongo
       .collection(collectionExemptions)
-      .insertMany([activeExemption1, activeExemption2, draftExemption])
+      .insertMany([
+        activeExemption1,
+        activeExemption2,
+        expiredExemption,
+        draftExemption
+      ])
 
     const { statusCode, body } = await makeGetRequest({
       server: getServer(),
@@ -50,9 +63,16 @@ describe('Get backfill for exemptions - integration tests', async () => {
     })
 
     expect(statusCode).toBe(200)
-    expect(body.backfillAreas).toHaveLength(2)
+    expect(body.backfillAreas).toHaveLength(3)
 
     expect(body.backfillAreas).toEqual([
+      {
+        _id: expiredExemption._id.toString(),
+        applicationReference: expiredExemption.applicationReference,
+        projectName: expiredExemption.projectName,
+        status: 'EXPIRED',
+        submittedAt: expiredExemption.submittedAt
+      },
       {
         _id: activeExemption2._id.toString(),
         applicationReference: activeExemption2.applicationReference,

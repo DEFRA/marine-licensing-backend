@@ -1,5 +1,6 @@
 import { structureErrorForECS } from '../../common/helpers/logging/logger.js'
 import { SCHEDULER_TIMEZONE } from '../../common/constants/job-scheduler.js'
+import { formatNumber } from '../../common/helpers/format-number.js'
 
 const jobAction = (jobName) => `scheduler:${jobName}`
 
@@ -23,6 +24,21 @@ const withDuration = (event, execution) => {
   return duration === undefined ? event : { ...event, duration }
 }
 
+// A readable millisecond figure for the message string, alongside the
+// nanosecond event.duration ECS/OpenSearch aggregates on. Checked against
+// undefined rather than truthiness so a zero-millisecond startedAt still
+// counts as reported.
+const durationMs = ({ startedAt, finishedAt } = {}) =>
+  startedAt !== undefined && finishedAt !== undefined
+    ? finishedAt - startedAt
+    : undefined
+
+const durationPhrase = (execution, preposition) => {
+  const ms = durationMs(execution)
+
+  return ms === undefined ? '' : ` ${preposition} ${formatNumber(ms)}ms`
+}
+
 const runEvent = (jobName, outcome, date, extra) => ({
   action: jobAction(jobName),
   outcome,
@@ -42,7 +58,7 @@ const onFinished =
   ({ date, execution }) => {
     logger.info(
       { event: withDuration(runEvent(jobName, 'success', date), execution) },
-      `Scheduled job ${jobName} completed: ${execution?.result?.summary ?? 'no summary reported'}`
+      `Scheduled job ${jobName} completed${durationPhrase(execution, 'in')}: ${execution?.result?.summary ?? 'no summary reported'}`
     )
   }
 
@@ -54,7 +70,7 @@ const onFailed =
         ...structureErrorForECS(execution?.error),
         event: withDuration(runEvent(jobName, 'failure', date), execution)
       },
-      `Scheduled job ${jobName} failed`
+      `Scheduled job ${jobName} failed${durationPhrase(execution, 'after')}`
     )
   }
 
