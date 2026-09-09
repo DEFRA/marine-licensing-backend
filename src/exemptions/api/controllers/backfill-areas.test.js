@@ -100,7 +100,7 @@ describe('POST /exemption/backfill-areas', () => {
     expect(mockHandler.code).toHaveBeenCalledWith(200)
   })
 
-  it('should throw error if exemption is not ACTIVE', async () => {
+  it('should throw error if exemption has not been submitted', async () => {
     mockDb.collection().findOne.mockResolvedValue({
       ...activeExemption,
       status: EXEMPTION_STATUS.DRAFT
@@ -114,9 +114,41 @@ describe('POST /exemption/backfill-areas', () => {
 
     await expect(
       backfillAreasController.handler(request, mockHandler)
-    ).rejects.toThrow(
-      Boom.badRequest(`Exemption is not in ${EXEMPTION_STATUS.ACTIVE}`)
-    )
+    ).rejects.toThrow(Boom.badRequest('Exemption has not been submitted'))
+  })
+
+  it('backfills an expired exemption, which is the population that needs it', async () => {
+    mockDb.collection().findOne.mockResolvedValue({
+      ...activeExemption,
+      status: EXEMPTION_STATUS.EXPIRED
+    })
+
+    const request = {
+      payload: { id: mockExemptionId },
+      db: mockDb,
+      logger: mockLogger
+    }
+
+    const result = await backfillAreasController.handler(request, mockHandler)
+
+    expect(result).toBeDefined()
+  })
+
+  it('refuses to backfill a draft', async () => {
+    mockDb.collection().findOne.mockResolvedValue({
+      ...activeExemption,
+      status: EXEMPTION_STATUS.DRAFT
+    })
+
+    const request = {
+      payload: { id: mockExemptionId },
+      db: mockDb,
+      logger: mockLogger
+    }
+
+    await expect(
+      backfillAreasController.handler(request, mockHandler)
+    ).rejects.toMatchObject({ output: { statusCode: 400 } })
   })
 
   it('should throw error if exemption already has correct data', async () => {
