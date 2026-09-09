@@ -220,6 +220,7 @@ describe('POST /exemption/submit', () => {
 
       await flushPromises()
 
+      expect(publishPublicRegisterSubmittedEvent).toHaveBeenCalledTimes(1)
       expect(publishPublicRegisterSubmittedEvent).toHaveBeenCalledWith({
         applicationId: mockExemptionId,
         applicationReference: 'EXE/2025/10001',
@@ -260,6 +261,8 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+
+      await flushPromises()
 
       expect(publishPublicRegisterSubmittedEvent).not.toHaveBeenCalled()
     })
@@ -311,6 +314,8 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
+      await flushPromises()
+
       expect(publishPublicRegisterSubmittedEvent).not.toHaveBeenCalled()
     })
 
@@ -345,6 +350,8 @@ describe('POST /exemption/submit', () => {
         mockHandler
       )
 
+      await flushPromises()
+
       expect(publishPublicRegisterSubmittedEvent).not.toHaveBeenCalled()
     })
 
@@ -377,6 +384,8 @@ describe('POST /exemption/submit', () => {
         },
         mockHandler
       )
+
+      await flushPromises()
 
       expect(publishPublicRegisterSubmittedEvent).not.toHaveBeenCalled()
     })
