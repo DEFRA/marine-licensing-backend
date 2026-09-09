@@ -27,6 +27,7 @@ import { addConstructionDrawingController } from './controllers/add-construction
 import { updateConstructionDrawingController } from './controllers/update-construction-drawing.js'
 import { deleteConstructionDrawingController } from './controllers/delete-construction-drawing.js'
 import { deleteConstructionDrawingsController } from './controllers/delete-construction-drawings.js'
+import { redactTextController } from './controllers/redact-text.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -116,6 +117,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/preferred-dates',
     ...updatePreferredDatesController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/redact-text',
+    ...redactTextController
   },
   {
     method: 'PATCH',

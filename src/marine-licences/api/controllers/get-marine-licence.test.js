@@ -6,7 +6,10 @@ import {
 } from '../../../../.vite/mocks.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { preferredDates } from '../../models/test-fixtures.js'
-import { mockCompleteSite } from '../../../../tests/test.fixture.js'
+import {
+  mockCompleteSite,
+  mockRedactions
+} from '../../../../tests/test.fixture.js'
 
 describe('GET /marine-licence', () => {
   const authenticatedController = getMarineLicenceController({
@@ -307,6 +310,76 @@ describe('GET /marine-licence', () => {
       expect(mockHandler.response).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'success' })
       )
+    })
+
+    describe('Redactions', () => {
+      const redactions = mockRedactions
+
+      it('should return redactions to an internal (Entra ID) user', async () => {
+        const { mockHandler } = global
+
+        mockedFindOne.mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: 'someone-elses-id',
+          redactions
+        })
+
+        await authenticatedController.handler(
+          requestFromInternalUser({ params: { id: mockId } }),
+          mockHandler
+        )
+
+        expect(mockHandler.response).toHaveBeenCalledWith(
+          expect.objectContaining({
+            value: expect.objectContaining({ redactions })
+          })
+        )
+      })
+
+      it('should not return redactions to an applicant', async () => {
+        const { mockHandler } = global
+        const userContactId = 'abc'
+
+        mockedFindOne.mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: userContactId,
+          redactions
+        })
+
+        await authenticatedController.handler(
+          requestFromApplicantUser({ userContactId, params: { id: mockId } }),
+          mockHandler
+        )
+
+        const [{ value }] = mockHandler.response.mock.calls[0]
+        expect(value).not.toHaveProperty('redactions')
+      })
+
+      it('should not return redactions on the public endpoint', async () => {
+        const { mockHandler } = global
+
+        mockedFindOne.mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: 'abc',
+          status: MARINE_LICENCE_STATUS.SUBMITTED,
+          redactions
+        })
+
+        await publicController.handler(
+          {
+            params: { id: mockId },
+            db: global.mockMongo,
+            logger: { info: vi.fn(), error: vi.fn() }
+          },
+          mockHandler
+        )
+
+        const [{ value }] = mockHandler.response.mock.calls[0]
+        expect(value).not.toHaveProperty('redactions')
+      })
     })
 
     it("should error if user didn't create the marine licence", async () => {

@@ -11,6 +11,7 @@ import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { getAuthUserContext } from '../../../shared/helpers/get-auth-user-context.js'
+import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
 
 export const getMarineLicenceController = ({ requiresAuth }) => ({
   options: {
@@ -45,7 +46,7 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
 
       const isCitizen = userRelationshipType === 'Citizen'
 
-      const { _id, status, ...rest } = marineLicence
+      const { _id, status, redactions, ...rest } = marineLicence
       const {
         responses: marinePlanPolicyResponses,
         count: marinePlanPolicyResponseCount
@@ -59,6 +60,7 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       const response = {
         id: _id.toString(),
         ...rest,
+        ...(isEntraIdUser(request) && { redactions }),
         status: MARINE_LICENCE_STATUS_LABEL[status] || status,
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],
