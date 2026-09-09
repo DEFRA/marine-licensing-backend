@@ -60,7 +60,11 @@ export const makePostRequest = async ({
       strategy: 'jwt',
       credentials: { contactId },
       artifacts: {
-        decoded: { tid: isInternalUser ? 'abc' : undefined, relationships }
+        decoded: {
+          tid: isInternalUser ? 'abc' : undefined,
+          oid: isInternalUser ? contactId : undefined,
+          relationships
+        }
       }
     },
     method: 'POST',

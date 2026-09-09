@@ -22,15 +22,16 @@ export const redactTextController = {
     }
 
     try {
-      const { payload, db } = request
-      const { id, fieldKey, text, updatedAt, updatedBy } = payload
+      const { payload, db, auth } = request
+      const { id, fieldKey, text, updatedAt } = payload
+      const { oid } = auth.artifacts.decoded
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
             [`redactions.${fieldKey}`]: {
               redactedAt: updatedAt,
-              redactedBy: updatedBy,
+              redactedBy: oid,
               redactedText: text
             }
           }

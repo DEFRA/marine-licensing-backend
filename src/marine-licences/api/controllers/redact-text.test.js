@@ -7,11 +7,14 @@ import { mockRedactions } from '../../../../tests/test.fixture.js'
 describe('POST /marine-licence/redact-text', () => {
   const { redactedAt, redactedBy, redactedText } = mockRedactions.preferredDates
 
-  const mockAuditPayload = { updatedAt: redactedAt, updatedBy: redactedBy }
+  const mockAuditPayload = {
+    updatedAt: redactedAt,
+    updatedBy: 'should-not-be-used'
+  }
 
   const entraAuth = {
     credentials: { contactId: redactedBy },
-    artifacts: { decoded: { tid: 'abc' } }
+    artifacts: { decoded: { tid: 'abc', oid: redactedBy } }
   }
 
   const defraIdAuth = {
