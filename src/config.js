@@ -37,6 +37,9 @@ const oneMinuteInMS = 60 * 1000
 /** Default minutes before a stuck `in_progress` Dynamics queue item may be reclaimed. */
 const dynamicsQueueClaimStaleDefaultMinutes = 30
 
+/** Default minutes before a stuck `in_progress` EMP queue item may be reclaimed. */
+const empQueueClaimStaleDefaultMinutes = 30
+
 const localAwsEndpoint = 'http://localhost:4566'
 
 const config = convict({
@@ -391,6 +394,12 @@ const config = convict({
       format: Number,
       default: oneMinuteInMS,
       env: 'EMP_RETRY_DELAY_MS'
+    },
+    claimStaleMs: {
+      doc: 'After this many milliseconds in in_progress (without success/failure), a queue item may be claimed by another worker. Set higher than the longest expected EMP call to avoid duplicate sends.',
+      format: Number,
+      default: empQueueClaimStaleDefaultMinutes * oneMinuteInMS,
+      env: 'EMP_CLAIM_STALE_MS'
     }
   },
   externalGeoAreas: {

@@ -19,6 +19,57 @@ import {
 
 const QUEUE_DELAY_MS = 2_000
 
+/** Bounds work per `processEmpQueue` run when the queue is large (avoids overlap with the polling interval). */
+export const EMP_QUEUE_MAX_ITEMS_PER_PROCESS_RUN = 50
+
+const buildClaimFilter = (now, claimStaleMs) => {
+  const retryThreshold = new Date(now.getTime() - QUEUE_DELAY_MS)
+  const staleClaimThreshold = new Date(now.getTime() - claimStaleMs)
+  return {
+    $or: [
+      { status: REQUEST_QUEUE_STATUS.PENDING },
+      {
+        status: REQUEST_QUEUE_STATUS.FAILED,
+        updatedAt: { $lte: retryThreshold }
+      },
+      {
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+        updatedAt: { $lte: staleClaimThreshold }
+      }
+    ]
+  }
+}
+
+const claimOneQueueItem = async (server, filter) => {
+  try {
+    const result = await server.db
+      .collection(collectionEmpQueue)
+      .findOneAndUpdate(
+        filter,
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+            updatedAt: new Date()
+          }
+        },
+        {
+          sort: { _id: 1 },
+          returnDocument: 'after',
+          // Default driver behaviour returns the document directly; we need `.value`
+          // for a consistent shape (tests and real DB).
+          includeResultMetadata: true
+        }
+      )
+    return result?.value ?? null
+  } catch (err) {
+    server.logger.error(
+      structureErrorForECS(err),
+      'Failed to claim EMP queue item'
+    )
+    return null
+  }
+}
+
 export const startEmpQueuePolling = (server, intervalMs) => {
   processEmpQueue(server)
 
@@ -118,28 +169,23 @@ const processEmpQueueItem = async (server, item) => {
 export const processEmpQueue = async (server) => {
   try {
     const now = new Date()
+    const { claimStaleMs } = config.get('exploreMarinePlanning')
+    const filter = buildClaimFilter(now, claimStaleMs)
 
-    const queueItems = await server.db
-      .collection(collectionEmpQueue)
-      .find({
-        $or: [
-          { status: REQUEST_QUEUE_STATUS.PENDING },
-          {
-            status: REQUEST_QUEUE_STATUS.FAILED,
-            updatedAt: { $lte: new Date(now.getTime() - QUEUE_DELAY_MS) }
-          }
-        ]
-      })
-      .toArray()
+    let item = await claimOneQueueItem(server, filter)
+    let processedCount = 0
 
-    if (queueItems.length > 0) {
-      server.logger.info(
-        `Found ${queueItems.length} items to process in EMP queue`
-      )
+    while (item) {
+      await processEmpQueueItem(server, item)
+      processedCount++
+      if (processedCount >= EMP_QUEUE_MAX_ITEMS_PER_PROCESS_RUN) {
+        break
+      }
+      item = await claimOneQueueItem(server, filter)
     }
 
-    for (const item of queueItems) {
-      await processEmpQueueItem(server, item)
+    if (processedCount > 0) {
+      server.logger.info(`Processed ${processedCount} item(s) from EMP queue`)
     }
   } catch (error) {
     server.logger.error(

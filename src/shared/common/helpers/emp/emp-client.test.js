@@ -103,9 +103,10 @@ describe('Emp Client', () => {
         applicationReference: 'TEST-REF-001'
       })
 
-      // Verify exemption-emp-queue collection is called for updateOne
-      const calls = mockServer.db.collection.mock.calls
-      expect(calls.some((call) => call[0] === 'exemption-emp-queue')).toBe(true)
+      // The queue item is claimed (flipped to in_progress) by the poller
+      // before the push runs, so the push itself must not write that status
+      // again - doing so would move the stale-claim anchor mid-push.
+      expect(mockServer.db.collection().updateOne).not.toHaveBeenCalled()
 
       expect(addFeatures).toHaveBeenCalledWith({
         features: expect.any(Array),

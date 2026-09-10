@@ -1,6 +1,5 @@
 import Boom from '@hapi/boom'
 import { config } from '../../../../config.js'
-import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
 import { transformExemptionToEmpRequest } from './transforms/exemption-to-emp.js'
 import {
   collectionEmpQueue,
@@ -99,16 +98,6 @@ export const sendExemptionToEmp = async (server, queueItem) => {
   const exemption = await exemptionService.getExemptionByApplicationReference({
     applicationReference: applicationReferenceNumber
   })
-
-  await server.db.collection(collectionEmpQueue).updateOne(
-    { _id: queueItem._id },
-    {
-      $set: {
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-        updatedAt: new Date()
-      }
-    }
-  )
 
   try {
     const features = transformExemptionToEmpRequest({
@@ -240,19 +229,9 @@ const updateEmpStatus = async (
   }
 
   // Resolved once the queue lookup has confirmed there is something to push,
-  // and before the queue item is marked in progress, so a status that can't
-  // be mapped fails the same way an unresolved feature id does.
+  // so a status that can't be mapped fails the same way an unresolved feature
+  // id does.
   const statusLabel = await getStatusLabel()
-
-  await server.db.collection(collectionEmpQueue).updateOne(
-    { _id: queueItem._id },
-    {
-      $set: {
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-        updatedAt: new Date()
-      }
-    }
-  )
 
   try {
     // https://developers.arcgis.com/rest/services-reference/enterprise/update-features/
