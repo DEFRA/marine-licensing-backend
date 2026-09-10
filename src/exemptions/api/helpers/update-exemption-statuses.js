@@ -43,8 +43,12 @@ const logUndatedExemption = (logger, exemption) => {
  * work that became due since the last run, because a missed fire is never
  * retried. That also makes it self-healing and removes any need to migrate
  * existing records.
+ *
+ * @param {Object} server - The Hapi server instance, supplying db and logger
+ * @param {Date} today - The current date for deriving status
  */
-export const updateExemptionStatuses = async (db, today, logger) => {
+export const updateExemptionStatuses = async (server, today) => {
+  const { db, logger } = server
   const collection = db.collection(collectionExemptions)
   const counts = {
     updated: 0,

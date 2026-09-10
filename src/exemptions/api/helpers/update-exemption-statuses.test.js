@@ -56,6 +56,9 @@ describe('updateExemptionStatuses', () => {
   const statusOf = async (projectName) =>
     (await db.collection(collectionExemptions).findOne({ projectName })).status
 
+  const runJob = (dbOverride = db) =>
+    updateExemptionStatuses({ db: dbOverride, logger }, TODAY)
+
   it('moves a scheduled exemption to active once its start date arrives', async () => {
     await db
       .collection(collectionExemptions)
@@ -63,7 +66,7 @@ describe('updateExemptionStatuses', () => {
         exemption(EXEMPTION_STATUS.SCHEDULED, '2026-08-20', '2026-09-30')
       )
 
-    await updateExemptionStatuses(db, TODAY, logger)
+    await runJob()
 
     expect(await statusOf('SCHEDULED-2026-08-20')).toBe(EXEMPTION_STATUS.ACTIVE)
   })
@@ -73,7 +76,7 @@ describe('updateExemptionStatuses', () => {
       .collection(collectionExemptions)
       .insertOne(exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'))
 
-    await updateExemptionStatuses(db, TODAY, logger)
+    await runJob()
 
     expect(await statusOf('ACTIVE-2026-07-01')).toBe(EXEMPTION_STATUS.EXPIRED)
   })
@@ -86,7 +89,7 @@ describe('updateExemptionStatuses', () => {
         exemption(EXEMPTION_STATUS.DRAFT, '2026-07-01', '2026-08-24')
       ])
 
-    await updateExemptionStatuses(db, TODAY, logger)
+    await runJob()
 
     expect(await statusOf('WITHDRAWN-2026-07-01')).toBe(
       EXEMPTION_STATUS.WITHDRAWN
@@ -99,8 +102,8 @@ describe('updateExemptionStatuses', () => {
       .collection(collectionExemptions)
       .insertOne(exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'))
 
-    await updateExemptionStatuses(db, TODAY, logger)
-    const second = await updateExemptionStatuses(db, TODAY, logger)
+    await runJob()
+    const second = await runJob()
 
     expect(second.summary).toContain('0 exemptions updated')
     expect(await statusOf('ACTIVE-2026-07-01')).toBe(EXEMPTION_STATUS.EXPIRED)
@@ -115,7 +118,7 @@ describe('updateExemptionStatuses', () => {
         exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-09-30')
       ])
 
-    const { summary } = await updateExemptionStatuses(db, TODAY, logger)
+    const { summary } = await runJob()
 
     expect(summary).toBe(
       '2 exemptions updated — 0 scheduled; 1 active; 1 expired; 1 unchanged'
@@ -136,11 +139,7 @@ describe('updateExemptionStatuses', () => {
         )
     }
 
-    await updateExemptionStatuses(
-      dbFlushingAfter(db, withdrawDuringFlush),
-      TODAY,
-      logger
-    )
+    await runJob(dbFlushingAfter(db, withdrawDuringFlush))
 
     expect(await statusOf('ACTIVE-2026-07-01')).toBe(EXEMPTION_STATUS.WITHDRAWN)
   })
@@ -155,11 +154,7 @@ describe('updateExemptionStatuses', () => {
 
     const batchSizes = []
 
-    const { summary } = await updateExemptionStatuses(
-      dbRecordingFlushes(db, batchSizes),
-      TODAY,
-      logger
-    )
+    const { summary } = await runJob(dbRecordingFlushes(db, batchSizes))
 
     // One full batch mid-loop, then the remainder flushed after it.
     expect(batchSizes).toEqual([500, 1])
@@ -178,7 +173,7 @@ describe('updateExemptionStatuses', () => {
       siteDetails: [{}]
     })
 
-    await updateExemptionStatuses(db, TODAY, logger)
+    await runJob()
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
