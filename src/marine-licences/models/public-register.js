@@ -3,6 +3,8 @@ import { marineLicenceId } from './shared-models.js'
 
 const PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH = 1000
 
+// consent 'yes' means the applicant wants information withheld. The exemption
+// journey's model uses the same field with the opposite meaning.
 export const publicRegister = joi
   .object({
     consent: joi.string().valid('yes', 'no').required().messages({
