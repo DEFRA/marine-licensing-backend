@@ -20,7 +20,7 @@ const BATCH_SIZE = 500
 const MISSING_DATES_ACTION = 'exemption-status:missing-activity-dates'
 
 // Queue rows are normally authored by the request that created them. This job
-// has no user, so it names itself — a row's origin has to be legible to whoever
+// has no user, so it names itself - a row's origin has to be legible to whoever
 // is reading the failed queue.
 const EMP_QUEUE_AUTHOR = 'exemption-status-job'
 
@@ -108,7 +108,8 @@ const queueEmpStatusUpdates = async (db, applicationReferences) => {
  * retried. That also makes it self-healing and removes any need to migrate
  * existing records.
  *
- * @param {Object} server - The Hapi server instance, supplying db and logger
+ * @param {Object} server - The Hapi server instance, supplying db and logger,
+ * and, when EMP is enabled, server.methods.processEmpQueue
  * @param {Date} today - The current date for deriving status
  */
 export const updateExemptionStatuses = async (server, today) => {

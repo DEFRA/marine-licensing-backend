@@ -6,7 +6,10 @@ import {
   collectionEmpQueue
 } from '../../../shared/common/constants/db-collections.js'
 import { config } from '../../../config.js'
-import { EMP_REQUEST_ACTIONS } from '../../../shared/common/constants/request-queue.js'
+import {
+  EMP_REQUEST_ACTIONS,
+  REQUEST_QUEUE_STATUS
+} from '../../../shared/common/constants/request-queue.js'
 
 vi.mock('../../../config.js')
 
@@ -303,7 +306,7 @@ describe('updateExemptionStatuses', () => {
 
       expect(row).toMatchObject({
         applicationReferenceNumber: 'IN-EMP',
-        status: 'pending',
+        status: REQUEST_QUEUE_STATUS.PENDING,
         retries: 0,
         createdBy: 'exemption-status-job',
         updatedBy: 'exemption-status-job'
