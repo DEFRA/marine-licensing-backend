@@ -13,7 +13,6 @@
 // nicknames `@hourly`, `@daily`, `@weekly`, `@monthly`, `@yearly` — nothing here
 // needs sub-minute scheduling.
 //
-//   '5 0 * * *'    00:05 every day, the exemption status job default below
 //   '0 */4 * * *'  every four hours, on the hour
 //   '30 6 * * 1'   06:30 every Monday
 //   '0 0 1 * *'    midnight on the 1st of each month

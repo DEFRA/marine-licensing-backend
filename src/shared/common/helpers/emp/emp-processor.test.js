@@ -415,9 +415,6 @@ describe('EMP Processor', () => {
     })
   })
   describe('claim filter', () => {
-    // Asserts the query rather than the outcome, because find() is stubbed in
-    // this file and the exclusion cannot be exercised behaviourally here. The
-    // behavioural version lives in the dynamics integration suite.
     it('should claim only pending items and failed items past the retry delay', async () => {
       const find = vi.fn().mockReturnValue({
         toArray: vi.fn().mockResolvedValue([])

@@ -35,15 +35,6 @@ const logUndatedExemption = (logger, exemption) => {
   )
 }
 
-/**
- * Recomputes the date-derived status of every submitted exemption and writes
- * back the ones that have moved on.
- *
- * Deliberately backward-looking: it queries all outstanding work rather than
- * work that became due since the last run, because a missed fire is never
- * retried. That also makes it self-healing and removes any need to migrate
- * existing records.
- */
 export const updateExemptionStatuses = async (db, today, logger) => {
   const collection = db.collection(collectionExemptions)
   const counts = {

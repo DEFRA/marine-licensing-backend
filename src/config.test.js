@@ -63,9 +63,6 @@ describe('Config helper functions', () => {
     const originalEnv = process.env.ENVIRONMENT
     const originalTestValue = process.env.TEST_VALUE
 
-    // Assigning undefined to process.env stores the string "undefined", which
-    // leaks into anything that reads ENVIRONMENT later, so an unset variable
-    // has to be restored by deleting it.
     const restore = (key, value) => {
       if (value === undefined) {
         delete process.env[key]
@@ -143,13 +140,7 @@ describe('Config helper functions', () => {
   })
 })
 
-// Reloading the module re-runs the convict schema against a modified
-// environment, so these exercise the env plumbing rather than restating the
-// literals that already live in config.js.
 const loadConfigWithEnv = async (env) => {
-  // Each key is restored individually - replacing process.env wholesale swaps
-  // the live environment object for a plain one and convict then reads nothing
-  // back from it.
   const previousEnv = Object.fromEntries(
     Object.keys(env).map((key) => [key, process.env[key]])
   )
@@ -207,11 +198,6 @@ describe('Config environment plumbing', () => {
   })
 })
 
-// These deliberately restate the literals in config.js. Duplication is the
-// point: a silently changed default is exactly the failure being guarded
-// against, and nothing else in the suite reads a default rather than a mocked
-// value. Schema defaults are asserted rather than resolved values, so the
-// assertions hold regardless of what is set in the environment running them.
 describe('Config schema defaults', () => {
   test.each([
     ['frontEndBaseUrl', 'http://localhost:3000'],

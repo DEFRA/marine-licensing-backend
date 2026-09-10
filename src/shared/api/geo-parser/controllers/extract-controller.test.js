@@ -323,9 +323,6 @@ describe('Extract Controller', () => {
 
     it('should validate against the bucket configured under cdp.uploadBucket', async () => {
       const { mockHandler } = global
-      // Keyed rather than blanket, so the allowed bucket is proved to come
-      // from cdp.uploadBucket specifically - any other key reads as undefined
-      // and would fail the comparison in the handler.
       config.get.mockImplementation((key) =>
         key === 'cdp.uploadBucket' ? 'different-bucket' : undefined
       )

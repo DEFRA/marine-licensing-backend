@@ -13,8 +13,6 @@ const exemption = (status, start, end) => ({
   ]
 })
 
-// Records the size of every batched write, so a test can assert the mid-loop
-// flush fires rather than everything landing in one final write.
 const dbRecordingFlushes = (realDb, batchSizes) => ({
   collection: (name) => {
     const collection = realDb.collection(name)
@@ -28,8 +26,6 @@ const dbRecordingFlushes = (realDb, batchSizes) => ({
   }
 })
 
-// Stands in for a concurrent writer landing between the cursor read and the
-// batched write: the supplied work runs immediately before every flush.
 const dbFlushingAfter = (realDb, concurrentWrite) => ({
   collection: (name) => {
     const collection = realDb.collection(name)
@@ -161,7 +157,6 @@ describe('updateExemptionStatuses', () => {
       logger
     )
 
-    // One full batch mid-loop, then the remainder flushed after it.
     expect(batchSizes).toEqual([500, 1])
     expect(
       await db

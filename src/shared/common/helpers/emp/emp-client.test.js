@@ -35,9 +35,6 @@ describe('Emp Client', () => {
     )
   })
 
-  // The default mockServer above returns one stub for every collection name,
-  // which is enough for most tests here but cannot show which collection a
-  // write landed in. This replaces it with a stub per collection.
   const stubCollectionsByName = ({
     exemption = null,
     priorQueueItem = null
@@ -240,8 +237,6 @@ describe('Emp Client', () => {
       vi.mocked(addFeatures).mockResolvedValue({
         addResults: [{ success: true, objectId: 'emp-record-id' }]
       })
-      // Per-collection stubs, so the assertion proves the claim was written to
-      // the queue rather than merely that some collection was updated.
       const { empQueue } = stubCollectionsByName({ exemption: mockExemption })
       const before = Date.now()
 
@@ -323,8 +318,6 @@ describe('Emp Client', () => {
     })
 
     it('should claim the queue item as IN_PROGRESS with a fresh updatedAt before withdrawing', async () => {
-      // Per-collection stubs, so the assertion proves the claim was written to
-      // the queue rather than merely that some collection was updated.
       const { empQueue } = stubCollectionsByName({
         priorQueueItem: { empFeatureIds: ['emp-object-id'] }
       })

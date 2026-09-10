@@ -151,7 +151,6 @@ describe('Dynamics Processor integration', () => {
         type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
         applicationReferenceNumber: 'EXE/SUCCESS/1',
         status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-        // Stale, so the assertion below fails if updatedAt is not overwritten.
         updatedAt: new Date('2000-01-01')
       })
 
@@ -198,8 +197,6 @@ describe('Dynamics Processor integration', () => {
         applicationReferenceNumber: 'EXE/FAIL/1',
         status: REQUEST_QUEUE_STATUS.FAILED,
         retries: 1,
-        // Stale, so the assertion below fails if updatedAt is not overwritten.
-        // The retry delay is measured from this field.
         updatedAt: new Date('2000-01-01')
       })
 
@@ -248,7 +245,6 @@ describe('Dynamics Processor integration', () => {
         type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
         applicationReferenceNumber: 'EXE/DL/1',
         status: REQUEST_QUEUE_STATUS.FAILED,
-        // Stale, so the assertion below fails if updatedAt is not overwritten.
         updatedAt: new Date('2000-01-01')
       }
       await db.collection(EXEMPTION_QUEUE).insertOne({ ...base, retries: 2 })
@@ -659,10 +655,6 @@ describe('Dynamics Processor integration', () => {
       expect(vi.mocked(sendToDynamics)).not.toHaveBeenCalled()
     })
 
-    // The point of the IN_PROGRESS claim is that two API instances polling on
-    // the same schedule cannot both pick up one application. A sequential run
-    // cannot show that, so this runs two passes concurrently against the real
-    // replica set and relies on findOneAndUpdate being atomic.
     it('should send an item only once when two runs poll concurrently', async () => {
       const db = globalThis.mockMongo
 
@@ -673,10 +665,6 @@ describe('Dynamics Processor integration', () => {
         status: REQUEST_QUEUE_STATUS.PENDING
       })
 
-      // Held open until both runs have started, so the second run is
-      // guaranteed to poll while the first still holds the claim. Without
-      // this the two runs could serialise and the test would pass without
-      // exercising the race at all.
       let releaseSend
       const sendHeldOpen = new Promise((resolve) => {
         releaseSend = resolve

@@ -41,8 +41,6 @@ const updateExemptionRecord = async ({
     { returnDocument: 'after' }
   )
   if (!exemption) {
-    // authorizeOwnership has already proved the document exists, so the only
-    // way to get here is a status that cannot be withdrawn.
     throw Boom.conflict(
       'Exemption cannot be withdrawn because its activity period has ended or it has already been withdrawn'
     )

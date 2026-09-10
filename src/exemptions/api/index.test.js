@@ -1,15 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { exemptions } from './index.js'
 
-// The frontend and MAS gateway call these paths by name, so a rename is a
-// breaking API change rather than a refactor. This pins the public surface.
 describe('exemption routes', () => {
   const routeTable = () =>
     exemptions.map(({ method, path }) => `${method} ${path}`)
 
-  // Compared as a sorted set: the routes registered are the contract, the order
-  // they appear in the array is not, so adding a route mid-list should not fail
-  // this test.
   it('should expose the expected method and path for every exemption route', () => {
     expect(routeTable().sort()).toEqual(
       [

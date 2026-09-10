@@ -378,8 +378,6 @@ describe('POST /exemption/submit', () => {
 
   describe('derived status on submission', () => {
     beforeEach(() => {
-      // The outer setup stubs the Date constructor, which would collapse every
-      // parsed activity date onto the same instant.
       global.Date.mockRestore()
     })
 
@@ -930,8 +928,6 @@ describe('POST /exemption/submit', () => {
         )
       ).rejects.toThrow(Boom.notFound('Exemption not found during update'))
 
-      // The controller fires the confirmation email without awaiting it, so
-      // the microtask queue has to drain before this assertion is meaningful.
       await flushPromises()
       expect(sendEmailConfirmation).not.toHaveBeenCalled()
     })
@@ -1010,8 +1006,6 @@ describe('POST /exemption/submit', () => {
 
       expect(generateApplicationReference).not.toHaveBeenCalled()
 
-      // The controller fires the confirmation email without awaiting it, so
-      // the microtask queue has to drain before this assertion is meaningful.
       await flushPromises()
       expect(sendEmailConfirmation).not.toHaveBeenCalled()
     })
@@ -1171,8 +1165,6 @@ describe('POST /exemption/submit', () => {
 
       expect(mockExemptionsCollection.updateOne).not.toHaveBeenCalled()
 
-      // The controller fires the confirmation email without awaiting it, so
-      // the microtask queue has to drain before this assertion is meaningful.
       await flushPromises()
       expect(sendEmailConfirmation).not.toHaveBeenCalled()
     })
@@ -1572,18 +1564,8 @@ describe('POST /exemption/submit', () => {
       )
     })
 
-    // The controller calls sendEmailConfirmation without awaiting it and
-    // without a .catch(), so a rejection here is an unhandled rejection in
-    // production rather than a handled failure - nothing is logged and no
-    // email-queue record is written.
-    //
-    // This test pins current behaviour, NOT intended behaviour. When the
-    // missing .catch() in submit-exemption.js is added, replace this with a
-    // test asserting the failure is logged. Follow-up ticket: TODO-TICKET.
     it('should still return a successful submission when sending the email rejects', async () => {
       const rejection = Promise.reject(new Error('Notify unavailable'))
-      // Handled here only to keep the rejection the controller drops from
-      // surfacing as an unhandled rejection in the test run.
       rejection.catch(() => {})
       sendEmailConfirmation.mockReturnValue(rejection)
 

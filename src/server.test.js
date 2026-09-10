@@ -24,11 +24,6 @@ import { requestTracing } from './shared/common/helpers/request-tracing.js'
 import { secureContext } from '@defra/hapi-secure-context'
 import hapiAuthJwt2 from 'hapi-auth-jwt2'
 
-// Every plugin is replaced by a sentinel so the assertions below are about
-// server wiring only - what gets registered, in what order, with what options.
-// `vi.mock` calls are hoisted above the imports, so each sentinel is inlined
-// rather than referenced from a shared variable.
-
 vi.mock('@hapi/hapi')
 vi.mock('./config.js')
 vi.mock('./shared/common/helpers/proxy/setup-proxy.js')
@@ -173,19 +168,12 @@ describe('createServer', () => {
     expect(routerOptions).toEqual({ stripTrailingSlash: true })
   })
 
-  // The registration order matters, so the tests below assert the ordering
-  // constraints that carry a reason rather than pinning the whole array -
-  // a list assertion would have to be edited for every plugin added, without
-  // catching anything the ordering tests miss.
   it('should register every plugin in a single call', async () => {
     await createServer()
 
     expect(mockServer.register).toHaveBeenCalledTimes(1)
   })
 
-  // indexOf returns -1 for a plugin that was never registered, which would
-  // satisfy a bare "before" assertion, so each position is checked for
-  // presence first.
   const positionOf = (plugins, target) => {
     const index = plugins.indexOf(target)
     expect(index).toBeGreaterThanOrEqual(0)
