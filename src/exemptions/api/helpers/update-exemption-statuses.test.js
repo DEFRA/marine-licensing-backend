@@ -247,6 +247,34 @@ describe('updateExemptionStatuses', () => {
       expect(await queuedStatusUpdates()).toEqual([])
     })
 
+    it('queues nothing for exemptions whose only queue row never created ArcGIS features', async () => {
+      await db.collection(collectionExemptions).insertMany([
+        {
+          ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+          applicationReference: 'QUEUED-BUT-NEVER-SUCCEEDED'
+        },
+        {
+          ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-02', '2026-08-24'),
+          applicationReference: 'WITHDRAWN-ONLY'
+        }
+      ])
+      await db.collection(collectionEmpQueue).insertMany([
+        {
+          applicationReferenceNumber: 'QUEUED-BUT-NEVER-SUCCEEDED',
+          action: EMP_REQUEST_ACTIONS.ADD
+        },
+        {
+          applicationReferenceNumber: 'WITHDRAWN-ONLY',
+          action: EMP_REQUEST_ACTIONS.WITHDRAW,
+          empFeatureIds: ['emp-object-id']
+        }
+      ])
+
+      await runWithEmpEnabled()
+
+      expect(await queuedStatusUpdates()).toEqual([])
+    })
+
     it('queues nothing when the status did not change', async () => {
       await db.collection(collectionExemptions).insertOne({
         ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-09-30'),
