@@ -1,5 +1,8 @@
-import { empFeaturesCreated } from './emp-queue.js'
-import { EMP_REQUEST_ACTIONS } from '../../constants/request-queue.js'
+import { empFeaturesCreated, buildEmpQueueItem } from './emp-queue.js'
+import {
+  EMP_REQUEST_ACTIONS,
+  REQUEST_QUEUE_STATUS
+} from '../../constants/request-queue.js'
 
 describe('empFeaturesCreated', () => {
   let collection
@@ -67,5 +70,31 @@ describe('empFeaturesCreated', () => {
     })
 
     expect(await matching()).toEqual([])
+  })
+})
+
+describe('buildEmpQueueItem', () => {
+  it('builds a pending row a job can insert without a request', () => {
+    const now = new Date('2026-09-10T00:05:00.000Z')
+
+    expect(
+      buildEmpQueueItem({
+        applicationReference: 'TEST-REF-001',
+        action: EMP_REQUEST_ACTIONS.UPDATE_STATUS,
+        createdAt: now,
+        createdBy: 'exemption-status-job',
+        updatedAt: now,
+        updatedBy: 'exemption-status-job'
+      })
+    ).toEqual({
+      action: EMP_REQUEST_ACTIONS.UPDATE_STATUS,
+      applicationReferenceNumber: 'TEST-REF-001',
+      status: REQUEST_QUEUE_STATUS.PENDING,
+      retries: 0,
+      createdAt: now,
+      createdBy: 'exemption-status-job',
+      updatedAt: now,
+      updatedBy: 'exemption-status-job'
+    })
   })
 })

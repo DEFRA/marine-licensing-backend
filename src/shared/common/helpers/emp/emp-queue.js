@@ -1,4 +1,7 @@
-import { EMP_REQUEST_ACTIONS } from '../../constants/request-queue.js'
+import {
+  EMP_REQUEST_ACTIONS,
+  REQUEST_QUEUE_STATUS
+} from '../../constants/request-queue.js'
 
 /**
  * Matches the queue row that created an exemption's ArcGIS features, which is
@@ -21,3 +24,21 @@ export const empFeaturesCreated = {
     { empFeatureId: { $exists: true, $ne: null } }
   ]
 }
+
+export const buildEmpQueueItem = ({
+  applicationReference,
+  action,
+  createdAt,
+  createdBy,
+  updatedAt,
+  updatedBy
+}) => ({
+  action,
+  applicationReferenceNumber: applicationReference,
+  status: REQUEST_QUEUE_STATUS.PENDING,
+  retries: 0,
+  createdAt,
+  createdBy,
+  updatedAt,
+  updatedBy
+})

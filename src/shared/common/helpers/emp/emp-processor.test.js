@@ -406,4 +406,59 @@ describe('EMP Processor', () => {
       ).rejects.toThrow('Database connection failed')
     })
   })
+
+  describe('action routing', () => {
+    const itemWith = (action) => ({
+      _id: 'routed',
+      applicationReferenceNumber: 'TEST-REF-001',
+      action
+    })
+
+    const processOne = async (item) => {
+      mockDb.collection.mockReturnValue({
+        find: vi.fn().mockReturnValue({
+          toArray: vi.fn().mockResolvedValue([item])
+        }),
+        updateOne: vi.fn().mockResolvedValue({})
+      })
+      vi.mocked(empClient.sendExemptionToEmp).mockResolvedValue({
+        objectIds: ['1']
+      })
+      vi.mocked(empClient.withdrawExemptionFromEmp).mockResolvedValue({
+        objectIds: ['1']
+      })
+      vi.mocked(empClient.updateExemptionStatusInEmp).mockResolvedValue({
+        objectIds: ['1']
+      })
+
+      await empModule.processEmpQueue(mockServer)
+    }
+
+    it('routes an update-status item to the status push', async () => {
+      const item = itemWith(EMP_REQUEST_ACTIONS.UPDATE_STATUS)
+
+      await processOne(item)
+
+      expect(empClient.updateExemptionStatusInEmp).toHaveBeenCalledWith(
+        mockServer,
+        item
+      )
+      expect(empClient.sendExemptionToEmp).not.toHaveBeenCalled()
+      expect(empClient.withdrawExemptionFromEmp).not.toHaveBeenCalled()
+    })
+
+    it('routes a withdraw item to the withdrawal push', async () => {
+      await processOne(itemWith(EMP_REQUEST_ACTIONS.WITHDRAW))
+
+      expect(empClient.withdrawExemptionFromEmp).toHaveBeenCalled()
+      expect(empClient.updateExemptionStatusInEmp).not.toHaveBeenCalled()
+    })
+
+    it('still treats a row with no action as an add', async () => {
+      await processOne(itemWith(undefined))
+
+      expect(empClient.sendExemptionToEmp).toHaveBeenCalled()
+      expect(empClient.updateExemptionStatusInEmp).not.toHaveBeenCalled()
+    })
+  })
 })

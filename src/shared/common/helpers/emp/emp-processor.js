@@ -4,8 +4,13 @@ import {
   EMP_REQUEST_ACTIONS
 } from '../../constants/request-queue.js'
 import { config } from '../../../../config.js'
-import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
+import {
+  sendExemptionToEmp,
+  withdrawExemptionFromEmp,
+  updateExemptionStatusInEmp
+} from './emp-client.js'
 import { structureErrorForECS } from '../logging/logger.js'
+import { buildEmpQueueItem } from './emp-queue.js'
 
 import {
   collectionEmpQueue,
@@ -88,12 +93,17 @@ export const handleEmpQueueItemFailure = async (
   }
 }
 
+// An unrecognised or absent action is an add, which is what rows written
+// before the action field existed rely on.
+const EMP_ACTION_HANDLERS = {
+  [EMP_REQUEST_ACTIONS.WITHDRAW]: withdrawExemptionFromEmp,
+  [EMP_REQUEST_ACTIONS.UPDATE_STATUS]: updateExemptionStatusInEmp
+}
+
 const processEmpQueueItem = async (server, item) => {
   try {
-    const result =
-      item.action === EMP_REQUEST_ACTIONS.WITHDRAW
-        ? await withdrawExemptionFromEmp(server, item)
-        : await sendExemptionToEmp(server, item)
+    const push = EMP_ACTION_HANDLERS[item.action] ?? sendExemptionToEmp
+    const result = await push(server, item)
     await handleEmpQueueItemSuccess(server, item, result.objectIds)
   } catch (err) {
     server.logger.error(
@@ -151,16 +161,16 @@ export const addToEmpQueue = async ({
   const { payload, db } = request
   const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
-  await db.collection(collectionEmpQueue).insertOne({
-    action,
-    applicationReferenceNumber: applicationReference,
-    status: REQUEST_QUEUE_STATUS.PENDING,
-    retries: 0,
-    createdAt,
-    createdBy,
-    updatedAt,
-    updatedBy
-  })
+  await db.collection(collectionEmpQueue).insertOne(
+    buildEmpQueueItem({
+      applicationReference,
+      action,
+      createdAt,
+      createdBy,
+      updatedAt,
+      updatedBy
+    })
+  )
 
   request.server.methods.processEmpQueue().catch(() => {
     request.server.logger.error(
