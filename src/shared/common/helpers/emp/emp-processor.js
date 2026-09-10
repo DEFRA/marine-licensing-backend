@@ -55,8 +55,8 @@ const claimOneQueueItem = async (server, filter) => {
         {
           sort: { _id: 1 },
           returnDocument: 'after',
-          // Default driver behaviour returns the document directly; we need `.value`
-          // for a consistent shape (tests and real DB).
+          // includeResultMetadata: true returns the raw reply; the document is
+          // read from .value, which yields null when nothing matched.
           includeResultMetadata: true
         }
       )

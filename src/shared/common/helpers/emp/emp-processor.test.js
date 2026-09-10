@@ -333,7 +333,7 @@ describe('EMP Processor', () => {
         ...queueDocBase,
         applicationReferenceNumber: 'EXE/RETRY/2',
         status: REQUEST_QUEUE_STATUS.FAILED,
-        updatedAt: new Date(Date.now() - (RETRY_DELAY_MS - 500))
+        updatedAt: new Date()
       })
 
       await empModule.processEmpQueue(mockServer)
