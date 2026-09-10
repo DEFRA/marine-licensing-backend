@@ -10,11 +10,11 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
   const differentContactId = '987e6543-e21b-12d3-a456-426614174000'
   const marineLicenceId = new ObjectId()
 
-  test('successfully updates public register when user consents', async () => {
+  test('successfully updates public register when nothing is withheld', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'no', reason: 'Previous reason' }
+      publicRegister: { consent: 'yes', reason: 'Previous reason' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -22,7 +22,43 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'yes'
+      consent: 'no'
+    }
+
+    const { statusCode, body } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/public-register',
+      contactId,
+      payload
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body).toEqual({ message: 'success' })
+
+    const updatedLicence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(updatedLicence.publicRegister).toEqual({
+      consent: 'no',
+      reason: null
+    })
+  })
+
+  test('successfully updates public register when information is withheld', async () => {
+    const marineLicence = createCompleteMarineLicence({
+      _id: marineLicenceId,
+      contactId,
+      publicRegister: { consent: 'no' }
+    })
+    await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .insertOne(marineLicence)
+
+    const payload = {
+      id: marineLicenceId.toString(),
+      consent: 'yes',
+      reason: 'Reason why this should not be published'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -41,42 +77,6 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     expect(updatedLicence.publicRegister).toEqual({
       consent: 'yes',
-      reason: null
-    })
-  })
-
-  test('successfully updates public register when user declines consent with reason', async () => {
-    const marineLicence = createCompleteMarineLicence({
-      _id: marineLicenceId,
-      contactId,
-      publicRegister: { consent: 'yes' }
-    })
-    await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .insertOne(marineLicence)
-
-    const payload = {
-      id: marineLicenceId.toString(),
-      consent: 'no',
-      reason: 'Reason why this should not be published'
-    }
-
-    const { statusCode, body } = await makePatchRequest({
-      server: getServer(),
-      url: '/marine-licence/public-register',
-      contactId,
-      payload
-    })
-
-    expect(statusCode).toBe(200)
-    expect(body).toEqual({ message: 'success' })
-
-    const updatedLicence = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
-
-    expect(updatedLicence.publicRegister).toEqual({
-      consent: 'no',
       reason: 'Reason why this should not be published'
     })
   })
@@ -86,7 +86,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: nonExistentId.toString(),
-      consent: 'no',
+      consent: 'yes',
       reason: 'Some reason'
     }
 
@@ -105,7 +105,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'yes' }
+      publicRegister: { consent: 'no' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -113,7 +113,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'yes'
+      consent: 'no'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -130,7 +130,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(unchangedLicence.publicRegister.consent).toBe('yes')
+    expect(unchangedLicence.publicRegister.consent).toBe('no')
   })
 
   test('returns 400 when consent is missing', async () => {

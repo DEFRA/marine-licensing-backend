@@ -22,7 +22,7 @@ export const createCompleteExemption = (overrides = {}) => {
     },
     projectName: 'Test Marine Project',
     publicRegister: {
-      consent: 'yes'
+      consent: 'no'
     },
     multipleSiteDetails: {
       multipleSitesEnabled: false
@@ -243,7 +243,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       details: 'Harbour authority details'
     },
     publicRegister: {
-      consent: 'no',
+      consent: 'yes',
       reason: 'Test public register details'
     },
     preferredDates: {
