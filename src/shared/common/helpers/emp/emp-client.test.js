@@ -1,7 +1,11 @@
 import { expect, vi } from 'vitest'
 
 import { config } from '../../../../config.js'
-import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
+import {
+  sendExemptionToEmp,
+  withdrawExemptionFromEmp,
+  updateExemptionStatusInEmp
+} from './emp-client.js'
 import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
 
 vi.mock('../../../../config.js')
@@ -363,6 +367,81 @@ describe('Emp Client', () => {
       await expect(
         withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
       ).rejects.toThrow('EMP updateFeatures failed: Network timeout')
+    })
+  })
+
+  describe('updateExemptionStatusInEmp', () => {
+    const mockStatusQueueItem = {
+      _id: 'status-queue-id',
+      applicationReferenceNumber: 'TEST-REF-001',
+      action: 'update-status'
+    }
+
+    // The queue row carries no status, so the push has to read the exemption.
+    // findOne is shared by the queue lookup and the exemption lookup, in that
+    // order, which is what these two resolved values stand for.
+    const respondWith = ({ empFeatureIds, status }) => {
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValueOnce(empFeatureIds ? { empFeatureIds } : null)
+        .mockResolvedValueOnce(status ? { status } : null)
+    }
+
+    it.each([
+      ['SCHEDULED', 'Scheduled'],
+      ['ACTIVE', 'Active'],
+      ['EXPIRED', 'Expired']
+    ])('pushes a %s exemption to EMP as %s', async (status, expected) => {
+      respondWith({ empFeatureIds: ['emp-object-id'], status })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [{ success: true, objectId: 'emp-object-id' }]
+      })
+
+      await updateExemptionStatusInEmp(mockServer, mockStatusQueueItem)
+
+      const [call] = vi.mocked(updateFeatures).mock.calls
+      expect(call[0].features).toEqual([
+        { attributes: { OBJECTID: 'emp-object-id', Status: expected } }
+      ])
+    })
+
+    it('pushes the status stored now, not one frozen onto the queue row', async () => {
+      respondWith({ empFeatureIds: ['emp-object-id'], status: 'WITHDRAWN' })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [{ success: true, objectId: 'emp-object-id' }]
+      })
+
+      await updateExemptionStatusInEmp(mockServer, {
+        ...mockStatusQueueItem,
+        status: 'ACTIVE'
+      })
+
+      const [call] = vi.mocked(updateFeatures).mock.calls
+      expect(call[0].features[0].attributes.Status).toBe('Withdrawn')
+    })
+
+    it('throws the message that triggers a hard fail when no objectId is found', async () => {
+      respondWith({ status: 'ACTIVE' })
+
+      await expect(
+        updateExemptionStatusInEmp(mockServer, mockStatusQueueItem)
+      ).rejects.toThrow(
+        'EMP status update failed: no objectId found for TEST-REF-001'
+      )
+
+      expect(updateFeatures).not.toHaveBeenCalled()
+    })
+
+    it('throws when the exemption has no mappable status', async () => {
+      respondWith({ empFeatureIds: ['emp-object-id'], status: 'NOT_A_STATUS' })
+
+      await expect(
+        updateExemptionStatusInEmp(mockServer, mockStatusQueueItem)
+      ).rejects.toThrow(
+        'EMP status update failed: no status label for TEST-REF-001'
+      )
+
+      expect(updateFeatures).not.toHaveBeenCalled()
     })
   })
 })
