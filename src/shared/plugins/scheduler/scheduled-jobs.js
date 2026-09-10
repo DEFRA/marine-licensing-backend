@@ -29,6 +29,8 @@ const HEARTBEAT_STATUS_ORDER = [
   [EXEMPTION_STATUS.WITHDRAWN, 'withdrawn']
 ]
 
+// Rendered from the known status list rather than from the query result, so a
+// status with no documents reports 0 instead of vanishing from the line.
 const buildHeartbeatSummary = (groupedCounts) => {
   const countsByStatus = Object.fromEntries(
     groupedCounts.map(({ _id, count }) => [_id, count])

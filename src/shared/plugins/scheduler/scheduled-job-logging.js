@@ -24,8 +24,10 @@ const withDuration = (event, execution) => {
   return duration === undefined ? event : { ...event, duration }
 }
 
-// Checked against undefined rather than truthiness so a zero-millisecond
-// duration still counts as reported.
+// A readable millisecond figure for the message string, alongside the
+// nanosecond event.duration ECS/OpenSearch aggregates on. Checked against
+// undefined rather than truthiness so a zero-millisecond startedAt still
+// counts as reported.
 const durationMs = ({ startedAt, finishedAt } = {}) =>
   startedAt !== undefined && finishedAt !== undefined
     ? finishedAt - startedAt

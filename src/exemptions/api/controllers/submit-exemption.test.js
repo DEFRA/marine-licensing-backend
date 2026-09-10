@@ -378,6 +378,8 @@ describe('POST /exemption/submit', () => {
 
   describe('derived status on submission', () => {
     beforeEach(() => {
+      // The outer setup stubs the Date constructor, which would collapse every
+      // parsed activity date onto the same instant.
       global.Date.mockRestore()
     })
 

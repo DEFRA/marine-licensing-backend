@@ -11,6 +11,7 @@ export const getUnsentEmpExemptionsController = {
     const { db } = request
 
     // get exemptions that meet all the following:
+    // - status is one of the submitted statuses
     // - exemption in not in the exemption-emp-queue collection - ie it's not currently being sent or waiting for another retry
     // also, if an exemption in the returned list has previously failed to send to EMP after retries, then include the date-time that it was added to the exemption-emp-queue-failed collection.
     const unsentExemptions = await db

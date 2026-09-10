@@ -2,6 +2,7 @@ import { londonToday } from './london-today.js'
 
 describe('londonToday', () => {
   it('uses the London calendar day during British Summer Time', () => {
+    // 23:30 UTC in August is already the next day in London
     const result = londonToday(new Date('2026-08-24T23:30:00.000Z'))
 
     expect(result.toISOString()).toBe('2026-08-25T00:00:00.000Z')

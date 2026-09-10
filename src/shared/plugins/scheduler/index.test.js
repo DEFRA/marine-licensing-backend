@@ -20,6 +20,8 @@ vi.mock('node-cron', async (importOriginal) => {
   }
 })
 
+// Every real job defaults to enabled, so the suite keeps covering new jobs as
+// they are added instead of crashing on a config lookup the fixture forgot.
 const allJobsEnabled = () =>
   Object.fromEntries(
     scheduledJobs.map((job) => [
