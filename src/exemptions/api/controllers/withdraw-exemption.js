@@ -3,7 +3,10 @@ import { StatusCodes } from 'http-status-codes'
 import { getExemption } from '../../models/get-exemption.js'
 import { ObjectId } from 'mongodb'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { EXEMPTION_STATUS } from '../../constants/exemption.js'
+import {
+  EXEMPTION_STATUS,
+  WITHDRAWABLE_STATUSES
+} from '../../constants/exemption.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
 import { addToEmpQueue } from '../../../shared/common/helpers/emp/index.js'
@@ -23,7 +26,10 @@ const updateExemptionRecord = async ({
   const { id } = params
   const { updatedAt, updatedBy } = payload
   const exemption = await db.collection(collectionExemptions).findOneAndUpdate(
-    { _id: ObjectId.createFromHexString(id) },
+    {
+      _id: ObjectId.createFromHexString(id),
+      status: { $in: WITHDRAWABLE_STATUSES }
+    },
     {
       $set: {
         withdrawnAt,
@@ -35,7 +41,11 @@ const updateExemptionRecord = async ({
     { returnDocument: 'after' }
   )
   if (!exemption) {
-    throw Boom.notFound('Exemption not found during update')
+    // authorizeOwnership has already proved the document exists, so the only
+    // way to get here is a status that cannot be withdrawn.
+    throw Boom.conflict(
+      'Exemption cannot be withdrawn because its activity period has ended or it has already been withdrawn'
+    )
   }
   return exemption
 }

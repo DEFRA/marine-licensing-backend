@@ -136,9 +136,9 @@ const config = convict({
   },
   mongo: {
     mongoUrl: {
-      doc: 'URI for mongodb',
+      doc: 'URI for mongodb. Local mongo is a single-member replica set that advertises a Docker-network hostname, so host-side clients must connect directly rather than via topology discovery.',
       format: requiredFromEnvInCdp,
-      default: 'mongodb://127.0.0.1:27017/',
+      default: 'mongodb://127.0.0.1:27017/?directConnection=true',
       env: 'MONGO_URI'
     },
     databaseName: {
@@ -155,6 +155,11 @@ const config = convict({
         nullable: true,
         env: 'MONGO_RETRY_WRITES'
       },
+      // Transactions require primary reads. CDP-issued URIs specify
+      // readPreference=secondaryPreferred; this default overrides the URI,
+      // which keeps transactions viable in deployed environments. Do not
+      // change it to a secondary preference without checking every
+      // transaction call site.
       readPreference: {
         doc: 'Mongo read preference, overrides mongo URI when set.',
         format: [
