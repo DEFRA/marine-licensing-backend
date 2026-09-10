@@ -53,10 +53,14 @@ left to fail; the count appears in the completion summary as `not in EMP`.
 
 The push is fire-and-forget. A push that exhausts its retries lands in
 `exemption-emp-queue-failed` and is not retried by a later run, because the local
-status already matches by then and nothing re-enqueues it. The job is idempotent
-in the sense the scheduler requires — a re-run writes nothing new — but it does
-not repair a failed EMP push. The frontend's `/admin/emp` screen, backed by
-this service's `GET /exemptions/send-to-emp`, is where those are re-driven.
+status already matches by then and nothing re-enqueues it. A shutdown landing
+between the status writes and the EMP enqueue has the same permanent effect and
+is quieter still: no row ever reaches `exemption-emp-queue-failed`, so there is
+nothing for `/admin/emp` to surface. The job is idempotent in the sense the
+scheduler requires — a re-run writes nothing new — but it does not repair a
+failed EMP push, and none of this runs unless `isEmpEnabled` is on. The
+frontend's `/admin/emp` screen, backed by this service's
+`GET /exemptions/send-to-emp`, is where those are re-driven.
 
 ## Shutdown
 
