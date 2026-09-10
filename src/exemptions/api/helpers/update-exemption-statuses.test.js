@@ -1,7 +1,14 @@
 import { vi } from 'vitest'
 import { updateExemptionStatuses } from './update-exemption-statuses.js'
 import { EXEMPTION_STATUS } from '../../constants/exemption.js'
-import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
+import {
+  collectionExemptions,
+  collectionEmpQueue
+} from '../../../shared/common/constants/db-collections.js'
+import { config } from '../../../config.js'
+import { EMP_REQUEST_ACTIONS } from '../../../shared/common/constants/request-queue.js'
+
+vi.mock('../../../config.js')
 
 const TODAY = new Date('2026-08-25T00:00:00.000Z')
 
@@ -20,6 +27,8 @@ const dbRecordingFlushes = (realDb, batchSizes) => ({
     const collection = realDb.collection(name)
     return {
       find: (...args) => collection.find(...args),
+      distinct: (...args) => collection.distinct(...args),
+      insertMany: (...args) => collection.insertMany(...args),
       bulkWrite: (operations) => {
         batchSizes.push(operations.length)
         return collection.bulkWrite(operations)
@@ -35,6 +44,8 @@ const dbFlushingAfter = (realDb, concurrentWrite) => ({
     const collection = realDb.collection(name)
     return {
       find: (...args) => collection.find(...args),
+      distinct: (...args) => collection.distinct(...args),
+      insertMany: (...args) => collection.insertMany(...args),
       bulkWrite: async (operations) => {
         await concurrentWrite()
         return collection.bulkWrite(operations)
@@ -50,6 +61,8 @@ describe('updateExemptionStatuses', () => {
   beforeEach(async () => {
     db = globalThis.mockMongo
     await db.collection(collectionExemptions).deleteMany({})
+    config.get.mockReturnValue({ isEmpEnabled: false })
+    await db.collection(collectionEmpQueue).deleteMany({})
     logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   })
 
@@ -183,5 +196,146 @@ describe('updateExemptionStatuses', () => {
       }),
       expect.any(String)
     )
+  })
+
+  describe('EMP status updates', () => {
+    let processEmpQueue
+
+    const runWithEmpEnabled = (dbOverride = db) => {
+      config.get.mockReturnValue({ isEmpEnabled: true })
+      processEmpQueue = vi.fn().mockResolvedValue(undefined)
+      return updateExemptionStatuses(
+        { db: dbOverride, logger, methods: { processEmpQueue } },
+        TODAY
+      )
+    }
+
+    const sentToEmp = (applicationReference) => ({
+      applicationReferenceNumber: applicationReference,
+      action: EMP_REQUEST_ACTIONS.ADD,
+      empFeatureIds: ['emp-object-id']
+    })
+
+    const queuedStatusUpdates = async () =>
+      (
+        await db
+          .collection(collectionEmpQueue)
+          .find({ action: EMP_REQUEST_ACTIONS.UPDATE_STATUS })
+          .toArray()
+      ).map((row) => row.applicationReferenceNumber)
+
+    it('queues an update for a changed exemption that has reached EMP', async () => {
+      await db.collection(collectionExemptions).insertOne({
+        ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+        applicationReference: 'IN-EMP'
+      })
+      await db.collection(collectionEmpQueue).insertOne(sentToEmp('IN-EMP'))
+
+      await runWithEmpEnabled()
+
+      expect(await queuedStatusUpdates()).toEqual(['IN-EMP'])
+    })
+
+    it('queues nothing for a changed exemption that never reached EMP', async () => {
+      await db.collection(collectionExemptions).insertOne({
+        ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+        applicationReference: 'NEVER-SENT'
+      })
+
+      await runWithEmpEnabled()
+
+      expect(await queuedStatusUpdates()).toEqual([])
+    })
+
+    it('queues nothing when the status did not change', async () => {
+      await db.collection(collectionExemptions).insertOne({
+        ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-09-30'),
+        applicationReference: 'UNCHANGED'
+      })
+      await db.collection(collectionEmpQueue).insertOne(sentToEmp('UNCHANGED'))
+
+      await runWithEmpEnabled()
+
+      expect(await queuedStatusUpdates()).toEqual([])
+    })
+
+    it('writes a pending row authored by the job', async () => {
+      await db.collection(collectionExemptions).insertOne({
+        ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+        applicationReference: 'IN-EMP'
+      })
+      await db.collection(collectionEmpQueue).insertOne(sentToEmp('IN-EMP'))
+
+      await runWithEmpEnabled()
+
+      const [row] = await db
+        .collection(collectionEmpQueue)
+        .find({ action: EMP_REQUEST_ACTIONS.UPDATE_STATUS })
+        .toArray()
+
+      expect(row).toMatchObject({
+        applicationReferenceNumber: 'IN-EMP',
+        status: 'pending',
+        retries: 0,
+        createdBy: 'exemption-status-job',
+        updatedBy: 'exemption-status-job'
+      })
+      expect(row.createdAt).toBeInstanceOf(Date)
+    })
+
+    it('kicks the poller once rather than once per exemption', async () => {
+      await db.collection(collectionExemptions).insertMany([
+        {
+          ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+          applicationReference: 'IN-EMP-1'
+        },
+        {
+          ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-02', '2026-08-24'),
+          applicationReference: 'IN-EMP-2'
+        }
+      ])
+      await db
+        .collection(collectionEmpQueue)
+        .insertMany([sentToEmp('IN-EMP-1'), sentToEmp('IN-EMP-2')])
+
+      await runWithEmpEnabled()
+
+      expect(processEmpQueue).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports the EMP figures in the summary', async () => {
+      await db.collection(collectionExemptions).insertMany([
+        {
+          ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+          applicationReference: 'IN-EMP'
+        },
+        {
+          ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-02', '2026-08-24'),
+          applicationReference: 'NEVER-SENT'
+        }
+      ])
+      await db.collection(collectionEmpQueue).insertOne(sentToEmp('IN-EMP'))
+
+      const { summary } = await runWithEmpEnabled()
+
+      expect(summary).toBe(
+        '2 exemptions updated — 0 scheduled; 0 active; 2 expired; 0 unchanged; 1 queued for EMP; 1 not in EMP'
+      )
+    })
+
+    it('touches neither the queue nor the server methods when EMP is disabled', async () => {
+      await db.collection(collectionExemptions).insertOne({
+        ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+        applicationReference: 'IN-EMP'
+      })
+      await db.collection(collectionEmpQueue).insertOne(sentToEmp('IN-EMP'))
+
+      const { summary } = await updateExemptionStatuses({ db, logger }, TODAY)
+
+      expect(await queuedStatusUpdates()).toEqual([])
+      expect(summary).toBe(
+        '1 exemptions updated — 0 scheduled; 0 active; 1 expired; 0 unchanged'
+      )
+    })
   })
 })
