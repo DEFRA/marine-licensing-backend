@@ -231,6 +231,11 @@ export const submitExemptionController = {
         applicationReference,
         viewDetailsUrl: `${frontEndBaseUrl}/exemption/view-details/${id}`,
         projectType: 'exemption'
+      }).catch((err) => {
+        request.logger.error(
+          structureErrorForECS(err),
+          `Failed to send confirmation email for ${applicationReference}`
+        )
       })
 
       return h

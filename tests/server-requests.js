@@ -52,13 +52,14 @@ export const makePostRequest = async ({
   server,
   contactId,
   payload,
-  relationships
+  relationships,
+  currentRelationshipId
 }) => {
   const response = await server.inject({
     auth: {
       strategy: 'jwt',
       credentials: { contactId },
-      artifacts: { decoded: { relationships } }
+      artifacts: { decoded: { relationships, currentRelationshipId } }
     },
     method: 'POST',
     url,
@@ -67,7 +68,9 @@ export const makePostRequest = async ({
   const parsed = JSON.parse(response.payload)
   return {
     statusCode: response.statusCode,
-    body: parsed.value || parsed
+    body: parsed.value || parsed,
+    isEmployee: parsed.isEmployee,
+    organisationId: parsed.organisationId
   }
 }
 

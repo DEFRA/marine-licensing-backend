@@ -11,6 +11,7 @@ import {
 } from '../../constants/request-queue.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
 import { sendToDynamics } from './dynamics-client.js'
+import { expectRecentDate } from '../../../../../tests/test-helpers.js'
 
 vi.mock('../../../../config.js')
 vi.mock('./get-access-token.js', () => ({
@@ -143,12 +144,14 @@ describe('Dynamics Processor integration', () => {
     it('should update the exemption queue item status to SUCCESS', async () => {
       const db = globalThis.mockMongo
       const _id = new ObjectId()
+      const before = Date.now()
       await db.collection(EXEMPTION_QUEUE).insertOne({
         _id,
         ...queueDocBase,
         type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
         applicationReferenceNumber: 'EXE/SUCCESS/1',
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+        updatedAt: new Date('2000-01-01')
       })
 
       await dynamicsModule.handleDynamicsQueueItemSuccess(mockServer, {
@@ -158,6 +161,7 @@ describe('Dynamics Processor integration', () => {
 
       const doc = await db.collection(EXEMPTION_QUEUE).findOne({ _id })
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
+      expectRecentDate(doc.updatedAt, before)
     })
 
     it('should update the marine licence queue item status to SUCCESS', async () => {
@@ -185,13 +189,15 @@ describe('Dynamics Processor integration', () => {
     it('should increment retries on an exemption queue item', async () => {
       const db = globalThis.mockMongo
       const _id = new ObjectId()
+      const before = Date.now()
       await db.collection(EXEMPTION_QUEUE).insertOne({
         _id,
         ...queueDocBase,
         type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
         applicationReferenceNumber: 'EXE/FAIL/1',
         status: REQUEST_QUEUE_STATUS.FAILED,
-        retries: 1
+        retries: 1,
+        updatedAt: new Date('2000-01-01')
       })
 
       await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, {
@@ -203,6 +209,7 @@ describe('Dynamics Processor integration', () => {
       const doc = await db.collection(EXEMPTION_QUEUE).findOne({ _id })
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
       expect(doc.retries).toBe(2)
+      expectRecentDate(doc.updatedAt, before)
     })
 
     it('should increment retries on a marine licence queue item', async () => {
@@ -231,12 +238,14 @@ describe('Dynamics Processor integration', () => {
     it('should move exemption item to exemption dead letter queue after max retries', async () => {
       const db = globalThis.mockMongo
       const _id = new ObjectId()
+      const before = Date.now()
       const base = {
         _id,
         ...queueDocBase,
         type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
         applicationReferenceNumber: 'EXE/DL/1',
-        status: REQUEST_QUEUE_STATUS.FAILED
+        status: REQUEST_QUEUE_STATUS.FAILED,
+        updatedAt: new Date('2000-01-01')
       }
       await db.collection(EXEMPTION_QUEUE).insertOne({ ...base, retries: 2 })
 
@@ -254,6 +263,7 @@ describe('Dynamics Processor integration', () => {
         retries: 3,
         status: REQUEST_QUEUE_STATUS.FAILED
       })
+      expectRecentDate(dead.updatedAt, before)
       expect(dead).not.toHaveProperty('_sourceCollection')
     })
 
@@ -573,6 +583,115 @@ describe('Dynamics Processor integration', () => {
         applicationReferenceNumber: 'MLA/2025/00001'
       })
       expect(exCount).toBe(0)
+    })
+  })
+  describe('claim state', () => {
+    it('should claim a pending item as IN_PROGRESS before sending it to Dynamics', async () => {
+      const db = globalThis.mockMongo
+      let statusWhileSending
+      let updatedAtWhileSending
+      const before = Date.now()
+
+      await db.collection(EXEMPTION_QUEUE).insertOne({
+        ...queueDocBase,
+        type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+        applicationReferenceNumber: 'EXE/CLAIM/1',
+        status: REQUEST_QUEUE_STATUS.PENDING,
+        updatedAt: new Date(Date.now() - 60_000)
+      })
+
+      vi.mocked(sendToDynamics).mockImplementation(async () => {
+        const doc = await db
+          .collection(EXEMPTION_QUEUE)
+          .findOne({ applicationReferenceNumber: 'EXE/CLAIM/1' })
+        statusWhileSending = doc.status
+        updatedAtWhileSending = doc.updatedAt
+      })
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      expect(statusWhileSending).toBe(REQUEST_QUEUE_STATUS.IN_PROGRESS)
+      expectRecentDate(updatedAtWhileSending, before)
+    })
+
+    it('should not claim a failed item whose retry delay has not yet elapsed', async () => {
+      const db = globalThis.mockMongo
+
+      await db.collection(EXEMPTION_QUEUE).insertOne({
+        ...queueDocBase,
+        type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+        applicationReferenceNumber: 'EXE/NOCLAIM/1',
+        status: REQUEST_QUEUE_STATUS.FAILED,
+        retries: 1,
+        updatedAt: new Date()
+      })
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      const doc = await db
+        .collection(EXEMPTION_QUEUE)
+        .findOne({ applicationReferenceNumber: 'EXE/NOCLAIM/1' })
+      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
+      expect(vi.mocked(sendToDynamics)).not.toHaveBeenCalled()
+    })
+
+    it('should not claim a success item', async () => {
+      const db = globalThis.mockMongo
+
+      await db.collection(EXEMPTION_QUEUE).insertOne({
+        ...queueDocBase,
+        type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+        applicationReferenceNumber: 'EXE/NOCLAIM/2',
+        status: REQUEST_QUEUE_STATUS.SUCCESS,
+        updatedAt: new Date('2000-01-01')
+      })
+
+      await dynamicsModule.processDynamicsQueue(mockServer)
+
+      const doc = await db
+        .collection(EXEMPTION_QUEUE)
+        .findOne({ applicationReferenceNumber: 'EXE/NOCLAIM/2' })
+      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
+      expect(vi.mocked(sendToDynamics)).not.toHaveBeenCalled()
+    })
+
+    it('should send an item only once when two runs poll concurrently', async () => {
+      const db = globalThis.mockMongo
+
+      await db.collection(EXEMPTION_QUEUE).insertOne({
+        ...queueDocBase,
+        type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
+        applicationReferenceNumber: 'EXE/CONCURRENT/1',
+        status: REQUEST_QUEUE_STATUS.PENDING
+      })
+
+      let releaseSend
+      const sendHeldOpen = new Promise((resolve) => {
+        releaseSend = resolve
+      })
+      const sendStarted = new Promise((resolve) => {
+        vi.mocked(sendToDynamics).mockImplementationOnce(async () => {
+          resolve()
+          await sendHeldOpen
+          return {}
+        })
+      })
+
+      await Promise.all([
+        dynamicsModule.processDynamicsQueue(mockServer),
+        sendStarted.then(async () => {
+          const secondRun = dynamicsModule.processDynamicsQueue(mockServer)
+          releaseSend()
+          return secondRun
+        })
+      ])
+
+      expect(vi.mocked(sendToDynamics)).toHaveBeenCalledTimes(1)
+
+      const doc = await db
+        .collection(EXEMPTION_QUEUE)
+        .findOne({ applicationReferenceNumber: 'EXE/CONCURRENT/1' })
+      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
     })
   })
 })
