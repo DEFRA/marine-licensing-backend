@@ -10,11 +10,11 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
   const differentContactId = '987e6543-e21b-12d3-a456-426614174000'
   const marineLicenceId = new ObjectId()
 
-  test('successfully updates public register when user consents', async () => {
+  test('successfully updates public register when nothing is withheld', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'no', reason: 'Previous reason' }
+      publicRegister: { withholdConsent: 'yes', reason: 'Previous reason' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -22,7 +22,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'yes'
+      withholdConsent: 'no'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -40,16 +40,16 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       .findOne({ _id: marineLicenceId })
 
     expect(updatedLicence.publicRegister).toEqual({
-      consent: 'yes',
+      withholdConsent: 'no',
       reason: null
     })
   })
 
-  test('successfully updates public register when user declines consent with reason', async () => {
+  test('successfully updates public register when information is withheld, with a reason', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'yes' }
+      publicRegister: { withholdConsent: 'no' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -57,7 +57,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'no',
+      withholdConsent: 'yes',
       reason: 'Reason why this should not be published'
     }
 
@@ -76,9 +76,11 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       .findOne({ _id: marineLicenceId })
 
     expect(updatedLicence.publicRegister).toEqual({
-      consent: 'no',
+      withholdConsent: 'yes',
       reason: 'Reason why this should not be published'
     })
+    expect(updatedLicence.updatedBy).toBe(contactId)
+    expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
   })
 
   test('returns 404 when marine licence does not exist', async () => {
@@ -86,7 +88,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: nonExistentId.toString(),
-      consent: 'no',
+      withholdConsent: 'yes',
       reason: 'Some reason'
     }
 
@@ -105,7 +107,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { consent: 'yes' }
+      publicRegister: { withholdConsent: 'no' }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -113,7 +115,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     const payload = {
       id: marineLicenceId.toString(),
-      consent: 'yes'
+      withholdConsent: 'no'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -130,10 +132,10 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(unchangedLicence.publicRegister.consent).toBe('yes')
+    expect(unchangedLicence.publicRegister.withholdConsent).toBe('no')
   })
 
-  test('returns 400 when consent is missing', async () => {
+  test('returns 400 when withholdConsent is missing', async () => {
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId
@@ -154,6 +156,6 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     })
 
     expect(statusCode).toBe(400)
-    expect(body.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
+    expect(body.message).toContain('PUBLIC_REGISTER_WITHHOLD_CONSENT_REQUIRED')
   })
 })

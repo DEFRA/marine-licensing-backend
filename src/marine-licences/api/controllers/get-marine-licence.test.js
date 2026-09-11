@@ -96,8 +96,8 @@ describe('GET /marine-licence', () => {
         },
         projectName: 'Test project',
         publicRegister: {
-          consent: 'yes',
-          reason: 'Test public register reason'
+          withholdConsent: 'no',
+          reason: null
         },
         preferredDates,
         publicConsultation: {
@@ -134,8 +134,8 @@ describe('GET /marine-licence', () => {
             },
             projectName: 'Test project',
             publicRegister: {
-              consent: 'yes',
-              reason: 'Test public register reason'
+              withholdConsent: 'no',
+              reason: null
             },
             preferredDates,
             publicConsultation: {
