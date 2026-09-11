@@ -9,11 +9,13 @@ import {
   PROJECT_TYPES
 } from '../../../constants/project-status.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
-import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
-import { createLogger } from '../../../common/helpers/logging/logger.js'
-
-const logger = createLogger()
-const logSystem = 'Projects:GetProjects'
+import { getProjects } from '../models/get-projects.js'
+import {
+  getOrganisationUserNames,
+  getStatusFilter,
+  getUserFilter,
+  queryEmployeeCollections
+} from './utils.js'
 
 const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
@@ -29,19 +31,13 @@ const transformProjectBase = (project, projectType) => {
   }
 }
 
-const transformProject = (
-  project,
-  projectType,
-  currentContactId,
-  ownerNames = {}
-) => {
+const transformProject = (project, projectType, currentContactId) => {
   const { contactId } = project
 
   return {
     ...transformProjectBase(project, projectType),
     contactId,
-    isOwnProject: contactId === currentContactId,
-    ownerName: ownerNames[contactId] || '-'
+    isOwnProject: contactId === currentContactId
   }
 }
 
@@ -67,41 +63,32 @@ export const sortByStatus = (a, b) => {
   return aSortIndex - bSortIndex
 }
 
-const getEmployeeProjects = async (db, organisationId, contactId) => {
-  const orgFilter = { 'organisation.id': organisationId }
+const getEmployeeProjects = async (
+  db,
+  organisationId,
+  contactId,
+  payload = {}
+) => {
+  const { show, status, type, user } = payload
 
-  const dbStartedAt = Date.now()
-  const [empExemptions, empMarineLicences] = await Promise.all([
-    db
-      .collection(collectionExemptions)
-      .find(orgFilter)
-      .sort({ projectName: 1 })
-      .toArray(),
-    db
-      .collection(collectionMarineLicences)
-      .find(orgFilter)
-      .sort({ projectName: 1 })
-      .toArray()
-  ])
-  logger.info(
-    `${logSystem}: Employee projects database query completed in ${Date.now() - dbStartedAt}ms (exemptions: ${empExemptions.length}, marineLicences: ${empMarineLicences.length})`
+  const orgFilter = {
+    'organisation.id': organisationId,
+    ...(show === 'all-projects' ? {} : getUserFilter(show, contactId, user)),
+    ...(status && getStatusFilter(status))
+  }
+
+  const [empExemptions, empMarineLicences] = await queryEmployeeCollections(
+    db,
+    orgFilter,
+    type
   )
-
-  const contactIds = [
-    ...new Set(
-      [...empExemptions, ...empMarineLicences]
-        .map((e) => e.contactId)
-        .filter(Boolean)
-    )
-  ]
-  const ownerNames = await batchGetContactNames(contactIds)
 
   return [
     ...empExemptions.map((e) =>
-      transformProject(e, PROJECT_TYPES.EXEMPTION, contactId, ownerNames)
+      transformProject(e, PROJECT_TYPES.EXEMPTION, contactId)
     ),
     ...empMarineLicences.map((m) =>
-      transformProject(m, PROJECT_TYPES.MARINE_LICENCE, contactId, ownerNames)
+      transformProject(m, PROJECT_TYPES.MARINE_LICENCE, contactId)
     )
   ].sort(sortByStatus)
 }
@@ -138,8 +125,13 @@ const getCitizenProjects = async (db, contactId, organisationId) => {
 }
 
 export const getProjectsController = {
+  options: {
+    validate: {
+      payload: getProjects
+    }
+  },
   handler: async (request, h) => {
-    const { db, auth } = request
+    const { db, auth, payload } = request
     const contactId = getContactId(auth)
     const { organisationId, userRelationshipType } =
       getOrganisationDetailsFromAuthToken(auth)
@@ -147,15 +139,17 @@ export const getProjectsController = {
     const isEmployee = userRelationshipType === 'Employee'
 
     if (isEmployee && organisationId) {
-      const employeeProjects = await getEmployeeProjects(
-        db,
-        organisationId,
-        contactId
-      )
+      const [employeeProjects, users] = await Promise.all([
+        getEmployeeProjects(db, organisationId, contactId, payload),
+        payload?.skipUsers
+          ? Promise.resolve({})
+          : getOrganisationUserNames(db, organisationId)
+      ])
+
       return h
         .response({
           message: 'success',
-          value: employeeProjects,
+          value: { projects: employeeProjects, users },
           isEmployee: true,
           organisationId
         })
@@ -164,7 +158,11 @@ export const getProjectsController = {
 
     const projects = await getCitizenProjects(db, contactId, organisationId)
     return h
-      .response({ message: 'success', value: projects, isEmployee: false })
+      .response({
+        message: 'success',
+        value: { projects, users: {} },
+        isEmployee: false
+      })
       .code(StatusCodes.OK)
   }
 }

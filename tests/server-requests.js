@@ -53,7 +53,8 @@ export const makePostRequest = async ({
   contactId,
   payload,
   relationships,
-  isInternalUser
+  isInternalUser,
+  currentRelationshipId
 }) => {
   const response = await server.inject({
     auth: {
@@ -63,7 +64,8 @@ export const makePostRequest = async ({
         decoded: {
           tid: isInternalUser ? 'abc' : undefined,
           oid: isInternalUser ? contactId : undefined,
-          relationships
+          relationships,
+          currentRelationshipId
         }
       }
     },
@@ -74,7 +76,9 @@ export const makePostRequest = async ({
   const parsed = JSON.parse(response.payload)
   return {
     statusCode: response.statusCode,
-    body: parsed.value || parsed
+    body: parsed.value || parsed,
+    isEmployee: parsed.isEmployee,
+    organisationId: parsed.organisationId
   }
 }
 
