@@ -15,32 +15,32 @@ describe('PATCH /marine-licence/public-register', () => {
     expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
   })
 
-  it('should fail if consent is not a valid value', () => {
+  it('should fail if withholdConsent is not a valid value', () => {
     const result = payloadValidator.validate({
-      consent: 'maybe'
+      withholdConsent: 'maybe'
     })
     expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
   })
 
-  it('should fail if consent is empty string', () => {
+  it('should fail if withholdConsent is empty string', () => {
     const result = payloadValidator.validate({
-      consent: ''
+      withholdConsent: ''
     })
     expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
   })
 
-  it('should fail if consent is no but reason is missing', () => {
+  it('should fail if withholdConsent is yes but reason is missing', () => {
     const result = payloadValidator.validate({
-      consent: 'no'
+      withholdConsent: 'yes'
     })
     expect(result.error.message).toContain('PUBLIC_REGISTER_REASON_REQUIRED')
   })
 
-  it('should update marine licence with public register consent yes', async () => {
+  it('should update marine licence when no information is withheld', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'yes',
+      withholdConsent: 'no',
       ...mockAuditPayload
     }
 
@@ -69,7 +69,7 @@ describe('PATCH /marine-licence/public-register', () => {
       {
         $set: {
           publicRegister: {
-            consent: mockPayload.consent,
+            withholdConsent: mockPayload.withholdConsent,
             reason: undefined
           },
           ...mockAuditPayload
@@ -78,12 +78,12 @@ describe('PATCH /marine-licence/public-register', () => {
     )
   })
 
-  it('should update marine licence with public register consent no and reason', async () => {
+  it('should update marine licence when information is withheld, with the reason', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'no',
-      reason: 'Reason for declining public register consent',
+      withholdConsent: 'yes',
+      reason: 'Reason for withholding information',
       ...mockAuditPayload
     }
 
@@ -111,7 +111,7 @@ describe('PATCH /marine-licence/public-register', () => {
       {
         $set: {
           publicRegister: {
-            consent: 'no',
+            withholdConsent: 'yes',
             reason: mockPayload.reason
           },
           ...mockAuditPayload
@@ -124,8 +124,8 @@ describe('PATCH /marine-licence/public-register', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'no',
-      reason: 'Reason for declining public register consent',
+      withholdConsent: 'yes',
+      reason: 'Reason for withholding information',
       ...mockAuditPayload
     }
 
@@ -152,8 +152,8 @@ describe('PATCH /marine-licence/public-register', () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'no',
-      reason: 'Reason for declining public register consent',
+      withholdConsent: 'yes',
+      reason: 'Reason for withholding information',
       ...mockAuditPayload
     }
 

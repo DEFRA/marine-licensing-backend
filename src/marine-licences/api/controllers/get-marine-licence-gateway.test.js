@@ -95,7 +95,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           end: { month: '11', year: '2026' }
         },
         publicRegister: {
-          consent: 'no',
+          withholdConsent: 'yes',
           reason: 'Commercial confidentiality'
         },
         specialLegalPowers: {
@@ -136,7 +136,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         projectBackground: 'Test project background',
         preferredLicenceDates: 'August 2026 to November 2026',
         publicRegister: {
-          consent: 'no',
+          withholdConsent: 'yes',
           reason: 'Commercial confidentiality'
         },
         specialLegalPowers: {
