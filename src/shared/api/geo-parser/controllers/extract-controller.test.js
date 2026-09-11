@@ -321,9 +321,11 @@ describe('Extract Controller', () => {
       expect(geoParser.extract).not.toHaveBeenCalled()
     })
 
-    it('should validate against configured bucket name', async () => {
+    it('should validate against the bucket configured under cdp.uploadBucket', async () => {
       const { mockHandler } = global
-      config.get.mockReturnValue('different-bucket')
+      config.get.mockImplementation((key) =>
+        key === 'cdp.uploadBucket' ? 'different-bucket' : undefined
+      )
       const payload = {
         ...validPayload,
         s3Bucket: 'different-bucket'

@@ -62,4 +62,50 @@ describe('#fail-action', () => {
       })
     }
   })
+  test('Should join a nested field path with dots', () => {
+    const mockRequest = {}
+    const mockToolkit = {}
+    const mockError = {
+      message: 'Validation failed',
+      name: 'ValidationError',
+      details: [
+        {
+          message: 'COORDINATES_LATITUDE_REQUIRED',
+          path: ['siteDetails', 0, 'coordinates', 'latitude'],
+          type: 'any.required'
+        },
+        {
+          message: 'PROJECT_NAME_REQUIRED',
+          path: ['projectName'],
+          type: 'any.required'
+        }
+      ],
+      output: {
+        payload: {
+          validation: {
+            source: 'payload',
+            keys: ['siteDetails.0.coordinates.latitude', 'projectName']
+          }
+        }
+      }
+    }
+
+    try {
+      failAction(mockRequest, mockToolkit, mockError)
+      expect.unreachable('failAction should rethrow the validation error')
+    } catch (error) {
+      expect(error.output.payload.validation.details).toEqual([
+        {
+          field: 'siteDetails.0.coordinates.latitude',
+          message: 'COORDINATES_LATITUDE_REQUIRED',
+          type: 'any.required'
+        },
+        {
+          field: 'projectName',
+          message: 'PROJECT_NAME_REQUIRED',
+          type: 'any.required'
+        }
+      ])
+    }
+  })
 })

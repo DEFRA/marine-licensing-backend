@@ -696,6 +696,42 @@ describe('POST /marine-licence/submit', () => {
         )
       )
     })
+
+    it('should log and not throw when sending the confirmation email fails', async () => {
+      const mockMarineLicence = {
+        _id: ObjectId.createFromHexString(mockMarineLicenceId),
+        contactId: 'test-contact-id',
+        projectName: 'Test Marine Project'
+      }
+
+      mockMarineLicencesCollection.findOne.mockResolvedValue(mockMarineLicence)
+      mockMarineLicencesCollection.updateOne.mockResolvedValue({
+        matchedCount: 1
+      })
+      vi.mocked(sendEmailConfirmation).mockRejectedValueOnce(
+        new Error('Notify API key is not set')
+      )
+
+      await submitMarineLicenceController.handler(
+        {
+          payload: { id: mockMarineLicenceId, ...mockAuditPayload },
+          db: mockDb,
+          locker: mockLocker,
+          auth: mockAuth,
+          logger: mockLogger
+        },
+        mockHandler
+      )
+      await flushPromises()
+
+      expect(mockHandler.code).toHaveBeenCalledWith(200)
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.stringContaining(
+          'Failed to send confirmation email for MLA/2025/10001'
+        )
+      )
+    })
   })
 
   describe('Dynamics Queue', () => {
