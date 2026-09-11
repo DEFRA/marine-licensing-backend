@@ -13,6 +13,7 @@ import {
   buildEmpQueueItem
 } from '../../../shared/common/helpers/emp/emp-queue.js'
 import { formatNumber } from '../../../shared/common/helpers/format-number.js'
+import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 import { deriveExemptionStatus } from './derive-exemption-status.js'
 
 const BATCH_SIZE = 500
@@ -178,8 +179,11 @@ export const updateExemptionStatuses = async (server, today) => {
 
   // Fire and forget, as the request-driven enqueue does: the status writes have
   // already succeeded, and the five-minute poller collects anything dropped here.
-  server.methods.processEmpQueue().catch(() => {
-    logger.error('Failed to process EMP queue after the exemption-status job')
+  server.methods.processEmpQueue().catch((error) => {
+    logger.error(
+      structureErrorForECS(error),
+      'Failed to process EMP queue after the exemption-status job'
+    )
   })
 
   return {

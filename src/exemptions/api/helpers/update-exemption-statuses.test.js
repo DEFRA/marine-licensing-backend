@@ -213,6 +213,15 @@ describe('updateExemptionStatuses', () => {
       )
     }
 
+    const runWithFailingPoller = (rejection) => {
+      config.get.mockReturnValue({ isEmpEnabled: true })
+      processEmpQueue = vi.fn().mockRejectedValue(rejection)
+      return updateExemptionStatuses(
+        { db, logger, methods: { processEmpQueue } },
+        TODAY
+      )
+    }
+
     const sentToEmp = (applicationReference) => ({
       applicationReferenceNumber: applicationReference,
       action: EMP_REQUEST_ACTIONS.ADD,
@@ -332,6 +341,41 @@ describe('updateExemptionStatuses', () => {
       await runWithEmpEnabled()
 
       expect(processEmpQueue).toHaveBeenCalledTimes(1)
+    })
+
+    it('logs why the poller kick failed rather than only that it did', async () => {
+      await db.collection(collectionExemptions).insertOne({
+        ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+        applicationReference: 'IN-EMP'
+      })
+      await db.collection(collectionEmpQueue).insertOne(sentToEmp('IN-EMP'))
+
+      await runWithFailingPoller(new Error('Queue processing failed'))
+
+      await vi.waitFor(() => {
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({
+            error: expect.objectContaining({
+              message: 'Queue processing failed'
+            })
+          }),
+          expect.any(String)
+        )
+      })
+    })
+
+    it('does not reject when the poller kick fails', async () => {
+      await db.collection(collectionExemptions).insertOne({
+        ...exemption(EXEMPTION_STATUS.ACTIVE, '2026-07-01', '2026-08-24'),
+        applicationReference: 'IN-EMP'
+      })
+      await db.collection(collectionEmpQueue).insertOne(sentToEmp('IN-EMP'))
+
+      const { summary } = await runWithFailingPoller(
+        new Error('Queue processing failed')
+      )
+
+      expect(summary).toContain('1 queued for EMP')
     })
 
     it('reports the EMP figures in the summary', async () => {

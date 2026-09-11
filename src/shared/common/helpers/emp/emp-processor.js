@@ -218,8 +218,9 @@ export const addToEmpQueue = async ({
     })
   )
 
-  request.server.methods.processEmpQueue().catch(() => {
+  request.server.methods.processEmpQueue().catch((error) => {
     request.server.logger.error(
+      structureErrorForECS(error),
       'Failed to process EMP queue, but exemption submission succeeded'
     )
   })

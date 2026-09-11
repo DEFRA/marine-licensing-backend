@@ -619,6 +619,11 @@ describe('EMP Processor', () => {
 
       await vi.waitFor(() => {
         expect(mockServer.logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({
+            error: expect.objectContaining({
+              message: 'Queue processing failed'
+            })
+          }),
           'Failed to process EMP queue, but exemption submission succeeded'
         )
       })

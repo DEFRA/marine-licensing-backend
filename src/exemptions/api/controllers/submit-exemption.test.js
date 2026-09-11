@@ -535,7 +535,9 @@ describe('POST /exemption/submit', () => {
       mockServer.methods.processDynamicsQueue.mockRejectedValueOnce(
         'Test error'
       )
-      mockServer.methods.processEmpQueue.mockRejectedValueOnce('Test error')
+      mockServer.methods.processEmpQueue.mockRejectedValueOnce(
+        new Error('Test error')
+      )
 
       await submitExemptionController.handler(
         {
@@ -557,6 +559,9 @@ describe('POST /exemption/submit', () => {
         'Failed to process dynamics queue, but EXEMPTION submission succeeded'
       )
       expect(mockServer.logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({ message: 'Test error' })
+        }),
         'Failed to process EMP queue, but exemption submission succeeded'
       )
 
