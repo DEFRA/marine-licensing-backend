@@ -53,19 +53,9 @@ left to fail; the count appears in the completion summary as `not in EMP`.
 
 The push is fire-and-forget. A push that exhausts its retries lands in
 `exemption-emp-queue-failed` and is not retried by a later run, because the local
-status already matches by then and nothing re-enqueues it. While it is still
-retrying, it appears — with its retry count — in the `failedPendingRetries` list
-returned by `GET /exemptions/send-to-emp`, which the frontend's `/admin/emp`
-screen renders; that endpoint's other list, of never-sent exemptions, can never
-show it, because every exemption the status job reaches already carries a
-permanent `add` row in `exemption-emp-queue` and so can never match the
-zero-queue-rows filter that list uses. Once retries are exhausted the row is
-deleted from the live queue, and nothing on `/admin/emp` shows it any more:
-`exemption-emp-queue-failed` and the error log are the only record, and there is
-no re-drive path for it today. A shutdown landing between the status writes and
-the EMP enqueue has the same permanent effect and is quieter still: no row is
-ever written anywhere, not even to `exemption-emp-queue-failed`. The job is
-idempotent in the sense the scheduler requires — a re-run writes nothing new —
+status already matches by then and nothing re-enqueues it.
+
+The job is idempotent in the sense the scheduler requires — a re-run writes nothing new —
 but it does not repair a failed EMP push, and none of this runs unless
 `isEmpEnabled` is on.
 
