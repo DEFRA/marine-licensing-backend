@@ -177,8 +177,7 @@ export const updateExemptionStatuses = async (server, today) => {
 
   const queued = await queueEmpStatusUpdates(db, changedReferences)
 
-  // Fire and forget, as the request-driven enqueue does: the status writes have
-  // already succeeded, and the five-minute poller collects anything dropped here.
+  // fire and forget
   server.methods.processEmpQueue().catch((error) => {
     logger.error(
       structureErrorForECS(error),
