@@ -11,14 +11,19 @@ export class MarineLicenceService {
     this.logger = logger
   }
 
-  async #findMarineLicenceById(id) {
-    const _id = ObjectId.createFromHexString(id)
-    const result = await this.db.collection('marine-licences').findOne({ _id })
+  async #findMarineLicenceByQuery(query) {
+    const result = await this.db.collection('marine-licences').findOne(query)
 
     if (!result) {
       throw Boom.notFound('Marine Licence not found')
     }
     return hydrateMarinePlanPolicies(this.db, result)
+  }
+
+  async #findMarineLicenceById(id) {
+    return this.#findMarineLicenceByQuery({
+      _id: ObjectId.createFromHexString(id)
+    })
   }
 
   async #getWhoMarineLicenceIsFor(marineLicence) {
@@ -42,6 +47,10 @@ export class MarineLicenceService {
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }
     return marineLicence
+  }
+
+  async getMarineLicenceByApplicationReference(applicationReference) {
+    return this.#findMarineLicenceByQuery({ applicationReference })
   }
 
   async getPublicMarineLicenceById(id) {
