@@ -144,7 +144,8 @@ describe('EMP Processor', () => {
       expect(insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockItem,
-          retries: 3
+          retries: 3,
+          status: REQUEST_QUEUE_STATUS.FAILED
         })
       )
       expect(deleteOne).toHaveBeenCalledWith(mockItem)
@@ -177,11 +178,17 @@ describe('EMP Processor', () => {
   })
 
   describe('processEmpQueue', () => {
-    it('should call handleQueueItemSuccess for each queue item', async () => {
+    it('should send ADD items and record the returned feature ids for each queue item', async () => {
       const mockQueueItems = [
-        { _id: '1', status: REQUEST_QUEUE_STATUS.PENDING, retries: 0 },
+        {
+          _id: '1',
+          action: EMP_REQUEST_ACTIONS.ADD,
+          status: REQUEST_QUEUE_STATUS.PENDING,
+          retries: 0
+        },
         {
           _id: '2',
+          action: EMP_REQUEST_ACTIONS.ADD,
           status: REQUEST_QUEUE_STATUS.FAILED,
           retries: 1,
           updatedAt: new Date(Date.now() - 70000)
@@ -200,6 +207,7 @@ describe('EMP Processor', () => {
 
       await empModule.processEmpQueue(mockServer)
 
+      expect(empClient.withdrawExemptionFromEmp).not.toHaveBeenCalled()
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledTimes(2)
       expect(mockServer.db.collection().updateOne).toHaveBeenCalledWith(
         { _id: '1' },
@@ -404,6 +412,26 @@ describe('EMP Processor', () => {
           applicationReference: 'APP-001'
         })
       ).rejects.toThrow('Database connection failed')
+    })
+  })
+  describe('claim filter', () => {
+    it('should claim only pending items and failed items past the retry delay', async () => {
+      const find = vi.fn().mockReturnValue({
+        toArray: vi.fn().mockResolvedValue([])
+      })
+      mockServer.db.collection.mockReturnValue({
+        find,
+        updateOne: vi.fn().mockResolvedValue({})
+      })
+
+      await empModule.processEmpQueue(mockServer)
+
+      const [filter] = find.mock.calls[0]
+      expect(filter.$or[0]).toEqual({
+        status: REQUEST_QUEUE_STATUS.PENDING
+      })
+      expect(filter.$or[1].status).toBe(REQUEST_QUEUE_STATUS.FAILED)
+      expect(filter.$or[1].updatedAt.$lte.getTime()).toBeLessThan(Date.now())
     })
   })
 })
