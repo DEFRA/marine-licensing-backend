@@ -19,9 +19,7 @@ const BATCH_SIZE = 500
 
 const MISSING_DATES_ACTION = 'exemption-status:missing-activity-dates'
 
-// Queue rows are normally authored by the request that created them. This job
-// has no user, so it names itself - a row's origin has to be legible to whoever
-// is reading the failed queue.
+// For mongodb record authorship: `createdBy` & `updatedBy`
 const EMP_QUEUE_AUTHOR = 'exemption-status-job'
 
 const buildSummary = ({ counts, unchanged, emp }) => {
@@ -59,9 +57,6 @@ const logUndatedExemption = (logger, exemption) => {
   )
 }
 
-// Exemptions with no ArcGIS features are skipped, not queued and left to fail:
-// a queue row of any kind hides the exemption from the unsent-exemptions
-// screen, which finds exemptions carrying none.
 const queueEmpStatusUpdates = async (db, applicationReferences) => {
   const collection = db.collection(collectionEmpQueue)
   const now = new Date()
