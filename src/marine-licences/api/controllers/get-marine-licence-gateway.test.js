@@ -19,7 +19,6 @@ describe('GET /public/marine-licence/mas/{id}', () => {
   let mockedFindOne
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockedFindOne = vi.fn().mockResolvedValue(null)
     vi.spyOn(global.mockMongo, 'collection').mockImplementation(function () {
       return { findOne: mockedFindOne }

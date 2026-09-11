@@ -79,6 +79,8 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       withholdConsent: 'yes',
       reason: 'Reason why this should not be published'
     })
+    expect(updatedLicence.updatedBy).toBe(contactId)
+    expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
   })
 
   test('returns 404 when marine licence does not exist', async () => {
@@ -154,6 +156,6 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     })
 
     expect(statusCode).toBe(400)
-    expect(body.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
+    expect(body.message).toContain('PUBLIC_REGISTER_WITHHOLD_CONSENT_REQUIRED')
   })
 })
