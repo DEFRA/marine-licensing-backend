@@ -1,38 +1,31 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
-import { getMarineLicence } from '../../models/get-marine-licence.js'
+import { getMarineLicenceByApplicationReference } from '../../models/get-marine-licence-by-application-reference.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
-import { getAuthUserContext } from '../../../shared/helpers/get-auth-user-context.js'
+import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
 import { buildMarineLicenceResponse } from '../helpers/build-marine-licence-response.js'
 
-export const getMarineLicenceController = ({ requiresAuth }) => ({
+export const getMarineLicenceByApplicationReferenceController = {
   options: {
     validate: {
-      params: getMarineLicence
-    },
-    ...(requiresAuth ? {} : { auth: false })
+      params: getMarineLicenceByApplicationReference
+    }
   },
   handler: async (request, h) => {
+    if (!isEntraIdUser(request)) {
+      throw Boom.forbidden('Not authorised to view this marine licence')
+    }
     try {
       const {
-        params: { id },
+        params: { applicationReference },
         db,
         logger
       } = request
       const marineLicenceService = new MarineLicenceService({ db, logger })
-      let marineLicence
-
-      if (requiresAuth) {
-        const { currentUserId } = getAuthUserContext(request)
-        marineLicence = await marineLicenceService.getMarineLicenceById({
-          id,
-          currentUserId
-        })
-      } else {
-        marineLicence =
-          await marineLicenceService.getPublicMarineLicenceById(id)
-      }
-
+      const marineLicence =
+        await marineLicenceService.getMarineLicenceByApplicationReference(
+          applicationReference.replaceAll('-', '/')
+        )
       const response = buildMarineLicenceResponse(marineLicence, request)
 
       return h
@@ -45,4 +38,4 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       throw Boom.internal(`Error retrieving marine licence: ${error.message}`)
     }
   }
-})
+}
