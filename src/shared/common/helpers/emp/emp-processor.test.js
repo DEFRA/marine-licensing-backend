@@ -289,6 +289,27 @@ describe('EMP Processor', () => {
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
     })
 
+    it('records the returned feature ids on a pending row it processes', async () => {
+      const db = globalThis.mockMongo
+      await db.collection(EMP_QUEUE).insertOne({
+        ...queueDocBase,
+        applicationReferenceNumber: 'EXE/ADD/1',
+        action: EMP_REQUEST_ACTIONS.ADD,
+        status: REQUEST_QUEUE_STATUS.PENDING
+      })
+      vi.mocked(empClient.sendExemptionToEmp).mockResolvedValue({
+        objectIds: ['emp-1', 'emp-2']
+      })
+
+      await empModule.processEmpQueue(mockServer)
+
+      const doc = await db.collection(EMP_QUEUE).findOne({
+        applicationReferenceNumber: 'EXE/ADD/1'
+      })
+      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
+      expect(doc.empFeatureIds).toEqual(['emp-1', 'emp-2'])
+    })
+
     it('does not reclaim an in_progress row while it is still fresh', async () => {
       const db = globalThis.mockMongo
       await db.collection(EMP_QUEUE).insertOne({

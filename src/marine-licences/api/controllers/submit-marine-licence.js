@@ -202,6 +202,11 @@ export const submitMarineLicenceController = {
         applicationReference,
         viewDetailsUrl: `${frontEndBaseUrl}/marine-licence/view-details/${id}`,
         projectType: 'marine-licence'
+      }).catch((err) => {
+        request.logger.error(
+          structureErrorForECS(err),
+          `Failed to send confirmation email for ${applicationReference}`
+        )
       })
 
       return h
