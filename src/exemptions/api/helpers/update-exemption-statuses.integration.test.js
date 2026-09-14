@@ -65,9 +65,6 @@ describe('exemption-status job - integration tests', async () => {
     getServer().methods.processEmpQueue = vi.fn().mockResolvedValue(undefined)
   })
 
-  // clearMocks (vitest config) only clears call history between tests, not
-  // the spied implementation, so the next beforeEach's config.get.bind(config)
-  // would otherwise capture this spy rather than the real config.get.
   afterEach(() => {
     configGetSpy.mockRestore()
   })
