@@ -99,9 +99,12 @@ const runPostSubmitBackgroundWork = ({
   updatedAt,
   updatedBy,
   applicationReference,
+  applicationId,
+  submittedAt,
   request,
   isDynamicsEnabled,
-  isEmpEnabled
+  isEmpEnabled,
+  shouldPublishToPublicRegister
 }) => {
   // Each geo operation catches its own errors so a failure in one does
   // not block the other or the Dynamics/EMP queue inserts — geo areas
@@ -116,6 +119,7 @@ const runPostSubmitBackgroundWork = ({
         structureErrorForECS(err),
         `Failed to update coastal operations areas for ${applicationReference}`
       )
+      return []
     }),
     updateMarinePlanningAreas(exemption, db, {
       updatedAt,
@@ -126,9 +130,21 @@ const runPostSubmitBackgroundWork = ({
         structureErrorForECS(err),
         `Failed to update marine plan areas for ${applicationReference}`
       )
+      return []
     })
   ])
-    .then(async () => {
+    .then(async ([, marinePlanAreas]) => {
+      if (shouldPublishToPublicRegister) {
+        publishPublicRegisterSubmittedEvent({
+          applicationId,
+          applicationReference,
+          projectName: exemption.projectName,
+          marinePlanAreas: marinePlanAreas ?? [],
+          submittedAt,
+          logger: request.logger
+        })
+      }
+
       if (isDynamicsEnabled) {
         await addToDynamicsQueue({
           request,
@@ -198,9 +214,13 @@ export const submitExemptionController = {
         updatedAt,
         updatedBy,
         applicationReference,
+        applicationId: id,
+        submittedAt,
         request,
         isDynamicsEnabled,
-        isEmpEnabled
+        isEmpEnabled,
+        shouldPublishToPublicRegister:
+          isSnsEnabled && exemption.publicRegister?.consent === 'yes'
       })
 
       sendEmailConfirmation({
@@ -217,14 +237,6 @@ export const submitExemptionController = {
           `Failed to send confirmation email for ${applicationReference}`
         )
       })
-
-      if (isSnsEnabled && exemption.publicRegister?.consent === 'yes') {
-        publishPublicRegisterSubmittedEvent({
-          applicationId: id,
-          applicationReference,
-          logger: request.logger
-        })
-      }
 
       return h
         .response({
