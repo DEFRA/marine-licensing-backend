@@ -37,7 +37,7 @@ export const sendEmailConfirmation = async ({
     applicationReference,
     projectType
   })
-  db.collection('email-queue')?.insertOne({
+  await db.collection('email-queue')?.insertOne({
     applicationReferenceNumber: applicationReference,
     ...result
   })

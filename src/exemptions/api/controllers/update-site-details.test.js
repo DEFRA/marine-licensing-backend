@@ -1,5 +1,6 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
+import { StatusCodes } from 'http-status-codes'
 import { updateSiteDetailsController } from './update-site-details.js'
 import { mockMultipleSiteDetails } from '../../models/site-details/test-fixtures.js'
 import Boom from '@hapi/boom'
@@ -53,6 +54,7 @@ describe('PATCH /exemptions/site-details', () => {
     expect(mockHandler.response).toHaveBeenCalledWith({
       message: 'success'
     })
+    expect(mockHandler.code).toHaveBeenCalledWith(StatusCodes.CREATED)
 
     expect(mockMongo.collection).toHaveBeenCalledWith('exemptions')
     expect(mockUpdateOne).toHaveBeenCalledWith(
