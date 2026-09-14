@@ -18,6 +18,7 @@ import { createLogger } from '../../helpers/logging/logger.js'
 import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
 import { buildCoordinatesCsvUrlById } from '../../../../marine-licences/constants/coordinates-csv.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../../../marine-licences/constants/water-framework-directive.js'
+import { toUrlSafeApplicationReference } from '../../../../marine-licences/api/helpers/url-transform.js'
 
 const logger = createLogger()
 
@@ -315,7 +316,7 @@ export const sendMarineLicenceToDynamics = async (
     projectName: marineLicence.projectName,
     reference: applicationReferenceNumber,
     feeBand,
-    applicationUrl: `${frontEndBaseUrl}/view-marine-licence-details/${marineLicence._id}`,
+    applicationUrl: `${frontEndBaseUrl}/marine-licence/redaction/${toUrlSafeApplicationReference(applicationReferenceNumber)}`,
     coordinatesCsvUrl: buildCoordinatesCsvUrlById(
       backendGatewayUrl,
       marineLicence._id

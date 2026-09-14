@@ -4,6 +4,7 @@ import { getMarineLicenceByApplicationReference } from '../../models/get-marine-
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
 import { buildMarineLicenceResponse } from '../helpers/build-marine-licence-response.js'
+import { toApplicationReference } from '../helpers/url-transform.js'
 
 export const getMarineLicenceByApplicationReferenceController = {
   options: {
@@ -24,7 +25,7 @@ export const getMarineLicenceByApplicationReferenceController = {
       const marineLicenceService = new MarineLicenceService({ db, logger })
       const marineLicence =
         await marineLicenceService.getMarineLicenceByApplicationReference(
-          applicationReference.replaceAll('-', '/')
+          toApplicationReference(applicationReference)
         )
       const response = buildMarineLicenceResponse(marineLicence, request)
 
