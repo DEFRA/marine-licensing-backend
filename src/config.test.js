@@ -1,5 +1,7 @@
+import { vi } from 'vitest'
 import convict from 'convict'
 import {
+  config,
   isCdpProductionLikeEnvironment,
   isNotCdpProductionLikeEnvironment
 } from './config.js'
@@ -59,9 +61,19 @@ describe('Config helper functions', () => {
 
   describe('requiredFromEnvInCdp format', () => {
     const originalEnv = process.env.ENVIRONMENT
+    const originalTestValue = process.env.TEST_VALUE
+
+    const restore = (key, value) => {
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
+    }
 
     afterEach(() => {
-      process.env.ENVIRONMENT = originalEnv
+      restore('ENVIRONMENT', originalEnv)
+      restore('TEST_VALUE', originalTestValue)
     })
 
     test('Should not throw for non-production-like environment with default value', () => {
@@ -125,5 +137,84 @@ describe('Config helper functions', () => {
 
       expect(() => testConfig.validate({ allowed: 'strict' })).not.toThrow()
     })
+  })
+})
+
+const loadConfigWithEnv = async (env) => {
+  const previousEnv = Object.fromEntries(
+    Object.keys(env).map((key) => [key, process.env[key]])
+  )
+  Object.assign(process.env, env)
+  vi.resetModules()
+
+  try {
+    return (await import('./config.js')).config
+  } finally {
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = value
+      }
+    }
+  }
+}
+
+describe('Config environment plumbing', () => {
+  afterAll(() => {
+    vi.resetModules()
+  })
+
+  test.each([
+    ['frontEndBaseUrl', 'FRONTEND_BASE_URL', 'https://frontend.example.gov.uk'],
+    [
+      'backendGatewayUrl',
+      'BACKEND_GATEWAY_URL',
+      'https://gateway.example.gov.uk'
+    ],
+    [
+      'defraId.jwksUri',
+      'DEFRA_ID_JWKS_URI',
+      'https://defra.example.gov.uk/jwks'
+    ],
+    [
+      'entraId.jwksUri',
+      'ENTRA_ID_JWKS_URI',
+      'https://entra.example.gov.uk/jwks'
+    ],
+    ['cdp.uploadBucket', 'CDP_UPLOAD_BUCKET', 'some-other-bucket'],
+    ['aws.s3.endpoint', 'S3_ENDPOINT', 'https://s3.example.gov.uk'],
+    ['cdpEnvironment', 'ENVIRONMENT', 'dev']
+  ])('Should read %s from %s', async (key, envVar, value) => {
+    const reloaded = await loadConfigWithEnv({ [envVar]: value })
+
+    expect(reloaded.get(key)).toBe(value)
+  })
+
+  test('Should coerce MAX_FILE_SIZE to a number', async () => {
+    const reloaded = await loadConfigWithEnv({ MAX_FILE_SIZE: '1234' })
+
+    expect(reloaded.get('cdp.maxFileSize')).toBe(1234)
+  })
+})
+
+describe('Config schema defaults', () => {
+  test.each([
+    ['frontEndBaseUrl', 'http://localhost:3000'],
+    ['backendGatewayUrl', 'http://localhost:3001'],
+    [
+      'defraId.jwksUri',
+      'http://localhost:3200/cdp-defra-id-stub/.well-known/jwks.json'
+    ],
+    [
+      'entraId.jwksUri',
+      'https://login.microsoftonline.com/common/discovery/keys'
+    ],
+    ['cdp.uploadBucket', 'mmo-uploads'],
+    ['cdp.maxFileSize', 50_000_000],
+    ['aws.s3.endpoint', 'http://localhost:4566'],
+    ['cdpEnvironment', 'local']
+  ])('Should default %s to %s', (key, expected) => {
+    expect(config.default(key)).toBe(expected)
   })
 })
