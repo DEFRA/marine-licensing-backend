@@ -3,6 +3,15 @@ import { StatusCodes } from 'http-status-codes'
 import { withdrawMarineLicenceController } from './withdraw-marine-licence.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { config } from '../../../config.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
+import {
+  DYNAMICS_QUEUE_TYPES,
+  DYNAMICS_REQUEST_ACTIONS
+} from '../../../shared/common/constants/request-queue.js'
+
+vi.mock('../../../config.js')
+vi.mock('../../../shared/common/helpers/dynamics/index.js')
 
 describe('POST /marine-licence/{id}/withdraw', () => {
   const paramsValidator =
@@ -11,6 +20,15 @@ describe('POST /marine-licence/{id}/withdraw', () => {
   const mockId = '123456789123456789123456'
 
   const mockLogger = { info: vi.fn(), error: vi.fn() }
+
+  const setDynamicsEnabled = (isDynamicsEnabled) =>
+    config.get.mockImplementation((key) =>
+      key === 'dynamics' ? { isDynamicsEnabled } : {}
+    )
+
+  beforeEach(() => {
+    setDynamicsEnabled(false)
+  })
 
   const buildRequest = (db) => ({
     db,
@@ -92,6 +110,51 @@ describe('POST /marine-licence/{id}/withdraw', () => {
       value: { withdrawnAt: expect.any(String) }
     })
     expect(mockHandler.code).toHaveBeenCalledWith(StatusCodes.OK)
+  })
+
+  it('should queue the withdrawal for Dynamics when the integration is enabled', async () => {
+    const { mockMongo, mockHandler } = global
+
+    setDynamicsEnabled(true)
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOneAndUpdate: vi.fn().mockResolvedValue({
+          _id: mockId,
+          applicationReference: 'MLA/2026/11883'
+        })
+      }
+    })
+
+    const request = buildRequest(mockMongo)
+    await withdrawMarineLicenceController.handler(request, mockHandler)
+
+    expect(addToDynamicsQueue).toHaveBeenCalledWith({
+      request,
+      applicationReference: 'MLA/2026/11883',
+      action: DYNAMICS_REQUEST_ACTIONS.WITHDRAW,
+      type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+    })
+  })
+
+  it('should not queue the withdrawal for Dynamics when the integration is disabled', async () => {
+    const { mockMongo, mockHandler } = global
+
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOneAndUpdate: vi.fn().mockResolvedValue({
+          _id: mockId,
+          applicationReference: 'MLA/2026/11883'
+        })
+      }
+    })
+
+    await withdrawMarineLicenceController.handler(
+      buildRequest(mockMongo),
+      mockHandler
+    )
+
+    expect(addToDynamicsQueue).not.toHaveBeenCalled()
   })
 
   it('should return a bad request error when the application is not submitted', async () => {
