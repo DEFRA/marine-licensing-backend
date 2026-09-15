@@ -162,7 +162,8 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           fileName: 'wfd-assessment.docx'
         },
         sites: [],
-        marinePlanPolicies: []
+        marinePlanPolicies: [],
+        withdrawnAt: null
       })
     })
 
@@ -292,8 +293,31 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           fileName: null
         },
         sites: [],
-        marinePlanPolicies: []
+        marinePlanPolicies: [],
+        withdrawnAt: null
       })
+    })
+
+    it('should return the withdrawal date for a withdrawn marine licence', async () => {
+      const { mockHandler } = global
+
+      const withdrawnAt = new Date('2026-09-15T10:30:00.000Z')
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        status: MARINE_LICENCE_STATUS.WITHDRAWN,
+        withdrawnAt
+      })
+
+      await getMarineLicenceGatewayController.handler(
+        mockRequest(),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({ withdrawnAt })
+      )
     })
 
     it('should include marine plan policies with applicant answers for Dynamics', async () => {

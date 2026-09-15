@@ -39,7 +39,8 @@ export const getMarineLicenceGatewayController = {
           siteDetails: 1,
           marinePlanPolicies: 1,
           marinePlanPolicyResponses: 1,
-          status: 1
+          status: 1,
+          withdrawnAt: 1
         }
       }
     )
@@ -80,7 +81,8 @@ export const getMarineLicenceGatewayController = {
           id
         ),
         sites,
-        marinePlanPolicies
+        marinePlanPolicies,
+        withdrawnAt: doc.withdrawnAt ?? null
       })
       .code(StatusCodes.OK)
   }
