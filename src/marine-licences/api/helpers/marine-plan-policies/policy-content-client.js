@@ -105,9 +105,19 @@ const toEmptyContent = () =>
     return content
   }, {})
 
+const buildGovukPoliciesAuthHeaders = (username, password) => {
+  if (!username || !password) {
+    return {}
+  }
+  const credentials = Buffer.from(`${username}:${password}`).toString('base64')
+  return { authorization: `Basic ${credentials}` }
+}
+
 const refreshPolicyDataset = async (collection, logger) => {
   const {
     govukPoliciesUrl,
+    govukPoliciesUsername,
+    govukPoliciesPassword,
     wordingTimeoutMs,
     wordingMaxResponseBytes,
     wordingMaxFieldBytes
@@ -116,6 +126,12 @@ const refreshPolicyDataset = async (collection, logger) => {
   // The API returns all policies in one response, so one fetch refreshes the full cache.
   const policies = await timedJsonFetch({
     url: govukPoliciesUrl,
+    options: {
+      headers: buildGovukPoliciesAuthHeaders(
+        govukPoliciesUsername,
+        govukPoliciesPassword
+      )
+    },
     timeoutMs: wordingTimeoutMs,
     maxBytes: wordingMaxResponseBytes,
     eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,

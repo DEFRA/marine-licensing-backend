@@ -1,8 +1,11 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 import { getPoliciesContent } from './policy-content-client.js'
+import { config } from '../../../../config.js'
 
 vi.mock('@hapi/wreck')
+
+const originalConfigGet = config.get.bind(config)
 
 describe('getPoliciesContent', () => {
   const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
@@ -293,6 +296,55 @@ describe('getPoliciesContent', () => {
 
       const [, options] = Wreck.get.mock.calls[0]
       expect(options.maxBytes).toBe(30_000_000)
+    })
+
+    it('should send a Basic auth header when GOV.UK policies credentials are configured', async () => {
+      setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
+      vi.spyOn(config, 'get').mockImplementation((key) =>
+        key === 'marinePlanPolicies'
+          ? {
+              ...originalConfigGet('marinePlanPolicies'),
+              govukPoliciesUsername: 'policies-user',
+              govukPoliciesPassword: 'policies-pass'
+            }
+          : originalConfigGet(key)
+      )
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1')]
+      })
+
+      try {
+        await getPoliciesContent({
+          policies: [{ policyCode: 'E-AGG-1' }],
+          db: global.mockMongo,
+          logger
+        })
+
+        const [, options] = Wreck.get.mock.calls[0]
+        expect(options.headers.authorization).toBe(
+          `Basic ${Buffer.from('policies-user:policies-pass').toString('base64')}`
+        )
+      } finally {
+        config.get.mockRestore()
+      }
+    })
+
+    it('should omit the Authorization header when GOV.UK policies credentials are not configured', async () => {
+      setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1')]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [, options] = Wreck.get.mock.calls[0]
+      expect(options.headers).not.toHaveProperty('authorization')
     })
 
     it('should sanitise wording fields before caching them', async () => {
