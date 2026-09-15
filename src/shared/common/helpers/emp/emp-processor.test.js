@@ -15,6 +15,7 @@ vi.mock('./emp-client.js')
 describe('EMP Processor', () => {
   let mockServer
   let mockDb
+  let mockSession
 
   const mockItem = { _id: 'abc123' }
 
@@ -30,6 +31,11 @@ describe('EMP Processor', () => {
       })
     }
 
+    mockSession = {
+      withTransaction: vi.fn((fn) => fn(mockSession)),
+      endSession: vi.fn().mockResolvedValue(undefined)
+    }
+
     mockServer = {
       app: {},
       logger: {
@@ -37,7 +43,8 @@ describe('EMP Processor', () => {
         warn: vi.fn(),
         error: vi.fn()
       },
-      db: mockDb
+      db: mockDb,
+      mongoClient: { startSession: vi.fn(() => mockSession) }
     }
 
     config.get.mockReturnValue({
@@ -144,11 +151,11 @@ describe('EMP Processor', () => {
       expect(insertOne).toHaveBeenCalledWith(
         expect.objectContaining({
           ...mockItem,
-          retries: 3,
-          status: REQUEST_QUEUE_STATUS.FAILED
-        })
+          retries: 3
+        }),
+        { session: mockSession }
       )
-      expect(deleteOne).toHaveBeenCalledWith(mockItem)
+      expect(deleteOne).toHaveBeenCalledWith(mockItem, { session: mockSession })
     })
 
     it('should move to dead letter queue immediately when hardFail is true', async () => {
@@ -171,9 +178,10 @@ describe('EMP Processor', () => {
           ...mockItem,
           retries: 0,
           status: REQUEST_QUEUE_STATUS.FAILED
-        })
+        }),
+        { session: mockSession }
       )
-      expect(deleteOne).toHaveBeenCalledWith(mockItem)
+      expect(deleteOne).toHaveBeenCalledWith(mockItem, { session: mockSession })
     })
   })
 
