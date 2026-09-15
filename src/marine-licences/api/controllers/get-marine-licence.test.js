@@ -89,6 +89,17 @@ describe('GET /marine-licence', () => {
       mockedFindOne.mockResolvedValue({
         _id: mockId,
         projectName: 'Test project',
+        publicRegister: {
+          withholdConsent: 'no',
+          reason: null
+        },
+        preferredDates,
+        publicConsultation: {
+          consulted: 'yes',
+          details: 'Public consultation details'
+        },
+        otherAuthorities: 'Test authority',
+        projectBackground: 'Test project background',
         contactId: userContactId
       })
 
@@ -106,6 +117,91 @@ describe('GET /marine-licence', () => {
           value: expect.objectContaining({
             id: mockId,
             contactId: userContactId,
+            feeEstimate: {
+              accept: 'yes',
+              termsAndConditions: true,
+              feeBand: '2A'
+            },
+            harbourAuthority: {
+              area: 'yes',
+              details: 'Harbour authority details'
+            },
+            projectName: 'Test project',
+            publicRegister: {
+              withholdConsent: 'no',
+              reason: null
+            },
+            preferredDates,
+            publicConsultation: {
+              consulted: 'yes',
+              details: 'Public consultation details'
+            },
+            otherAuthorities: 'Test authority',
+            projectBackground: 'Test project background',
+            marinePlanPolicyJob: null,
+            marinePlanPolicies: [],
+            marinePlanPolicyResponses: {},
+            marinePlanPolicyResponseCount: 0,
+            taskList: {
+              feeEstimate: 'COMPLETED',
+              harbourAuthority: 'COMPLETED',
+              invoicing: 'INCOMPLETE',
+              preferredDates: 'COMPLETED',
+              projectName: 'COMPLETED',
+              otherAuthorities: 'COMPLETED',
+              projectBackground: 'COMPLETED',
+              publicRegister: 'COMPLETED',
+              publicConsultation: 'COMPLETED',
+              siteDetails: 'INCOMPLETE',
+              waterFrameworkDirective: 'INCOMPLETE',
+              marinePlanPolicies: 'INCOMPLETE'
+            },
+            siteDetailsDataComplete: false
+          }
+        })
+      )
+    })
+
+    it('should filter marinePlanPolicyResponses down to the current policy set and count only those', async () => {
+      const { mockHandler } = global
+
+      const userContactId = 'abc'
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        contactId: userContactId,
+        marinePlanPolicyJob: 'ready',
+        marinePlanPolicies: [
+          { policyCode: 'NEW-1', sector: 'sector-a' },
+          { policyCode: 'NEW-2', sector: 'sector-a' }
+        ],
+        marinePlanPoliciesCount: 2,
+        marinePlanPolicyResponses: {
+          'OLD-1': 'a stale answer from a previous site',
+          'NEW-1': 'answer for the current set'
+        },
+        marinePlanPolicyResponseCount: 2
+      })
+
+      await authenticatedController.handler(
+        requestFromApplicantUser({
+          userContactId,
+          params: { id: mockId }
+        }),
+        mockHandler
+      )
+
+      expect(mockHandler.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: 'success',
+          value: expect.objectContaining({
+            marinePlanPolicyResponses: {
+              'NEW-1': 'answer for the current set'
+            },
+            marinePlanPolicyResponseCount: 1,
+            taskList: expect.objectContaining({
+              marinePlanPolicies: 'IN_PROGRESS'
+            }),
             projectName: 'Test project'
           })
         })
