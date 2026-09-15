@@ -441,7 +441,7 @@ describe('Dynamics Client', () => {
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
-              'http://localhost/view-marine-licence-details/ml-123',
+              'http://localhost/marine-licence/redaction/MLA-2025-00001',
             coordinatesCsvUrl:
               'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             waterFrameworkDirective: {
@@ -485,7 +485,7 @@ describe('Dynamics Client', () => {
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
-              'http://localhost/view-marine-licence-details/ml-123',
+              'http://localhost/marine-licence/redaction/MLA-2025-00001',
             coordinatesCsvUrl:
               'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             waterFrameworkDirective: {
