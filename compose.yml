@@ -1,19 +1,17 @@
 services:
-  localstack:
-    image: localstack/localstack:3.0.2
+  floci:
+    image: floci/floci:latest-compat
     ports:
-      - '4566:4566' # LocalStack Gateway
-      - '4510-4559:4510-4559' # external services port range
+      - '4566:4566'
     env_file:
       - 'compose/aws.env'
     environment:
-      DEBUG: ${DEBUG:-1}
-      LS_LOG: WARN # Localstack DEBUG Level
-      SERVICES: s3,sqs,sns,firehose
-      LOCALSTACK_HOST: 127.0.0.1
+      FLOCI_HOSTNAME: 127.0.0.1
+      QUARKUS_LOG_LEVEL: WARN
+      FLOCI_STORAGE_MODE: memory
+      FLOCI_STORAGE_SERVICES_RESOURCEEXPLORER2_MODE: memory
     volumes:
-      - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
-      - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+      - ./compose/start-floci.sh:/etc/floci/init/ready.d/start-floci.sh
     healthcheck:
       test: ['CMD', 'curl', 'localhost:4566']
       interval: 5s
@@ -85,10 +83,10 @@ services:
   #   ports:
   #     - '3000:3000'
   #   links:
-  #     - 'localstack:localstack'
+  #     - 'floci:floci'
   #     - 'redis:redis'
   #   depends_on:
-  #     localstack:
+  #     floci:
   #       condition: service_healthy
   #     redis:
   #       condition: service_started
@@ -98,7 +96,7 @@ services:
   #     PORT: 3000
   #     NODE_ENV: development
   #     REDIS_HOST: redis
-  #     LOCALSTACK_ENDPOINT: http://localstack:4566
+  #     AWS_ENDPOINT_URL: http://floci:4566
   #     USE_SINGLE_INSTANCE_CACHE: true
   #   networks:
   #     - cdp-tenant
@@ -110,10 +108,10 @@ services:
     ports:
       - '3001:3001'
     links:
-      - 'localstack:localstack'
+      - 'floci:floci'
       - 'mongodb:mongodb'
     depends_on:
-      localstack:
+      floci:
         condition: service_healthy
       mongodb:
         condition: service_healthy
@@ -126,9 +124,9 @@ services:
     environment:
       PORT: 3001
       NODE_ENV: development
-      LOCALSTACK_ENDPOINT: http://localstack:4566
-      SQS_ENDPOINT: http://localstack:4566
-      SNS_ENDPOINT: http://localstack:4566
+      AWS_ENDPOINT_URL: http://floci:4566
+      SQS_ENDPOINT: http://floci:4566
+      SNS_ENDPOINT: http://floci:4566
       MARINE_PLAN_POLICIES_WORDING_TIMEOUT_MS: 60000
       MONGO_URI: mongodb://mongodb:27017/
       DEFRA_ID_ENABLED: true
@@ -147,10 +145,10 @@ services:
     ports:
       - '7337:7337'
     links:
-      - 'localstack:localstack'
+      - 'floci:floci'
       - 'redis:redis'
     depends_on:
-      localstack:
+      floci:
         condition: service_healthy
     env_file:
       - 'compose/aws.env'
@@ -166,8 +164,8 @@ services:
       MOCK_VIRUS_RESULT_DELAY: 3
       MOCK_VIRUS_REGEX: '.*virus.*'
       CONSUMER_BUCKETS: '${CDP_UPLOAD_BUCKET:-mmo-uploads},cdp-uploader-quarantine'
-      SQS_ENDPOINT: http://localstack:4566
-      S3_ENDPOINT: http://localstack:4566
+      SQS_ENDPOINT: http://floci:4566
+      S3_ENDPOINT: http://floci:4566
     networks:
       - cdp-tenant
 ################################################################################
