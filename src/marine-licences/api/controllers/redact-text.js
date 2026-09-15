@@ -3,7 +3,11 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
-import { redactText } from '../../models/redact-text.js'
+import {
+  redactText,
+  buildFieldPath,
+  WITHHOLD_LOCATION_FIELD
+} from '../../models/redact-text.js'
 
 export const redactTextController = {
   options: {
@@ -23,20 +27,21 @@ export const redactTextController = {
 
     try {
       const { payload, db, auth } = request
-      const { id, fieldKey, text, updatedAt } = payload
+      const { id, fieldKey, text, withhold, updatedAt } = payload
       const { oid } = auth.artifacts.decoded
-      const result = await db.collection(collectionMarineLicences).updateOne(
-        { _id: ObjectId.createFromHexString(id) },
-        {
-          $set: {
-            [`redactions.${fieldKey}`]: {
-              redactedAt: updatedAt,
-              redactedBy: oid,
-              redactedText: text
-            }
-          }
-        }
-      )
+      const fieldPath = buildFieldPath(fieldKey, payload)
+
+      const value =
+        fieldKey === WITHHOLD_LOCATION_FIELD
+          ? withhold
+          : { redactedAt: updatedAt, redactedBy: oid, redactedText: text }
+
+      const result = await db
+        .collection(collectionMarineLicences)
+        .updateOne(
+          { _id: ObjectId.createFromHexString(id) },
+          { $set: { [`redactions.${fieldPath}`]: value } }
+        )
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
       }
