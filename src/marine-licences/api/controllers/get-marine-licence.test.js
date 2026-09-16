@@ -122,6 +122,7 @@ describe('GET /marine-licence', () => {
           message: 'success',
           value: {
             id: mockId,
+            applicationTasks: [],
             contactId: userContactId,
             feeEstimate: {
               accept: 'yes',

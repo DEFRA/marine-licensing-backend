@@ -23,6 +23,7 @@ import { saveMarinePlanPolicyResponseController } from './controllers/save-marin
 import { updateInvoicingController } from './controllers/update-invoicing.js'
 import { confirmSiteDetailsController } from './controllers/confirm-site-details.js'
 import { withdrawMarineLicenceController } from './controllers/withdraw-marine-licence.js'
+import { resolveApplicationTaskController } from './controllers/resolve-application-task.js'
 import { addConstructionDrawingController } from './controllers/add-construction-drawing.js'
 import { updateConstructionDrawingController } from './controllers/update-construction-drawing.js'
 import { deleteConstructionDrawingController } from './controllers/delete-construction-drawing.js'
@@ -71,6 +72,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'POST',
     path: '/marine-licence/{id}/withdraw',
     ...withdrawMarineLicenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/{id}/application-tasks/{taskId}/resolve',
+    ...resolveApplicationTaskController
   },
   {
     method: 'PATCH',

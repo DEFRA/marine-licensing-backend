@@ -16,6 +16,10 @@ export const MARINE_LICENCE_STATUS_LABEL = {
   WITHDRAWN: 'Withdrawn'
 }
 
+export const APPLICATION_TASK_TYPE = {
+  WITHHOLDING_NOTIFICATION: 'WITHHOLDING_NOTIFICATION'
+}
+
 export const MARINE_PLAN_POLICY_JOB_STATUS = {
   PENDING: 'pending',
   COMPUTING: 'computing',
@@ -58,5 +62,6 @@ export const MAS_EVENT_ACTION = {
   MESSAGE_DEAD_LETTERED: 'mas:message-dead-lettered',
   JOB_STALE: 'mas:job-stale',
   JOB_FAILED: 'mas:job-failed',
-  JOB_COMPLETE: 'mas:job-complete'
+  JOB_COMPLETE: 'mas:job-complete',
+  APPLICATION_TASK_ADDED: 'mas:application-task-added'
 }

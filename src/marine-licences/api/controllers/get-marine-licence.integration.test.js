@@ -47,6 +47,7 @@ describe('Get marine licence - integration tests', async () => {
     expect(body).toEqual({
       ...rest,
       id: _id.toString(),
+      applicationTasks: [],
       status: MARINE_LICENCE_STATUS_LABEL[marineLicence.status],
       createdAt: marineLicence.createdAt.toISOString(),
       updatedAt: marineLicence.updatedAt.toISOString(),

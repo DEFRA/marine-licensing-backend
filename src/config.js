@@ -492,6 +492,12 @@ const config = convict({
         format: String,
         default: '3dde6815-2908-4d3b-b4d0-026d69396318',
         env: 'NOTIFY_MARINE_LICENCE_TRANSFERRED_TEMPLATE_ID'
+      },
+      notifyWithholdingNotificationId: {
+        doc: 'Notify template ID for a withholding decision notification email',
+        format: String,
+        default: 'PLACEHOLDER-REPLACE-WITH-REAL-NOTIFY-TEMPLATE-ID',
+        env: 'NOTIFY_MARINE_LICENCE_WITHHOLDING_TEMPLATE_ID'
       }
     }
   },

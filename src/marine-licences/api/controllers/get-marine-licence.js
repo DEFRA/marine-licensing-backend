@@ -11,6 +11,7 @@ import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { getAuthUserContext } from '../../../shared/helpers/get-auth-user-context.js'
+import { getDisplayStatus } from '../../../shared/helpers/application-tasks.js'
 
 export const getMarineLicenceController = ({ requiresAuth }) => ({
   options: {
@@ -45,7 +46,9 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
 
       const isCitizen = userRelationshipType === 'Citizen'
 
-      const { _id, status, ...rest } = marineLicence
+      // Application tasks carry the caseworker's withholding comments, so they must
+      // never reach the unauthenticated public register response.
+      const { _id, status, applicationTasks, ...rest } = marineLicence
       const {
         responses: marinePlanPolicyResponses,
         count: marinePlanPolicyResponseCount
@@ -59,7 +62,13 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       const response = {
         id: _id.toString(),
         ...rest,
-        status: MARINE_LICENCE_STATUS_LABEL[status] || status,
+        status: requiresAuth
+          ? getDisplayStatus({
+              status: MARINE_LICENCE_STATUS_LABEL[status] || status,
+              applicationTasks
+            })
+          : MARINE_LICENCE_STATUS_LABEL[status] || status,
+        ...(requiresAuth && { applicationTasks: applicationTasks ?? [] }),
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],
         marinePlanPolicyResponses,

@@ -10,6 +10,7 @@ import {
 } from '../../../constants/project-status.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { getProjects } from '../models/get-projects.js'
+import { getDisplayStatus } from '../../../helpers/application-tasks.js'
 import {
   getOrganisationUserNames,
   getStatusFilter,
@@ -18,13 +19,24 @@ import {
 } from './utils.js'
 
 const transformProjectBase = (project, projectType) => {
-  const { _id, projectName, applicationReference, status, submittedAt } =
-    project
+  const {
+    _id,
+    projectName,
+    applicationReference,
+    status,
+    submittedAt,
+    applicationTasks
+  } = project
+
+  const displayStatus = getDisplayStatus({
+    status: PROJECT_STATUS_LABEL[status] || status,
+    applicationTasks
+  })
 
   return {
     id: _id.toString(),
     projectType,
-    ...(status && { status: PROJECT_STATUS_LABEL[status] || status }),
+    ...(status && { status: displayStatus }),
     ...(projectName && { projectName }),
     ...(applicationReference && { applicationReference }),
     ...(submittedAt && { submittedAt })
