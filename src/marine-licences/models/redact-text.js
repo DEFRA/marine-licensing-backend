@@ -66,21 +66,19 @@ export const redactText = joi
     siteIndex: indexSchema,
     activityIndex: indexSchema,
     policyCode: joi.string(),
-    withhold: joi.when('fieldKey', {
-      is: WITHHOLD_LOCATION_FIELD,
-      then: joi.boolean().required().messages({
-        'boolean.base': 'WITHHOLD_INVALID',
-        'any.required': 'WITHHOLD_REQUIRED'
-      }),
-      otherwise: joi.forbidden().messages({
-        'any.unknown': 'WITHHOLD_NOT_ALLOWED'
-      })
-    }),
+    remove: joi.boolean(),
+    withhold: joi.boolean().messages({ 'boolean.base': 'WITHHOLD_INVALID' }),
     text: joi
-      .when('fieldKey', {
-        is: WITHHOLD_LOCATION_FIELD,
-        then: joi.string().allow('').optional(),
-        otherwise: joi.string().trim().required()
+      .string()
+      .trim()
+      .required()
+      .when('remove', {
+        is: joi.exist(),
+        then: joi.string().allow('').optional()
+      })
+      .when('withhold', {
+        is: joi.exist(),
+        then: joi.string().allow('').optional()
       })
       .messages({
         'string.empty': 'REDACTION_TEXT_REQUIRED',

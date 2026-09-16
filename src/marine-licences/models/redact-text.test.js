@@ -64,20 +64,55 @@ describe('redactText', () => {
       expect(error).toBeUndefined()
     })
 
-    test('should error when withhold is missing', () => {
+    test('should error when withhold is not a boolean', () => {
       const { error } = redactText.validate({
         ...withholdPayload,
-        withhold: undefined
+        withhold: 'yes please'
       })
-      expect(error.message).toContain('WITHHOLD_REQUIRED')
+      expect(error.message).toContain('WITHHOLD_INVALID')
     })
+  })
 
-    test('should error when withhold is sent for another field', () => {
+  describe('removing a redaction', () => {
+    test('should allow text to be omitted', () => {
       const { error } = redactText.validate({
         ...validPayload,
-        withhold: true
+        text: undefined,
+        remove: true
       })
-      expect(error.message).toContain('WITHHOLD_NOT_ALLOWED')
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow a withheld location to be removed with no flag', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: WITHHOLD_LOCATION_FIELD,
+        siteIndex: 0,
+        text: undefined,
+        remove: true
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should not require text whenever remove is present', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        text: undefined,
+        remove: false
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow remove alongside withhold', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: WITHHOLD_LOCATION_FIELD,
+        siteIndex: 0,
+        text: undefined,
+        withhold: true,
+        remove: true
+      })
+      expect(error).toBeUndefined()
     })
   })
 

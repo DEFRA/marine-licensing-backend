@@ -119,6 +119,57 @@ describe('POST /marine-licence/redact-text', () => {
       }
     )
 
+    it('should unset the redaction when removing', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = createPayload({
+        fieldKey: 'siteDetails.siteName',
+        siteIndex: 1,
+        text: undefined,
+        remove: true
+      })
+
+      const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return { updateOne: mockUpdateOne }
+      })
+
+      await redactTextController.handler(
+        { db: mockMongo, payload: mockPayload, auth: entraAuth },
+        mockHandler
+      )
+
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        { _id: ObjectId.createFromHexString(mockPayload.id) },
+        { $unset: { 'redactions.siteDetails.1.siteName': '' } }
+      )
+    })
+
+    it('should unset a withheld location when removing', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = createPayload({
+        fieldKey: WITHHOLD_LOCATION_FIELD,
+        siteIndex: 0,
+        text: undefined,
+        remove: true
+      })
+
+      const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return { updateOne: mockUpdateOne }
+      })
+
+      await redactTextController.handler(
+        { db: mockMongo, payload: mockPayload, auth: entraAuth },
+        mockHandler
+      )
+
+      const [, update] = mockUpdateOne.mock.calls[0]
+      expect(update).toEqual({
+        $unset: { 'redactions.siteDetails.0.withholdLocation': '' }
+      })
+      expect(update.$set).toBeUndefined()
+    })
+
     it('should not allow a non Entra ID user to save', async () => {
       const { mockMongo, mockHandler } = global
       const mockUpdateOne = vi.fn()

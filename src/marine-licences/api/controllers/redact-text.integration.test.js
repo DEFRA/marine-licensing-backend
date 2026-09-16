@@ -20,7 +20,11 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
         createCompleteMarineLicence({ _id: marineLicenceId, contactId })
       )
 
-  const redact = ({ id = marineLicenceId.toString(), isInternalUser = true }) =>
+  const redact = ({
+    id = marineLicenceId.toString(),
+    isInternalUser = true,
+    ...payload
+  }) =>
     makePostRequest({
       server: getServer(),
       url: '/marine-licence/redact-text',
@@ -29,7 +33,8 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
       payload: {
         id,
         fieldKey: 'preferredDates',
-        text: mockRedactions.preferredDates.redactedText
+        text: mockRedactions.preferredDates.redactedText,
+        ...payload
       }
     })
 
@@ -80,6 +85,51 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
     expect(licence.redactions.preferredDates.redactedText).toBe(
       'Redacted again'
     )
+  })
+
+  test('removes a redaction and leaves the underlying field', async () => {
+    await insertLicence()
+    await redact({})
+
+    const { statusCode } = await redact({ text: undefined, remove: true })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(licence.redactions.preferredDates).toBeUndefined()
+    expect(licence.preferredDates).toEqual(
+      createCompleteMarineLicence({}).preferredDates
+    )
+  })
+
+  test('attempting to remove a redaction that was never there does not error', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({ text: undefined, remove: true })
+
+    expect(statusCode).toBe(200)
+  })
+
+  test('stores a marine plan policy redaction against its code', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'marinePlanPolicyResponses',
+      policyCode: 'E-AGG-3'
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.marinePlanPolicyResponses['E-AGG-3'].redactedText
+    ).toBe(mockRedactions.preferredDates.redactedText)
   })
 
   test('returns 403 for a non Entra ID user', async () => {

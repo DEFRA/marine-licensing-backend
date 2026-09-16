@@ -9,6 +9,20 @@ import {
   WITHHOLD_LOCATION_FIELD
 } from '../../models/redact-text.js'
 
+const setRedaction = (key, { updatedAt, oid, text }) => ({
+  $set: {
+    [key]: {
+      redactedAt: updatedAt,
+      redactedBy: oid,
+      redactedText: text
+    }
+  }
+})
+const removeRedaction = (key) => ({ $unset: { [key]: '' } })
+const withholdRedaction = (key, withhold) => ({
+  $set: { [key]: Boolean(withhold) }
+})
+
 export const redactTextController = {
   options: {
     payload: {
@@ -27,21 +41,26 @@ export const redactTextController = {
 
     try {
       const { payload, db, auth } = request
-      const { id, fieldKey, text, withhold, updatedAt } = payload
+      const { id, fieldKey, text, withhold, remove, updatedAt } = payload
       const { oid } = auth.artifacts.decoded
-      const fieldPath = buildFieldPath(fieldKey, payload)
 
-      const value =
-        fieldKey === WITHHOLD_LOCATION_FIELD
-          ? withhold
-          : { redactedAt: updatedAt, redactedBy: oid, redactedText: text }
+      const fieldPath = buildFieldPath(fieldKey, payload)
+      const key = `redactions.${fieldPath}`
+
+      let update
+
+      if (remove) {
+        update = removeRedaction(key)
+      } else {
+        update =
+          fieldKey === WITHHOLD_LOCATION_FIELD
+            ? withholdRedaction(key, withhold)
+            : setRedaction(key, { updatedAt, oid, text })
+      }
 
       const result = await db
         .collection(collectionMarineLicences)
-        .updateOne(
-          { _id: ObjectId.createFromHexString(id) },
-          { $set: { [`redactions.${fieldPath}`]: value } }
-        )
+        .updateOne({ _id: ObjectId.createFromHexString(id) }, update)
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
       }
