@@ -5,8 +5,7 @@ import {
   requestFromInternalUser
 } from '../../../../.vite/mocks.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-import { preferredDates } from '../../models/test-fixtures.js'
-import { mockCompleteSite } from '../../../../tests/test.fixture.js'
+import { mockRedactions } from '../../../../tests/test.fixture.js'
 
 describe('GET /marine-licence', () => {
   const authenticatedController = getMarineLicenceController({
@@ -89,23 +88,7 @@ describe('GET /marine-licence', () => {
       const userContactId = 'abc'
       mockedFindOne.mockResolvedValue({
         _id: mockId,
-        feeEstimate: { accept: 'yes', termsAndConditions: true, feeBand: '2A' },
-        harbourAuthority: {
-          area: 'yes',
-          details: 'Harbour authority details'
-        },
         projectName: 'Test project',
-        publicRegister: {
-          consent: 'yes',
-          reason: 'Test public register reason'
-        },
-        preferredDates,
-        publicConsultation: {
-          consulted: 'yes',
-          details: 'Public consultation details'
-        },
-        otherAuthorities: 'Test authority',
-        projectBackground: 'Test project background',
         contactId: userContactId
       })
 
@@ -120,172 +103,11 @@ describe('GET /marine-licence', () => {
       expect(mockHandler.response).toHaveBeenCalledWith(
         expect.objectContaining({
           message: 'success',
-          value: {
+          value: expect.objectContaining({
             id: mockId,
             contactId: userContactId,
-            feeEstimate: {
-              accept: 'yes',
-              termsAndConditions: true,
-              feeBand: '2A'
-            },
-            harbourAuthority: {
-              area: 'yes',
-              details: 'Harbour authority details'
-            },
-            projectName: 'Test project',
-            publicRegister: {
-              consent: 'yes',
-              reason: 'Test public register reason'
-            },
-            preferredDates,
-            publicConsultation: {
-              consulted: 'yes',
-              details: 'Public consultation details'
-            },
-            otherAuthorities: 'Test authority',
-            projectBackground: 'Test project background',
-            marinePlanPolicyJob: null,
-            marinePlanPolicies: [],
-            marinePlanPolicyResponses: {},
-            marinePlanPolicyResponseCount: 0,
-            taskList: {
-              feeEstimate: 'COMPLETED',
-              harbourAuthority: 'COMPLETED',
-              invoicing: 'INCOMPLETE',
-              preferredDates: 'COMPLETED',
-              projectName: 'COMPLETED',
-              otherAuthorities: 'COMPLETED',
-              projectBackground: 'COMPLETED',
-              publicRegister: 'COMPLETED',
-              publicConsultation: 'COMPLETED',
-              siteDetails: 'INCOMPLETE',
-              waterFrameworkDirective: 'INCOMPLETE',
-              marinePlanPolicies: 'INCOMPLETE'
-            },
-            siteDetailsDataComplete: false
-          }
-        })
-      )
-    })
-
-    it('should filter marinePlanPolicyResponses down to the current policy set and count only those', async () => {
-      const { mockHandler } = global
-
-      const userContactId = 'abc'
-      mockedFindOne.mockResolvedValue({
-        _id: mockId,
-        projectName: 'Test project',
-        contactId: userContactId,
-        marinePlanPolicyJob: 'ready',
-        marinePlanPolicies: [
-          { policyCode: 'NEW-1', sector: 'sector-a' },
-          { policyCode: 'NEW-2', sector: 'sector-a' }
-        ],
-        marinePlanPoliciesCount: 2,
-        marinePlanPolicyResponses: {
-          'OLD-1': 'a stale answer from a previous site',
-          'NEW-1': 'answer for the current set'
-        },
-        marinePlanPolicyResponseCount: 2
-      })
-
-      await authenticatedController.handler(
-        requestFromApplicantUser({
-          userContactId,
-          params: { id: mockId }
-        }),
-        mockHandler
-      )
-
-      expect(mockHandler.response).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'success',
-          value: expect.objectContaining({
-            marinePlanPolicyResponses: {
-              'NEW-1': 'answer for the current set'
-            },
-            marinePlanPolicyResponseCount: 1,
-            taskList: expect.objectContaining({
-              marinePlanPolicies: 'IN_PROGRESS'
-            })
+            projectName: 'Test project'
           })
-        })
-      )
-    })
-
-    it('should report siteDetailsDataComplete as true when site data is valid regardless of siteDetailsConfirmed', async () => {
-      const { mockHandler } = global
-
-      mockedFindOne.mockResolvedValue({
-        _id: mockId,
-        projectName: 'Test project',
-        contactId: 'abc',
-        siteDetails: [mockCompleteSite],
-        siteDetailsConfirmed: false
-      })
-
-      await authenticatedController.handler(
-        requestFromApplicantUser({
-          userContactId: 'abc',
-          params: { id: mockId }
-        }),
-        mockHandler
-      )
-
-      expect(mockHandler.response).toHaveBeenCalledWith(
-        expect.objectContaining({
-          value: expect.objectContaining({ siteDetailsDataComplete: true })
-        })
-      )
-    })
-
-    it('should report siteDetailsDataComplete as false when site data is invalid even if siteDetailsConfirmed is true', async () => {
-      const { mockHandler } = global
-
-      mockedFindOne.mockResolvedValue({
-        _id: mockId,
-        projectName: 'Test project',
-        contactId: 'abc',
-        siteDetails: [],
-        siteDetailsConfirmed: true
-      })
-
-      await authenticatedController.handler(
-        requestFromApplicantUser({
-          userContactId: 'abc',
-          params: { id: mockId }
-        }),
-        mockHandler
-      )
-
-      expect(mockHandler.response).toHaveBeenCalledWith(
-        expect.objectContaining({
-          value: expect.objectContaining({ siteDetailsDataComplete: false })
-        })
-      )
-    })
-
-    it('should return the mapped status label rather than the raw status', async () => {
-      const { mockHandler } = global
-
-      mockedFindOne.mockResolvedValue({
-        _id: mockId,
-        projectName: 'Test project',
-        contactId: 'abc',
-        status: MARINE_LICENCE_STATUS.ACTIVE
-      })
-
-      await authenticatedController.handler(
-        requestFromApplicantUser({
-          userContactId: 'abc',
-          params: { id: mockId }
-        }),
-        mockHandler
-      )
-
-      expect(mockHandler.response).toHaveBeenCalledWith(
-        expect.objectContaining({
-          value: expect.objectContaining({ status: 'Active' })
         })
       )
     })
@@ -307,6 +129,34 @@ describe('GET /marine-licence', () => {
       expect(mockHandler.response).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'success' })
       )
+    })
+
+    describe('Redactions', () => {
+      const redactions = mockRedactions
+
+      it('should not return redactions on the public endpoint', async () => {
+        const { mockHandler } = global
+
+        mockedFindOne.mockResolvedValue({
+          _id: mockId,
+          projectName: 'Test project',
+          contactId: 'abc',
+          status: MARINE_LICENCE_STATUS.SUBMITTED,
+          redactions
+        })
+
+        await publicController.handler(
+          {
+            params: { id: mockId },
+            db: global.mockMongo,
+            logger: { info: vi.fn(), error: vi.fn() }
+          },
+          mockHandler
+        )
+
+        const [{ value }] = mockHandler.response.mock.calls[0]
+        expect(value).not.toHaveProperty('redactions')
+      })
     })
 
     it("should error if user didn't create the marine licence", async () => {

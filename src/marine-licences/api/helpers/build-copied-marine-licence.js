@@ -9,7 +9,8 @@ export const FIELDS_TO_DROP_ON_COPY = [
   'rejectedInformation',
   'transferredDate',
   'coastalOperationsAreas',
-  'marinePlanAreas'
+  'marinePlanAreas',
+  'redactions'
 ]
 
 export const buildCopiedMarineLicence = (

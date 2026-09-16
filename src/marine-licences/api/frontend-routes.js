@@ -1,6 +1,7 @@
 import { createProjectNameController } from './controllers/create-project-name.js'
 import { updateProjectNameController } from './controllers/update-project-name.js'
 import { getMarineLicenceController } from './controllers/get-marine-licence.js'
+import { getMarineLicenceByApplicationReferenceController } from './controllers/get-marine-licence-by-application-reference.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
 import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
@@ -27,6 +28,7 @@ import { addConstructionDrawingController } from './controllers/add-construction
 import { updateConstructionDrawingController } from './controllers/update-construction-drawing.js'
 import { deleteConstructionDrawingController } from './controllers/delete-construction-drawing.js'
 import { deleteConstructionDrawingsController } from './controllers/delete-construction-drawings.js'
+import { redactTextController } from './controllers/redact-text.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -41,6 +43,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'GET',
     path: '/public/marine-licence/{id}',
     ...getMarineLicenceController({ requiresAuth: false })
+  },
+  {
+    method: 'GET',
+    path: '/marine-licence/applicationReference/{applicationReference}',
+    ...getMarineLicenceByApplicationReferenceController
   },
   {
     method: 'POST',
@@ -116,6 +123,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/preferred-dates',
     ...updatePreferredDatesController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/redact-text',
+    ...redactTextController
   },
   {
     method: 'PATCH',
