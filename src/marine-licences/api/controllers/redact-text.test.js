@@ -66,7 +66,7 @@ describe('POST /marine-licence/redact-text', () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = createPayload({
         fieldKey: 'siteDetails.activityDetails.activityDescription',
-        index: 2,
+        siteIndex: 2,
         activityIndex: 1
       })
 
@@ -97,7 +97,7 @@ describe('POST /marine-licence/redact-text', () => {
         const { mockMongo, mockHandler } = global
         const mockPayload = createPayload({
           fieldKey: WITHHOLD_LOCATION_FIELD,
-          index: 3,
+          siteIndex: 3,
           text: '',
           withhold
         })

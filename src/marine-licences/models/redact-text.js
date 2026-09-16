@@ -46,10 +46,10 @@ export const REDACTABLE_FIELDS = [
 
 export const buildFieldPath = (
   fieldKey,
-  { index, activityIndex, policyCode }
+  { siteIndex, activityIndex, policyCode }
 ) =>
   fieldKey
-    .replace('siteDetails', `siteDetails.${index}`)
+    .replace('siteDetails', `siteDetails.${siteIndex}`)
     .replace('activityDetails', `activityDetails.${activityIndex}`)
     .replace(
       'marinePlanPolicyResponses',
@@ -73,7 +73,7 @@ export const redactText = joi
         'any.only': 'REDACTION_FIELD_KEY_INVALID',
         'any.required': 'REDACTION_FIELD_KEY_REQUIRED'
       }),
-    index: indexSchema,
+    siteIndex: indexSchema,
     activityIndex: indexSchema,
     policyCode: joi.string(),
     withhold: joi.when('fieldKey', {

@@ -16,7 +16,7 @@ describe('redactText', () => {
   const withIndexes = (fieldKey) => ({
     ...validPayload,
     fieldKey,
-    ...(fieldKey.startsWith('siteDetails') && { index: 0 }),
+    ...(fieldKey.startsWith('siteDetails') && { siteIndex: 0 }),
     ...(fieldKey.includes('activityDetails') && { activityIndex: 1 }),
     ...(fieldKey.startsWith('marinePlanPolicyResponses') && {
       policyCode: 'E-AGG-3'
@@ -38,7 +38,7 @@ describe('redactText', () => {
     const withholdPayload = {
       ...validPayload,
       fieldKey: WITHHOLD_LOCATION_FIELD,
-      index: 0,
+      siteIndex: 0,
       text: '',
       withhold: true
     }
@@ -86,11 +86,11 @@ describe('redactText', () => {
     expect(error.message).toContain('REDACTION_TEXT_REQUIRED')
   })
 
-  test('should error when an index is not a number', () => {
+  test('should error when a site index is not a number', () => {
     const { error } = redactText.validate({
       ...validPayload,
       fieldKey: 'siteDetails.siteName',
-      index: '0.siteName'
+      siteIndex: '0.siteName'
     })
     expect(error.message).toContain('REDACTION_INDEX_INVALID')
   })
@@ -98,11 +98,15 @@ describe('redactText', () => {
   describe('buildFieldPath', () => {
     test.each([
       ['projectName', {}, 'projectName'],
-      ['siteDetails.siteName', { index: 3 }, 'siteDetails.3.siteName'],
-      [WITHHOLD_LOCATION_FIELD, { index: 0 }, 'siteDetails.0.withholdLocation'],
+      ['siteDetails.siteName', { siteIndex: 3 }, 'siteDetails.3.siteName'],
+      [
+        WITHHOLD_LOCATION_FIELD,
+        { siteIndex: 0 },
+        'siteDetails.0.withholdLocation'
+      ],
       [
         'siteDetails.activityDetails.activityDescription',
-        { index: 2, activityIndex: 1 },
+        { siteIndex: 2, activityIndex: 1 },
         'siteDetails.2.activityDetails.1.activityDescription'
       ],
       [
