@@ -14,8 +14,13 @@ const ACTIVITY_FIELDS = [
   'workingHours'
 ]
 
-// redaction specific flag
+// redaction specific flags - these store a bare boolean, not replacement text
 export const WITHHOLD_LOCATION_FIELD = 'siteDetails.withholdLocation'
+export const WITHHOLD_FIELDS = [
+  WITHHOLD_LOCATION_FIELD,
+  'waterFrameworkDirective.withholdDocument',
+  'siteDetails.constructionDrawings.withholdDocument'
+]
 
 export const REDACTABLE_FIELDS = [
   'projectName',
@@ -30,17 +35,18 @@ export const REDACTABLE_FIELDS = [
   'marinePlanPolicyResponses',
   'siteDetails.siteName',
   'siteDetails.circleWidth',
-  WITHHOLD_LOCATION_FIELD,
+  ...WITHHOLD_FIELDS,
   ...ACTIVITY_FIELDS.map((field) => `${ACTIVITY}.${field}`)
 ]
 
 export const buildFieldPath = (
   fieldKey,
-  { siteIndex, activityIndex, policyCode }
+  { siteIndex, activityIndex, drawingIndex, policyCode }
 ) =>
   fieldKey
     .replace('siteDetails', `siteDetails.${siteIndex}`)
     .replace('activityDetails', `activityDetails.${activityIndex}`)
+    .replace('constructionDrawings', `constructionDrawings.${drawingIndex}`)
     .replace(
       'marinePlanPolicyResponses',
       `marinePlanPolicyResponses.${policyCode}`
@@ -65,6 +71,7 @@ export const redactText = joi
       }),
     siteIndex: indexSchema,
     activityIndex: indexSchema,
+    drawingIndex: indexSchema,
     policyCode: joi.string(),
     remove: joi.boolean(),
     withhold: joi.boolean().messages({ 'boolean.base': 'WITHHOLD_INVALID' }),

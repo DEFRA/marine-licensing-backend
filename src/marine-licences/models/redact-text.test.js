@@ -2,6 +2,7 @@ import {
   redactText,
   REDACTABLE_FIELDS,
   WITHHOLD_LOCATION_FIELD,
+  WITHHOLD_FIELDS,
   buildFieldPath
 } from './redact-text.js'
 import { mockMarineLicence } from './test-fixtures.js'
@@ -18,10 +19,11 @@ describe('redactText', () => {
     fieldKey,
     ...(fieldKey.startsWith('siteDetails') && { siteIndex: 0 }),
     ...(fieldKey.includes('activityDetails') && { activityIndex: 1 }),
+    ...(fieldKey.includes('constructionDrawings') && { drawingIndex: 2 }),
     ...(fieldKey.startsWith('marinePlanPolicyResponses') && {
       policyCode: 'E-AGG-3'
     }),
-    ...(fieldKey === WITHHOLD_LOCATION_FIELD && { withhold: true, text: '' })
+    ...(WITHHOLD_FIELDS.includes(fieldKey) && { withhold: true, text: '' })
   })
 
   test('should pass with valid data', () => {
@@ -70,6 +72,42 @@ describe('redactText', () => {
         withhold: 'yes please'
       })
       expect(error.message).toContain('WITHHOLD_INVALID')
+    })
+  })
+
+  describe('withholding a document', () => {
+    test('should allow the water framework directive file with no index', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: 'waterFrameworkDirective.withholdDocument',
+        text: undefined,
+        withhold: true
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow a construction drawing with both indexes', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+        siteIndex: 0,
+        drawingIndex: 1,
+        text: undefined,
+        withhold: true
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should error when a drawing index is not a number', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+        siteIndex: 0,
+        drawingIndex: 'first',
+        text: undefined,
+        withhold: true
+      })
+      expect(error.message).toContain('REDACTION_INDEX_INVALID')
     })
   })
 
@@ -143,6 +181,16 @@ describe('redactText', () => {
         'siteDetails.activityDetails.activityDescription',
         { siteIndex: 2, activityIndex: 1 },
         'siteDetails.2.activityDetails.1.activityDescription'
+      ],
+      [
+        'siteDetails.constructionDrawings.withholdDocument',
+        { siteIndex: 1, drawingIndex: 2 },
+        'siteDetails.1.constructionDrawings.2.withholdDocument'
+      ],
+      [
+        'waterFrameworkDirective.withholdDocument',
+        {},
+        'waterFrameworkDirective.withholdDocument'
       ],
       [
         'marinePlanPolicyResponses',

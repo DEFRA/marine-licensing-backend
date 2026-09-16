@@ -6,7 +6,7 @@ import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
 import {
   redactText,
   buildFieldPath,
-  WITHHOLD_LOCATION_FIELD
+  WITHHOLD_FIELDS
 } from '../../models/redact-text.js'
 
 const setRedaction = (key, { updatedAt, oid, text }) => ({
@@ -52,10 +52,9 @@ export const redactTextController = {
       if (remove) {
         update = removeRedaction(key)
       } else {
-        update =
-          fieldKey === WITHHOLD_LOCATION_FIELD
-            ? withholdRedaction(key, withhold)
-            : setRedaction(key, { updatedAt, oid, text })
+        update = WITHHOLD_FIELDS.includes(fieldKey)
+          ? withholdRedaction(key, withhold)
+          : setRedaction(key, { updatedAt, oid, text })
       }
 
       const result = await db

@@ -132,6 +132,78 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
     ).toBe(mockRedactions.preferredDates.redactedText)
   })
 
+  test('withholds the water framework directive document', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(licence.redactions.waterFrameworkDirective.withholdDocument).toBe(
+      true
+    )
+    expect(licence.waterFrameworkDirective).toEqual(
+      createCompleteMarineLicence({}).waterFrameworkDirective
+    )
+  })
+
+  test('withholds a construction drawing against its site and drawing', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.siteDetails[0].constructionDrawings[0].withholdDocument
+    ).toBe(true)
+    expect(licence.siteDetails).toEqual(
+      createCompleteMarineLicence({}).siteDetails
+    )
+  })
+
+  test('reverses a withheld document to false', async () => {
+    await insertLicence()
+
+    const withholdWfd = (withhold) =>
+      redact({
+        fieldKey: 'waterFrameworkDirective.withholdDocument',
+        text: undefined,
+        withhold
+      })
+
+    await withholdWfd(true)
+    const { statusCode } = await withholdWfd(false)
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(licence.redactions.waterFrameworkDirective.withholdDocument).toBe(
+      false
+    )
+  })
+
   test('returns 403 for a non Entra ID user', async () => {
     await insertLicence()
 
