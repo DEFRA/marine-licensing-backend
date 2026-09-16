@@ -6,6 +6,7 @@ import {
 } from '../../../../.vite/mocks.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { mockRedactions } from '../../../../tests/test.fixture.js'
+import { preferredDates } from '../../models/test-fixtures.js'
 
 describe('GET /marine-licence', () => {
   const authenticatedController = getMarineLicenceController({
@@ -100,6 +101,15 @@ describe('GET /marine-licence', () => {
         },
         otherAuthorities: 'Test authority',
         projectBackground: 'Test project background',
+        feeEstimate: {
+          accept: 'yes',
+          termsAndConditions: true,
+          feeBand: '2A'
+        },
+        harbourAuthority: {
+          area: 'yes',
+          details: 'Harbour authority details'
+        },
         contactId: userContactId
       })
 
@@ -157,7 +167,7 @@ describe('GET /marine-licence', () => {
               marinePlanPolicies: 'INCOMPLETE'
             },
             siteDetailsDataComplete: false
-          }
+          })
         })
       )
     })
