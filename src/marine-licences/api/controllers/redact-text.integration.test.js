@@ -5,15 +5,12 @@ import {
   mockRedactions
 } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { validateConstructionDrawingUpload } from '../helpers/validateConstructionDrawingUpload.js'
 
-vi.mock('../helpers/validateWfdUpload.js', () => ({
-  validateWfdUpload: vi.fn()
-}))
-vi.mock('../helpers/validateConstructionDrawingUpload.js', () => ({
-  validateConstructionDrawingUpload: vi.fn()
-}))
+vi.mock('../helpers/validateWfdUpload.js')
+vi.mock('../helpers/validateConstructionDrawingUpload.js')
 
 const mockRedactedS3Location = {
   s3Bucket: 'mmo-uploads',
@@ -26,6 +23,14 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
   const caseworkerOid = '987e6543-e21b-12d3-a456-426614174000'
   const marineLicenceId = new ObjectId()
+
+  let validateConstructionDrawingUploadMock
+
+  beforeEach(() => {
+    validateConstructionDrawingUploadMock = vi.mocked(
+      validateConstructionDrawingUpload
+    )
+  })
 
   const insertLicence = () =>
     globalThis.mockMongo
@@ -180,7 +185,6 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
       fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
       siteIndex: 0,
       drawingIndex: 0,
-      text: undefined,
       withhold: true
     })
 
@@ -284,6 +288,43 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
     expect(licence.waterFrameworkDirective).toEqual(
       createCompleteMarineLicence({}).waterFrameworkDirective
     )
+  })
+
+  test('errors on invalid upload', async () => {
+    await insertLicence()
+
+    validateConstructionDrawingUploadMock.mockRejectedValue('reject')
+
+    const { statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-drawing.pdf',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(statusCode).toBe(500)
+  })
+
+  test('errors on invalid upload field key', async () => {
+    await insertLicence()
+
+    validateConstructionDrawingUploadMock.mockRejectedValue('reject')
+
+    const { body, statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.invalid',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-drawing.pdf',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(body.message).toBe('REDACTION_FIELD_KEY_INVALID')
+    expect(statusCode).toBe(400)
   })
 
   test('unwithholding removes a replacement document', async () => {

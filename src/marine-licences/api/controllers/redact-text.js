@@ -41,14 +41,14 @@ const CONSTRUCTION_FIELD_KEY =
 
 const validateUploads = async (fieldKey, s3Location) => {
   if (fieldKey === WFD_FIELD_KEY) {
-    return await validateWfdUpload({ s3Location })
+    return validateWfdUpload({ s3Location })
   }
 
   if (fieldKey === CONSTRUCTION_FIELD_KEY) {
-    return await validateConstructionDrawingUpload(s3Location)
+    return validateConstructionDrawingUpload(s3Location)
   }
 
-  throw Boom.notFound('Invalid upload')
+  throw Boom.notFound('Invalid upload key')
 }
 
 export const redactTextController = {
