@@ -403,11 +403,11 @@ Tests are run via npm scripts (see package.json). Key patterns:
 - Check MongoDB is running: `docker compose up -d` (includes MongoDB)
 - Test connection: `mongosh "mongodb://127.0.0.1:27017/marine-licensing-backend?directConnection=true"` (the composed mongo is a single-member replica set advertising a Docker-network hostname, so host clients must skip topology discovery — see README "MongoDB")
 
-### S3/LocalStack Issues
+### S3/Floci Issues
 
-- Ensure LocalStack is running: `docker compose up -d`
-- Verify `S3_ENDPOINT` points to LocalStack
-- Check bucket exists: Use AWS CLI against LocalStack
+- Ensure Floci is running: `docker compose up -d`
+- Verify `S3_ENDPOINT` points to Floci (`http://floci:4566` in Docker, `http://localhost:4566` on the host)
+- Check bucket exists: Use AWS CLI against Floci (`--endpoint-url=http://localhost:4566`)
 
 ### Authentication Failures
 
