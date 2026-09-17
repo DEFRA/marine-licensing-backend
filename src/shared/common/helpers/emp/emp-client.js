@@ -228,9 +228,6 @@ const updateEmpStatus = async (
     )
   }
 
-  // Resolved once the queue lookup has confirmed there is something to push,
-  // so a status that can't be mapped fails the same way an unresolved feature
-  // id does.
   const statusLabel = await getStatusLabel()
 
   try {
