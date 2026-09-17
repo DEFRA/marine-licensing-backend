@@ -1,12 +1,16 @@
 import { vi } from 'vitest'
-import { updateWithholdingNotification } from './update-withholding-notification.js'
+import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { addApplicationTask } from './add-application-task.js'
 import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
-import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MAS_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
 import {
   mockMasWithholdingMessageBody,
   mockMasWithholdingNationalSecurityOnlyMessageBody,
-  mockMasWithholdingCommercialOnlyMessageBody
+  mockMasWithholdingCommercialOnlyMessageBody,
+  mockMasWithholdingNoBasisMessageBody
 } from './test-fixtures.js'
 
 vi.mock('./add-application-task.js', () => ({
@@ -16,13 +20,12 @@ vi.mock('./send-withholding-notification-email.js', () => ({
   sendWithholdingNotificationEmail: vi.fn()
 }))
 
-describe('updateWithholdingNotification', () => {
+describe('handleWithholdingNotification', () => {
   const db = { collection: vi.fn() }
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   const messageId = 'message-id'
 
   beforeEach(() => {
-    vi.clearAllMocks()
     addApplicationTask.mockResolvedValue({
       marineLicence: { _id: '507f1f77bcf86cd799439011' },
       task: { taskId: 'abc' }
@@ -30,7 +33,7 @@ describe('updateWithholdingNotification', () => {
   })
 
   const run = (body) =>
-    updateWithholdingNotification(db, logger, { body, id: messageId })
+    handleWithholdingNotification(db, logger, { body, id: messageId })
 
   it('records both bases when the caseworker flagged both', async () => {
     await run(mockMasWithholdingMessageBody)
@@ -95,5 +98,34 @@ describe('updateWithholdingNotification', () => {
     await run(mockMasWithholdingMessageBody)
 
     expect(sendWithholdingNotificationEmail).not.toHaveBeenCalled()
+  })
+
+  it('raises no task and sends no email when neither basis is present', async () => {
+    const result = await run(mockMasWithholdingNoBasisMessageBody)
+
+    expect(result).toBeNull()
+    expect(addApplicationTask).not.toHaveBeenCalled()
+    expect(sendWithholdingNotificationEmail).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MAS_EVENT_ACTION.APPLICATION_TASK_SKIPPED,
+          outcome: 'failure'
+        })
+      }),
+      expect.stringContaining('Discarding withholding notification')
+    )
+  })
+
+  it('re-notifies the applicant when a decision supersedes an unresolved task', async () => {
+    addApplicationTask.mockResolvedValue({
+      marineLicence: { _id: '507f1f77bcf86cd799439011' },
+      task: { taskId: 'abc' },
+      superseded: true
+    })
+
+    await run(mockMasWithholdingMessageBody)
+
+    expect(sendWithholdingNotificationEmail).toHaveBeenCalledTimes(1)
   })
 })

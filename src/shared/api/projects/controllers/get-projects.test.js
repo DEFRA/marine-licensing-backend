@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import { getProjectsController, sortByStatus } from './get-projects.js'
 import { ObjectId } from 'mongodb'
-import { PROJECT_STATUS_LABEL } from '../../../constants/project-status.js'
+import {
+  ACTION_REQUIRED_STATUS_LABEL,
+  PROJECT_STATUS_LABEL
+} from '../../../constants/project-status.js'
 import {
   collectionExemptions,
   collectionMarineLicences
@@ -364,6 +367,28 @@ describe('getProjectsController', () => {
       const result = projects.sort(sortByStatus)
       expect(result[0].status).toBe(PROJECT_STATUS_LABEL.TRANSFERRED)
       expect(result[1].status).toBe(PROJECT_STATUS_LABEL.DRAFT)
+    })
+
+    it('should put the derived Action required status above every stored status', () => {
+      const projects = [
+        { status: PROJECT_STATUS_LABEL.ACTIVE, projectName: 'Active Project' },
+        {
+          status: ACTION_REQUIRED_STATUS_LABEL,
+          projectName: 'Action Required Project'
+        },
+        {
+          status: PROJECT_STATUS_LABEL.TRANSFERRED,
+          projectName: 'Transferred Project'
+        },
+        { status: PROJECT_STATUS_LABEL.DRAFT, projectName: 'Draft Project' }
+      ]
+      const result = projects.sort(sortByStatus)
+      expect(result.map(({ status }) => status)).toEqual([
+        ACTION_REQUIRED_STATUS_LABEL,
+        PROJECT_STATUS_LABEL.TRANSFERRED,
+        PROJECT_STATUS_LABEL.DRAFT,
+        PROJECT_STATUS_LABEL.ACTIVE
+      ])
     })
 
     it('should handle unknown status by placing it last', () => {

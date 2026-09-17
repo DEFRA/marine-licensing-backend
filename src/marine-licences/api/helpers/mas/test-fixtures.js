@@ -1,3 +1,5 @@
+import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
+
 export const mockMasApplicationReference = 'MMO-2027-00123'
 
 export const mockMasTransferredMessageBody = {
@@ -20,7 +22,7 @@ export const mockMasRejectedMessageBody = {
 
 export const mockMasWithholdingMessageBody = {
   applicationReference: mockMasApplicationReference,
-  taskType: 'WITHHOLDING_NOTIFICATION',
+  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
   nationalSecurity: {
     withheldSome: false,
     comments:
@@ -37,7 +39,7 @@ export const mockMasWithholdingMessageBody = {
 
 export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
-  taskType: 'WITHHOLDING_NOTIFICATION',
+  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
   nationalSecurity: {
     withheldSome: true,
     comments: 'We agree to withhold the vessel positions.'
@@ -46,9 +48,16 @@ export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
   userEmail: 'jane@example.com'
 }
 
+export const mockMasWithholdingNoBasisMessageBody = {
+  applicationReference: mockMasApplicationReference,
+  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
+  userName: 'Jane Doe',
+  userEmail: 'jane@example.com'
+}
+
 export const mockMasWithholdingCommercialOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
-  taskType: 'WITHHOLDING_NOTIFICATION',
+  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
   commercialConfidentiality: {
     withheldSome: false,
     comments: 'This information is standard practice information.'

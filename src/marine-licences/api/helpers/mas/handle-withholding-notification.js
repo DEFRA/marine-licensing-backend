@@ -1,5 +1,8 @@
 import { config } from '../../../../config.js'
-import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MAS_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
 import { addApplicationTask } from './add-application-task.js'
 import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
 
@@ -27,15 +30,17 @@ const buildWithholdingData = ({
     data.nationalSecurity = nationalSecurityDecision
   }
 
-  const commercialDecision = buildBasis(commercialConfidentiality)
-  if (commercialDecision) {
-    data.commercialConfidentiality = commercialDecision
+  const commercialConfidentialityDecision = buildBasis(
+    commercialConfidentiality
+  )
+  if (commercialConfidentialityDecision) {
+    data.commercialConfidentiality = commercialConfidentialityDecision
   }
 
   return data
 }
 
-export const updateWithholdingNotification = async (
+export const handleWithholdingNotification = async (
   db,
   logger,
   { body, id }
@@ -49,10 +54,32 @@ export const updateWithholdingNotification = async (
   } = body
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
+  const data = buildWithholdingData({
+    nationalSecurity,
+    commercialConfidentiality
+  })
+
+  // With no basis the applicant's page would render empty, so there is nothing to
+  // ask them to acknowledge.
+  if (!Object.keys(data).length) {
+    logger.warn(
+      {
+        event: {
+          action: MAS_EVENT_ACTION.APPLICATION_TASK_SKIPPED,
+          outcome: 'failure',
+          reference: applicationReference,
+          reason: 'no withholding basis on message'
+        }
+      },
+      `Discarding withholding notification for applicationReference ${applicationReference}: neither national security nor commercial confidentiality basis was present`
+    )
+    return null
+  }
+
   const result = await addApplicationTask(db, logger, {
     applicationReference,
     type: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
-    data: buildWithholdingData({ nationalSecurity, commercialConfidentiality }),
+    data,
     updatedBy: id
   })
 

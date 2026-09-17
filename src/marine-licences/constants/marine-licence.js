@@ -63,5 +63,8 @@ export const MAS_EVENT_ACTION = {
   JOB_STALE: 'mas:job-stale',
   JOB_FAILED: 'mas:job-failed',
   JOB_COMPLETE: 'mas:job-complete',
-  APPLICATION_TASK_ADDED: 'mas:application-task-added'
+  APPLICATION_TASK_ADDED: 'mas:application-task-added',
+  APPLICATION_TASK_SUPERSEDED: 'mas:application-task-superseded',
+  APPLICATION_TASK_SKIPPED: 'mas:application-task-skipped',
+  LICENCE_NOT_FOUND: 'mas:licence-not-found'
 }

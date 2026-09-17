@@ -5,6 +5,7 @@ import {
 } from '../../../common/constants/db-collections.js'
 import { getContactId } from '../../../helpers/get-contact-id.js'
 import {
+  ACTION_REQUIRED_STATUS_LABEL,
   PROJECT_STATUS_LABEL,
   PROJECT_TYPES
 } from '../../../constants/project-status.js'
@@ -57,7 +58,10 @@ const transformProjects = (projects, type) =>
   (projects ?? []).filter(Boolean).map((p) => transformProjectBase(p, type))
 
 export const sortByStatus = (a, b) => {
+  // Ordered by display status, so the derived "Action required" must be listed
+  // here too or every project with an outstanding task falls to the bottom.
   const statusOrder = [
+    ACTION_REQUIRED_STATUS_LABEL,
     PROJECT_STATUS_LABEL.TRANSFERRED,
     PROJECT_STATUS_LABEL.DRAFT,
     PROJECT_STATUS_LABEL.ACTIVE

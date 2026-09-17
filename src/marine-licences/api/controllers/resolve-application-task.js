@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { resolveApplicationTask } from '../../models/resolve-application-task.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
 // Generic across application task types. No status is written: the application
@@ -16,10 +17,11 @@ export const resolveApplicationTaskController = {
   },
   handler: async (request, h) => {
     try {
-      const { db, params } = request
+      const { db, params, auth } = request
       const { id, taskId } = params
 
       const resolvedAt = new Date()
+      const resolvedBy = getContactId(auth)
 
       const result = await db
         .collection(collectionMarineLicences)
@@ -31,7 +33,8 @@ export const resolveApplicationTaskController = {
           {
             $set: {
               'applicationTasks.$.resolvedAt': resolvedAt,
-              updatedAt: resolvedAt
+              updatedAt: resolvedAt,
+              updatedBy: resolvedBy
             }
           }
         )

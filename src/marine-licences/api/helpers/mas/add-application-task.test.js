@@ -9,16 +9,27 @@ describe('addApplicationTask', () => {
   const applicationReference = 'MMO-2027-00123'
   const type = APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION
   const data = { nationalSecurity: { withheldSome: true, comments: 'x' } }
+  const licence = { _id: '507f1f77bcf86cd799439011' }
 
   let mockFindOneAndUpdate
   let db
   let logger
 
+  const add = () =>
+    addApplicationTask(db, logger, {
+      applicationReference,
+      type,
+      data,
+      updatedBy: 'message-id'
+    })
+
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
-    mockFindOneAndUpdate = vi
-      .fn()
-      .mockResolvedValue({ _id: '507f1f77bcf86cd799439011' })
+    mockFindOneAndUpdate = vi.fn()
+    // First call is the supersede attempt, second the push of a new task.
+    mockFindOneAndUpdate
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(licence)
     db = {
       collection: vi
         .fn()
@@ -27,15 +38,14 @@ describe('addApplicationTask', () => {
     logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   })
 
-  it('pushes a task with a null resolvedAt and writes no status', async () => {
-    const result = await addApplicationTask(db, logger, {
-      applicationReference,
-      type,
-      data,
-      updatedBy: 'message-id'
-    })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
-    const [filter, update] = mockFindOneAndUpdate.mock.calls[0]
+  it('pushes a task with a null resolvedAt and writes no status', async () => {
+    const result = await add()
+
+    const [filter, update] = mockFindOneAndUpdate.mock.calls[1]
 
     expect(filter).toEqual({
       applicationReference,
@@ -54,23 +64,66 @@ describe('addApplicationTask', () => {
     })
     expect(update.$set).not.toHaveProperty('status')
     expect(result.task.taskId).toEqual(expect.any(String))
+    expect(result.superseded).toBe(false)
   })
 
-  it('does not add a duplicate when an unresolved task of the type already exists', async () => {
-    mockFindOneAndUpdate.mockResolvedValue(null)
-
-    const result = await addApplicationTask(db, logger, {
-      applicationReference,
+  it('overwrites an unresolved task of the same type rather than discarding the decision', async () => {
+    const supersededTask = {
+      taskId: 'existing-task',
       type,
-      data,
+      receivedAt: new Date(),
+      resolvedAt: null,
+      data
+    }
+    mockFindOneAndUpdate.mockReset()
+    mockFindOneAndUpdate.mockResolvedValue({
+      ...licence,
+      applicationTasks: [supersededTask]
+    })
+
+    const result = await add()
+
+    const [filter, update] = mockFindOneAndUpdate.mock.calls[0]
+
+    expect(filter).toEqual({
+      applicationReference,
+      applicationTasks: { $elemMatch: { type, resolvedAt: null } }
+    })
+    expect(update.$set).toEqual({
+      'applicationTasks.$.data': data,
+      'applicationTasks.$.receivedAt': new Date(),
+      updatedAt: new Date(),
       updatedBy: 'message-id'
     })
+    expect(update.$set).not.toHaveProperty('status')
+    expect(mockFindOneAndUpdate).toHaveBeenCalledTimes(1)
+    expect(result).toEqual({
+      marineLicence: { ...licence, applicationTasks: [supersededTask] },
+      task: supersededTask,
+      superseded: true
+    })
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MAS_EVENT_ACTION.APPLICATION_TASK_SUPERSEDED
+        })
+      }),
+      expect.stringContaining(applicationReference)
+    )
+  })
+
+  it('returns null when no marine licence matches the reference', async () => {
+    mockFindOneAndUpdate.mockReset()
+    mockFindOneAndUpdate.mockResolvedValue(null)
+
+    const result = await add()
 
     expect(result).toBeNull()
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({
-          action: MAS_EVENT_ACTION.JOB_STALE
+          action: MAS_EVENT_ACTION.LICENCE_NOT_FOUND,
+          outcome: 'failure'
         })
       }),
       expect.stringContaining(applicationReference)
@@ -78,17 +131,10 @@ describe('addApplicationTask', () => {
   })
 
   it('rethrows so the queue retries when the update fails', async () => {
-    const error = new Error('mongo is down')
-    mockFindOneAndUpdate.mockRejectedValue(error)
+    mockFindOneAndUpdate.mockReset()
+    mockFindOneAndUpdate.mockRejectedValue(new Error('mongo is down'))
 
-    await expect(
-      addApplicationTask(db, logger, {
-        applicationReference,
-        type,
-        data,
-        updatedBy: 'message-id'
-      })
-    ).rejects.toThrow('mongo is down')
+    await expect(add()).rejects.toThrow('mongo is down')
     expect(logger.error).toHaveBeenCalled()
   })
 })

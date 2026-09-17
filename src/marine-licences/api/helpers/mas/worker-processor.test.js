@@ -11,7 +11,7 @@ import {
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
-import { updateWithholdingNotification } from './update-withholding-notification.js'
+import { handleWithholdingNotification } from './handle-withholding-notification.js'
 
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
@@ -21,7 +21,7 @@ vi.mock('./sqs-client.js', () => ({
 
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
-vi.mock('./update-withholding-notification.js')
+vi.mock('./handle-withholding-notification.js')
 
 const sqsQueueName = 'marine_licensing_mas'
 const sqsDlqName = 'marine_licensing_mas-deadletter'
@@ -76,13 +76,13 @@ describe('mas-worker-processor', () => {
       )
     })
 
-    it('should call updateWithholdingNotification for a withholding notification message', async () => {
+    it('should call handleWithholdingNotification for a withholding notification message', async () => {
       const server = buildServer()
       const body = JSON.parse(mockMasWithholdingSqsMessage.Body)
 
       await processMasMessage(server, mockMasWithholdingSqsMessage)
 
-      expect(updateWithholdingNotification).toHaveBeenCalledWith(
+      expect(handleWithholdingNotification).toHaveBeenCalledWith(
         server.db,
         server.logger,
         { body, id: mockMasWithholdingSqsMessage.MessageId }
@@ -98,7 +98,7 @@ describe('mas-worker-processor', () => {
 
       await processMasMessage(server, mockMasRejectedSqsMessage)
 
-      expect(updateWithholdingNotification).not.toHaveBeenCalled()
+      expect(handleWithholdingNotification).not.toHaveBeenCalled()
     })
 
     it('should log an error and still delete a malformed message', async () => {

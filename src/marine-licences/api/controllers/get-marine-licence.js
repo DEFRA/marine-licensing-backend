@@ -59,15 +59,13 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       const taskList = createTaskList(marineLicence, isCitizen, {
         marinePlanPolicyResponseCount
       })
+      const statusLabel = MARINE_LICENCE_STATUS_LABEL[status] || status
       const response = {
         id: _id.toString(),
         ...rest,
         status: requiresAuth
-          ? getDisplayStatus({
-              status: MARINE_LICENCE_STATUS_LABEL[status] || status,
-              applicationTasks
-            })
-          : MARINE_LICENCE_STATUS_LABEL[status] || status,
+          ? getDisplayStatus({ status: statusLabel, applicationTasks })
+          : statusLabel,
         ...(requiresAuth && { applicationTasks: applicationTasks ?? [] }),
         marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
         marinePlanPolicies: rest.marinePlanPolicies ?? [],

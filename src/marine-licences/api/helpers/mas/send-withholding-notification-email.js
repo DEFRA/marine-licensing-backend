@@ -22,7 +22,7 @@ export const sendWithholdingNotificationEmail = async ({
     projectType: 'marine-licence'
   })
 
-  db.collection('email-queue')?.insertOne({
+  await db.collection('email-queue').insertOne({
     applicationReferenceNumber: applicationReference,
     ...result
   })

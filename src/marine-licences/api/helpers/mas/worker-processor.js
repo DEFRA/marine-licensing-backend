@@ -6,10 +6,10 @@ import {
   MARINE_LICENCE_STATUS,
   MAS_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
+import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { deleteMasMessage } from './sqs-client.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
-import { updateWithholdingNotification } from './update-withholding-notification.js'
 
 const discardMalformedMessage = 'Discarding malformed MAS message'
 
@@ -56,7 +56,7 @@ export const processMasMessage = async (server, message) => {
   }
 
   if (body.taskType === APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION) {
-    await updateWithholdingNotification(db, logger, {
+    await handleWithholdingNotification(db, logger, {
       body,
       id: message.MessageId
     })
