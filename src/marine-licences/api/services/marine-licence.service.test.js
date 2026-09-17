@@ -166,6 +166,47 @@ describe('MarineLicenceService', () => {
     })
   })
 
+  describe('getMarineLicenceByApplicationReference', () => {
+    const applicationReference = 'MLA/2026/10001'
+
+    it('should return marine licence found by applicationReference', async () => {
+      const licence = { ...marineLicence, applicationReference }
+      vi.spyOn(global.mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi
+          .fn()
+          .mockImplementation((query) =>
+            query.applicationReference === applicationReference ? licence : null
+          )
+      }))
+      const marineLicenceService = new MarineLicenceService({
+        db: global.mockMongo,
+        logger
+      })
+
+      const result =
+        await marineLicenceService.getMarineLicenceByApplicationReference(
+          applicationReference
+        )
+      expect(result).toEqual(licence)
+    })
+
+    it('should throw a not found error if marine licence not found', async () => {
+      vi.spyOn(global.mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi.fn().mockResolvedValue(null)
+      }))
+      const marineLicenceService = new MarineLicenceService({
+        db: global.mockMongo,
+        logger
+      })
+
+      await expect(() =>
+        marineLicenceService.getMarineLicenceByApplicationReference(
+          applicationReference
+        )
+      ).rejects.toThrow('Marine Licence not found')
+    })
+  })
+
   describe('marine plan policy hydration', () => {
     const wording = {
       policy: '<p>statement</p>',

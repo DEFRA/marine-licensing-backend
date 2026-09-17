@@ -230,7 +230,7 @@ See [migrations/README.md](migrations/README.md) for full details
 
 A local environment with:
 
-- Localstack for AWS services (S3, SQS)
+- Floci for AWS services (S3, SQS)
 - Redis
 - MongoDB (single-member replica set — see [MongoDB](#mongodb))
 - [marine-licensing-api-stub](https://github.com/DEFRA/marine-licensing-api-stub) (must be

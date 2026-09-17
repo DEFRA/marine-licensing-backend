@@ -5,6 +5,12 @@ import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { config } from '../../../config.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
+import {
+  DYNAMICS_QUEUE_TYPES,
+  DYNAMICS_REQUEST_ACTIONS
+} from '../../../shared/common/constants/request-queue.js'
 
 // Ownership is enforced by the authorizeOwnership pre-handler; matching on status here keeps
 // the guard atomic, so a null result means the licence is not in the SUBMITTED state.
@@ -32,7 +38,8 @@ const updateMarineLicenceRecord = async ({
           updatedAt,
           updatedBy
         }
-      }
+      },
+      { returnDocument: 'after' }
     )
 
   if (!marineLicence) {
@@ -40,6 +47,8 @@ const updateMarineLicenceRecord = async ({
       `Cannot withdraw marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.SUBMITTED}'.`
     )
   }
+
+  return marineLicence
 }
 
 export const withdrawMarineLicenceController = {
@@ -54,12 +63,22 @@ export const withdrawMarineLicenceController = {
       const { params, payload } = request
 
       const withdrawnAt = new Date()
-      await updateMarineLicenceRecord({
+      const marineLicence = await updateMarineLicenceRecord({
         request,
         params,
         payload,
         withdrawnAt
       })
+
+      const { isDynamicsEnabled } = config.get('dynamics')
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference: marineLicence.applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.WITHDRAW,
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+        })
+      }
 
       request.logger.info(
         { event: { action: 'withdraw', outcome: 'success' } },

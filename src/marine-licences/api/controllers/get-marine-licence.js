@@ -1,17 +1,9 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
-import { MARINE_LICENCE_STATUS_LABEL } from '../../constants/marine-licence.js'
-import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
-import {
-  createTaskList,
-  getSiteDetailsDataStatus
-} from '../helpers/createTaskList.js'
-import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
-import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { getAuthUserContext } from '../../../shared/helpers/get-auth-user-context.js'
-import { getDisplayStatus } from '../../../shared/helpers/application-tasks.js'
+import { buildMarineLicenceResponse } from '../helpers/build-marine-licence-response.js'
 
 export const getMarineLicenceController = ({ requiresAuth }) => ({
   options: {
@@ -25,8 +17,7 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
       const {
         params: { id },
         db,
-        logger,
-        auth
+        logger
       } = request
       const marineLicenceService = new MarineLicenceService({ db, logger })
       let marineLicence
@@ -42,39 +33,9 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
           await marineLicenceService.getPublicMarineLicenceById(id)
       }
 
-      const { userRelationshipType } = getOrganisationDetailsFromAuthToken(auth)
-
-      const isCitizen = userRelationshipType === 'Citizen'
-
-      // Application tasks carry the caseworker's withholding comments, so they must
-      // never reach the unauthenticated public register response.
-      const { _id, status, applicationTasks, ...rest } = marineLicence
-      const {
-        responses: marinePlanPolicyResponses,
-        count: marinePlanPolicyResponseCount
-      } = filterCurrentPolicyResponses(
-        rest.marinePlanPolicies,
-        rest.marinePlanPolicyResponses
-      )
-      const taskList = createTaskList(marineLicence, isCitizen, {
-        marinePlanPolicyResponseCount
+      const response = buildMarineLicenceResponse(marineLicence, request, {
+        includeApplicationTasks: requiresAuth
       })
-      const statusLabel = MARINE_LICENCE_STATUS_LABEL[status] || status
-      const response = {
-        id: _id.toString(),
-        ...rest,
-        status: requiresAuth
-          ? getDisplayStatus({ status: statusLabel, applicationTasks })
-          : statusLabel,
-        ...(requiresAuth && { applicationTasks: applicationTasks ?? [] }),
-        marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
-        marinePlanPolicies: rest.marinePlanPolicies ?? [],
-        marinePlanPolicyResponses,
-        marinePlanPolicyResponseCount,
-        taskList,
-        siteDetailsDataComplete:
-          getSiteDetailsDataStatus(marineLicence.siteDetails) === COMPLETED
-      }
 
       return h
         .response({ message: 'success', value: response })

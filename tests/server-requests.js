@@ -53,13 +53,21 @@ export const makePostRequest = async ({
   contactId,
   payload,
   relationships,
+  isInternalUser,
   currentRelationshipId
 }) => {
   const response = await server.inject({
     auth: {
       strategy: 'jwt',
       credentials: { contactId },
-      artifacts: { decoded: { relationships, currentRelationshipId } }
+      artifacts: {
+        decoded: {
+          tid: isInternalUser ? 'abc' : undefined,
+          oid: isInternalUser ? contactId : undefined,
+          relationships,
+          currentRelationshipId
+        }
+      }
     },
     method: 'POST',
     url,
