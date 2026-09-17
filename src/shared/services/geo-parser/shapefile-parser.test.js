@@ -603,10 +603,6 @@ describe('ShapefileParser class', () => {
 
     it('short circuits when no coordinates are given', () => {
       const transformer = proj4(crsOsgb34, targetCRS)
-
-      // Asserting on the argument afterwards would prove nothing: null cannot
-      // be mutated, so the check is whether the guard stops it reaching
-      // coords.length.
       expect(() => sut.transformCoordinates(null, transformer)).not.toThrow()
     })
 
