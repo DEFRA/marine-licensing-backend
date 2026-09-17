@@ -1,5 +1,4 @@
 import { expect, vi } from 'vitest'
-
 import { config } from '../../../../config.js'
 import {
   sendExemptionToEmp,
