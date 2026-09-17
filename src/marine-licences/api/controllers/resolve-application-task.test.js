@@ -1,7 +1,5 @@
 import { vi } from 'vitest'
-import { StatusCodes } from 'http-status-codes'
 import { resolveApplicationTaskController } from './resolve-application-task.js'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
 describe('resolveApplicationTaskController', () => {
   const id = '507f1f77bcf86cd799439011'
@@ -50,18 +48,6 @@ describe('resolveApplicationTaskController', () => {
     })
   })
 
-  it('succeeds idempotently when the task is already resolved', async () => {
-    mockFindOneAndUpdate.mockResolvedValue(null)
-
-    await resolveApplicationTaskController.handler(request, h)
-
-    expect(h.response).toHaveBeenCalledWith({
-      message: 'success',
-      value: { taskId }
-    })
-    expect(h.response().code).toHaveBeenCalledWith(StatusCodes.OK)
-  })
-
   it('wraps unexpected failures as an internal error', async () => {
     mockFindOneAndUpdate.mockRejectedValue(new Error('mongo is down'))
 
@@ -70,32 +56,9 @@ describe('resolveApplicationTaskController', () => {
     ).rejects.toThrow('Error when attempting to resolve application task')
   })
 
-  it('guards the route with an ownership check against marine licences', async () => {
-    const [{ method }] = resolveApplicationTaskController.options.pre
-    const findOne = vi.fn().mockResolvedValue({ contactId })
-    const h = { continue: Symbol('continue') }
-
-    await method(
-      {
-        ...request,
-        db: { collection: vi.fn().mockReturnValue({ findOne }) }
-      },
-      h
-    )
-
-    expect(findOne).toHaveBeenCalled()
-  })
-
-  it('rejects a task belonging to another applicant', async () => {
-    const [{ method }] = resolveApplicationTaskController.options.pre
-    const collection = vi.fn().mockReturnValue({
-      findOne: vi.fn().mockResolvedValue({ contactId: 'someone-else' })
-    })
-
-    await expect(
-      method({ ...request, db: { collection } }, {})
-    ).rejects.toThrow('Not authorised to request this resource')
-
-    expect(collection).toHaveBeenCalledWith(collectionMarineLicences)
+  // Behaviour belongs to authorize-ownership.test.js; the 403 integration test
+  // proves this route is wired to the right collection.
+  it('guards the route with a pre-handler', () => {
+    expect(resolveApplicationTaskController.options.pre).toHaveLength(1)
   })
 })

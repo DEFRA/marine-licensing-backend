@@ -90,6 +90,12 @@ export const mockMasWithholdingSqsMessage = {
   Body: JSON.stringify(mockMasWithholdingMessageBody)
 }
 
+export const mockMasWithholdingNoBasisSqsMessage = {
+  ...mockMasSqsMessage,
+  ReceiptHandle: 'AQEBmock-no-basis-receipt-handle==',
+  Body: JSON.stringify(mockMasWithholdingNoBasisMessageBody)
+}
+
 export const mockMasMissingApplicationReferenceSqsMessage = {
   MessageId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   ReceiptHandle: 'AQEBmock-missing-reference-receipt-handle==',

@@ -6,7 +6,10 @@ import {
 } from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../../exemptions/constants/exemption.js'
-import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS
+} from '../../../../marine-licences/constants/marine-licence.js'
 import {
   collectionExemptions,
   collectionMarineLicences
@@ -453,7 +456,7 @@ describe('Get projects - integration tests', async () => {
     describe('status filtering with outstanding application tasks', () => {
       const outstandingTask = {
         taskId: 'task-1',
-        type: 'WITHHOLDING_NOTIFICATION',
+        type: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
         receivedAt: new Date('2026-05-21T12:00:00.000Z'),
         resolvedAt: null,
         data: {}

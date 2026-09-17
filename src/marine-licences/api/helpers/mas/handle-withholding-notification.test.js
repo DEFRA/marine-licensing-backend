@@ -119,7 +119,7 @@ describe('handleWithholdingNotification', () => {
     )
   })
 
-  it('re-notifies the applicant when a decision supersedes an unresolved task', async () => {
+  it('still emails when the decision superseded an existing task', async () => {
     addApplicationTask.mockResolvedValue({
       marineLicence: { _id: '507f1f77bcf86cd799439011' },
       task: { taskId: 'abc' },

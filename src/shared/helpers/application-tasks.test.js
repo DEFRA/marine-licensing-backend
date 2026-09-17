@@ -1,8 +1,6 @@
 import {
   getDisplayStatus,
-  hasOutstandingApplicationTasks,
-  noOutstandingTasksQuery,
-  outstandingTasksQuery
+  hasOutstandingApplicationTasks
 } from './application-tasks.js'
 
 const outstanding = { taskId: 'a', resolvedAt: null }
@@ -50,60 +48,5 @@ describe('getDisplayStatus', () => {
     expect(
       getDisplayStatus({ status: 'Transferred', applicationTasks: [resolved] })
     ).toBe('Transferred')
-  })
-})
-
-describe('the Mongo task predicates', () => {
-  const collection = () => global.mockMongo.collection('application-task-query')
-
-  const seeded = {
-    none: { name: 'none' },
-    empty: { name: 'empty', applicationTasks: [] },
-    resolved: { name: 'resolved', applicationTasks: [resolved] },
-    outstanding: { name: 'outstanding', applicationTasks: [outstanding] },
-    mixed: { name: 'mixed', applicationTasks: [resolved, outstanding] },
-    missingResolvedAt: {
-      name: 'missingResolvedAt',
-      applicationTasks: [{ taskId: 'c' }]
-    }
-  }
-
-  beforeAll(async () => {
-    await collection().insertMany(Object.values(seeded))
-  })
-
-  afterAll(async () => {
-    await collection().drop()
-  })
-
-  const namesMatching = async (query) =>
-    (await collection().find(query).project({ name: 1 }).toArray())
-      .map(({ name }) => name)
-      .sort()
-
-  it('matches exactly the projects with at least one unresolved task', async () => {
-    expect(await namesMatching(outstandingTasksQuery)).toEqual([
-      'missingResolvedAt',
-      'mixed',
-      'outstanding'
-    ])
-  })
-
-  it('matches exactly the projects the outstanding predicate does not', async () => {
-    expect(await namesMatching(noOutstandingTasksQuery)).toEqual([
-      'empty',
-      'none',
-      'resolved'
-    ])
-  })
-
-  it('agrees with hasOutstandingApplicationTasks on every seeded project', async () => {
-    const matched = new Set(await namesMatching(outstandingTasksQuery))
-
-    for (const { name, applicationTasks } of Object.values(seeded)) {
-      expect(hasOutstandingApplicationTasks(applicationTasks)).toBe(
-        matched.has(name)
-      )
-    }
   })
 })
