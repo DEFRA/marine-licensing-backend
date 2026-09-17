@@ -1,23 +1,28 @@
-import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS
+} from '../../../constants/marine-licence.js'
 
 export const mockMasApplicationReference = 'MMO-2027-00123'
+export const mockMasUserName = 'Jane Doe'
+export const mockMasUserEmail = 'jane@example.com'
 
 export const mockMasTransferredMessageBody = {
   applicationReference: mockMasApplicationReference,
-  status: 'TRANSFERRED',
+  status: MARINE_LICENCE_STATUS.TRANSFERRED,
   transferredDate: '2026-05-21T12:00:00.000Z',
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com'
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail
 }
 
 export const mockMasRejectedMessageBody = {
   applicationReference: mockMasApplicationReference,
-  status: 'REJECTED',
+  status: MARINE_LICENCE_STATUS.REJECTED,
   rejectedDate: '2026-05-21T12:00:00.000Z',
   rejectedReasons: 'Marine plan policies, Another reason',
   rejectedInformation: 'Test free text',
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com'
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail
 }
 
 export const mockMasWithholdingMessageBody = {
@@ -33,8 +38,8 @@ export const mockMasWithholdingMessageBody = {
     comments:
       'We agree the unit rates table in section 4 of your method statement is commercially confidential and will withhold this.'
   },
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com'
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail
 }
 
 export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
@@ -44,15 +49,15 @@ export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
     withheldSome: true,
     comments: 'We agree to withhold the vessel positions.'
   },
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com'
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail
 }
 
 export const mockMasWithholdingNoBasisMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com'
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail
 }
 
 export const mockMasWithholdingCommercialOnlyMessageBody = {
@@ -62,8 +67,8 @@ export const mockMasWithholdingCommercialOnlyMessageBody = {
     withheldSome: false,
     comments: 'This information is standard practice information.'
   },
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com'
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail
 }
 
 export const mockMasSqsMessage = {
@@ -88,7 +93,7 @@ export const mockMasWithholdingSqsMessage = {
 export const mockMasMissingApplicationReferenceSqsMessage = {
   MessageId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   ReceiptHandle: 'AQEBmock-missing-reference-receipt-handle==',
-  Body: JSON.stringify({ status: 'TRANSFERRED' }),
+  Body: JSON.stringify({ status: MARINE_LICENCE_STATUS.TRANSFERRED }),
   Attributes: {
     ApproximateReceiveCount: '1'
   }
@@ -98,7 +103,7 @@ export const mockMasInvalidApplicationReferenceSqsMessage = {
   MessageId: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
   ReceiptHandle: 'AQEBmock-invalid-reference-receipt-handle==',
   Body: JSON.stringify({
-    status: 'TRANSFERRED',
+    status: MARINE_LICENCE_STATUS.TRANSFERRED,
     applicationReference: { $ne: null }
   }),
   Attributes: {

@@ -7,6 +7,8 @@ import {
   MAS_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
 import {
+  mockMasUserEmail,
+  mockMasUserName,
   mockMasWithholdingMessageBody,
   mockMasWithholdingNationalSecurityOnlyMessageBody,
   mockMasWithholdingCommercialOnlyMessageBody,
@@ -83,8 +85,8 @@ describe('handleWithholdingNotification', () => {
 
     expect(sendWithholdingNotificationEmail).toHaveBeenCalledWith({
       db,
-      userName: 'Jane Doe',
-      userEmail: 'jane@example.com',
+      userName: mockMasUserName,
+      userEmail: mockMasUserEmail,
       applicationReference: mockMasWithholdingMessageBody.applicationReference,
       viewDetailsUrl: expect.stringContaining(
         '/marine-licence/view-details/507f1f77bcf86cd799439011'
