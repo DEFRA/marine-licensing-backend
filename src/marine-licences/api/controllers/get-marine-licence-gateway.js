@@ -13,6 +13,10 @@ import { formatMarinePlanPoliciesForGateway } from '../helpers/format-marine-pla
 import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
 import { hydrateMarinePlanPolicies } from '../helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
 
+// Keeps the nullable pass-through fields below out of the handler's cyclomatic
+// complexity, which the response body would otherwise breach as it grows.
+const orNull = (value) => value ?? null
+
 export const getMarineLicenceGatewayController = {
   options: {
     auth: false,
@@ -39,7 +43,8 @@ export const getMarineLicenceGatewayController = {
           siteDetails: 1,
           marinePlanPolicies: 1,
           marinePlanPolicyResponses: 1,
-          status: 1
+          status: 1,
+          withdrawnAt: 1
         }
       }
     )
@@ -66,21 +71,22 @@ export const getMarineLicenceGatewayController = {
 
     return h
       .response({
-        projectName: doc.projectName ?? null,
-        projectBackground: doc.projectBackground ?? null,
+        projectName: orNull(doc.projectName),
+        projectBackground: orNull(doc.projectBackground),
         preferredLicenceDates: formatPreferredDates(doc.preferredDates),
-        publicRegister: doc.publicRegister ?? null,
-        specialLegalPowers: doc.specialLegalPowers ?? null,
-        harbourAuthority: doc.harbourAuthority ?? null,
-        otherAuthorities: doc.otherAuthorities ?? null,
-        publicConsultation: doc.publicConsultation ?? null,
+        publicRegister: orNull(doc.publicRegister),
+        specialLegalPowers: orNull(doc.specialLegalPowers),
+        harbourAuthority: orNull(doc.harbourAuthority),
+        otherAuthorities: orNull(doc.otherAuthorities),
+        publicConsultation: orNull(doc.publicConsultation),
         waterFrameworkDirective: buildWaterFrameworkDirectiveDynamicsPayload(
           doc.waterFrameworkDirective,
           config.get('backendGatewayUrl'),
           id
         ),
         sites,
-        marinePlanPolicies
+        marinePlanPolicies,
+        withdrawnAt: orNull(doc.withdrawnAt)
       })
       .code(StatusCodes.OK)
   }

@@ -441,7 +441,7 @@ describe('Dynamics Client', () => {
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
-              'http://localhost/view-marine-licence-details/ml-123',
+              'http://localhost/marine-licence/redaction/MLA-2025-00001',
             coordinatesCsvUrl:
               'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             waterFrameworkDirective: {
@@ -485,7 +485,7 @@ describe('Dynamics Client', () => {
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
-              'http://localhost/view-marine-licence-details/ml-123',
+              'http://localhost/marine-licence/redaction/MLA-2025-00001',
             coordinatesCsvUrl:
               'http://localhost:3001/public/marine-licence/ml-123/generate-coordinates-csv',
             waterFrameworkDirective: {
@@ -751,6 +751,23 @@ describe('Dynamics Client', () => {
       expect(mockWreckPost).toHaveBeenCalledWith(
         'https://localhost/api/data/v9.2/marine-licences',
         expect.any(Object)
+      )
+    })
+
+    it('should route a marine licence withdrawal to the shared withdraw endpoint', async () => {
+      const result = await sendToDynamics(mockServer, mockAccessToken, {
+        ...mockQueueItem,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+        action: DYNAMICS_REQUEST_ACTIONS.WITHDRAW,
+        applicationReferenceNumber: 'MLA/2026/11883'
+      })
+
+      expect(result).toEqual({ id: 'dynamics-record-id' })
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2',
+        expect.objectContaining({
+          payload: { reference: 'MLA/2026/11883', status: 'WITHDRAWN' }
+        })
       )
     })
   })

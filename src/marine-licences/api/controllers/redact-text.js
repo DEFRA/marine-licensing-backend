@@ -1,33 +1,39 @@
 import Boom from '@hapi/boom'
-import { publicRegister } from '../../models/public-register.js'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
+import { redactText } from '../../models/redact-text.js'
 
-export const updatePublicRegisterController = {
+export const redactTextController = {
   options: {
     payload: {
       parse: true,
       output: 'data'
     },
-    pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
     validate: {
       query: false,
-      payload: publicRegister
+      payload: redactText
     }
   },
   handler: async (request, h) => {
+    if (!isEntraIdUser(request)) {
+      throw Boom.forbidden('Not authorised to redact data')
+    }
+
     try {
-      const { payload, db } = request
-      const { withholdConsent, reason, id, updatedAt, updatedBy } = payload
+      const { payload, db, auth } = request
+      const { id, fieldKey, text, updatedAt } = payload
+      const { oid } = auth.artifacts.decoded
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            publicRegister: { withholdConsent, reason },
-            updatedAt,
-            updatedBy
+            [`redactions.${fieldKey}`]: {
+              redactedAt: updatedAt,
+              redactedBy: oid,
+              redactedText: text
+            }
           }
         }
       )
@@ -43,7 +49,7 @@ export const updatePublicRegisterController = {
       if (error.isBoom) {
         throw error
       }
-      throw Boom.internal(`Error updating public register: ${error.message}`)
+      throw Boom.internal(`Error redacting data: ${error.message}`)
     }
   }
 }

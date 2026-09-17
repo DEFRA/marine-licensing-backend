@@ -18,6 +18,7 @@ import { createLogger } from '../../helpers/logging/logger.js'
 import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
 import { buildCoordinatesCsvUrlById } from '../../../../marine-licences/constants/coordinates-csv.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../../../marine-licences/constants/water-framework-directive.js'
+import { toUrlSafeApplicationReference } from '../../../../marine-licences/api/helpers/url-transform.js'
 
 const logger = createLogger()
 
@@ -214,7 +215,12 @@ export const sendWithdrawToDynamics = async (
   const {
     exemptions: { withdrawUrl }
   } = config.get('dynamics')
-  const { applicationReferenceNumber } = queueItem
+  const { applicationReferenceNumber, type } = queueItem
+
+  const subject =
+    type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+      ? 'marine licence'
+      : 'exemption'
 
   const payload = {
     status: EXEMPTION_STATUS.WITHDRAWN,
@@ -230,16 +236,12 @@ export const sendWithdrawToDynamics = async (
   })
 
   const statusCode = response.res?.statusCode
-  validateDynamicsResponse(
-    statusCode,
-    applicationReferenceNumber,
-    'withdrawExemption'
-  )
+  validateDynamicsResponse(statusCode, applicationReferenceNumber, 'withdraw')
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    'withdrawExemption',
-    'Successfully sent request to withdraw exemption to Dynamics 365'
+    'withdraw',
+    `Successfully sent request to withdraw ${subject} to Dynamics 365`
   )
 
   return response.payload
@@ -315,7 +317,7 @@ export const sendMarineLicenceToDynamics = async (
     projectName: marineLicence.projectName,
     reference: applicationReferenceNumber,
     feeBand,
-    applicationUrl: `${frontEndBaseUrl}/view-marine-licence-details/${marineLicence._id}`,
+    applicationUrl: `${frontEndBaseUrl}/marine-licence/redaction/${toUrlSafeApplicationReference(applicationReferenceNumber)}`,
     coordinatesCsvUrl: buildCoordinatesCsvUrlById(
       backendGatewayUrl,
       marineLicence._id
@@ -358,11 +360,11 @@ export const sendMarineLicenceToDynamics = async (
 }
 
 const getHandler = (queueItem) => {
-  if (queueItem.type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
-    return sendMarineLicenceToDynamics
-  }
   if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.WITHDRAW) {
     return sendWithdrawToDynamics
+  }
+  if (queueItem.type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
+    return sendMarineLicenceToDynamics
   }
   if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.UPDATE) {
     return sendUpdateExemptionToDynamics

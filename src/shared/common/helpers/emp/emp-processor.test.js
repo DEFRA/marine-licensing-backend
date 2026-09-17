@@ -56,7 +56,11 @@ describe('EMP Processor', () => {
         warn: vi.fn(),
         error: vi.fn()
       },
-      db
+      db,
+      // The real client, not a stub session: the dead-letter move runs in a
+      // transaction, and the in-memory Mongo is a replica set so one genuinely
+      // commits. A fake session would be handed to real collection operations.
+      mongoClient: globalThis.mockMongoClient
     }
 
     config.get.mockReturnValue({
