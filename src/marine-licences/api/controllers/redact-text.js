@@ -19,8 +19,14 @@ const setRedaction = (key, { updatedAt, oid, text }) => ({
   }
 })
 const removeRedaction = (key) => ({ $unset: { [key]: '' } })
-const withholdRedaction = (key, withhold) => ({
-  $set: { [key]: Boolean(withhold) }
+const withholdRedaction = (key, { updatedAt, oid, withhold }) => ({
+  $set: {
+    [key]: {
+      redactedAt: updatedAt,
+      redactedBy: oid,
+      withhold: Boolean(withhold)
+    }
+  }
 })
 
 export const redactTextController = {
@@ -53,7 +59,7 @@ export const redactTextController = {
         update = removeRedaction(key)
       } else {
         update = WITHHOLD_FIELDS.includes(fieldKey)
-          ? withholdRedaction(key, withhold)
+          ? withholdRedaction(key, { updatedAt, oid, withhold })
           : setRedaction(key, { updatedAt, oid, text })
       }
 

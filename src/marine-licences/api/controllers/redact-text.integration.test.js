@@ -147,8 +147,12 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(licence.redactions.waterFrameworkDirective.withholdDocument).toBe(
-      true
+    expect(licence.redactions.waterFrameworkDirective.withholdDocument).toEqual(
+      {
+        redactedAt: expect.any(Date),
+        redactedBy: caseworkerOid,
+        withhold: true
+      }
     )
     expect(licence.waterFrameworkDirective).toEqual(
       createCompleteMarineLicence({}).waterFrameworkDirective
@@ -174,7 +178,11 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
 
     expect(
       licence.redactions.siteDetails[0].constructionDrawings[0].withholdDocument
-    ).toBe(true)
+    ).toEqual({
+      redactedAt: expect.any(Date),
+      redactedBy: caseworkerOid,
+      withhold: true
+    })
     expect(licence.siteDetails).toEqual(
       createCompleteMarineLicence({}).siteDetails
     )
@@ -199,9 +207,9 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(licence.redactions.waterFrameworkDirective.withholdDocument).toBe(
-      false
-    )
+    expect(
+      licence.redactions.waterFrameworkDirective.withholdDocument.withhold
+    ).toBe(false)
   })
 
   test('returns 403 for a non Entra ID user', async () => {

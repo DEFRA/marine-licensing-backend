@@ -92,7 +92,7 @@ describe('POST /marine-licence/redact-text', () => {
     })
 
     it.each([true, false])(
-      'should store a withheld location as the bare flag %s',
+      'should store a withheld location with audit fields and the flag %s',
       async (withhold) => {
         const { mockMongo, mockHandler } = global
         const mockPayload = createPayload({
@@ -114,7 +114,15 @@ describe('POST /marine-licence/redact-text', () => {
 
         expect(mockUpdateOne).toHaveBeenCalledWith(
           { _id: ObjectId.createFromHexString(mockPayload.id) },
-          { $set: { 'redactions.siteDetails.3.withholdLocation': withhold } }
+          {
+            $set: {
+              'redactions.siteDetails.3.withholdLocation': {
+                redactedAt,
+                redactedBy,
+                withhold
+              }
+            }
+          }
         )
       }
     )
