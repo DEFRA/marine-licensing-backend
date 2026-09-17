@@ -3,6 +3,7 @@ import {
   REDACTABLE_FIELDS,
   WITHHOLD_LOCATION_FIELD,
   WITHHOLD_FIELDS,
+  WITHHOLD_DOCUMENT_FIELDS,
   buildFieldPath
 } from './redact-text.js'
 import { mockMarineLicence } from './test-fixtures.js'
@@ -12,6 +13,12 @@ describe('redactText', () => {
     id: mockMarineLicence._id.toHexString(),
     fieldKey: 'preferredDates',
     text: 'Redacted by MMO'
+  }
+
+  const mockS3Location = {
+    s3Bucket: 'mmo-uploads',
+    s3Key: 'redactions/abc-123',
+    checksumSha256: 'V3nR8yISvb6pfVp1g1eUdFo5Cer80JpGlqkGAJb/O8k='
   }
 
   const withIndexes = (fieldKey) => ({
@@ -108,6 +115,57 @@ describe('redactText', () => {
         withhold: true
       })
       expect(error.message).toContain('REDACTION_INDEX_INVALID')
+    })
+  })
+
+  describe('replacing a document', () => {
+    const replacePayload = {
+      ...validPayload,
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted.pdf',
+      s3Location: mockS3Location
+    }
+
+    test.each(WITHHOLD_DOCUMENT_FIELDS)(
+      'should allow a replacement alongside the %s flag',
+      (fieldKey) => {
+        const { error } = redactText.validate({ ...replacePayload, fieldKey })
+        expect(error).toBeUndefined()
+      }
+    )
+
+    test('should error when the filename is missing', () => {
+      const { error } = redactText.validate({
+        ...replacePayload,
+        filename: undefined
+      })
+      expect(error.message).toContain('UPLOADED_FILE_FILENAME_REQUIRED')
+    })
+
+    test('should error when the s3 key is missing', () => {
+      const { error } = redactText.validate({
+        ...replacePayload,
+        s3Location: { ...mockS3Location, s3Key: undefined }
+      })
+      expect(error.message).toContain('S3_KEY_REQUIRED')
+    })
+
+    test('should allow a withhold with no replacement', () => {
+      const { error } = redactText.validate({
+        ...replacePayload,
+        filename: undefined,
+        s3Location: undefined
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should not require an upload for a text redaction', () => {
+      const { error } = redactText.validate(validPayload)
+      expect(error).toBeUndefined()
     })
   })
 

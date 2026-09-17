@@ -5,7 +5,21 @@ import {
   mockRedactions
 } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
+import { vi } from 'vitest'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+
+vi.mock('../helpers/validateWfdUpload.js', () => ({
+  validateWfdUpload: vi.fn()
+}))
+vi.mock('../helpers/validateConstructionDrawingUpload.js', () => ({
+  validateConstructionDrawingUpload: vi.fn()
+}))
+
+const mockRedactedS3Location = {
+  s3Bucket: 'mmo-uploads',
+  s3Key: 'redactions/abc-123',
+  checksumSha256: 'V3nR8yISvb6pfVp1g1eUdFo5Cer80JpGlqkGAJb/O8k='
+}
 
 describe('POST /marine-licence/redact-text - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -210,6 +224,123 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
     expect(
       licence.redactions.waterFrameworkDirective.withholdDocument.withhold
     ).toBe(false)
+  })
+
+  test('stores a replacement drawing without touching the original', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-drawing.pdf',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.siteDetails[0].constructionDrawings[0].withholdDocument
+    ).toEqual({
+      redactedAt: expect.any(Date),
+      redactedBy: caseworkerOid,
+      withhold: true,
+      redactedDocument: {
+        filename: 'redacted-drawing.pdf',
+        s3Location: mockRedactedS3Location
+      }
+    })
+    expect(licence.siteDetails).toEqual(
+      createCompleteMarineLicence({}).siteDetails
+    )
+  })
+
+  test('stores a replacement WFD document without touching the original', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-wfd.docx',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    const { withholdDocument } = licence.redactions.waterFrameworkDirective
+    expect(withholdDocument.withhold).toBe(true)
+    expect(withholdDocument.redactedDocument.filename).toBe('redacted-wfd.docx')
+    expect(licence.waterFrameworkDirective).toEqual(
+      createCompleteMarineLicence({}).waterFrameworkDirective
+    )
+  })
+
+  test('unwithholding removes a replacement document', async () => {
+    await insertLicence()
+
+    await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-wfd.docx',
+      s3Location: mockRedactedS3Location
+    })
+    await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: false
+    })
+
+    const { withholdDocument } = (
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .findOne({ _id: marineLicenceId })
+    ).redactions.waterFrameworkDirective
+
+    expect(withholdDocument.withhold).toBe(false)
+    expect(withholdDocument.redactedDocument).toBeUndefined()
+  })
+
+  test('removing clears the withhold flag and its replacement together', async () => {
+    await insertLicence()
+
+    await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-wfd.docx',
+      s3Location: mockRedactedS3Location
+    })
+
+    const { statusCode } = await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      remove: true
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.waterFrameworkDirective.withholdDocument
+    ).toBeUndefined()
+    expect(licence.waterFrameworkDirective).toEqual(
+      createCompleteMarineLicence({}).waterFrameworkDirective
+    )
   })
 
   test('returns 403 for a non Entra ID user', async () => {

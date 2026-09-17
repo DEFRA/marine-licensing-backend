@@ -1,13 +1,29 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
+import Boom from '@hapi/boom'
 import { redactTextController } from './redact-text.js'
+import { validateWfdUpload } from '../helpers/validateWfdUpload.js'
+import { validateConstructionDrawingUpload } from '../helpers/validateConstructionDrawingUpload.js'
 import {
   redactText,
   WITHHOLD_LOCATION_FIELD
 } from '../../models/redact-text.js'
 import { mockRedactions } from '../../../../tests/test.fixture.js'
 
+vi.mock('../helpers/validateWfdUpload.js', () => ({
+  validateWfdUpload: vi.fn()
+}))
+vi.mock('../helpers/validateConstructionDrawingUpload.js', () => ({
+  validateConstructionDrawingUpload: vi.fn()
+}))
+
 describe('POST /marine-licence/redact-text', () => {
+  const mockS3Location = {
+    s3Bucket: 'mmo-uploads',
+    s3Key: 'redactions/abc-123',
+    checksumSha256: 'V3nR8yISvb6pfVp1g1eUdFo5Cer80JpGlqkGAJb/O8k='
+  }
+
   const { redactedAt, redactedBy, redactedText } = mockRedactions.preferredDates
 
   const mockAuditPayload = {
@@ -176,6 +192,106 @@ describe('POST /marine-licence/redact-text', () => {
         $unset: { 'redactions.siteDetails.0.withholdLocation': '' }
       })
       expect(update.$set).toBeUndefined()
+    })
+
+    it('should store a replacement drawing at the indexed path', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = createPayload({
+        fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+        siteIndex: 1,
+        drawingIndex: 2,
+        text: undefined,
+        withhold: true,
+        filename: 'redacted.pdf',
+        s3Location: mockS3Location
+      })
+
+      const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return { updateOne: mockUpdateOne }
+      })
+
+      await redactTextController.handler(
+        { db: mockMongo, payload: mockPayload, auth: entraAuth },
+        mockHandler
+      )
+
+      expect(validateConstructionDrawingUpload).toHaveBeenCalledWith(
+        mockS3Location
+      )
+      expect(validateWfdUpload).not.toHaveBeenCalled()
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        { _id: ObjectId.createFromHexString(mockPayload.id) },
+        {
+          $set: {
+            'redactions.siteDetails.1.constructionDrawings.2.withholdDocument':
+              {
+                redactedAt,
+                redactedBy,
+                withhold: true,
+                redactedDocument: {
+                  filename: 'redacted.pdf',
+                  s3Location: mockS3Location
+                }
+              }
+          }
+        }
+      )
+    })
+
+    it('should validate a replacement WFD document with the WFD rules', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = createPayload({
+        fieldKey: 'waterFrameworkDirective.withholdDocument',
+        text: undefined,
+        filename: 'redacted.docx',
+        s3Location: mockS3Location
+      })
+
+      const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return { updateOne: mockUpdateOne }
+      })
+
+      await redactTextController.handler(
+        { db: mockMongo, payload: mockPayload, auth: entraAuth },
+        mockHandler
+      )
+
+      expect(validateWfdUpload).toHaveBeenCalledWith({
+        s3Location: mockS3Location
+      })
+      expect(validateConstructionDrawingUpload).not.toHaveBeenCalled()
+    })
+
+    it('should not write anything if the upload fails validation', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockUpdateOne = vi.fn()
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return { updateOne: mockUpdateOne }
+      })
+      validateWfdUpload.mockRejectedValueOnce(
+        Boom.unsupportedMediaType('File must be an ODT or DOCX document')
+      )
+
+      await expect(() =>
+        redactTextController.handler(
+          {
+            db: mockMongo,
+            payload: createPayload({
+              fieldKey: 'waterFrameworkDirective.withholdDocument',
+              text: undefined,
+              withhold: true,
+              filename: 'redacted.zip',
+              s3Location: mockS3Location
+            }),
+            auth: entraAuth
+          },
+          mockHandler
+        )
+      ).rejects.toThrow('File must be an ODT or DOCX document')
+
+      expect(mockUpdateOne).not.toHaveBeenCalled()
     })
 
     it('should not allow a non Entra ID user to save', async () => {

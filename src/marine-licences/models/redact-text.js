@@ -1,5 +1,6 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
+import { s3LocationFieldSchema } from '../../shared/models/site-details/file-upload.js'
 
 const ACTIVITY = 'siteDetails.activityDetails'
 
@@ -21,6 +22,10 @@ export const WITHHOLD_FIELDS = [
   'waterFrameworkDirective.withholdDocument',
   'siteDetails.constructionDrawings.withholdDocument'
 ]
+
+export const WITHHOLD_DOCUMENT_FIELDS = WITHHOLD_FIELDS.filter((field) =>
+  field.endsWith('withholdDocument')
+)
 
 export const REDACTABLE_FIELDS = [
   'projectName',
@@ -58,6 +63,17 @@ const indexSchema = joi.number().integer().min(0).messages({
   'number.min': 'REDACTION_INDEX_INVALID'
 })
 
+const replacementDocumentFields = {
+  filename: joi
+    .string()
+    .when('s3Location', { is: joi.exist(), then: joi.required() })
+    .messages({
+      'string.empty': 'UPLOADED_FILE_FILENAME_REQUIRED',
+      'any.required': 'UPLOADED_FILE_FILENAME_REQUIRED'
+    }),
+  s3Location: s3LocationFieldSchema.optional()
+}
+
 export const redactText = joi
   .object({
     fieldKey: joi
@@ -75,6 +91,7 @@ export const redactText = joi
     policyCode: joi.string(),
     remove: joi.boolean(),
     withhold: joi.boolean().messages({ 'boolean.base': 'WITHHOLD_INVALID' }),
+    ...replacementDocumentFields,
     text: joi
       .string()
       .trim()
@@ -84,6 +101,10 @@ export const redactText = joi
         then: joi.string().allow('').optional()
       })
       .when('withhold', {
+        is: joi.exist(),
+        then: joi.string().allow('').optional()
+      })
+      .when('s3Location', {
         is: joi.exist(),
         then: joi.string().allow('').optional()
       })
