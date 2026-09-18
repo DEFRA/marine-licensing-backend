@@ -49,12 +49,12 @@ describe('POST /marine-licence/redact-text', () => {
     ...overrides
   })
 
-  it('should validate the payload with the redactText schema', () => {
+  test('should validate the payload with the redactText schema', () => {
     expect(redactTextController.options.validate.payload).toBe(redactText)
   })
 
   describe('handler', () => {
-    it('should store the redaction against the field key', async () => {
+    test('should store the redaction against the field key', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = createPayload()
 
@@ -78,7 +78,7 @@ describe('POST /marine-licence/redact-text', () => {
       )
     })
 
-    it('should substitute the indexes into the field path', async () => {
+    test('should substitute the indexes into the field path', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = createPayload({
         fieldKey: 'siteDetails.activityDetails.activityDescription',
@@ -107,7 +107,7 @@ describe('POST /marine-licence/redact-text', () => {
       )
     })
 
-    it.each([true, false])(
+    test.each([true, false])(
       'should store a withheld location with audit fields and the flag %s',
       async (withhold) => {
         const { mockMongo, mockHandler } = global
@@ -143,7 +143,7 @@ describe('POST /marine-licence/redact-text', () => {
       }
     )
 
-    it('should unset the redaction when removing', async () => {
+    test('should unset the redaction when removing', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = createPayload({
         fieldKey: 'siteDetails.siteName',
@@ -168,7 +168,7 @@ describe('POST /marine-licence/redact-text', () => {
       )
     })
 
-    it('should unset a withheld location when removing', async () => {
+    test('should unset a withheld location when removing', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = createPayload({
         fieldKey: WITHHOLD_LOCATION_FIELD,
@@ -194,7 +194,7 @@ describe('POST /marine-licence/redact-text', () => {
       expect(update.$set).toBeUndefined()
     })
 
-    it('should store a replacement drawing at the indexed path', async () => {
+    test('should store a replacement drawing at the indexed path', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = createPayload({
         fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
@@ -239,7 +239,7 @@ describe('POST /marine-licence/redact-text', () => {
       )
     })
 
-    it('should validate a replacement WFD document with the WFD rules', async () => {
+    test('should validate a replacement WFD document with the WFD rules', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = createPayload({
         fieldKey: 'waterFrameworkDirective.withholdDocument',
@@ -264,7 +264,7 @@ describe('POST /marine-licence/redact-text', () => {
       expect(validateConstructionDrawingUpload).not.toHaveBeenCalled()
     })
 
-    it('should not write anything if the upload fails validation', async () => {
+    test('should not write anything if the upload fails validation', async () => {
       const { mockMongo, mockHandler } = global
       const mockUpdateOne = vi.fn()
       vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
@@ -294,7 +294,7 @@ describe('POST /marine-licence/redact-text', () => {
       expect(mockUpdateOne).not.toHaveBeenCalled()
     })
 
-    it('should not allow a non Entra ID user to save', async () => {
+    test('should not allow a non Entra ID user to save', async () => {
       const { mockMongo, mockHandler } = global
       const mockUpdateOne = vi.fn()
       vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
@@ -311,7 +311,7 @@ describe('POST /marine-licence/redact-text', () => {
       expect(mockUpdateOne).not.toHaveBeenCalled()
     })
 
-    it('should return a 404 if the marine licence does not exist', async () => {
+    test('should return a 404 if the marine licence does not exist', async () => {
       const { mockMongo, mockHandler } = global
 
       vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
@@ -328,7 +328,7 @@ describe('POST /marine-licence/redact-text', () => {
       ).rejects.toThrow('Marine licence not found')
     })
 
-    it('should return an error message if the database operation fails', async () => {
+    test('should return an error message if the database operation fails', async () => {
       const { mockMongo, mockHandler } = global
       const mockError = 'Database failed'
 
