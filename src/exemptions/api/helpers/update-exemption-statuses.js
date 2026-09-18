@@ -20,7 +20,6 @@ const BATCH_SIZE = 500
 
 const MISSING_DATES_ACTION = 'exemption-status:missing-activity-dates'
 
-// For mongodb record authorship: `createdBy` & `updatedBy`
 const EMP_QUEUE_AUTHOR = 'exemption-status-job'
 
 const buildSummary = ({ counts, unchanged, emp }) => {

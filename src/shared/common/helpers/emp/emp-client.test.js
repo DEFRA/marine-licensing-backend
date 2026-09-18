@@ -102,9 +102,6 @@ describe('Emp Client', () => {
         applicationReference: 'TEST-REF-001'
       })
 
-      // The queue item is claimed (flipped to in_progress) by the poller
-      // before the push runs, so the push itself must not write that status
-      // again - doing so would move the stale-claim anchor mid-push.
       expect(mockServer.db.collection().updateOne).not.toHaveBeenCalled()
 
       expect(addFeatures).toHaveBeenCalledWith({
@@ -377,9 +374,6 @@ describe('Emp Client', () => {
       action: 'update-status'
     }
 
-    // The queue row carries no status, so the push has to read the exemption.
-    // findOne is shared by the queue lookup and the exemption lookup, in that
-    // order, which is what these two resolved values stand for.
     const respondWith = ({ empFeatureIds, status }) => {
       mockServer.db
         .collection()
