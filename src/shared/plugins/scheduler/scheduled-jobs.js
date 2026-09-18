@@ -59,7 +59,6 @@ export const scheduledJobs = [
   {
     name: 'exemption-status',
     methodName: 'runSchedulerExemptionStatus',
-    run: async (server) =>
-      updateExemptionStatuses(server.db, londonToday(), server.logger)
+    run: async (server) => updateExemptionStatuses(server, londonToday())
   }
 ]
