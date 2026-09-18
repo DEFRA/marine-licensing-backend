@@ -176,7 +176,6 @@ export const updateExemptionStatuses = async (server, today) => {
 
   const queued = await queueEmpStatusUpdates(db, changedReferences)
 
-  // fire and forget
   server.methods.processEmpQueue().catch((error) => {
     logger.error(
       structureErrorForECS(error),
