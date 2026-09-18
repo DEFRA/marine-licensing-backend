@@ -20,12 +20,12 @@ export const updatePublicRegisterController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const { consent, reason, id, updatedAt, updatedBy } = payload
+      const { withholdConsent, reason, id, updatedAt, updatedBy } = payload
       const result = await db.collection(collectionMarineLicences).updateOne(
         { _id: ObjectId.createFromHexString(id) },
         {
           $set: {
-            publicRegister: { consent, reason },
+            publicRegister: { withholdConsent, reason },
             updatedAt,
             updatedBy
           }

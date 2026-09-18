@@ -11,8 +11,8 @@ export const mockMarineLicence = {
   contactId: 'contact-123-abc',
   projectName: 'Test Marine Licence Project',
   publicRegister: {
-    consent: 'yes',
-    reason: 'Test public register reason'
+    withholdConsent: 'no',
+    reason: null
   },
   preferredDates,
   status: MARINE_LICENCE_STATUS.DRAFT,

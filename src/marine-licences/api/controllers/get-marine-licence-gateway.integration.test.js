@@ -31,7 +31,7 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
         end: { month: '11', year: '2026' }
       },
       publicRegister: {
-        consent: 'no',
+        withholdConsent: 'yes',
         reason: 'Commercial confidentiality'
       },
       specialLegalPowers: {
@@ -69,7 +69,7 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
       projectBackground: 'Maintenance of navigation channel',
       preferredLicenceDates: 'August 2026 to November 2026',
       publicRegister: {
-        consent: 'no',
+        withholdConsent: 'yes',
         reason: 'Commercial confidentiality'
       },
       specialLegalPowers: {
@@ -95,8 +95,31 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
         fileName: mockWaterFrameworkDirective.uploadedFile.filename
       },
       sites: [],
-      marinePlanPolicies: []
+      marinePlanPolicies: [],
+      withdrawnAt: null
     })
+  })
+
+  test('returns the withdrawal date for a WITHDRAWN marine licence', async () => {
+    const withdrawnId = new ObjectId()
+    const withdrawnAt = new Date('2026-09-15T10:30:00.000Z')
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: withdrawnId,
+      status: MARINE_LICENCE_STATUS.WITHDRAWN,
+      withdrawnAt
+    })
+
+    const response = await getServer().inject({
+      method: 'GET',
+      url: `/public/marine-licence/mas/${withdrawnId}`
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(JSON.parse(response.payload).withdrawnAt).toBe(
+      '2026-09-15T10:30:00.000Z'
+    )
   })
 
   test('returns 403 when requesting a DRAFT marine licence', async () => {
