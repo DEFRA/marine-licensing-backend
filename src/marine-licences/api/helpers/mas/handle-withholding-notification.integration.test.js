@@ -65,7 +65,8 @@ describe('Withholding notification end to end - integration tests', async () => 
       contactId: mockMarineLicence.contactId
     })
 
-    expect(body.status).toBe(ACTION_REQUIRED_STATUS_LABEL)
+    expect(body.status).toBe('Submitted')
+    expect(body.displayStatus).toBe(ACTION_REQUIRED_STATUS_LABEL)
     expect(sendEmail).toHaveBeenCalledTimes(1)
     expect(deleteMasMessage).toHaveBeenCalledWith(
       expect.any(String),

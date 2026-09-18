@@ -41,7 +41,8 @@ export const buildMarineLicenceResponse = (
     ...(includeApplicationTasks && {
       applicationTasks: applicationTasks ?? []
     }),
-    status: includeApplicationTasks
+    status: statusLabel,
+    displayStatus: includeApplicationTasks
       ? getDisplayStatus({ status: statusLabel, applicationTasks })
       : statusLabel,
     marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,

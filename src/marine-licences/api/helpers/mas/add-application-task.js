@@ -3,33 +3,16 @@ import { collectionMarineLicences } from '../../../../shared/common/constants/db
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
-const supersedeUnresolvedTask = (
+// The filter is what enforces "at most one task per type": a concurrent second
+// message cannot match it, so the invariant holds without a transaction.
+const pushFirstTaskOfType = (
   db,
-  { applicationReference, type, data, updatedBy, now }
+  { applicationReference, task, updatedBy, now }
 ) =>
   db.collection(collectionMarineLicences).findOneAndUpdate(
     {
       applicationReference,
-      applicationTasks: { $elemMatch: { type, resolvedAt: null } }
-    },
-    {
-      $set: {
-        'applicationTasks.$.data': data,
-        'applicationTasks.$.receivedAt': now,
-        updatedAt: now,
-        updatedBy
-      }
-    },
-    { returnDocument: 'after' }
-  )
-
-const pushNewTask = (db, { applicationReference, task, updatedBy, now }) =>
-  db.collection(collectionMarineLicences).findOneAndUpdate(
-    {
-      applicationReference,
-      applicationTasks: {
-        $not: { $elemMatch: { type: task.type, resolvedAt: null } }
-      }
+      applicationTasks: { $not: { $elemMatch: { type: task.type } } }
     },
     {
       $push: { applicationTasks: task },
@@ -38,14 +21,85 @@ const pushNewTask = (db, { applicationReference, task, updatedBy, now }) =>
     { returnDocument: 'after' }
   )
 
+const findLicence = (db, applicationReference) =>
+  db
+    .collection(collectionMarineLicences)
+    .findOne({ applicationReference }, { projection: { applicationTasks: 1 } })
+
+const logLicenceNotFound = (logger, { applicationReference, type }) =>
+  logger.warn(
+    {
+      event: {
+        action: MAS_EVENT_ACTION.LICENCE_NOT_FOUND,
+        outcome: 'failure',
+        reference: applicationReference
+      }
+    },
+    `No marine licence found for applicationReference ${applicationReference}; cannot add ${type} application task`
+  )
+
+const logRedelivery = (
+  logger,
+  { applicationReference, type, sourceMessageId }
+) =>
+  logger.info(
+    {
+      event: {
+        action: MAS_EVENT_ACTION.APPLICATION_TASK_REDELIVERED,
+        outcome: 'success',
+        reference: applicationReference
+      }
+    },
+    `Message ${sourceMessageId} already created the ${type} application task for applicationReference ${applicationReference}; ignoring redelivery`
+  )
+
+const logDuplicate = (logger, { applicationReference, type, existing }) =>
+  logger.error(
+    {
+      event: {
+        action: MAS_EVENT_ACTION.APPLICATION_TASK_DUPLICATE,
+        outcome: 'failure',
+        reference: applicationReference
+      }
+    },
+    `Refused a second ${type} application task for applicationReference ${applicationReference}; MAS sends one per application and task ${existing.taskId} already exists`
+  )
+
+// Resolves why the conditional push matched nothing: the licence is missing, the same
+// queue message has already been processed, or MAS has broken its one-per-application
+// contract. A duplicate leaves the stored task exactly as it is, so an applicant who
+// has already read a notification keeps that acknowledgement.
+const explainMissedPush = async (
+  db,
+  logger,
+  { applicationReference, type, sourceMessageId }
+) => {
+  const marineLicence = await findLicence(db, applicationReference)
+
+  if (!marineLicence) {
+    logLicenceNotFound(logger, { applicationReference, type })
+    return null
+  }
+
+  const existing = (marineLicence.applicationTasks ?? []).find(
+    (task) => task.type === type
+  )
+
+  if (existing?.sourceMessageId === sourceMessageId) {
+    logRedelivery(logger, { applicationReference, type, sourceMessageId })
+    return null
+  }
+
+  logDuplicate(logger, { applicationReference, type, existing })
+  return null
+}
+
 // Generic for every application task type: the caller supplies only the type and its
 // opaque `data`. No status is written — "Action required" is derived from any task
 // with a null resolvedAt (see shared/helpers/application-tasks.js).
 //
-// A second message of the same type arriving before the applicant has resolved the
-// first carries a decision that supersedes it, so it overwrites the unresolved
-// task's data rather than being dropped. Callers can tell the two apart via
-// `superseded` and decide whether to notify again.
+// MAS sends at most one task of a given type per application, so a second one is a
+// broken contract rather than a correction and is refused, not applied.
 export const addApplicationTask = async (
   db,
   logger,
@@ -58,24 +112,19 @@ export const addApplicationTask = async (
     type,
     receivedAt: now,
     resolvedAt: null,
+    sourceMessageId: updatedBy,
     data
   }
 
-  let superseded
   let result
 
   try {
-    superseded = await supersedeUnresolvedTask(db, {
+    result = await pushFirstTaskOfType(db, {
       applicationReference,
-      type,
-      data,
+      task,
       updatedBy,
       now
     })
-
-    result =
-      superseded ??
-      (await pushNewTask(db, { applicationReference, task, updatedBy, now }))
   } catch (error) {
     logger.error(
       structureErrorForECS(error),
@@ -85,36 +134,11 @@ export const addApplicationTask = async (
   }
 
   if (!result) {
-    logger.warn(
-      {
-        event: {
-          action: MAS_EVENT_ACTION.LICENCE_NOT_FOUND,
-          outcome: 'failure',
-          reference: applicationReference
-        }
-      },
-      `No marine licence found for applicationReference ${applicationReference}; cannot add ${type} application task`
-    )
-    return null
-  }
-
-  if (superseded) {
-    const updatedTask = result.applicationTasks.find(
-      (existing) => existing.type === type && existing.resolvedAt == null
-    )
-
-    logger.info(
-      {
-        event: {
-          action: MAS_EVENT_ACTION.APPLICATION_TASK_SUPERSEDED,
-          outcome: 'success',
-          reference: applicationReference
-        }
-      },
-      `Superseded the unresolved ${type} application task for applicationReference ${applicationReference}`
-    )
-
-    return { marineLicence: result, task: updatedTask, superseded: true }
+    return explainMissedPush(db, logger, {
+      applicationReference,
+      type,
+      sourceMessageId: updatedBy
+    })
   }
 
   logger.info(
@@ -128,5 +152,5 @@ export const addApplicationTask = async (
     `Added ${type} application task for applicationReference ${applicationReference}`
   )
 
-  return { marineLicence: result, task, superseded: false }
+  return { marineLicence: result, task }
 }

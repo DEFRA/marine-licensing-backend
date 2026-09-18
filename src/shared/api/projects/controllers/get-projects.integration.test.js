@@ -499,7 +499,7 @@ describe('Get projects - integration tests', async () => {
           .insertMany([submitted, submittedWithTask, activeWithResolvedTask])
       }
 
-      const filterBy = async (status) => {
+      const projectsFor = async (status) => {
         const { body } = await makePostRequest({
           server: getServer(),
           url: '/projects',
@@ -509,11 +509,14 @@ describe('Get projects - integration tests', async () => {
           currentRelationshipId: relationshipId
         })
 
-        return body.projects.map(({ projectName, status: projectStatus }) => [
-          projectName,
-          projectStatus
-        ])
+        return body.projects
       }
+
+      const filterBy = async (status) =>
+        (await projectsFor(status)).map(({ projectName, displayStatus }) => [
+          projectName,
+          displayStatus
+        ])
 
       test('a stored-status filter excludes projects that display as Action required', async () => {
         await seed()
@@ -554,7 +557,22 @@ describe('Get projects - integration tests', async () => {
           currentRelationshipId: relationshipId
         })
 
-        expect(body.projects[0].status).toBe(ACTION_REQUIRED_STATUS_LABEL)
+        expect(body.projects[0].displayStatus).toBe(
+          ACTION_REQUIRED_STATUS_LABEL
+        )
+      })
+
+      test('keeps the stored status alongside the display status', async () => {
+        await seed()
+
+        const [awaitingApplicant] = (
+          await projectsFor(['SUBMITTED', ACTION_REQUIRED_STATUS_FILTER])
+        ).filter(({ projectName }) => projectName.includes('Awaiting'))
+
+        expect(awaitingApplicant).toMatchObject({
+          status: 'Submitted',
+          displayStatus: ACTION_REQUIRED_STATUS_LABEL
+        })
       })
     })
   })

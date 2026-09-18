@@ -118,16 +118,4 @@ describe('handleWithholdingNotification', () => {
       expect.stringContaining('Discarding withholding notification')
     )
   })
-
-  it('still emails when the decision superseded an existing task', async () => {
-    addApplicationTask.mockResolvedValue({
-      marineLicence: { _id: '507f1f77bcf86cd799439011' },
-      task: { taskId: 'abc' },
-      superseded: true
-    })
-
-    await run(mockMasWithholdingMessageBody)
-
-    expect(sendWithholdingNotificationEmail).toHaveBeenCalledTimes(1)
-  })
 })

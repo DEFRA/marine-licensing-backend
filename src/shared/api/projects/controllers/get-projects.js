@@ -29,15 +29,16 @@ const transformProjectBase = (project, projectType) => {
     applicationTasks
   } = project
 
+  const statusLabel = PROJECT_STATUS_LABEL[status] || status
   const displayStatus = getDisplayStatus({
-    status: PROJECT_STATUS_LABEL[status] || status,
+    status: statusLabel,
     applicationTasks
   })
 
   return {
     id: _id.toString(),
     projectType,
-    ...(status && { status: displayStatus }),
+    ...(status && { status: statusLabel, displayStatus }),
     ...(projectName && { projectName }),
     ...(applicationReference && { applicationReference }),
     ...(submittedAt && { submittedAt })
@@ -67,8 +68,8 @@ export const sortByStatus = (a, b) => {
     PROJECT_STATUS_LABEL.ACTIVE
   ]
 
-  const firstStatus = statusOrder.indexOf(a.status)
-  const comparisonStatus = statusOrder.indexOf(b.status)
+  const firstStatus = statusOrder.indexOf(a.displayStatus ?? a.status)
+  const comparisonStatus = statusOrder.indexOf(b.displayStatus ?? b.status)
 
   const unknownStatusIndex = statusOrder.length
 

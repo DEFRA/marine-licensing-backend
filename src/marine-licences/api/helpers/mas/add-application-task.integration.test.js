@@ -25,12 +25,12 @@ describe('addApplicationTask - integration tests', () => {
   const tasksOf = async (_id) =>
     (await collection().findOne({ _id })).applicationTasks
 
-  const add = (data) =>
+  const add = (data, updatedBy = 'message-id') =>
     addApplicationTask(global.mockMongo, logger, {
       applicationReference: mockMasApplicationReference,
       type,
       data,
-      updatedBy: 'message-id'
+      updatedBy
     })
 
   const buildTask = (overrides = {}) => ({
@@ -38,6 +38,7 @@ describe('addApplicationTask - integration tests', () => {
     type,
     receivedAt: new Date('2026-05-21T12:00:00.000Z'),
     resolvedAt: null,
+    sourceMessageId: 'an-earlier-message',
     data: { nationalSecurity: { withheldSome: false, comments: 'first' } },
     ...overrides
   })
@@ -47,50 +48,50 @@ describe('addApplicationTask - integration tests', () => {
 
     const result = await add({ nationalSecurity: { withheldSome: true } })
 
-    expect(result.superseded).toBe(false)
+    expect(result.task.taskId).toEqual(expect.any(String))
     const tasks = await tasksOf(_id)
     expect(tasks).toHaveLength(1)
     expect(tasks[0]).toMatchObject({
       type,
       resolvedAt: null,
+      sourceMessageId: 'message-id',
       data: { nationalSecurity: { withheldSome: true } }
     })
   })
 
-  it('adds a second task when the only task of the type is already resolved', async () => {
-    const _id = await insertLicence([
-      buildTask({ resolvedAt: new Date('2026-05-22T12:00:00.000Z') })
-    ])
+  it('refuses a second task of the type once the first has been read', async () => {
+    const existing = buildTask({
+      resolvedAt: new Date('2026-05-22T12:00:00.000Z')
+    })
+    const _id = await insertLicence([existing])
 
     const result = await add({ nationalSecurity: { withheldSome: true } })
 
-    expect(result.superseded).toBe(false)
-    expect(await tasksOf(_id)).toHaveLength(2)
+    expect(result).toBeNull()
+    expect(await tasksOf(_id)).toEqual([existing])
   })
 
-  it('overwrites the unresolved task in place rather than adding a second', async () => {
+  it('refuses a second task of the type while the first is still unread', async () => {
     const existing = buildTask()
     const _id = await insertLicence([existing])
 
     const result = await add({
-      commercialConfidentiality: { withheldSome: true, comments: 'superseding' }
+      commercialConfidentiality: { withheldSome: true, comments: 'second' }
     })
 
-    expect(result.superseded).toBe(true)
+    expect(result).toBeNull()
+    expect(await tasksOf(_id)).toEqual([existing])
+  })
 
-    const tasks = await tasksOf(_id)
-    expect(tasks).toHaveLength(1)
-    expect(tasks[0].taskId).toBe(existing.taskId)
-    expect(tasks[0].data).toEqual({
-      commercialConfidentiality: {
-        withheldSome: true,
-        comments: 'superseding'
-      }
-    })
-    expect(tasks[0].receivedAt.getTime()).toBeGreaterThan(
-      existing.receivedAt.getTime()
-    )
-    expect(tasks[0].resolvedAt).toBeNull()
+  it('ignores a redelivery of the message that created the task', async () => {
+    const existing = buildTask({ sourceMessageId: 'message-id' })
+    const _id = await insertLicence([existing])
+
+    const result = await add({ nationalSecurity: { withheldSome: true } })
+
+    expect(result).toBeNull()
+    expect(await tasksOf(_id)).toEqual([existing])
+    expect(logger.error).not.toHaveBeenCalled()
   })
 
   it('leaves an unresolved task of a different type untouched', async () => {
@@ -99,7 +100,7 @@ describe('addApplicationTask - integration tests', () => {
 
     const result = await add({ nationalSecurity: { withheldSome: true } })
 
-    expect(result.superseded).toBe(false)
+    expect(result.task.type).toBe(type)
 
     const tasks = await tasksOf(_id)
     expect(tasks).toHaveLength(2)
