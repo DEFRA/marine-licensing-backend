@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { redactTextController } from './redact-text.js'
-import { redactText } from '../../models/redact-text.js'
+import {
+  redactText,
+  WITHHOLD_LOCATION_FIELD
+} from '../../models/redact-text.js'
 import { mockRedactions } from '../../../../tests/test.fixture.js'
 
 describe('POST /marine-licence/redact-text', () => {
@@ -58,6 +61,63 @@ describe('POST /marine-licence/redact-text', () => {
         { $set: { 'redactions.preferredDates': mockRedactions.preferredDates } }
       )
     })
+
+    it('should substitute the indexes into the field path', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = createPayload({
+        fieldKey: 'siteDetails.activityDetails.activityDescription',
+        siteIndex: 2,
+        activityIndex: 1
+      })
+
+      const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+      vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+        return { updateOne: mockUpdateOne }
+      })
+
+      await redactTextController.handler(
+        { db: mockMongo, payload: mockPayload, auth: entraAuth },
+        mockHandler
+      )
+
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        { _id: ObjectId.createFromHexString(mockPayload.id) },
+        {
+          $set: {
+            'redactions.siteDetails.2.activityDetails.1.activityDescription':
+              mockRedactions.preferredDates
+          }
+        }
+      )
+    })
+
+    it.each([true, false])(
+      'should store a withheld location as the bare flag %s',
+      async (withhold) => {
+        const { mockMongo, mockHandler } = global
+        const mockPayload = createPayload({
+          fieldKey: WITHHOLD_LOCATION_FIELD,
+          siteIndex: 3,
+          text: '',
+          withhold
+        })
+
+        const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+        vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+          return { updateOne: mockUpdateOne }
+        })
+
+        await redactTextController.handler(
+          { db: mockMongo, payload: mockPayload, auth: entraAuth },
+          mockHandler
+        )
+
+        expect(mockUpdateOne).toHaveBeenCalledWith(
+          { _id: ObjectId.createFromHexString(mockPayload.id) },
+          { $set: { 'redactions.siteDetails.3.withholdLocation': withhold } }
+        )
+      }
+    )
 
     it('should not allow a non Entra ID user to save', async () => {
       const { mockMongo, mockHandler } = global
