@@ -4,14 +4,23 @@ import { createTaskList, getSiteDetailsDataStatus } from './createTaskList.js'
 import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
+import { getDisplayStatus } from '../../../shared/helpers/application-tasks.js'
 
-export const buildMarineLicenceResponse = (marineLicence, request) => {
+export const buildMarineLicenceResponse = (
+  marineLicence,
+  request,
+  { includeApplicationTasks = false } = {}
+) => {
   const { userRelationshipType } = getOrganisationDetailsFromAuthToken(
     request.auth
   )
   const isCitizen = userRelationshipType === 'Citizen'
 
-  const { _id, status, redactions, ...rest } = marineLicence
+  // Application tasks carry the caseworker's withholding comments, so they must
+  // never reach the unauthenticated public register response. The derived
+  // "Action required" status is gated with them: it only means anything where the
+  // tasks it is derived from are visible.
+  const { _id, status, redactions, applicationTasks, ...rest } = marineLicence
   const {
     responses: marinePlanPolicyResponses,
     count: marinePlanPolicyResponseCount
@@ -23,11 +32,19 @@ export const buildMarineLicenceResponse = (marineLicence, request) => {
     marinePlanPolicyResponseCount
   })
 
+  const statusLabel = MARINE_LICENCE_STATUS_LABEL[status] || status
+
   return {
     id: _id.toString(),
     ...rest,
     ...(isEntraIdUser(request) && { redactions }),
-    status: MARINE_LICENCE_STATUS_LABEL[status] || status,
+    ...(includeApplicationTasks && {
+      applicationTasks: applicationTasks ?? []
+    }),
+    status: statusLabel,
+    displayStatus: includeApplicationTasks
+      ? getDisplayStatus({ status: statusLabel, applicationTasks })
+      : statusLabel,
     marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
     marinePlanPolicies: rest.marinePlanPolicies ?? [],
     marinePlanPolicyResponses,

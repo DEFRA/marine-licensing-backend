@@ -6,10 +6,12 @@ import {
   mockMasInvalidApplicationReferenceSqsMessage,
   mockMasMissingApplicationReferenceSqsMessage,
   mockMasRejectedSqsMessage,
-  mockMasSqsMessage
+  mockMasSqsMessage,
+  mockMasWithholdingSqsMessage
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
+import { handleWithholdingNotification } from './handle-withholding-notification.js'
 
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
@@ -19,6 +21,7 @@ vi.mock('./sqs-client.js', () => ({
 
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
+vi.mock('./handle-withholding-notification.js')
 
 const sqsQueueName = 'marine_licensing_mas'
 const sqsDlqName = 'marine_licensing_mas-deadletter'
@@ -71,6 +74,31 @@ describe('mas-worker-processor', () => {
         sqsQueueName,
         mockMasRejectedSqsMessage.ReceiptHandle
       )
+    })
+
+    it('should call handleWithholdingNotification for a withholding notification message', async () => {
+      const server = buildServer()
+      const body = JSON.parse(mockMasWithholdingSqsMessage.Body)
+
+      await processMasMessage(server, mockMasWithholdingSqsMessage)
+
+      expect(handleWithholdingNotification).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        { body, id: mockMasWithholdingSqsMessage.MessageId }
+      )
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasWithholdingSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should not treat a status-only message as an application task', async () => {
+      const server = buildServer()
+
+      await processMasMessage(server, mockMasRejectedSqsMessage)
+
+      expect(handleWithholdingNotification).not.toHaveBeenCalled()
     })
 
     it('should log an error and still delete a malformed message', async () => {

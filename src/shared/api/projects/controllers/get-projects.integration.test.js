@@ -6,12 +6,19 @@ import {
 } from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../../exemptions/constants/exemption.js'
-import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS
+} from '../../../../marine-licences/constants/marine-licence.js'
 import {
   collectionExemptions,
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
-import { PROJECT_TYPES } from '../../../constants/project-status.js'
+import {
+  ACTION_REQUIRED_STATUS_FILTER,
+  ACTION_REQUIRED_STATUS_LABEL,
+  PROJECT_TYPES
+} from '../../../constants/project-status.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn((contactIds) =>
@@ -444,6 +451,129 @@ describe('Get projects - integration tests', async () => {
       expect(body.projects[0].status).toBe('Draft')
       expect(body.projects[1].status).toBe('Active')
       expect(body.projects[2].status).toBe('Active')
+    })
+
+    describe('status filtering with outstanding application tasks', () => {
+      const outstandingTask = {
+        taskId: 'task-1',
+        type: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
+        receivedAt: new Date('2026-05-21T12:00:00.000Z'),
+        resolvedAt: null,
+        data: {}
+      }
+
+      const seed = async () => {
+        const submitted = createCompleteMarineLicence({
+          _id: new ObjectId(),
+          contactId: employeeContactId,
+          organisation: { id: testOrgId, name: 'Test Org' },
+          projectName: 'Plain Submitted ML',
+          status: MARINE_LICENCE_STATUS.SUBMITTED
+        })
+
+        const submittedWithTask = createCompleteMarineLicence({
+          _id: new ObjectId(),
+          contactId: employeeContactId,
+          organisation: { id: testOrgId, name: 'Test Org' },
+          projectName: 'Submitted ML Awaiting Applicant',
+          status: MARINE_LICENCE_STATUS.SUBMITTED,
+          applicationTasks: [outstandingTask]
+        })
+
+        const activeWithResolvedTask = createCompleteMarineLicence({
+          _id: new ObjectId(),
+          contactId: employeeContactId,
+          organisation: { id: testOrgId, name: 'Test Org' },
+          projectName: 'Active ML Task Resolved',
+          status: MARINE_LICENCE_STATUS.ACTIVE,
+          applicationTasks: [
+            {
+              ...outstandingTask,
+              resolvedAt: new Date('2026-05-22T12:00:00.000Z')
+            }
+          ]
+        })
+
+        await globalThis.mockMongo
+          .collection(collectionMarineLicences)
+          .insertMany([submitted, submittedWithTask, activeWithResolvedTask])
+      }
+
+      const projectsFor = async (status) => {
+        const { body } = await makePostRequest({
+          server: getServer(),
+          url: '/projects',
+          payload: { show: 'all-projects', status },
+          contactId: employeeContactId,
+          relationships: employeeRelationships,
+          currentRelationshipId: relationshipId
+        })
+
+        return body.projects
+      }
+
+      const filterBy = async (status) =>
+        (await projectsFor(status)).map(({ projectName, displayStatus }) => [
+          projectName,
+          displayStatus
+        ])
+
+      test('a stored-status filter excludes projects that display as Action required', async () => {
+        await seed()
+
+        expect(await filterBy(['SUBMITTED'])).toEqual([
+          ['Plain Submitted ML', 'Submitted']
+        ])
+      })
+
+      test('filtering by ACTION_REQUIRED returns only projects with an unresolved task', async () => {
+        await seed()
+
+        expect(await filterBy([ACTION_REQUIRED_STATUS_FILTER])).toEqual([
+          ['Submitted ML Awaiting Applicant', ACTION_REQUIRED_STATUS_LABEL]
+        ])
+      })
+
+      test('ACTION_REQUIRED combines with a stored status without duplicating a project', async () => {
+        await seed()
+
+        expect(
+          (await filterBy(['SUBMITTED', ACTION_REQUIRED_STATUS_FILTER])).sort()
+        ).toEqual([
+          ['Plain Submitted ML', 'Submitted'],
+          ['Submitted ML Awaiting Applicant', ACTION_REQUIRED_STATUS_LABEL]
+        ])
+      })
+
+      test('an outstanding task sorts a project above every stored status', async () => {
+        await seed()
+
+        const { body } = await makePostRequest({
+          server: getServer(),
+          url: '/projects',
+          payload: { show: 'all-projects' },
+          contactId: employeeContactId,
+          relationships: employeeRelationships,
+          currentRelationshipId: relationshipId
+        })
+
+        expect(body.projects[0].displayStatus).toBe(
+          ACTION_REQUIRED_STATUS_LABEL
+        )
+      })
+
+      test('keeps the stored status alongside the display status', async () => {
+        await seed()
+
+        const [awaitingApplicant] = (
+          await projectsFor(['SUBMITTED', ACTION_REQUIRED_STATUS_FILTER])
+        ).filter(({ projectName }) => projectName.includes('Awaiting'))
+
+        expect(awaitingApplicant).toMatchObject({
+          status: 'Submitted',
+          displayStatus: ACTION_REQUIRED_STATUS_LABEL
+        })
+      })
     })
   })
 
