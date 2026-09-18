@@ -2,6 +2,8 @@ import {
   redactText,
   REDACTABLE_FIELDS,
   WITHHOLD_LOCATION_FIELD,
+  WITHHOLD_FIELDS,
+  WITHHOLD_DOCUMENT_FIELDS,
   buildFieldPath
 } from './redact-text.js'
 import { mockMarineLicence } from './test-fixtures.js'
@@ -13,15 +15,22 @@ describe('redactText', () => {
     text: 'Redacted by MMO'
   }
 
+  const mockS3Location = {
+    s3Bucket: 'mmo-uploads',
+    s3Key: 'redactions/abc-123',
+    checksumSha256: 'V3nR8yISvb6pfVp1g1eUdFo5Cer80JpGlqkGAJb/O8k='
+  }
+
   const withIndexes = (fieldKey) => ({
     ...validPayload,
     fieldKey,
     ...(fieldKey.startsWith('siteDetails') && { siteIndex: 0 }),
     ...(fieldKey.includes('activityDetails') && { activityIndex: 1 }),
+    ...(fieldKey.includes('constructionDrawings') && { drawingIndex: 2 }),
     ...(fieldKey.startsWith('marinePlanPolicyResponses') && {
       policyCode: 'E-AGG-3'
     }),
-    ...(fieldKey === WITHHOLD_LOCATION_FIELD && { withhold: true, text: '' })
+    ...(WITHHOLD_FIELDS.includes(fieldKey) && { withhold: true, text: '' })
   })
 
   test('should pass with valid data', () => {
@@ -64,20 +73,142 @@ describe('redactText', () => {
       expect(error).toBeUndefined()
     })
 
-    test('should error when withhold is missing', () => {
+    test('should error when withhold is not a boolean', () => {
       const { error } = redactText.validate({
         ...withholdPayload,
-        withhold: undefined
+        withhold: 'yes please'
       })
-      expect(error.message).toContain('WITHHOLD_REQUIRED')
+      expect(error.message).toContain('WITHHOLD_INVALID')
     })
+  })
 
-    test('should error when withhold is sent for another field', () => {
+  describe('withholding a document', () => {
+    test('should allow the water framework directive file with no index', () => {
       const { error } = redactText.validate({
         ...validPayload,
+        fieldKey: 'waterFrameworkDirective.withholdDocument',
+        text: undefined,
         withhold: true
       })
-      expect(error.message).toContain('WITHHOLD_NOT_ALLOWED')
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow a construction drawing with both indexes', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+        siteIndex: 0,
+        drawingIndex: 1,
+        text: undefined,
+        withhold: true
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should error when a drawing index is not a number', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+        siteIndex: 0,
+        drawingIndex: 'first',
+        text: undefined,
+        withhold: true
+      })
+      expect(error.message).toContain('REDACTION_INDEX_INVALID')
+    })
+  })
+
+  describe('replacing a document', () => {
+    const replacePayload = {
+      ...validPayload,
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted.pdf',
+      s3Location: mockS3Location
+    }
+
+    test.each(WITHHOLD_DOCUMENT_FIELDS)(
+      'should allow a replacement alongside the %s flag',
+      (fieldKey) => {
+        const { error } = redactText.validate({ ...replacePayload, fieldKey })
+        expect(error).toBeUndefined()
+      }
+    )
+
+    test('should error when the filename is missing', () => {
+      const { error } = redactText.validate({
+        ...replacePayload,
+        filename: undefined
+      })
+      expect(error.message).toContain('UPLOADED_FILE_FILENAME_REQUIRED')
+    })
+
+    test('should error when the s3 key is missing', () => {
+      const { error } = redactText.validate({
+        ...replacePayload,
+        s3Location: { ...mockS3Location, s3Key: undefined }
+      })
+      expect(error.message).toContain('S3_KEY_REQUIRED')
+    })
+
+    test('should allow a withhold with no replacement', () => {
+      const { error } = redactText.validate({
+        ...replacePayload,
+        filename: undefined,
+        s3Location: undefined
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should not require an upload for a text redaction', () => {
+      const { error } = redactText.validate(validPayload)
+      expect(error).toBeUndefined()
+    })
+  })
+
+  describe('removing a redaction', () => {
+    test('should allow text to be omitted', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        text: undefined,
+        remove: true
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow a withheld location to be removed with no flag', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: WITHHOLD_LOCATION_FIELD,
+        siteIndex: 0,
+        text: undefined,
+        remove: true
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should not require text whenever remove is present', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        text: undefined,
+        remove: false
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow remove alongside withhold', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        fieldKey: WITHHOLD_LOCATION_FIELD,
+        siteIndex: 0,
+        text: undefined,
+        withhold: true,
+        remove: true
+      })
+      expect(error).toBeUndefined()
     })
   })
 
@@ -108,6 +239,16 @@ describe('redactText', () => {
         'siteDetails.activityDetails.activityDescription',
         { siteIndex: 2, activityIndex: 1 },
         'siteDetails.2.activityDetails.1.activityDescription'
+      ],
+      [
+        'siteDetails.constructionDrawings.withholdDocument',
+        { siteIndex: 1, drawingIndex: 2 },
+        'siteDetails.1.constructionDrawings.2.withholdDocument'
+      ],
+      [
+        'waterFrameworkDirective.withholdDocument',
+        {},
+        'waterFrameworkDirective.withholdDocument'
       ],
       [
         'marinePlanPolicyResponses',
