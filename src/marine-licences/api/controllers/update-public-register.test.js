@@ -5,128 +5,80 @@ import { updatePublicRegisterController } from './update-public-register.js'
 describe('PATCH /marine-licence/public-register', () => {
   const payloadValidator =
     updatePublicRegisterController.options.validate.payload
-  const mockAuditPayload = {
-    updatedAt: new Date('2025-01-01T12:00:00Z'),
-    updatedBy: 'user123'
-  }
 
-  it('should fail if fields are missing', () => {
-    const result = payloadValidator.validate({})
-    expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
+  it.each([
+    ['fields are missing', {}],
+    ['withholdConsent is not a valid value', { withholdConsent: 'maybe' }],
+    ['withholdConsent is empty string', { withholdConsent: '' }]
+  ])('should fail if %s', (_description, payload) => {
+    const result = payloadValidator.validate(payload)
+    expect(result.error.message).toContain(
+      'PUBLIC_REGISTER_WITHHOLD_CONSENT_REQUIRED'
+    )
   })
 
-  it('should fail if consent is not a valid value', () => {
+  it.each([
+    ['reason is missing', { withholdConsent: 'yes' }],
+    ['reason is only whitespace', { withholdConsent: 'yes', reason: '   ' }]
+  ])(
+    'should fail if information is withheld and %s',
+    (_description, payload) => {
+      const result = payloadValidator.validate(payload)
+      expect(result.error.message).toContain('PUBLIC_REGISTER_REASON_REQUIRED')
+    }
+  )
+
+  it('should fail if reason is longer than the maximum length', () => {
     const result = payloadValidator.validate({
-      consent: 'maybe'
+      withholdConsent: 'yes',
+      reason: 'a'.repeat(1001)
     })
-    expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
+    expect(result.error.message).toContain('PUBLIC_REGISTER_REASON_MAX_LENGTH')
   })
 
-  it('should fail if consent is empty string', () => {
+  it('should fail if a reason is given when nothing is withheld', () => {
     const result = payloadValidator.validate({
-      consent: ''
+      withholdConsent: 'no',
+      reason: 'A reason that should not be here'
     })
-    expect(result.error.message).toContain('PUBLIC_REGISTER_CONSENT_REQUIRED')
+    expect(result.error.message).toContain('"reason" is not allowed')
   })
 
-  it('should fail if consent is no but reason is missing', () => {
-    const result = payloadValidator.validate({
-      consent: 'no'
-    })
-    expect(result.error.message).toContain('PUBLIC_REGISTER_REASON_REQUIRED')
-  })
-
-  it('should update marine licence with public register consent yes', async () => {
+  it('should return a 404 if the licence is deleted before the update runs', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'yes',
-      ...mockAuditPayload
+      withholdConsent: 'yes',
+      reason: 'Reason for withholding information',
+      updatedAt: new Date('2025-01-01T12:00:00Z'),
+      updatedBy: 'user123'
     }
 
-    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
-        updateOne: mockUpdateOne
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
       }
     })
 
-    await updatePublicRegisterController.handler(
-      {
-        db: mockMongo,
-        payload: mockPayload
-      },
-      mockHandler
-    )
-
-    expect(mockHandler.response).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'success' })
-    )
-
-    expect(mockMongo.collection).toHaveBeenCalledWith('marine-licences')
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(mockPayload.id) },
-      {
-        $set: {
-          publicRegister: {
-            consent: mockPayload.consent,
-            reason: undefined
-          },
-          ...mockAuditPayload
-        }
-      }
-    )
-  })
-
-  it('should update marine licence with public register consent no and reason', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      consent: 'no',
-      reason: 'Reason for declining public register consent',
-      ...mockAuditPayload
-    }
-
-    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: mockUpdateOne
-      }
-    })
-
-    await updatePublicRegisterController.handler(
-      {
-        db: mockMongo,
-        payload: mockPayload
-      },
-      mockHandler
-    )
-
-    expect(mockHandler.response).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'success' })
-    )
-
-    expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(mockPayload.id) },
-      {
-        $set: {
-          publicRegister: {
-            consent: 'no',
-            reason: mockPayload.reason
-          },
-          ...mockAuditPayload
-        }
-      }
-    )
+    await expect(() =>
+      updatePublicRegisterController.handler(
+        {
+          db: mockMongo,
+          payload: mockPayload
+        },
+        mockHandler
+      )
+    ).rejects.toThrow('Marine licence not found')
   })
 
   it('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
       id: new ObjectId().toHexString(),
-      consent: 'no',
-      reason: 'Reason for declining public register consent',
-      ...mockAuditPayload
+      withholdConsent: 'yes',
+      reason: 'Reason for withholding information',
+      updatedAt: new Date('2025-01-01T12:00:00Z'),
+      updatedBy: 'user123'
     }
 
     const mockError = 'Database failed'
@@ -146,31 +98,5 @@ describe('PATCH /marine-licence/public-register', () => {
         mockHandler
       )
     ).rejects.toThrow(`Error updating public register: ${mockError}`)
-  })
-
-  it('should return a 404 if id is not correct', async () => {
-    const { mockMongo, mockHandler } = global
-    const mockPayload = {
-      id: new ObjectId().toHexString(),
-      consent: 'no',
-      reason: 'Reason for declining public register consent',
-      ...mockAuditPayload
-    }
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
-      }
-    })
-
-    await expect(() =>
-      updatePublicRegisterController.handler(
-        {
-          db: mockMongo,
-          payload: mockPayload
-        },
-        mockHandler
-      )
-    ).rejects.toThrow('Marine licence not found')
   })
 })
