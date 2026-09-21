@@ -1,4 +1,9 @@
-import { redactText, REDACTABLE_FIELDS } from './redact-text.js'
+import {
+  redactText,
+  REDACTABLE_FIELDS,
+  WITHHOLD_LOCATION_FIELD,
+  buildFieldPath
+} from './redact-text.js'
 import { mockMarineLicence } from './test-fixtures.js'
 
 describe('redactText', () => {
@@ -8,14 +13,110 @@ describe('redactText', () => {
     text: 'Redacted by MMO'
   }
 
+  const withIndexes = (fieldKey) => ({
+    ...validPayload,
+    fieldKey,
+    ...(fieldKey.startsWith('siteDetails') && { siteIndex: 0 }),
+    ...(fieldKey.includes('activityDetails') && { activityIndex: 1 }),
+    ...(fieldKey.startsWith('marinePlanPolicyResponses') && {
+      policyCode: 'E-AGG-3'
+    }),
+    ...(fieldKey === WITHHOLD_LOCATION_FIELD && { withhold: true, text: '' })
+  })
+
   test('should pass with valid data', () => {
     const { error } = redactText.validate(validPayload)
     expect(error).toBeUndefined()
   })
 
   test.each(REDACTABLE_FIELDS)('should allow the %s field key', (fieldKey) => {
-    const { error } = redactText.validate({ ...validPayload, fieldKey })
+    const { error } = redactText.validate(withIndexes(fieldKey))
     expect(error).toBeUndefined()
+  })
+
+  describe('withholding a location', () => {
+    const withholdPayload = {
+      ...validPayload,
+      fieldKey: WITHHOLD_LOCATION_FIELD,
+      siteIndex: 0,
+      text: '',
+      withhold: true
+    }
+
+    test('should allow blank text', () => {
+      const { error } = redactText.validate(withholdPayload)
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow text to be omitted', () => {
+      const { error } = redactText.validate({
+        ...withholdPayload,
+        text: undefined
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should allow withhold to be false', () => {
+      const { error } = redactText.validate({
+        ...withholdPayload,
+        withhold: false
+      })
+      expect(error).toBeUndefined()
+    })
+
+    test('should error when withhold is missing', () => {
+      const { error } = redactText.validate({
+        ...withholdPayload,
+        withhold: undefined
+      })
+      expect(error.message).toContain('WITHHOLD_REQUIRED')
+    })
+
+    test('should error when withhold is sent for another field', () => {
+      const { error } = redactText.validate({
+        ...validPayload,
+        withhold: true
+      })
+      expect(error.message).toContain('WITHHOLD_NOT_ALLOWED')
+    })
+  })
+
+  test('should error when text is blank for a normal field', () => {
+    const { error } = redactText.validate({ ...validPayload, text: '' })
+    expect(error.message).toContain('REDACTION_TEXT_REQUIRED')
+  })
+
+  test('should error when a site index is not a number', () => {
+    const { error } = redactText.validate({
+      ...validPayload,
+      fieldKey: 'siteDetails.siteName',
+      siteIndex: '0.siteName'
+    })
+    expect(error.message).toContain('REDACTION_INDEX_INVALID')
+  })
+
+  describe('buildFieldPath', () => {
+    test.each([
+      ['projectName', {}, 'projectName'],
+      ['siteDetails.siteName', { siteIndex: 3 }, 'siteDetails.3.siteName'],
+      [
+        WITHHOLD_LOCATION_FIELD,
+        { siteIndex: 0 },
+        'siteDetails.0.withholdLocation'
+      ],
+      [
+        'siteDetails.activityDetails.activityDescription',
+        { siteIndex: 2, activityIndex: 1 },
+        'siteDetails.2.activityDetails.1.activityDescription'
+      ],
+      [
+        'marinePlanPolicyResponses',
+        { policyCode: 'E-AGG-3' },
+        'marinePlanPolicyResponses.E-AGG-3'
+      ]
+    ])('should build %s into %s', (fieldKey, params, expected) => {
+      expect(buildFieldPath(fieldKey, params)).toBe(expected)
+    })
   })
 
   test('should error when field key is not redactable', () => {

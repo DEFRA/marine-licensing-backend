@@ -251,7 +251,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
       details: 'Harbour authority details'
     },
     publicRegister: {
-      consent: 'no',
+      withholdConsent: 'yes',
       reason: 'Test public register details'
     },
     preferredDates: {
