@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import { getProjectsController, sortByStatus } from './get-projects.js'
 import { ObjectId } from 'mongodb'
-import { PROJECT_STATUS_LABEL } from '../../../constants/project-status.js'
+import {
+  DISPLAY_STATUS,
+  PROJECT_STATUS_LABEL
+} from '../../../constants/project-status.js'
 import {
   collectionExemptions,
   collectionMarineLicences
@@ -344,7 +347,8 @@ describe('getProjectsController', () => {
       const projects = [
         { status: PROJECT_STATUS_LABEL.ACTIVE, projectName: 'Active Project' },
         {
-          status: PROJECT_STATUS_LABEL.ACTION_REQUIRED,
+          status: PROJECT_STATUS_LABEL.SUBMITTED,
+          displayStatus: DISPLAY_STATUS.ACTION_REQUIRED,
           projectName: 'Action Required Project'
         },
         {
@@ -354,11 +358,11 @@ describe('getProjectsController', () => {
         { status: PROJECT_STATUS_LABEL.DRAFT, projectName: 'Draft Project' }
       ]
       const result = projects.sort(sortByStatus)
-      expect(result.map(({ status }) => status)).toEqual([
-        PROJECT_STATUS_LABEL.ACTION_REQUIRED,
-        PROJECT_STATUS_LABEL.TRANSFERRED,
-        PROJECT_STATUS_LABEL.DRAFT,
-        PROJECT_STATUS_LABEL.ACTIVE
+      expect(result.map(({ projectName }) => projectName)).toEqual([
+        'Action Required Project',
+        'Transferred Project',
+        'Draft Project',
+        'Active Project'
       ])
     })
 

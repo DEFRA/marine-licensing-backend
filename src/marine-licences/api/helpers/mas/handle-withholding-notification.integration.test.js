@@ -7,9 +7,13 @@ import { deleteMasMessage } from './sqs-client.js'
 import { sendEmail } from '../../../../shared/helpers/email.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { mockMarineLicence } from '../../../models/test-fixtures.js'
-import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  WITHHOLDING_DECISION
+} from '../../../constants/marine-licence.js'
 import {
   mockMasApplicationReference,
+  mockMasWithholdingMessageBody,
   mockMasWithholdingSqsMessage,
   mockMasWithholdingNoBasisSqsMessage
 } from './test-fixtures.js'
@@ -45,21 +49,21 @@ describe('Withholding notification end to end - integration tests', async () => 
 
     await process(mockMasWithholdingSqsMessage)
 
-    const { applicationTasks, status, previousStatus } = await global.mockMongo
+    const { applicationTasks, status } = await global.mockMongo
       .collection(collectionMarineLicences)
       .findOne({ _id })
 
-    expect(status).toBe(MARINE_LICENCE_STATUS.ACTION_REQUIRED)
-    expect(previousStatus).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
+    expect(status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
 
     expect(applicationTasks).toHaveLength(1)
     expect(applicationTasks[0]).toMatchObject({
       type: 'WITHHOLDING_NOTIFICATION',
       resolvedAt: null
     })
-    expect(
-      applicationTasks[0].data.commercialConfidentiality.withheldSome
-    ).toBe(true)
+    expect(applicationTasks[0].data.commercialConfidentiality).toEqual({
+      decision: WITHHOLDING_DECISION.AGREE_IN_PART,
+      applicantMessage: mockMasWithholdingMessageBody.commercialApplicantMessage
+    })
 
     const { body } = await makeGetRequest({
       server: getServer(),
@@ -67,8 +71,8 @@ describe('Withholding notification end to end - integration tests', async () => 
       contactId: mockMarineLicence.contactId
     })
 
-    expect(body.status).toBe('Action required')
-    expect(body.previousStatus).toBe('Submitted')
+    expect(body.status).toBe('Submitted')
+    expect(body.displayStatus).toBe('Action required')
     expect(sendEmail).toHaveBeenCalledTimes(1)
     expect(deleteMasMessage).toHaveBeenCalledWith(
       expect.any(String),

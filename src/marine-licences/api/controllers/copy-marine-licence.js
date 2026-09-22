@@ -8,7 +8,6 @@ import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { addCreateAuditFields } from '../../../shared/common/helpers/mongo-audit.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { buildCopiedMarineLicence } from '../helpers/build-copied-marine-licence.js'
-import { getLifecycleStatus } from '../helpers/lifecycle-status.js'
 
 export const copyMarineLicenceController = {
   options: {
@@ -31,7 +30,7 @@ export const copyMarineLicenceController = {
         .collection(collectionMarineLicences)
         .findOne({ _id: ObjectId.createFromHexString(id) })
 
-      if (getLifecycleStatus(source) !== MARINE_LICENCE_STATUS.REJECTED) {
+      if (source?.status !== MARINE_LICENCE_STATUS.REJECTED) {
         throw Boom.badRequest(
           `Cannot copy marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.REJECTED}'.`
         )

@@ -1,6 +1,7 @@
 import {
-  APPLICATION_TASK_TYPE,
-  MARINE_LICENCE_STATUS
+  MARINE_LICENCE_STATUS,
+  WITHHOLDING_DECISION,
+  WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
 
 export const mockMasApplicationReference = 'MMO-2027-00123'
@@ -27,46 +28,52 @@ export const mockMasRejectedMessageBody = {
 
 export const mockMasWithholdingMessageBody = {
   applicationReference: mockMasApplicationReference,
-  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
-  nationalSecurity: {
-    withheldSome: false,
-    comments:
-      'The location details you asked us to withhold are already publicly available on navigational charts, so publishing them does not create a risk to national security.'
-  },
-  commercialConfidentiality: {
-    withheldSome: true,
-    comments:
-      'We agree the unit rates table in section 4 of your method statement is commercially confidential and will withhold this.'
-  },
+  decisionDate: '2026-09-22T11:14:35.102Z',
+  requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
+  commercialDecision: WITHHOLDING_DECISION.AGREE_IN_PART,
+  commercialApplicantMessage:
+    'We agree the unit rates table in section 4 is commercially confidential and will withhold this.\nThe vessel movement schedule in appendix B will be published.',
+  nationalSecurityDecision: WITHHOLDING_DECISION.DISAGREE,
+  nationalSecurityApplicantMessage:
+    'The location details are already publicly available on navigational charts.',
   userName: mockMasUserName,
   userEmail: mockMasUserEmail
 }
 
 export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
-  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
-  nationalSecurity: {
-    withheldSome: true,
-    comments: 'We agree to withhold the vessel positions.'
-  },
-  userName: mockMasUserName,
-  userEmail: mockMasUserEmail
-}
-
-export const mockMasWithholdingNoBasisMessageBody = {
-  applicationReference: mockMasApplicationReference,
-  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
+  decisionDate: '2026-09-22T11:14:35.102Z',
+  requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.NATIONAL_SECURITY,
+  commercialDecision: null,
+  commercialApplicantMessage: null,
+  nationalSecurityDecision: WITHHOLDING_DECISION.AGREE,
+  nationalSecurityApplicantMessage:
+    'We agree to withhold the vessel positions.',
   userName: mockMasUserName,
   userEmail: mockMasUserEmail
 }
 
 export const mockMasWithholdingCommercialOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
-  taskType: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
-  commercialConfidentiality: {
-    withheldSome: false,
-    comments: 'This information is standard practice information.'
-  },
+  decisionDate: '2026-09-22T11:14:35.102Z',
+  requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.COMMERCIAL,
+  commercialDecision: WITHHOLDING_DECISION.DISAGREE,
+  commercialApplicantMessage:
+    'This information is standard practice information.',
+  nationalSecurityDecision: null,
+  nationalSecurityApplicantMessage: null,
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail
+}
+
+export const mockMasWithholdingNoBasisMessageBody = {
+  applicationReference: mockMasApplicationReference,
+  decisionDate: '2026-09-22T11:14:35.102Z',
+  requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
+  commercialDecision: null,
+  commercialApplicantMessage: null,
+  nationalSecurityDecision: null,
+  nationalSecurityApplicantMessage: null,
   userName: mockMasUserName,
   userEmail: mockMasUserEmail
 }

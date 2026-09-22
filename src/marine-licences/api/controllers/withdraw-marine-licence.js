@@ -4,7 +4,6 @@ import { ObjectId } from 'mongodb'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-import { lifecycleStatusIs } from '../helpers/lifecycle-status.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
@@ -15,8 +14,6 @@ import {
 
 // Ownership is enforced by the authorizeOwnership pre-handler; matching on status here keeps
 // the guard atomic, so a null result means the licence is not in the SUBMITTED state.
-// Withdrawal wins over an outstanding application task: the ACTION_REQUIRED mask and the
-// status it was hiding both go.
 const updateMarineLicenceRecord = async ({
   request,
   params,
@@ -32,19 +29,16 @@ const updateMarineLicenceRecord = async ({
     .findOneAndUpdate(
       {
         _id: ObjectId.createFromHexString(id),
-        ...lifecycleStatusIs(MARINE_LICENCE_STATUS.SUBMITTED)
+        status: MARINE_LICENCE_STATUS.SUBMITTED
       },
-      [
-        {
-          $set: {
-            withdrawnAt,
-            status: MARINE_LICENCE_STATUS.WITHDRAWN,
-            previousStatus: '$$REMOVE',
-            updatedAt,
-            updatedBy
-          }
+      {
+        $set: {
+          withdrawnAt,
+          status: MARINE_LICENCE_STATUS.WITHDRAWN,
+          updatedAt,
+          updatedBy
         }
-      ],
+      },
       { returnDocument: 'after' }
     )
 

@@ -472,8 +472,7 @@ describe('Get projects - integration tests', async () => {
           contactId: employeeContactId,
           organisation: { id: testOrgId, name: 'Test Org' },
           projectName: 'Submitted ML Awaiting Applicant',
-          status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-          previousStatus: MARINE_LICENCE_STATUS.SUBMITTED,
+          status: MARINE_LICENCE_STATUS.SUBMITTED,
           applicationTasks: [outstandingTask]
         })
 
@@ -515,31 +514,28 @@ describe('Get projects - integration tests', async () => {
           label
         ])
 
-      test('a stored-status filter excludes projects that are Action required', async () => {
+      test('a status filter includes projects with an outstanding task', async () => {
         await seed()
 
-        expect(await filterBy(['SUBMITTED'])).toEqual([
-          ['Plain Submitted ML', 'Submitted']
-        ])
-      })
-
-      test('filtering by ACTION_REQUIRED returns only projects with an unresolved task', async () => {
-        await seed()
-
-        expect(await filterBy(['ACTION_REQUIRED'])).toEqual([
-          ['Submitted ML Awaiting Applicant', 'Action required']
-        ])
-      })
-
-      test('ACTION_REQUIRED combines with a stored status without duplicating a project', async () => {
-        await seed()
-
-        expect(
-          (await filterBy(['SUBMITTED', 'ACTION_REQUIRED'])).sort()
-        ).toEqual([
+        expect((await filterBy(['SUBMITTED'])).sort()).toEqual([
           ['Plain Submitted ML', 'Submitted'],
-          ['Submitted ML Awaiting Applicant', 'Action required']
+          ['Submitted ML Awaiting Applicant', 'Submitted']
         ])
+      })
+
+      test('rejects ACTION_REQUIRED as a filter value', async () => {
+        await seed()
+
+        const { statusCode } = await makePostRequest({
+          server: getServer(),
+          url: '/projects',
+          payload: { show: 'all-projects', status: ['ACTION_REQUIRED'] },
+          contactId: employeeContactId,
+          relationships: employeeRelationships,
+          currentRelationshipId: relationshipId
+        })
+
+        expect(statusCode).toBe(400)
       })
 
       test('an outstanding task sorts a project above every other status', async () => {
@@ -554,20 +550,30 @@ describe('Get projects - integration tests', async () => {
           currentRelationshipId: relationshipId
         })
 
-        expect(body.projects[0].status).toBe('Action required')
+        expect(body.projects[0].displayStatus).toBe('Action required')
       })
 
-      test('carries the masked status as previousStatus', async () => {
+      test('carries Action required alongside the real status', async () => {
         await seed()
 
-        const [awaitingApplicant] = (
-          await projectsFor(['SUBMITTED', 'ACTION_REQUIRED'])
-        ).filter(({ projectName }) => projectName.includes('Awaiting'))
+        const [awaitingApplicant] = (await projectsFor(['SUBMITTED'])).filter(
+          ({ projectName }) => projectName.includes('Awaiting')
+        )
 
         expect(awaitingApplicant).toMatchObject({
-          status: 'Action required',
-          previousStatus: 'Submitted'
+          status: 'Submitted',
+          displayStatus: 'Action required'
         })
+      })
+
+      test('a resolved task leaves a project with no display status', async () => {
+        await seed()
+
+        const [resolved] = (await projectsFor(['ACTIVE'])).filter(
+          ({ projectName }) => projectName.includes('Task Resolved')
+        )
+
+        expect(resolved.displayStatus).toBeUndefined()
       })
     })
   })

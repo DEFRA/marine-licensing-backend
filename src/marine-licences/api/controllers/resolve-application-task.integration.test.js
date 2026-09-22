@@ -27,18 +27,12 @@ describe('Resolve application task - integration tests', async () => {
 
   const insertLicence = async (applicationTasks) => {
     const _id = new ObjectId()
-    const isOutstanding = applicationTasks.some(({ resolvedAt }) => !resolvedAt)
 
     await globalThis.mockMongo.collection('marine-licences').insertOne({
       ...mockMarineLicence,
       _id,
       organisation: null,
-      status: isOutstanding
-        ? MARINE_LICENCE_STATUS.ACTION_REQUIRED
-        : MARINE_LICENCE_STATUS.SUBMITTED,
-      ...(isOutstanding && {
-        previousStatus: MARINE_LICENCE_STATUS.SUBMITTED
-      }),
+      status: MARINE_LICENCE_STATUS.SUBMITTED,
       applicationTasks
     })
     return _id
@@ -52,30 +46,46 @@ describe('Resolve application task - integration tests', async () => {
       payload: {}
     })
 
-  const getStatus = async (id, contactId) => {
+  const getStatuses = async (id, contactId) => {
     const { body } = await makeGetRequest({
       server: getServer(),
       url: `/marine-licence/${id}`,
       contactId
     })
-    return body.status
+    return { status: body.status, displayStatus: body.displayStatus }
   }
 
   const storedLicence = (id) =>
     globalThis.mockMongo.collection('marine-licences').findOne({ _id: id })
 
-  test('reports Action required while a task is outstanding, and reverts once it is resolved', async () => {
+  test('reports Action required alongside the real status while a task is outstanding', async () => {
     const taskId = new ObjectId().toHexString()
     const id = await insertLicence([buildTask(taskId)])
     const { contactId } = mockMarineLicence
 
-    expect(await getStatus(id, contactId)).toBe('Action required')
+    expect(await getStatuses(id, contactId)).toEqual({
+      status: 'Submitted',
+      displayStatus: 'Action required'
+    })
 
     const { statusCode } = await resolve(id, taskId, contactId)
     expect(statusCode).toBe(200)
 
-    expect(await getStatus(id, contactId)).toBe('Submitted')
-    expect(await storedLicence(id)).not.toHaveProperty('previousStatus')
+    expect(await getStatuses(id, contactId)).toEqual({
+      status: 'Submitted',
+      displayStatus: undefined
+    })
+  })
+
+  test('resolving a task leaves the stored status alone', async () => {
+    const taskId = new ObjectId().toHexString()
+    const id = await insertLicence([buildTask(taskId)])
+
+    await resolve(id, taskId, mockMarineLicence.contactId)
+
+    expect(await storedLicence(id)).toMatchObject({
+      status: MARINE_LICENCE_STATUS.SUBMITTED
+    })
   })
 
   test('stays at Action required until the last outstanding task is resolved', async () => {
@@ -88,10 +98,12 @@ describe('Resolve application task - integration tests', async () => {
     const { contactId } = mockMarineLicence
 
     await resolve(id, firstTaskId, contactId)
-    expect(await getStatus(id, contactId)).toBe('Action required')
+    expect((await getStatuses(id, contactId)).displayStatus).toBe(
+      'Action required'
+    )
 
     await resolve(id, secondTaskId, contactId)
-    expect(await getStatus(id, contactId)).toBe('Submitted')
+    expect((await getStatuses(id, contactId)).displayStatus).toBeUndefined()
   })
 
   test('is idempotent when the same task is resolved twice', async () => {
@@ -103,7 +115,7 @@ describe('Resolve application task - integration tests', async () => {
     const { statusCode } = await resolve(id, taskId, contactId)
 
     expect(statusCode).toBe(200)
-    expect(await getStatus(id, contactId)).toBe('Submitted')
+    expect((await getStatuses(id, contactId)).displayStatus).toBeUndefined()
   })
 
   test('rejects a user who did not submit the application', async () => {
@@ -131,6 +143,6 @@ describe('Resolve application task - integration tests', async () => {
     expect(body.applicationTasks).toBeUndefined()
     expect(JSON.stringify(body)).not.toContain('Some comments')
     expect(body.status).toBe('Submitted')
-    expect(body.previousStatus).toBeUndefined()
+    expect(body.displayStatus).toBeUndefined()
   })
 })

@@ -2,9 +2,9 @@ import { config } from '../../../../config.js'
 import { parseMessageBody } from '../../../../shared/common/helpers/sqs/parse-message-body.js'
 import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string.js'
 import {
-  APPLICATION_TASK_TYPE,
   MARINE_LICENCE_STATUS,
-  MAS_EVENT_ACTION
+  MAS_EVENT_ACTION,
+  WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { deleteMasMessage } from './sqs-client.js'
@@ -55,7 +55,12 @@ export const processMasMessage = async (server, message) => {
     })
   }
 
-  if (body.taskType === APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION) {
+  // A withholding decision carries no status; requestRelatesTo is what identifies it.
+  if (
+    Object.values(WITHHOLDING_REQUEST_RELATES_TO).includes(
+      body.requestRelatesTo
+    )
+  ) {
     await handleWithholdingNotification(db, logger, {
       body,
       id: message.MessageId

@@ -175,13 +175,6 @@ describe('getStatusFilter', async () => {
     const result = getStatusFilter(['ACTIVE', 'DRAFT'])
     expect(result).toEqual({ status: { $in: ['ACTIVE', 'DRAFT'] } })
   })
-
-  test('handles ACTION_REQUIRED like any other stored status', async () => {
-    const result = getStatusFilter(['SUBMITTED', 'ACTION_REQUIRED'])
-    expect(result).toEqual({
-      status: { $in: ['SUBMITTED', 'ACTION_REQUIRED'] }
-    })
-  })
 })
 
 describe('queryEmployeeCollections', () => {

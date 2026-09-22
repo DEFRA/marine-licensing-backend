@@ -24,47 +24,11 @@ const markTaskResolved = (taskId, resolvedAt) => ({
   }
 })
 
-// Reads the array the previous stage produced, so the last task to be resolved is the
-// one that reveals previousStatus again. A licence withdrawn while the task was
-// outstanding has no previousStatus, and $ifNull leaves its status alone.
-const restoreStatusWhenNothingOutstanding = {
-  $set: {
-    status: {
-      $cond: [
-        { $gt: [{ $size: { $ifNull: ['$outstandingTasks', []] } }, 0] },
-        '$status',
-        { $ifNull: ['$previousStatus', '$status'] }
-      ]
-    },
-    previousStatus: {
-      $cond: [
-        { $gt: [{ $size: { $ifNull: ['$outstandingTasks', []] } }, 0] },
-        '$previousStatus',
-        '$$REMOVE'
-      ]
-    }
-  }
-}
-
 const buildResolvePipeline = (taskId, resolvedAt, resolvedBy) => [
   markTaskResolved(taskId, resolvedAt),
-  {
-    $set: {
-      outstandingTasks: {
-        $filter: {
-          input: '$applicationTasks',
-          cond: { $eq: ['$$this.resolvedAt', null] }
-        }
-      }
-    }
-  },
-  restoreStatusWhenNothingOutstanding,
-  { $set: { updatedAt: resolvedAt, updatedBy: resolvedBy } },
-  { $unset: 'outstandingTasks' }
+  { $set: { updatedAt: resolvedAt, updatedBy: resolvedBy } }
 ]
 
-// Generic across application task types: resolving the last outstanding task puts the
-// application back to the status ACTION_REQUIRED masked, in the same write.
 export const resolveApplicationTaskController = {
   options: {
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],

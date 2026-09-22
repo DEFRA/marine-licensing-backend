@@ -2,10 +2,6 @@ import { vi } from 'vitest'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { mockMasSqsMessage } from './test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
-import {
-  lifecycleStatusIsNot,
-  setLifecycleStatus
-} from '../lifecycle-status.js'
 import { sendTransferredEmail } from './send-transferred-email.js'
 
 vi.mock('./send-transferred-email.js', () => ({
@@ -50,18 +46,16 @@ describe('updateTransferredMarineLicence', async () => {
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
       {
         applicationReference: body.applicationReference,
-        ...lifecycleStatusIsNot(MARINE_LICENCE_STATUS.TRANSFERRED)
+        status: { $ne: MARINE_LICENCE_STATUS.TRANSFERRED }
       },
-      [
-        {
-          $set: {
-            ...setLifecycleStatus(MARINE_LICENCE_STATUS.TRANSFERRED),
-            transferredDate: body.transferredDate,
-            updatedAt: new Date(),
-            updatedBy: mockMasSqsMessage.MessageId
-          }
+      {
+        $set: {
+          status: MARINE_LICENCE_STATUS.TRANSFERRED,
+          transferredDate: body.transferredDate,
+          updatedAt: new Date(),
+          updatedBy: mockMasSqsMessage.MessageId
         }
-      ],
+      },
       { returnDocument: 'after' }
     )
   })
@@ -128,7 +122,7 @@ describe('updateTransferredMarineLicence', async () => {
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
       {
         applicationReference: body.applicationReference,
-        ...lifecycleStatusIsNot(MARINE_LICENCE_STATUS.TRANSFERRED)
+        status: { $ne: MARINE_LICENCE_STATUS.TRANSFERRED }
       },
       expect.anything(),
       expect.anything()
