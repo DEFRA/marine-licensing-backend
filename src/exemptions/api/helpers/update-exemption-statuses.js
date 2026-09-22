@@ -96,7 +96,8 @@ const queueEmpStatusUpdates = async (db, applicationReferences) => {
 
 /**
  * Recomputes the date-derived status of every submitted exemption and writes
- * back the ones that have moved on.
+ * back the ones that have moved on.  EMP status updates are queued if EMP
+ * is enabled. The EMP queue processor is then kicked off.
  *
  * Deliberately backward-looking: it queries all outstanding work rather than
  * work that became due since the last run, because a missed fire is never
