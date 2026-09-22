@@ -4,8 +4,13 @@ import {
   EMP_REQUEST_ACTIONS
 } from '../../constants/request-queue.js'
 import { config } from '../../../../config.js'
-import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
+import {
+  sendExemptionToEmp,
+  withdrawExemptionFromEmp,
+  updateExemptionStatusInEmp
+} from './emp-client.js'
 import { structureErrorForECS } from '../logging/logger.js'
+import { buildEmpQueueItem } from './emp-queue.js'
 import { withMongoTransaction } from '../mongo-transactions.js'
 
 import {
@@ -14,6 +19,57 @@ import {
 } from '../../constants/db-collections.js'
 
 const QUEUE_DELAY_MS = 2_000
+
+/** Bounds work per `processEmpQueue` run when the queue is large (avoids overlap with the polling interval). */
+export const EMP_QUEUE_MAX_ITEMS_PER_PROCESS_RUN = 50
+
+const buildClaimFilter = (now, claimStaleMs) => {
+  const retryThreshold = new Date(now.getTime() - QUEUE_DELAY_MS)
+  const staleClaimThreshold = new Date(now.getTime() - claimStaleMs)
+  return {
+    $or: [
+      { status: REQUEST_QUEUE_STATUS.PENDING },
+      {
+        status: REQUEST_QUEUE_STATUS.FAILED,
+        updatedAt: { $lte: retryThreshold }
+      },
+      {
+        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+        updatedAt: { $lte: staleClaimThreshold }
+      }
+    ]
+  }
+}
+
+const claimOneQueueItem = async (server, filter) => {
+  try {
+    const result = await server.db
+      .collection(collectionEmpQueue)
+      .findOneAndUpdate(
+        filter,
+        {
+          $set: {
+            status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
+            updatedAt: new Date()
+          }
+        },
+        {
+          sort: { _id: 1 },
+          returnDocument: 'after',
+          // includeResultMetadata: true returns the raw reply; the document is
+          // read from .value, which yields null when nothing matched.
+          includeResultMetadata: true
+        }
+      )
+    return result?.value ?? null
+  } catch (err) {
+    server.logger.error(
+      structureErrorForECS(err),
+      'Failed to claim EMP queue item'
+    )
+    return null
+  }
+}
 
 export const startEmpQueuePolling = (server, intervalMs) => {
   processEmpQueue(server)
@@ -99,12 +155,17 @@ export const handleEmpQueueItemFailure = async (
   }
 }
 
+// An unrecognised or absent action is an add, which is what rows written
+// before the action field existed rely on.
+const EMP_ACTION_HANDLERS = {
+  [EMP_REQUEST_ACTIONS.WITHDRAW]: withdrawExemptionFromEmp,
+  [EMP_REQUEST_ACTIONS.UPDATE_STATUS]: updateExemptionStatusInEmp
+}
+
 const processEmpQueueItem = async (server, item) => {
   try {
-    const result =
-      item.action === EMP_REQUEST_ACTIONS.WITHDRAW
-        ? await withdrawExemptionFromEmp(server, item)
-        : await sendExemptionToEmp(server, item)
+    const push = EMP_ACTION_HANDLERS[item.action] ?? sendExemptionToEmp
+    const result = await push(server, item)
     await handleEmpQueueItemSuccess(server, item, result.objectIds)
   } catch (err) {
     server.logger.error(
@@ -119,28 +180,23 @@ const processEmpQueueItem = async (server, item) => {
 export const processEmpQueue = async (server) => {
   try {
     const now = new Date()
+    const { claimStaleMs } = config.get('exploreMarinePlanning')
+    const filter = buildClaimFilter(now, claimStaleMs)
 
-    const queueItems = await server.db
-      .collection(collectionEmpQueue)
-      .find({
-        $or: [
-          { status: REQUEST_QUEUE_STATUS.PENDING },
-          {
-            status: REQUEST_QUEUE_STATUS.FAILED,
-            updatedAt: { $lte: new Date(now.getTime() - QUEUE_DELAY_MS) }
-          }
-        ]
-      })
-      .toArray()
+    let item = await claimOneQueueItem(server, filter)
+    let processedCount = 0
 
-    if (queueItems.length > 0) {
-      server.logger.info(
-        `Found ${queueItems.length} items to process in EMP queue`
-      )
+    while (item) {
+      await processEmpQueueItem(server, item)
+      processedCount++
+      if (processedCount >= EMP_QUEUE_MAX_ITEMS_PER_PROCESS_RUN) {
+        break
+      }
+      item = await claimOneQueueItem(server, filter)
     }
 
-    for (const item of queueItems) {
-      await processEmpQueueItem(server, item)
+    if (processedCount > 0) {
+      server.logger.info(`Processed ${processedCount} item(s) from EMP queue`)
     }
   } catch (error) {
     server.logger.error(
@@ -162,19 +218,20 @@ export const addToEmpQueue = async ({
   const { payload, db } = request
   const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
-  await db.collection(collectionEmpQueue).insertOne({
-    action,
-    applicationReferenceNumber: applicationReference,
-    status: REQUEST_QUEUE_STATUS.PENDING,
-    retries: 0,
-    createdAt,
-    createdBy,
-    updatedAt,
-    updatedBy
-  })
+  await db.collection(collectionEmpQueue).insertOne(
+    buildEmpQueueItem({
+      applicationReference,
+      action,
+      createdAt,
+      createdBy,
+      updatedAt,
+      updatedBy
+    })
+  )
 
-  request.server.methods.processEmpQueue().catch(() => {
+  request.server.methods.processEmpQueue().catch((error) => {
     request.server.logger.error(
+      structureErrorForECS(error),
       'Failed to process EMP queue, but exemption submission succeeded'
     )
   })

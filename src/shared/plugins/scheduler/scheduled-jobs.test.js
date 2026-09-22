@@ -103,11 +103,7 @@ describe('scheduledJobs', () => {
 
       const result = await exemptionStatus().run(server)
 
-      expect(updateExemptionStatuses).toHaveBeenCalledWith(
-        server.db,
-        today,
-        server.logger
-      )
+      expect(updateExemptionStatuses).toHaveBeenCalledWith(server, today)
       expect(result.summary).toContain('exemptions updated')
     })
   })

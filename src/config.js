@@ -7,6 +7,7 @@ import {
   requiredFromEnvInCdp
 } from './shared/common/helpers/convict/required-from-env-in-cdp.js'
 import { convictValidateCronExpression } from './shared/common/helpers/convict/validate-scheduler.js'
+import { exploreMarinePlanningSchema } from './config/explore-marine-planning.js'
 import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
 import { dynamicsSchema } from './config/dynamics.js'
 import { masSchema } from './config/mas.js'
