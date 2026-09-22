@@ -5,13 +5,32 @@ import {
   mockRedactions
 } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
+import { beforeEach, vi } from 'vitest'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { validateConstructionDrawingUpload } from '../helpers/validateConstructionDrawingUpload.js'
+
+vi.mock('../helpers/validateWfdUpload.js')
+vi.mock('../helpers/validateConstructionDrawingUpload.js')
+
+const mockRedactedS3Location = {
+  s3Bucket: 'mmo-uploads',
+  s3Key: 'redactions/abc-123',
+  checksumSha256: 'V3nR8yISvb6pfVp1g1eUdFo5Cer80JpGlqkGAJb/O8k='
+}
 
 describe('POST /marine-licence/redact-text - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
   const caseworkerOid = '987e6543-e21b-12d3-a456-426614174000'
   const marineLicenceId = new ObjectId()
+
+  let validateConstructionDrawingUploadMock
+
+  beforeEach(() => {
+    validateConstructionDrawingUploadMock = vi.mocked(
+      validateConstructionDrawingUpload
+    )
+  })
 
   const insertLicence = () =>
     globalThis.mockMongo
@@ -20,7 +39,11 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
         createCompleteMarineLicence({ _id: marineLicenceId, contactId })
       )
 
-  const redact = ({ id = marineLicenceId.toString(), isInternalUser = true }) =>
+  const redact = ({
+    id = marineLicenceId.toString(),
+    isInternalUser = true,
+    ...payload
+  }) =>
     makePostRequest({
       server: getServer(),
       url: '/marine-licence/redact-text',
@@ -29,7 +52,8 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
       payload: {
         id,
         fieldKey: 'preferredDates',
-        text: mockRedactions.preferredDates.redactedText
+        text: mockRedactions.preferredDates.redactedText,
+        ...payload
       }
     })
 
@@ -79,6 +103,284 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
 
     expect(licence.redactions.preferredDates.redactedText).toBe(
       'Redacted again'
+    )
+  })
+
+  test('removes a redaction and leaves the underlying field', async () => {
+    await insertLicence()
+    await redact({})
+
+    const { statusCode } = await redact({ text: undefined, remove: true })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(licence.redactions.preferredDates).toBeUndefined()
+    expect(licence.preferredDates).toEqual(
+      createCompleteMarineLicence({}).preferredDates
+    )
+  })
+
+  test('attempting to remove a redaction that was never there does not error', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({ text: undefined, remove: true })
+
+    expect(statusCode).toBe(200)
+  })
+
+  test('stores a marine plan policy redaction against its code', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'marinePlanPolicyResponses',
+      policyCode: 'E-AGG-3'
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.marinePlanPolicyResponses['E-AGG-3'].redactedText
+    ).toBe(mockRedactions.preferredDates.redactedText)
+  })
+
+  test('withholds the water framework directive document', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(licence.redactions.waterFrameworkDirective.withholdDocument).toEqual(
+      {
+        redactedAt: expect.any(Date),
+        redactedBy: caseworkerOid,
+        withhold: true
+      }
+    )
+    expect(licence.waterFrameworkDirective).toEqual(
+      createCompleteMarineLicence({}).waterFrameworkDirective
+    )
+  })
+
+  test('withholds a construction drawing against its site and drawing', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      withhold: true
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.siteDetails[0].constructionDrawings[0].withholdDocument
+    ).toEqual({
+      redactedAt: expect.any(Date),
+      redactedBy: caseworkerOid,
+      withhold: true
+    })
+    expect(licence.siteDetails).toEqual(
+      createCompleteMarineLicence({}).siteDetails
+    )
+  })
+
+  test('reverses a withheld document to false', async () => {
+    await insertLicence()
+
+    const withholdWfd = (withhold) =>
+      redact({
+        fieldKey: 'waterFrameworkDirective.withholdDocument',
+        text: undefined,
+        withhold
+      })
+
+    await withholdWfd(true)
+    const { statusCode } = await withholdWfd(false)
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.waterFrameworkDirective.withholdDocument.withhold
+    ).toBe(false)
+  })
+
+  test('stores a replacement drawing without touching the original', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-drawing.pdf',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.siteDetails[0].constructionDrawings[0].withholdDocument
+    ).toEqual({
+      redactedAt: expect.any(Date),
+      redactedBy: caseworkerOid,
+      withhold: true,
+      redactedDocument: {
+        filename: 'redacted-drawing.pdf',
+        s3Location: mockRedactedS3Location
+      }
+    })
+    expect(licence.siteDetails).toEqual(
+      createCompleteMarineLicence({}).siteDetails
+    )
+  })
+
+  test('stores a replacement WFD document without touching the original', async () => {
+    await insertLicence()
+
+    const { statusCode } = await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-wfd.docx',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    const { withholdDocument } = licence.redactions.waterFrameworkDirective
+    expect(withholdDocument.withhold).toBe(true)
+    expect(withholdDocument.redactedDocument.filename).toBe('redacted-wfd.docx')
+    expect(licence.waterFrameworkDirective).toEqual(
+      createCompleteMarineLicence({}).waterFrameworkDirective
+    )
+  })
+
+  test('errors on invalid upload', async () => {
+    await insertLicence()
+
+    validateConstructionDrawingUploadMock.mockRejectedValue('reject')
+
+    const { statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.withholdDocument',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-drawing.pdf',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(statusCode).toBe(500)
+  })
+
+  test('errors on invalid upload field key', async () => {
+    await insertLicence()
+
+    validateConstructionDrawingUploadMock.mockRejectedValue('reject')
+
+    const { body, statusCode } = await redact({
+      fieldKey: 'siteDetails.constructionDrawings.invalid',
+      siteIndex: 0,
+      drawingIndex: 0,
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-drawing.pdf',
+      s3Location: mockRedactedS3Location
+    })
+
+    expect(body.message).toBe('REDACTION_FIELD_KEY_INVALID')
+    expect(statusCode).toBe(400)
+  })
+
+  test('unwithholding removes a replacement document', async () => {
+    await insertLicence()
+
+    await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-wfd.docx',
+      s3Location: mockRedactedS3Location
+    })
+    await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: false
+    })
+
+    const { withholdDocument } = (
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .findOne({ _id: marineLicenceId })
+    ).redactions.waterFrameworkDirective
+
+    expect(withholdDocument.withhold).toBe(false)
+    expect(withholdDocument.redactedDocument).toBeUndefined()
+  })
+
+  test('removing clears the withhold flag and its replacement together', async () => {
+    await insertLicence()
+
+    await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      withhold: true,
+      filename: 'redacted-wfd.docx',
+      s3Location: mockRedactedS3Location
+    })
+
+    const { statusCode } = await redact({
+      fieldKey: 'waterFrameworkDirective.withholdDocument',
+      text: undefined,
+      remove: true
+    })
+
+    expect(statusCode).toBe(200)
+
+    const licence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(
+      licence.redactions.waterFrameworkDirective.withholdDocument
+    ).toBeUndefined()
+    expect(licence.waterFrameworkDirective).toEqual(
+      createCompleteMarineLicence({}).waterFrameworkDirective
     )
   })
 
