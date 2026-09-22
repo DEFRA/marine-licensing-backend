@@ -5,13 +5,11 @@ import {
 } from '../../../common/constants/db-collections.js'
 import { getContactId } from '../../../helpers/get-contact-id.js'
 import {
-  ACTION_REQUIRED_STATUS_LABEL,
   PROJECT_STATUS_LABEL,
   PROJECT_TYPES
 } from '../../../constants/project-status.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { getProjects } from '../models/get-projects.js'
-import { getDisplayStatus } from '../../../helpers/application-tasks.js'
 import {
   getOrganisationUserNames,
   getStatusFilter,
@@ -25,20 +23,17 @@ const transformProjectBase = (project, projectType) => {
     projectName,
     applicationReference,
     status,
-    submittedAt,
-    applicationTasks
+    previousStatus,
+    submittedAt
   } = project
 
-  const statusLabel = PROJECT_STATUS_LABEL[status] || status
-  const displayStatus = getDisplayStatus({
-    status: statusLabel,
-    applicationTasks
-  })
+  const toLabel = (value) => PROJECT_STATUS_LABEL[value] || value
 
   return {
     id: _id.toString(),
     projectType,
-    ...(status && { status: statusLabel, displayStatus }),
+    ...(status && { status: toLabel(status) }),
+    ...(previousStatus && { previousStatus: toLabel(previousStatus) }),
     ...(projectName && { projectName }),
     ...(applicationReference && { applicationReference }),
     ...(submittedAt && { submittedAt })
@@ -59,17 +54,15 @@ const transformProjects = (projects, type) =>
   (projects ?? []).filter(Boolean).map((p) => transformProjectBase(p, type))
 
 export const sortByStatus = (a, b) => {
-  // Ordered by display status, so the derived "Action required" must be listed
-  // here too or every project with an outstanding task falls to the bottom.
   const statusOrder = [
-    ACTION_REQUIRED_STATUS_LABEL,
+    PROJECT_STATUS_LABEL.ACTION_REQUIRED,
     PROJECT_STATUS_LABEL.TRANSFERRED,
     PROJECT_STATUS_LABEL.DRAFT,
     PROJECT_STATUS_LABEL.ACTIVE
   ]
 
-  const firstStatus = statusOrder.indexOf(a.displayStatus ?? a.status)
-  const comparisonStatus = statusOrder.indexOf(b.displayStatus ?? b.status)
+  const firstStatus = statusOrder.indexOf(a.status)
+  const comparisonStatus = statusOrder.indexOf(b.status)
 
   const unknownStatusIndex = statusOrder.length
 

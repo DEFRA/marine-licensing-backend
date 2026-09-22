@@ -11,11 +11,6 @@ import {
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
 import { batchGetContactNames } from '../../../common/helpers/dynamics/get-contact-details.js'
-import { ACTION_REQUIRED_STATUS_FILTER } from '../../../constants/project-status.js'
-import {
-  noOutstandingTasksQuery,
-  outstandingTasksQuery
-} from '../../../helpers/application-tasks.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn().mockResolvedValue({})
@@ -173,32 +168,18 @@ describe('getStatusFilter', async () => {
 
   test('handle single status', async () => {
     const result = getStatusFilter(['DRAFT'])
-    expect(result).toEqual({
-      status: { $in: ['DRAFT'] },
-      ...noOutstandingTasksQuery
-    })
+    expect(result).toEqual({ status: { $in: ['DRAFT'] } })
   })
 
   test('handle multiple status values', async () => {
     const result = getStatusFilter(['ACTIVE', 'DRAFT'])
-    expect(result).toEqual({
-      status: { $in: ['ACTIVE', 'DRAFT'] },
-      ...noOutstandingTasksQuery
-    })
+    expect(result).toEqual({ status: { $in: ['ACTIVE', 'DRAFT'] } })
   })
 
-  test('translates a lone ACTION_REQUIRED selection into a task predicate', async () => {
-    const result = getStatusFilter([ACTION_REQUIRED_STATUS_FILTER])
-    expect(result).toEqual(outstandingTasksQuery)
-  })
-
-  test('combines ACTION_REQUIRED with stored statuses without overlapping them', async () => {
-    const result = getStatusFilter(['SUBMITTED', ACTION_REQUIRED_STATUS_FILTER])
+  test('handles ACTION_REQUIRED like any other stored status', async () => {
+    const result = getStatusFilter(['SUBMITTED', 'ACTION_REQUIRED'])
     expect(result).toEqual({
-      $or: [
-        { status: { $in: ['SUBMITTED'] }, ...noOutstandingTasksQuery },
-        outstandingTasksQuery
-      ]
+      status: { $in: ['SUBMITTED', 'ACTION_REQUIRED'] }
     })
   })
 })

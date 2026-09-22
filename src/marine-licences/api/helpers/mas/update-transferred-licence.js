@@ -5,6 +5,10 @@ import {
   MARINE_LICENCE_STATUS,
   MAS_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
+import {
+  lifecycleStatusIsNot,
+  setLifecycleStatus
+} from '../lifecycle-status.js'
 import { sendTransferredEmail } from './send-transferred-email.js'
 
 export const updateTransferredMarineLicence = async (
@@ -23,16 +27,18 @@ export const updateTransferredMarineLicence = async (
     result = await db.collection(collectionMarineLicences).findOneAndUpdate(
       {
         applicationReference,
-        status: { $ne: MARINE_LICENCE_STATUS.TRANSFERRED }
+        ...lifecycleStatusIsNot(MARINE_LICENCE_STATUS.TRANSFERRED)
       },
-      {
-        $set: {
-          status: MARINE_LICENCE_STATUS.TRANSFERRED,
-          transferredDate,
-          updatedAt,
-          updatedBy: id
+      [
+        {
+          $set: {
+            ...setLifecycleStatus(MARINE_LICENCE_STATUS.TRANSFERRED),
+            transferredDate,
+            updatedAt,
+            updatedBy: id
+          }
         }
-      },
+      ],
       { returnDocument: 'after' }
     )
   } catch (error) {

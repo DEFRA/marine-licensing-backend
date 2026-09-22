@@ -4,7 +4,10 @@ export const MARINE_LICENCE_STATUS = {
   REJECTED: 'REJECTED',
   SUBMITTED: 'SUBMITTED',
   TRANSFERRED: 'TRANSFERRED',
-  WITHDRAWN: 'WITHDRAWN'
+  WITHDRAWN: 'WITHDRAWN',
+  // Masks the lifecycle status while an application task is outstanding; the masked
+  // value is kept in previousStatus (see api/helpers/lifecycle-status.js).
+  ACTION_REQUIRED: 'ACTION_REQUIRED'
 }
 
 export const MARINE_LICENCE_STATUS_LABEL = {
@@ -13,7 +16,8 @@ export const MARINE_LICENCE_STATUS_LABEL = {
   REJECTED: 'Rejected',
   SUBMITTED: 'Submitted',
   TRANSFERRED: 'Transferred',
-  WITHDRAWN: 'Withdrawn'
+  WITHDRAWN: 'Withdrawn',
+  ACTION_REQUIRED: 'Action required'
 }
 
 export const APPLICATION_TASK_TYPE = {

@@ -4,7 +4,7 @@ import { createTaskList, getSiteDetailsDataStatus } from './createTaskList.js'
 import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
-import { getDisplayStatus } from '../../../shared/helpers/application-tasks.js'
+import { getLifecycleStatus } from './lifecycle-status.js'
 
 export const buildMarineLicenceResponse = (
   marineLicence,
@@ -16,11 +16,12 @@ export const buildMarineLicenceResponse = (
   )
   const isCitizen = userRelationshipType === 'Citizen'
 
-  // Application tasks carry the caseworker's withholding comments, so they must
-  // never reach the unauthenticated public register response. The derived
-  // "Action required" status is gated with them: it only means anything where the
-  // tasks it is derived from are visible.
-  const { _id, status, redactions, applicationTasks, ...rest } = marineLicence
+  // Application tasks carry the caseworker's withholding comments, so they must never
+  // reach the unauthenticated public register response, and nor must the fact that a
+  // withholding decision is pending: that response shows the status ACTION_REQUIRED
+  // masks, not the mask.
+  const { _id, status, previousStatus, redactions, applicationTasks, ...rest } =
+    marineLicence
   const {
     responses: marinePlanPolicyResponses,
     count: marinePlanPolicyResponseCount
@@ -32,19 +33,21 @@ export const buildMarineLicenceResponse = (
     marinePlanPolicyResponseCount
   })
 
-  const statusLabel = MARINE_LICENCE_STATUS_LABEL[status] || status
+  const statusToShow = includeApplicationTasks
+    ? status
+    : getLifecycleStatus(marineLicence)
+
+  const toLabel = (value) => MARINE_LICENCE_STATUS_LABEL[value] || value
 
   return {
     id: _id.toString(),
     ...rest,
     ...(isEntraIdUser(request) && { redactions }),
     ...(includeApplicationTasks && {
-      applicationTasks: applicationTasks ?? []
+      applicationTasks: applicationTasks ?? [],
+      ...(previousStatus && { previousStatus: toLabel(previousStatus) })
     }),
-    status: statusLabel,
-    displayStatus: includeApplicationTasks
-      ? getDisplayStatus({ status: statusLabel, applicationTasks })
-      : statusLabel,
+    status: toLabel(statusToShow),
     marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
     marinePlanPolicies: rest.marinePlanPolicies ?? [],
     marinePlanPolicyResponses,

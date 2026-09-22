@@ -14,11 +14,7 @@ import {
   collectionExemptions,
   collectionMarineLicences
 } from '../../../common/constants/db-collections.js'
-import {
-  ACTION_REQUIRED_STATUS_FILTER,
-  ACTION_REQUIRED_STATUS_LABEL,
-  PROJECT_TYPES
-} from '../../../constants/project-status.js'
+import { PROJECT_TYPES } from '../../../constants/project-status.js'
 
 vi.mock('../../../common/helpers/dynamics/get-contact-details.js', () => ({
   batchGetContactNames: vi.fn((contactIds) =>
@@ -476,7 +472,8 @@ describe('Get projects - integration tests', async () => {
           contactId: employeeContactId,
           organisation: { id: testOrgId, name: 'Test Org' },
           projectName: 'Submitted ML Awaiting Applicant',
-          status: MARINE_LICENCE_STATUS.SUBMITTED,
+          status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+          previousStatus: MARINE_LICENCE_STATUS.SUBMITTED,
           applicationTasks: [outstandingTask]
         })
 
@@ -513,12 +510,12 @@ describe('Get projects - integration tests', async () => {
       }
 
       const filterBy = async (status) =>
-        (await projectsFor(status)).map(({ projectName, displayStatus }) => [
+        (await projectsFor(status)).map(({ projectName, status: label }) => [
           projectName,
-          displayStatus
+          label
         ])
 
-      test('a stored-status filter excludes projects that display as Action required', async () => {
+      test('a stored-status filter excludes projects that are Action required', async () => {
         await seed()
 
         expect(await filterBy(['SUBMITTED'])).toEqual([
@@ -529,8 +526,8 @@ describe('Get projects - integration tests', async () => {
       test('filtering by ACTION_REQUIRED returns only projects with an unresolved task', async () => {
         await seed()
 
-        expect(await filterBy([ACTION_REQUIRED_STATUS_FILTER])).toEqual([
-          ['Submitted ML Awaiting Applicant', ACTION_REQUIRED_STATUS_LABEL]
+        expect(await filterBy(['ACTION_REQUIRED'])).toEqual([
+          ['Submitted ML Awaiting Applicant', 'Action required']
         ])
       })
 
@@ -538,14 +535,14 @@ describe('Get projects - integration tests', async () => {
         await seed()
 
         expect(
-          (await filterBy(['SUBMITTED', ACTION_REQUIRED_STATUS_FILTER])).sort()
+          (await filterBy(['SUBMITTED', 'ACTION_REQUIRED'])).sort()
         ).toEqual([
           ['Plain Submitted ML', 'Submitted'],
-          ['Submitted ML Awaiting Applicant', ACTION_REQUIRED_STATUS_LABEL]
+          ['Submitted ML Awaiting Applicant', 'Action required']
         ])
       })
 
-      test('an outstanding task sorts a project above every stored status', async () => {
+      test('an outstanding task sorts a project above every other status', async () => {
         await seed()
 
         const { body } = await makePostRequest({
@@ -557,21 +554,19 @@ describe('Get projects - integration tests', async () => {
           currentRelationshipId: relationshipId
         })
 
-        expect(body.projects[0].displayStatus).toBe(
-          ACTION_REQUIRED_STATUS_LABEL
-        )
+        expect(body.projects[0].status).toBe('Action required')
       })
 
-      test('keeps the stored status alongside the display status', async () => {
+      test('carries the masked status as previousStatus', async () => {
         await seed()
 
         const [awaitingApplicant] = (
-          await projectsFor(['SUBMITTED', ACTION_REQUIRED_STATUS_FILTER])
+          await projectsFor(['SUBMITTED', 'ACTION_REQUIRED'])
         ).filter(({ projectName }) => projectName.includes('Awaiting'))
 
         expect(awaitingApplicant).toMatchObject({
-          status: 'Submitted',
-          displayStatus: ACTION_REQUIRED_STATUS_LABEL
+          status: 'Action required',
+          previousStatus: 'Submitted'
         })
       })
     })

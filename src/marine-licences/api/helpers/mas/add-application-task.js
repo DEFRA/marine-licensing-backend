@@ -1,10 +1,17 @@
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
-import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  MAS_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
 
 // The filter is what enforces "at most one task per type": a concurrent second
 // message cannot match it, so the invariant holds without a transaction.
+//
+// A pipeline update, not $push, so the status it masks can be copied into
+// previousStatus in the same write. The $cond keeps ACTION_REQUIRED out of
+// previousStatus when a task of another type is already outstanding.
 const pushFirstTaskOfType = (
   db,
   { applicationReference, task, updatedBy, now }
@@ -14,10 +21,25 @@ const pushFirstTaskOfType = (
       applicationReference,
       applicationTasks: { $not: { $elemMatch: { type: task.type } } }
     },
-    {
-      $push: { applicationTasks: task },
-      $set: { updatedAt: now, updatedBy }
-    },
+    [
+      {
+        $set: {
+          applicationTasks: {
+            $concatArrays: [{ $ifNull: ['$applicationTasks', []] }, [task]]
+          },
+          previousStatus: {
+            $cond: [
+              { $eq: ['$status', MARINE_LICENCE_STATUS.ACTION_REQUIRED] },
+              '$previousStatus',
+              '$status'
+            ]
+          },
+          status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+          updatedAt: now,
+          updatedBy
+        }
+      }
+    ],
     { returnDocument: 'after' }
   )
 
@@ -95,8 +117,8 @@ const explainMissedPush = async (
 }
 
 // Generic for every application task type: the caller supplies only the type and its
-// opaque `data`. No status is written — "Action required" is derived from any task
-// with a null resolvedAt (see shared/helpers/application-tasks.js).
+// opaque `data`. The application moves to ACTION_REQUIRED and the status it replaces
+// is kept in previousStatus, which resolving the task puts back.
 //
 // MAS sends at most one task of a given type per application, so a second one is a
 // broken contract rather than a correction and is refused, not applied.

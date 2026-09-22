@@ -31,17 +31,26 @@ describe('resolveApplicationTaskController', () => {
     vi.useRealTimers()
   })
 
-  it('resolves only the named unresolved task and writes no status', async () => {
+  it('resolves only the named unresolved task', async () => {
     await resolveApplicationTaskController.handler(request, h)
 
-    const [filter, update] = mockFindOneAndUpdate.mock.calls[0]
+    const [filter, pipeline] = mockFindOneAndUpdate.mock.calls[0]
 
     expect(filter.applicationTasks).toEqual({
       $elemMatch: { taskId, resolvedAt: null }
     })
-    expect(update.$set['applicationTasks.$.resolvedAt']).toEqual(new Date())
-    expect(update.$set.updatedBy).toBe(contactId)
-    expect(update.$set).not.toHaveProperty('status')
+
+    const [{ $set: mapStage }] = pipeline
+    expect(mapStage.applicationTasks.$map.in.$cond[0]).toEqual({
+      $eq: ['$$task.taskId', taskId]
+    })
+    expect(mapStage.applicationTasks.$map.in.$cond[1]).toEqual({
+      $mergeObjects: ['$$task', { resolvedAt: new Date() }]
+    })
+
+    const auditStage = pipeline.find(({ $set }) => $set?.updatedBy)
+    expect(auditStage.$set.updatedBy).toBe(contactId)
+
     expect(h.response).toHaveBeenCalledWith({
       message: 'success',
       value: { taskId }

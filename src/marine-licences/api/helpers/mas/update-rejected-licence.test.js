@@ -2,6 +2,10 @@ import { vi } from 'vitest'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { mockMasRejectedSqsMessage } from './test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
+import {
+  lifecycleStatusIsNot,
+  setLifecycleStatus
+} from '../lifecycle-status.js'
 import { sendRejectedEmail } from './send-rejected-email.js'
 
 vi.mock('./send-rejected-email.js', () => ({
@@ -46,18 +50,20 @@ describe('updateRejectedMarineLicence', async () => {
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
       {
         applicationReference: body.applicationReference,
-        status: { $ne: MARINE_LICENCE_STATUS.REJECTED }
+        ...lifecycleStatusIsNot(MARINE_LICENCE_STATUS.REJECTED)
       },
-      {
-        $set: {
-          status: MARINE_LICENCE_STATUS.REJECTED,
-          rejectedDate: body.rejectedDate,
-          rejectedInformation: 'Test free text',
-          rejectedReasons: 'Marine plan policies, Another reason',
-          updatedAt: new Date(),
-          updatedBy: mockMasRejectedSqsMessage.MessageId
+      [
+        {
+          $set: {
+            ...setLifecycleStatus(MARINE_LICENCE_STATUS.REJECTED),
+            rejectedDate: body.rejectedDate,
+            rejectedInformation: 'Test free text',
+            rejectedReasons: 'Marine plan policies, Another reason',
+            updatedAt: new Date(),
+            updatedBy: mockMasRejectedSqsMessage.MessageId
+          }
         }
-      },
+      ],
       { returnDocument: 'after' }
     )
   })
@@ -123,7 +129,7 @@ describe('updateRejectedMarineLicence', async () => {
     expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
       {
         applicationReference: body.applicationReference,
-        status: { $ne: MARINE_LICENCE_STATUS.REJECTED }
+        ...lifecycleStatusIsNot(MARINE_LICENCE_STATUS.REJECTED)
       },
       expect.anything(),
       expect.anything()

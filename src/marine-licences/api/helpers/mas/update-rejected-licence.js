@@ -5,6 +5,10 @@ import {
   MARINE_LICENCE_STATUS,
   MAS_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
+import {
+  lifecycleStatusIsNot,
+  setLifecycleStatus
+} from '../lifecycle-status.js'
 import { sendRejectedEmail } from './send-rejected-email.js'
 
 export const updateRejectedMarineLicence = async (db, logger, { body, id }) => {
@@ -26,18 +30,20 @@ export const updateRejectedMarineLicence = async (db, logger, { body, id }) => {
     result = await db.collection(collectionMarineLicences).findOneAndUpdate(
       {
         applicationReference,
-        status: { $ne: MARINE_LICENCE_STATUS.REJECTED }
+        ...lifecycleStatusIsNot(MARINE_LICENCE_STATUS.REJECTED)
       },
-      {
-        $set: {
-          status: MARINE_LICENCE_STATUS.REJECTED,
-          rejectedDate,
-          rejectedReasons,
-          rejectedInformation,
-          updatedAt,
-          updatedBy: id
+      [
+        {
+          $set: {
+            ...setLifecycleStatus(MARINE_LICENCE_STATUS.REJECTED),
+            rejectedDate,
+            rejectedReasons,
+            rejectedInformation,
+            updatedAt,
+            updatedBy: id
+          }
         }
-      },
+      ],
       { returnDocument: 'after' }
     )
   } catch (error) {

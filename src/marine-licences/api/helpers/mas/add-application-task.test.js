@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { addApplicationTask } from './add-application-task.js'
 import {
   APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS,
   MAS_EVENT_ACTION
 } from '../../../constants/marine-licence.js'
 
@@ -41,28 +42,35 @@ describe('addApplicationTask', () => {
     vi.useRealTimers()
   })
 
-  it('pushes a task with a null resolvedAt and writes no status', async () => {
+  it('pushes a task with a null resolvedAt and masks the status', async () => {
     const result = await add()
 
-    const [filter, update] = mockFindOneAndUpdate.mock.calls[0]
+    const [filter, [{ $set: update }]] = mockFindOneAndUpdate.mock.calls[0]
 
     expect(filter).toEqual({
       applicationReference,
       applicationTasks: { $not: { $elemMatch: { type } } }
     })
-    expect(update.$push.applicationTasks).toEqual({
-      taskId: expect.any(String),
-      type,
-      receivedAt: new Date(),
-      resolvedAt: null,
-      sourceMessageId: 'message-id',
-      data
+    expect(update.applicationTasks.$concatArrays[1]).toEqual([
+      {
+        taskId: expect.any(String),
+        type,
+        receivedAt: new Date(),
+        resolvedAt: null,
+        sourceMessageId: 'message-id',
+        data
+      }
+    ])
+    expect(update.status).toBe(MARINE_LICENCE_STATUS.ACTION_REQUIRED)
+    expect(update.previousStatus).toEqual({
+      $cond: [
+        { $eq: ['$status', MARINE_LICENCE_STATUS.ACTION_REQUIRED] },
+        '$previousStatus',
+        '$status'
+      ]
     })
-    expect(update.$set).toEqual({
-      updatedAt: new Date(),
-      updatedBy: 'message-id'
-    })
-    expect(update.$set).not.toHaveProperty('status')
+    expect(update.updatedAt).toEqual(new Date())
+    expect(update.updatedBy).toBe('message-id')
     expect(result.task.taskId).toEqual(expect.any(String))
     expect(mockFindOne).not.toHaveBeenCalled()
   })

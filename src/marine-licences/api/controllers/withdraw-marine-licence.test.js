@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { StatusCodes } from 'http-status-codes'
 import { withdrawMarineLicenceController } from './withdraw-marine-licence.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import { lifecycleStatusIs } from '../helpers/lifecycle-status.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
@@ -77,15 +78,16 @@ describe('POST /marine-licence/{id}/withdraw', () => {
 
     expect(collection).toHaveBeenCalledWith(collectionMarineLicences)
 
-    const [filter, update] = findOneAndUpdate.mock.calls[0]
+    const [filter, [{ $set: update }]] = findOneAndUpdate.mock.calls[0]
 
     expect(filter).toEqual({
       _id: expect.anything(),
-      status: MARINE_LICENCE_STATUS.SUBMITTED
+      ...lifecycleStatusIs(MARINE_LICENCE_STATUS.SUBMITTED)
     })
-    expect(update.$set).toEqual({
+    expect(update).toEqual({
       withdrawnAt: expect.any(Date),
       status: MARINE_LICENCE_STATUS.WITHDRAWN,
+      previousStatus: '$$REMOVE',
       updatedAt: request.payload.updatedAt,
       updatedBy: 'user123'
     })

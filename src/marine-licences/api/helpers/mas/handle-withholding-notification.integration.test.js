@@ -8,7 +8,6 @@ import { sendEmail } from '../../../../shared/helpers/email.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { mockMarineLicence } from '../../../models/test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
-import { ACTION_REQUIRED_STATUS_LABEL } from '../../../../shared/constants/project-status.js'
 import {
   mockMasApplicationReference,
   mockMasWithholdingSqsMessage,
@@ -46,9 +45,12 @@ describe('Withholding notification end to end - integration tests', async () => 
 
     await process(mockMasWithholdingSqsMessage)
 
-    const { applicationTasks } = await global.mockMongo
+    const { applicationTasks, status, previousStatus } = await global.mockMongo
       .collection(collectionMarineLicences)
       .findOne({ _id })
+
+    expect(status).toBe(MARINE_LICENCE_STATUS.ACTION_REQUIRED)
+    expect(previousStatus).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
 
     expect(applicationTasks).toHaveLength(1)
     expect(applicationTasks[0]).toMatchObject({
@@ -65,8 +67,8 @@ describe('Withholding notification end to end - integration tests', async () => 
       contactId: mockMarineLicence.contactId
     })
 
-    expect(body.status).toBe('Submitted')
-    expect(body.displayStatus).toBe(ACTION_REQUIRED_STATUS_LABEL)
+    expect(body.status).toBe('Action required')
+    expect(body.previousStatus).toBe('Submitted')
     expect(sendEmail).toHaveBeenCalledTimes(1)
     expect(deleteMasMessage).toHaveBeenCalledWith(
       expect.any(String),
