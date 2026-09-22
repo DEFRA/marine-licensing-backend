@@ -1,14 +1,15 @@
 import Boom from '@hapi/boom'
 import { config } from '../../../../config.js'
-import {
-  REQUEST_QUEUE_STATUS,
-  EMP_REQUEST_ACTIONS
-} from '../../constants/request-queue.js'
 import { transformExemptionToEmpRequest } from './transforms/exemption-to-emp.js'
-import { collectionEmpQueue } from '../../constants/db-collections.js'
+import {
+  collectionEmpQueue,
+  collectionExemptions
+} from '../../constants/db-collections.js'
 import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
 import { createLogger } from '../logging/logger.js'
 import { ExemptionService } from '../../../../exemptions/api/services/exemption.service.js'
+import { EXEMPTION_STATUS_LABEL } from '../../../../exemptions/constants/exemption.js'
+import { empFeaturesCreated } from './emp-queue.js'
 
 const logger = createLogger()
 
@@ -98,16 +99,6 @@ export const sendExemptionToEmp = async (server, queueItem) => {
     applicationReference: applicationReferenceNumber
   })
 
-  await server.db.collection(collectionEmpQueue).updateOne(
-    { _id: queueItem._id },
-    {
-      $set: {
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-        updatedAt: new Date()
-      }
-    }
-  )
-
   try {
     const features = transformExemptionToEmpRequest({
       exemption
@@ -142,11 +133,7 @@ export const sendExemptionToEmp = async (server, queueItem) => {
 const getEmpFeatureIdsFromQueue = async (db, applicationReferenceNumber) => {
   const priorItem = await db.collection(collectionEmpQueue).findOne({
     applicationReferenceNumber,
-    action: { $ne: EMP_REQUEST_ACTIONS.WITHDRAW },
-    $or: [
-      { empFeatureIds: { $exists: true, $ne: null } },
-      { empFeatureId: { $exists: true, $ne: null } }
-    ]
+    ...empFeaturesCreated
   })
 
   if (!priorItem) {
@@ -222,7 +209,11 @@ const logEmpUpdateExceptionError = (error, applicationReference) => {
   )
 }
 
-export const withdrawExemptionFromEmp = async (server, queueItem) => {
+const updateEmpStatus = async (
+  server,
+  queueItem,
+  { getStatusLabel, operation }
+) => {
   const { apiUrl, apiKey } = config.get('exploreMarinePlanning')
   const { applicationReferenceNumber } = queueItem
 
@@ -233,19 +224,11 @@ export const withdrawExemptionFromEmp = async (server, queueItem) => {
 
   if (empFeatureIds.length === 0) {
     throw Boom.badImplementation(
-      `EMP withdraw failed: no objectId found for ${applicationReferenceNumber}`
+      `EMP ${operation} failed: no objectId found for ${applicationReferenceNumber}`
     )
   }
 
-  await server.db.collection(collectionEmpQueue).updateOne(
-    { _id: queueItem._id },
-    {
-      $set: {
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-        updatedAt: new Date()
-      }
-    }
-  )
+  const statusLabel = await getStatusLabel()
 
   try {
     // https://developers.arcgis.com/rest/services-reference/enterprise/update-features/
@@ -256,7 +239,7 @@ export const withdrawExemptionFromEmp = async (server, queueItem) => {
       features: empFeatureIds.map((objectId) => ({
         attributes: {
           OBJECTID: objectId,
-          Status: 'Withdrawn'
+          Status: statusLabel
         }
       })),
       params: {
@@ -284,3 +267,32 @@ export const withdrawExemptionFromEmp = async (server, queueItem) => {
     throw Boom.badImplementation(`EMP updateFeatures failed: ${error.message}`)
   }
 }
+
+export const withdrawExemptionFromEmp = (server, queueItem) =>
+  updateEmpStatus(server, queueItem, {
+    getStatusLabel: () => EXEMPTION_STATUS_LABEL.WITHDRAWN,
+    operation: 'withdraw'
+  })
+
+const getExemptionStatusLabel = async (db, applicationReference) => {
+  const exemption = await db
+    .collection(collectionExemptions)
+    .findOne({ applicationReference }, { projection: { status: 1 } })
+
+  const statusLabel = EXEMPTION_STATUS_LABEL[exemption?.status]
+
+  if (!statusLabel) {
+    throw Boom.badImplementation(
+      `EMP status update failed: no status label for ${applicationReference}`
+    )
+  }
+
+  return statusLabel
+}
+
+export const updateExemptionStatusInEmp = (server, queueItem) =>
+  updateEmpStatus(server, queueItem, {
+    getStatusLabel: () =>
+      getExemptionStatusLabel(server.db, queueItem.applicationReferenceNumber),
+    operation: 'status update'
+  })

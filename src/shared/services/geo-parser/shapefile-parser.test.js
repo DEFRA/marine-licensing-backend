@@ -601,11 +601,9 @@ describe('ShapefileParser class', () => {
       expect(coords[1]).toBe(54.175195)
     })
 
-    it('short circuits when no coordinates are given', async () => {
+    it('short circuits when no coordinates are given', () => {
       const transformer = proj4(crsOsgb34, targetCRS)
-      const coords = null
-      sut.transformCoordinates(coords, transformer)
-      expect(coords).toBe(null)
+      expect(() => sut.transformCoordinates(null, transformer)).not.toThrow()
     })
 
     it('short circuits when coordinates are not an array', async () => {
