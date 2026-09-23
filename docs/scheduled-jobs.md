@@ -43,6 +43,22 @@ overwriting a withdrawal that landed mid-run.
 Counts reported in the completion summary are what the job intended to write, so
 in that rare race the summary can name one more document than actually changed.
 
+### The exemption-status job writes outside the database
+
+Having written a status change, the job queues an EMP status push for every
+changed exemption that has previously reached EMP — a row on
+`exemption-emp-queue`, picked up by the same poller that handles submissions and
+withdrawals. Exemptions that never reached EMP are skipped rather than queued and
+left to fail; the count appears in the completion summary as `not in EMP`.
+
+The push is fire-and-forget. A push that exhausts its retries lands in
+`exemption-emp-queue-failed` and is not retried by a later run, because the local
+status already matches by then and nothing re-enqueues it.
+
+The job is idempotent in the sense the scheduler requires — a re-run writes nothing new —
+but it does not repair a failed EMP push, and none of this runs unless
+`isEmpEnabled` is on.
+
 ## Shutdown
 
 `onPreStop` calls node-cron's `shutdown()`, which stops the timers and then waits

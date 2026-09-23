@@ -18,5 +18,6 @@ export const DYNAMICS_QUEUE_TYPES = {
 
 export const EMP_REQUEST_ACTIONS = {
   ADD: 'add',
-  WITHDRAW: 'withdraw'
+  WITHDRAW: 'withdraw',
+  UPDATE_STATUS: 'update-status'
 }
