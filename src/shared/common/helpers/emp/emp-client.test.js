@@ -1,14 +1,11 @@
 import { expect, vi } from 'vitest'
-
 import { config } from '../../../../config.js'
-import { sendExemptionToEmp, withdrawExemptionFromEmp } from './emp-client.js'
-import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
-import { REQUEST_QUEUE_STATUS } from '../../constants/request-queue.js'
-import { expectRecentDate } from '../../../../../tests/test-helpers.js'
 import {
-  collectionEmpQueue,
-  collectionExemptions
-} from '../../constants/db-collections.js'
+  sendExemptionToEmp,
+  withdrawExemptionFromEmp,
+  updateExemptionStatusInEmp
+} from './emp-client.js'
+import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
 
 vi.mock('../../../../config.js')
 vi.mock('@esri/arcgis-rest-feature-service')
@@ -34,28 +31,6 @@ describe('Emp Client', () => {
         : 'http://localhost'
     )
   })
-
-  const stubCollectionsByName = ({
-    exemption = null,
-    priorQueueItem = null
-  }) => {
-    const empQueue = {
-      findOne: vi.fn().mockResolvedValue(priorQueueItem),
-      updateOne: vi.fn().mockResolvedValue({})
-    }
-    const exemptions = {
-      findOne: vi.fn().mockResolvedValue(exemption),
-      updateOne: vi.fn().mockResolvedValue({})
-    }
-
-    mockServer.db.collection.mockImplementation((name) => {
-      if (name === collectionEmpQueue) return empQueue
-      if (name === collectionExemptions) return exemptions
-      throw new Error(`Unexpected collection: ${name}`)
-    })
-
-    return { empQueue, exemptions }
-  }
 
   describe('sendExemptionToEmp', () => {
     const mockQueueItem = {
@@ -127,9 +102,7 @@ describe('Emp Client', () => {
         applicationReference: 'TEST-REF-001'
       })
 
-      // Verify exemption-emp-queue collection is called for updateOne
-      const calls = mockServer.db.collection.mock.calls
-      expect(calls.some((call) => call[0] === 'exemption-emp-queue')).toBe(true)
+      expect(mockServer.db.collection().updateOne).not.toHaveBeenCalled()
 
       expect(addFeatures).toHaveBeenCalledWith({
         features: expect.any(Array),
@@ -233,32 +206,6 @@ describe('Emp Client', () => {
       )
     })
 
-    it('should claim the queue item as IN_PROGRESS with a fresh updatedAt before sending', async () => {
-      vi.mocked(addFeatures).mockResolvedValue({
-        addResults: [{ success: true, objectId: 'emp-record-id' }]
-      })
-      const { empQueue } = stubCollectionsByName({ exemption: mockExemption })
-      const before = Date.now()
-
-      await sendExemptionToEmp(mockServer, {
-        ...mockQueueItem,
-        _id: 'send-queue-id'
-      })
-
-      expect(empQueue.updateOne).toHaveBeenCalledWith(
-        { _id: 'send-queue-id' },
-        {
-          $set: {
-            status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-            updatedAt: expect.any(Date)
-          }
-        }
-      )
-
-      const [, update] = empQueue.updateOne.mock.calls[0]
-      expectRecentDate(update.$set.updatedAt, before)
-    })
-
     it('should throw error if no coordinates are passed to transformExemptionToEmpRequest', async () => {
       mockServer.db.collection().findOne.mockResolvedValue({
         ...mockExemption,
@@ -315,31 +262,6 @@ describe('Emp Client', () => {
         ],
         params: { token: 'test-api-key', rollbackOnFailure: true }
       })
-    })
-
-    it('should claim the queue item as IN_PROGRESS with a fresh updatedAt before withdrawing', async () => {
-      const { empQueue } = stubCollectionsByName({
-        priorQueueItem: { empFeatureIds: ['emp-object-id'] }
-      })
-      vi.mocked(updateFeatures).mockResolvedValue({
-        updateResults: [{ success: true, objectId: 'emp-object-id' }]
-      })
-      const before = Date.now()
-
-      await withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
-
-      expect(empQueue.updateOne).toHaveBeenCalledWith(
-        { _id: 'withdraw-queue-id' },
-        {
-          $set: {
-            status: REQUEST_QUEUE_STATUS.IN_PROGRESS,
-            updatedAt: expect.any(Date)
-          }
-        }
-      )
-
-      const [, update] = empQueue.updateOne.mock.calls[0]
-      expectRecentDate(update.$set.updatedAt, before)
     })
 
     it('should withdraw all features when multiple ids were stored', async () => {
@@ -442,6 +364,78 @@ describe('Emp Client', () => {
       await expect(
         withdrawExemptionFromEmp(mockServer, mockWithdrawQueueItem)
       ).rejects.toThrow('EMP updateFeatures failed: Network timeout')
+    })
+  })
+
+  describe('updateExemptionStatusInEmp', () => {
+    const mockStatusQueueItem = {
+      _id: 'status-queue-id',
+      applicationReferenceNumber: 'TEST-REF-001',
+      action: 'update-status'
+    }
+
+    const respondWith = ({ empFeatureIds, status }) => {
+      mockServer.db
+        .collection()
+        .findOne.mockResolvedValueOnce(empFeatureIds ? { empFeatureIds } : null)
+        .mockResolvedValueOnce(status ? { status } : null)
+    }
+
+    it.each([
+      ['SCHEDULED', 'Scheduled'],
+      ['ACTIVE', 'Active'],
+      ['EXPIRED', 'Expired']
+    ])('pushes a %s exemption to EMP as %s', async (status, expected) => {
+      respondWith({ empFeatureIds: ['emp-object-id'], status })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [{ success: true, objectId: 'emp-object-id' }]
+      })
+
+      await updateExemptionStatusInEmp(mockServer, mockStatusQueueItem)
+
+      const [call] = vi.mocked(updateFeatures).mock.calls
+      expect(call[0].features).toEqual([
+        { attributes: { OBJECTID: 'emp-object-id', Status: expected } }
+      ])
+    })
+
+    it('pushes the status stored now, not one frozen onto the queue row', async () => {
+      respondWith({ empFeatureIds: ['emp-object-id'], status: 'WITHDRAWN' })
+      vi.mocked(updateFeatures).mockResolvedValue({
+        updateResults: [{ success: true, objectId: 'emp-object-id' }]
+      })
+
+      await updateExemptionStatusInEmp(mockServer, {
+        ...mockStatusQueueItem,
+        status: 'ACTIVE'
+      })
+
+      const [call] = vi.mocked(updateFeatures).mock.calls
+      expect(call[0].features[0].attributes.Status).toBe('Withdrawn')
+    })
+
+    it('throws the message that triggers a hard fail when no objectId is found', async () => {
+      respondWith({ status: 'ACTIVE' })
+
+      await expect(
+        updateExemptionStatusInEmp(mockServer, mockStatusQueueItem)
+      ).rejects.toThrow(
+        'EMP status update failed: no objectId found for TEST-REF-001'
+      )
+
+      expect(updateFeatures).not.toHaveBeenCalled()
+    })
+
+    it('throws when the exemption has no mappable status', async () => {
+      respondWith({ empFeatureIds: ['emp-object-id'], status: 'NOT_A_STATUS' })
+
+      await expect(
+        updateExemptionStatusInEmp(mockServer, mockStatusQueueItem)
+      ).rejects.toThrow(
+        'EMP status update failed: no status label for TEST-REF-001'
+      )
+
+      expect(updateFeatures).not.toHaveBeenCalled()
     })
   })
 })
