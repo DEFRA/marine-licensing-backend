@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { getProjectStartEndDates } from '../../../../../exemptions/api/helpers/get-project-start-end-dates.js'
+import { EXEMPTION_STATUS_LABEL } from '../../../../../exemptions/constants/exemption.js'
 import { shortIsoDate } from './short-iso-date.js'
 import { buildEmpGeometries } from './site-details.js'
 import { config } from '../../../../../config.js'
@@ -37,7 +38,7 @@ export const transformExemptionToEmpRequest = ({ exemption }) => {
 
   const attributes = {
     CaseReference: exemption.applicationReference,
-    Status: 'Active',
+    Status: EXEMPTION_STATUS_LABEL[exemption.status],
     ApplicationTy: 'Exempt activity notification',
     ApplicantName: exemption.whoExemptionIsFor || '',
     Project: exemption.projectName,
