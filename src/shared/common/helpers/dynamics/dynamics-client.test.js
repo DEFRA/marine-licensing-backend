@@ -452,6 +452,10 @@ describe('Dynamics Client', () => {
             },
             marinePlanAreas: [],
             coastalOperationsAreas: [],
+            publicRegister: {
+              withholdConsent: null,
+              reason: null
+            },
             status: 'SUBMITTED'
           },
           headers: {
@@ -496,6 +500,10 @@ describe('Dynamics Client', () => {
             },
             marinePlanAreas: [],
             coastalOperationsAreas: [],
+            publicRegister: {
+              withholdConsent: null,
+              reason: null
+            },
             status: 'SUBMITTED'
           },
           headers: {
@@ -582,6 +590,53 @@ describe('Dynamics Client', () => {
           coastalOperationsAreas: [{ name: 'Coastal Ops Area 1' }]
         })
       )
+    })
+
+    it('should include publicRegister when present on the marine licence', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        publicRegister: {
+          withholdConsent: 'yes',
+          reason:
+            'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
+        }
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1].payload).toEqual(
+        expect.objectContaining({
+          publicRegister: {
+            withholdConsent: 'yes',
+            reason:
+              'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
+          }
+        })
+      )
+    })
+
+    it('should include publicRegister with null reason when withholdConsent is no', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        publicRegister: {
+          withholdConsent: 'no'
+        }
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual({
+        withholdConsent: 'no',
+        reason: null
+      })
     })
 
     it('should omit applicantOrganisationId when no organisation present', async () => {
