@@ -56,7 +56,7 @@ export class MarineLicenceService {
   async getPublicMarineLicenceById(id) {
     const marineLicence = await this.#findMarineLicenceById(id)
 
-    if (marineLicence.status !== MARINE_LICENCE_STATUS.SUBMITTED) {
+    if (marineLicence?.status !== MARINE_LICENCE_STATUS.SUBMITTED) {
       this.logger.info(
         { event: { action: 'authorization_check', outcome: 'failure' } },
         `Authorization error in getPublicMarineLicenceById: licence ${id}`

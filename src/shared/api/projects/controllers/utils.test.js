@@ -161,6 +161,11 @@ describe('getStatusFilter', async () => {
     expect(result).toEqual({})
   })
 
+  test('handle an empty status array', async () => {
+    const result = getStatusFilter([])
+    expect(result).toEqual({})
+  })
+
   test('handle single status', async () => {
     const result = getStatusFilter(['DRAFT'])
     expect(result).toEqual({ status: { $in: ['DRAFT'] } })

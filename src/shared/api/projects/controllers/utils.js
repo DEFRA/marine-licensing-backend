@@ -16,17 +16,8 @@ export const getUserFilter = (show, contactId, user) => {
   return { contactId }
 }
 
-export const getStatusFilter = (status) => {
-  if (!status) {
-    return {}
-  }
-
-  return {
-    status: {
-      $in: status
-    }
-  }
-}
+export const getStatusFilter = (status) =>
+  status?.length ? { status: { $in: status } } : {}
 
 export const getOrganisationContactIds = async (db, organisationId) => {
   const orgFilter = { 'organisation.id': organisationId }

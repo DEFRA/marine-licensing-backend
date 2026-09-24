@@ -9,6 +9,12 @@ export const PROJECT_STATUS_LABEL = {
   WITHDRAWN: 'Withdrawn'
 }
 
+// Derived from an outstanding application task and carried alongside `status`, which
+// always stays the lifecycle status.
+export const DISPLAY_STATUS = {
+  ACTION_REQUIRED: 'Action required'
+}
+
 export const PROJECT_TYPES = {
   EXEMPTION: 'EXEMPTION',
   MARINE_LICENCE: 'MARINE_LICENCE'
