@@ -52,6 +52,10 @@ updates:
       time: '10:30'
       timezone: 'Europe/London'
 
+    # Only open version-update PRs once the release is at least 5 days old
+    cooldown:
+      default-days: 7
+
     versioning-strategy: increase
 
     allow:
@@ -68,3 +72,7 @@ updates:
       day: tuesday
       time: '10:30'
       timezone: 'Europe/London'
+
+    # Only open version-update PRs once the release is at least 5 days old
+    cooldown:
+      default-days: 7
