@@ -55,8 +55,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+      - name: Select journey test profile
+        id: journey-profile
+        run: |
+          if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
+            echo "profile=smoke" >> "$GITHUB_OUTPUT"
+            echo "Dependabot PR detected — running smoke journey tests only"
+          else
+            echo "profile=github" >> "$GITHUB_OUTPUT"
+            echo "Running full github journey test suite"
+          fi
       - run: docker build -t defradigital/marine-licensing-backend:${{github.sha}} .
       - uses: DEFRA/marine-licensing-journey-tests/run-journey-tests@main
         with:
           marine-licensing-backend: ${{github.sha}}
           branch: main
+          profile: ${{ steps.journey-profile.outputs.profile }}
