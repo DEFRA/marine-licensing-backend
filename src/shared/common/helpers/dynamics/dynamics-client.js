@@ -329,6 +329,10 @@ export const sendMarineLicenceToDynamics = async (
     ),
     marinePlanAreas: marineLicence.marinePlanAreas ?? [],
     coastalOperationsAreas: marineLicence.coastalOperationsAreas ?? [],
+    publicRegister: {
+      withholdConsent: marineLicence.publicRegister?.withholdConsent ?? null,
+      reason: marineLicence.publicRegister?.reason ?? null
+    },
     ...(marineLicence.organisation?.id
       ? { applicantOrganisationId: marineLicence.organisation.id }
       : {}),
