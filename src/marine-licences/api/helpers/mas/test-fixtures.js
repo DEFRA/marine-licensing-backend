@@ -7,6 +7,7 @@ import {
 export const mockMasApplicationReference = 'MMO-2027-00123'
 export const mockMasUserName = 'Jane Doe'
 export const mockMasUserEmail = 'jane@example.com'
+export const mockMasDecisionDate = '2026-09-22T11:14:35.102Z'
 
 export const mockMasTransferredMessageBody = {
   applicationReference: mockMasApplicationReference,
@@ -28,7 +29,7 @@ export const mockMasRejectedMessageBody = {
 
 export const mockMasWithholdingMessageBody = {
   applicationReference: mockMasApplicationReference,
-  decisionDate: '2026-09-22T11:14:35.102Z',
+  decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
   commercialDecision: WITHHOLDING_DECISION.AGREE_IN_PART,
   commercialApplicantMessage:
@@ -42,7 +43,7 @@ export const mockMasWithholdingMessageBody = {
 
 export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
-  decisionDate: '2026-09-22T11:14:35.102Z',
+  decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.NATIONAL_SECURITY,
   commercialDecision: null,
   commercialApplicantMessage: null,
@@ -55,7 +56,7 @@ export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
 
 export const mockMasWithholdingCommercialOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
-  decisionDate: '2026-09-22T11:14:35.102Z',
+  decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.COMMERCIAL,
   commercialDecision: WITHHOLDING_DECISION.DISAGREE,
   commercialApplicantMessage:
@@ -68,7 +69,7 @@ export const mockMasWithholdingCommercialOnlyMessageBody = {
 
 export const mockMasWithholdingNoBasisMessageBody = {
   applicationReference: mockMasApplicationReference,
-  decisionDate: '2026-09-22T11:14:35.102Z',
+  decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
   commercialDecision: null,
   commercialApplicantMessage: null,
