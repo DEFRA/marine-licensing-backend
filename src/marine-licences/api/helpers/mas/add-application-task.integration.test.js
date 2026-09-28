@@ -2,7 +2,10 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { addApplicationTask } from './add-application-task.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
-import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS
+} from '../../../constants/marine-licence.js'
 import { mockMasApplicationReference } from './test-fixtures.js'
 
 const type = APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION
@@ -12,18 +15,20 @@ describe('addApplicationTask - integration tests', () => {
   const collection = () => global.mockMongo.collection(collectionMarineLicences)
   const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
 
-  const insertLicence = async (applicationTasks) => {
+  const insertLicence = async (applicationTasks, fields = {}) => {
     const _id = new ObjectId()
     await collection().insertOne({
       _id,
       applicationReference: mockMasApplicationReference,
-      ...(applicationTasks && { applicationTasks })
+      ...(applicationTasks && { applicationTasks }),
+      ...fields
     })
     return _id
   }
 
-  const tasksOf = async (_id) =>
-    (await collection().findOne({ _id })).applicationTasks
+  const stored = (_id) => collection().findOne({ _id })
+
+  const tasksOf = async (_id) => (await stored(_id)).applicationTasks
 
   const add = (data, updatedBy = 'message-id') =>
     addApplicationTask(global.mockMongo, logger, {
@@ -59,29 +64,21 @@ describe('addApplicationTask - integration tests', () => {
     })
   })
 
-  it('refuses a second task of the type once the first has been read', async () => {
-    const existing = buildTask({
-      resolvedAt: new Date('2026-05-22T12:00:00.000Z')
-    })
-    const _id = await insertLicence([existing])
+  it.each([
+    ['read', new Date('2026-05-22T12:00:00.000Z')],
+    ['unread', null]
+  ])(
+    'refuses a second task of the type while the first is %s',
+    async (_state, resolvedAt) => {
+      const existing = buildTask({ resolvedAt })
+      const _id = await insertLicence([existing])
 
-    const result = await add({ nationalSecurity: { withheldSome: true } })
+      const result = await add({ nationalSecurity: { withheldSome: true } })
 
-    expect(result).toBeNull()
-    expect(await tasksOf(_id)).toEqual([existing])
-  })
-
-  it('refuses a second task of the type while the first is still unread', async () => {
-    const existing = buildTask()
-    const _id = await insertLicence([existing])
-
-    const result = await add({
-      commercialConfidentiality: { withheldSome: true, comments: 'second' }
-    })
-
-    expect(result).toBeNull()
-    expect(await tasksOf(_id)).toEqual([existing])
-  })
+      expect(result).toBeNull()
+      expect(await tasksOf(_id)).toEqual([existing])
+    }
+  )
 
   it('ignores a redelivery of the message that created the task', async () => {
     const existing = buildTask({ sourceMessageId: 'message-id' })
@@ -107,7 +104,55 @@ describe('addApplicationTask - integration tests', () => {
     expect(tasks.find(({ type: t }) => t === otherType)).toEqual(otherTask)
   })
 
-  it('returns null when no licence matches the reference', async () => {
-    expect(await add({ nationalSecurity: {} })).toBeNull()
+  it('moves a submitted licence to ACTION_REQUIRED and records what it was', async () => {
+    const _id = await insertLicence(undefined, {
+      status: MARINE_LICENCE_STATUS.SUBMITTED
+    })
+
+    await add({ nationalSecurity: { withheldSome: true } })
+
+    expect(await stored(_id)).toMatchObject({
+      status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED
+    })
+  })
+
+  it('keeps the recorded status when a second task type arrives', async () => {
+    const _id = await insertLicence([buildTask({ type: otherType })], {
+      status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED
+    })
+
+    await add({ nationalSecurity: { withheldSome: true } })
+
+    expect(await stored(_id)).toMatchObject({
+      status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED
+    })
+  })
+
+  it.each([
+    MARINE_LICENCE_STATUS.DRAFT,
+    MARINE_LICENCE_STATUS.WITHDRAWN,
+    MARINE_LICENCE_STATUS.REJECTED,
+    MARINE_LICENCE_STATUS.TRANSFERRED
+  ])('adds the task but leaves a %s licence at its status', async (status) => {
+    const _id = await insertLicence(undefined, { status })
+
+    const result = await add({ nationalSecurity: { withheldSome: true } })
+
+    expect(result.task.type).toBe(type)
+    const licence = await stored(_id)
+    expect(licence.status).toBe(status)
+    expect(licence).not.toHaveProperty('statusBeforeActionRequired')
+  })
+
+  it('stores an applicant message starting with $ verbatim', async () => {
+    const _id = await insertLicence()
+
+    await add({ commercialConfidentiality: { applicantMessage: '$status' } })
+
+    const [task] = await tasksOf(_id)
+    expect(task.data.commercialConfidentiality.applicantMessage).toBe('$status')
   })
 })

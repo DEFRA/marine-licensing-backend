@@ -128,6 +128,38 @@ describe('Get marine licence - integration tests', async () => {
     })
   })
 
+  test('shows a public user Submitted while action is required, without the application tasks', async () => {
+    const actionRequiredId = new ObjectId()
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: actionRequiredId,
+      organisation: null,
+      status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED,
+      applicationTasks: [
+        {
+          taskId: new ObjectId().toHexString(),
+          type: 'WITHHOLDING_NOTIFICATION',
+          resolvedAt: null,
+          data: { commercialConfidentiality: { applicantMessage: 'Private' } }
+        }
+      ]
+    })
+    mockDynamicsContactDetailsApi()
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: `/public/marine-licence/${actionRequiredId}`
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body.status).toBe(MARINE_LICENCE_STATUS_LABEL.SUBMITTED)
+    expect(body).not.toHaveProperty('applicationTasks')
+    expect(body).not.toHaveProperty('statusBeforeActionRequired')
+    expect(JSON.stringify(body)).not.toContain('Private')
+  })
+
   test('returns 403 when public user requests a non SUBMITTED marine licence', async () => {
     const draftId = new ObjectId()
     const marineLicence = {

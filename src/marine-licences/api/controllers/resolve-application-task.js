@@ -5,6 +5,7 @@ import { resolveApplicationTask } from '../../models/resolve-application-task.js
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 
 const markTaskResolved = (taskId, resolvedAt) => ({
   $set: {
@@ -24,8 +25,52 @@ const markTaskResolved = (taskId, resolvedAt) => ({
   }
 })
 
+const isStillActionRequiredWithNoOutstandingTask = {
+  $and: [
+    { $eq: ['$status', MARINE_LICENCE_STATUS.ACTION_REQUIRED] },
+    {
+      $allElementsTrue: [
+        {
+          $map: {
+            input: '$applicationTasks',
+            as: 'task',
+            in: { $ne: [{ $ifNull: ['$$task.resolvedAt', null] }, null] }
+          }
+        }
+      ]
+    }
+  ]
+}
+
+// Checking status as well as the tasks matters: MAS may have transferred or rejected
+// the licence while a task was outstanding, and resolving the task must not undo that.
+const restoreStatusWhenNoTaskOutstanding = {
+  $set: {
+    status: {
+      $cond: [
+        isStillActionRequiredWithNoOutstandingTask,
+        {
+          $ifNull: [
+            '$statusBeforeActionRequired',
+            MARINE_LICENCE_STATUS.SUBMITTED
+          ]
+        },
+        '$status'
+      ]
+    },
+    statusBeforeActionRequired: {
+      $cond: [
+        isStillActionRequiredWithNoOutstandingTask,
+        '$$REMOVE',
+        '$statusBeforeActionRequired'
+      ]
+    }
+  }
+}
+
 const buildResolvePipeline = (taskId, resolvedAt, resolvedBy) => [
   markTaskResolved(taskId, resolvedAt),
+  restoreStatusWhenNoTaskOutstanding,
   { $set: { updatedAt: resolvedAt, updatedBy: resolvedBy } }
 ]
 

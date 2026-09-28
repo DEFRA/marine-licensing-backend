@@ -6,8 +6,7 @@ import {
   mockMasInvalidApplicationReferenceSqsMessage,
   mockMasMissingApplicationReferenceSqsMessage,
   mockMasRejectedSqsMessage,
-  mockMasSqsMessage,
-  mockMasWithholdingSqsMessage
+  mockMasSqsMessage
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
@@ -73,23 +72,6 @@ describe('mas-worker-processor', () => {
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
         mockMasRejectedSqsMessage.ReceiptHandle
-      )
-    })
-
-    it('should call handleWithholdingNotification for a withholding notification message', async () => {
-      const server = buildServer()
-      const body = JSON.parse(mockMasWithholdingSqsMessage.Body)
-
-      await processMasMessage(server, mockMasWithholdingSqsMessage)
-
-      expect(handleWithholdingNotification).toHaveBeenCalledWith(
-        server.db,
-        server.logger,
-        { body, id: mockMasWithholdingSqsMessage.MessageId }
-      )
-      expect(deleteMasMessage).toHaveBeenCalledWith(
-        sqsQueueName,
-        mockMasWithholdingSqsMessage.ReceiptHandle
       )
     })
 

@@ -4,7 +4,8 @@ export const MARINE_LICENCE_STATUS = {
   REJECTED: 'REJECTED',
   SUBMITTED: 'SUBMITTED',
   TRANSFERRED: 'TRANSFERRED',
-  WITHDRAWN: 'WITHDRAWN'
+  WITHDRAWN: 'WITHDRAWN',
+  ACTION_REQUIRED: 'ACTION_REQUIRED'
 }
 
 export const MARINE_LICENCE_STATUS_LABEL = {
@@ -13,8 +14,16 @@ export const MARINE_LICENCE_STATUS_LABEL = {
   REJECTED: 'Rejected',
   SUBMITTED: 'Submitted',
   TRANSFERRED: 'Transferred',
-  WITHDRAWN: 'Withdrawn'
+  WITHDRAWN: 'Withdrawn',
+  ACTION_REQUIRED: 'Action required'
 }
+
+// ACTION_REQUIRED sits on top of SUBMITTED while an application task is outstanding,
+// so anything that means "submitted" must test against this rather than SUBMITTED.
+export const MARINE_LICENCE_SUBMITTED_STATUSES = [
+  MARINE_LICENCE_STATUS.SUBMITTED,
+  MARINE_LICENCE_STATUS.ACTION_REQUIRED
+]
 
 export const APPLICATION_TASK_TYPE = {
   WITHHOLDING_NOTIFICATION: 'WITHHOLDING_NOTIFICATION'

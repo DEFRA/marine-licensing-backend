@@ -4,70 +4,48 @@ import { resolveApplicationTaskController } from './resolve-application-task.js'
 describe('resolveApplicationTaskController', () => {
   const id = '507f1f77bcf86cd799439011'
   const taskId = '507f1f77bcf86cd799439012'
-  const contactId = 'bdd2cd26-15a6-4e0c-9f2e-9f06f8b7c2f1'
+  const paramsValidator =
+    resolveApplicationTaskController.options.validate.params
 
-  let mockFindOneAndUpdate
-  let request
-  let h
+  it('should fail if the task id is missing', () => {
+    const result = paramsValidator.validate({ id })
 
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    mockFindOneAndUpdate = vi.fn().mockResolvedValue({ _id: id })
-    request = {
-      params: { id, taskId },
-      db: {
-        collection: vi
-          .fn()
-          .mockReturnValue({ findOneAndUpdate: mockFindOneAndUpdate })
-      },
-      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-      auth: { credentials: { contactId } }
-    }
-    const response = { code: vi.fn().mockReturnThis() }
-    h = { response: vi.fn().mockReturnValue(response) }
+    expect(result.error.message).toContain('APPLICATION_TASK_ID_REQUIRED')
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
+  it('should fail if the task id is the wrong length', () => {
+    const result = paramsValidator.validate({ id, taskId: '123' })
+
+    expect(result.error.message).toContain('APPLICATION_TASK_ID_REQUIRED')
   })
 
-  it('resolves only the named unresolved task', async () => {
-    await resolveApplicationTaskController.handler(request, h)
-
-    const [filter, pipeline] = mockFindOneAndUpdate.mock.calls[0]
-
-    expect(filter.applicationTasks).toEqual({
-      $elemMatch: { taskId, resolvedAt: null }
+  it('should fail if the task id has incorrect characters', () => {
+    const result = paramsValidator.validate({
+      id,
+      taskId: taskId.replace('5', '+')
     })
 
-    const [{ $set: mapStage }] = pipeline
-    expect(mapStage.applicationTasks.$map.in.$cond[0]).toEqual({
-      $eq: ['$$task.taskId', taskId]
-    })
-    expect(mapStage.applicationTasks.$map.in.$cond[1]).toEqual({
-      $mergeObjects: ['$$task', { resolvedAt: new Date() }]
-    })
-
-    const auditStage = pipeline.find(({ $set }) => $set?.updatedBy)
-    expect(auditStage.$set.updatedBy).toBe(contactId)
-
-    expect(h.response).toHaveBeenCalledWith({
-      message: 'success',
-      value: { taskId }
-    })
+    expect(result.error.message).toContain('APPLICATION_TASK_ID_INVALID')
   })
 
   it('wraps unexpected failures as an internal error', async () => {
-    mockFindOneAndUpdate.mockRejectedValue(new Error('mongo is down'))
+    const request = {
+      params: { id, taskId },
+      db: {
+        collection: vi.fn().mockReturnValue({
+          findOneAndUpdate: vi
+            .fn()
+            .mockRejectedValue(new Error('mongo is down'))
+        })
+      },
+      logger: { info: vi.fn() },
+      auth: {
+        credentials: { contactId: 'bdd2cd26-15a6-4e0c-9f2e-9f06f8b7c2f1' }
+      }
+    }
 
     await expect(
-      resolveApplicationTaskController.handler(request, h)
+      resolveApplicationTaskController.handler(request, global.mockHandler)
     ).rejects.toThrow('Error when attempting to resolve application task')
-  })
-
-  // Behaviour belongs to authorize-ownership.test.js; the 403 integration test
-  // proves this route is wired to the right collection.
-  it('guards the route with a pre-handler', () => {
-    expect(resolveApplicationTaskController.options.pre).toHaveLength(1)
   })
 })

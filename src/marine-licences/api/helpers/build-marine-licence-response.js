@@ -4,7 +4,6 @@ import { createTaskList, getSiteDetailsDataStatus } from './createTaskList.js'
 import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { isEntraIdUser } from '../../../shared/helpers/is-entra-id-user.js'
-import { getDisplayStatus } from './application-tasks.js'
 
 export const buildMarineLicenceResponse = (
   marineLicence,
@@ -19,7 +18,14 @@ export const buildMarineLicenceResponse = (
   // Application tasks carry the caseworker's withholding comments, so they must never
   // reach the unauthenticated public register response, and nor must the fact that a
   // withholding decision is pending.
-  const { _id, status, redactions, applicationTasks, ...rest } = marineLicence
+  const {
+    _id,
+    status,
+    redactions,
+    applicationTasks,
+    statusBeforeActionRequired,
+    ...rest
+  } = marineLicence
   const {
     responses: marinePlanPolicyResponses,
     count: marinePlanPolicyResponseCount
@@ -32,15 +38,13 @@ export const buildMarineLicenceResponse = (
   })
 
   const toLabel = (value) => MARINE_LICENCE_STATUS_LABEL[value] || value
-  const displayStatus = getDisplayStatus(marineLicence)
 
   return {
     id: _id.toString(),
     ...rest,
     ...(isEntraIdUser(request) && { redactions }),
     ...(includeApplicationTasks && {
-      applicationTasks: applicationTasks ?? [],
-      ...(displayStatus && { displayStatus })
+      applicationTasks: applicationTasks ?? []
     }),
     status: toLabel(status),
     marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,

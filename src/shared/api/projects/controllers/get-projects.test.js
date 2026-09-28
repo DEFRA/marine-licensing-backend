@@ -1,10 +1,7 @@
 import { vi } from 'vitest'
 import { getProjectsController, sortByStatus } from './get-projects.js'
 import { ObjectId } from 'mongodb'
-import {
-  DISPLAY_STATUS,
-  PROJECT_STATUS_LABEL
-} from '../../../constants/project-status.js'
+import { PROJECT_STATUS_LABEL } from '../../../constants/project-status.js'
 import {
   collectionExemptions,
   collectionMarineLicences
@@ -347,8 +344,7 @@ describe('getProjectsController', () => {
       const projects = [
         { status: PROJECT_STATUS_LABEL.ACTIVE, projectName: 'Active Project' },
         {
-          status: PROJECT_STATUS_LABEL.SUBMITTED,
-          displayStatus: DISPLAY_STATUS.ACTION_REQUIRED,
+          status: PROJECT_STATUS_LABEL.ACTION_REQUIRED,
           projectName: 'Action Required Project'
         },
         {

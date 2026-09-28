@@ -11,7 +11,8 @@ export const FIELDS_TO_DROP_ON_COPY = [
   'coastalOperationsAreas',
   'marinePlanAreas',
   'redactions',
-  'applicationTasks'
+  'applicationTasks',
+  'statusBeforeActionRequired'
 ]
 
 export const buildCopiedMarineLicence = (

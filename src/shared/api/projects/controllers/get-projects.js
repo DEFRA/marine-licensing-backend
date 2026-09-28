@@ -5,11 +5,9 @@ import {
 } from '../../../common/constants/db-collections.js'
 import { getContactId } from '../../../helpers/get-contact-id.js'
 import {
-  DISPLAY_STATUS,
   PROJECT_STATUS_LABEL,
   PROJECT_TYPES
 } from '../../../constants/project-status.js'
-import { getDisplayStatus } from '../../../../marine-licences/api/helpers/application-tasks.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../helpers/get-organisation-from-token.js'
 import { getProjects } from '../models/get-projects.js'
 import {
@@ -23,14 +21,10 @@ const transformProjectBase = (project, projectType) => {
   const { _id, projectName, applicationReference, status, submittedAt } =
     project
 
-  const toLabel = (value) => PROJECT_STATUS_LABEL[value] || value
-  const displayStatus = getDisplayStatus(project)
-
   return {
     id: _id.toString(),
     projectType,
-    ...(status && { status: toLabel(status) }),
-    ...(displayStatus && { displayStatus }),
+    ...(status && { status: PROJECT_STATUS_LABEL[status] || status }),
     ...(projectName && { projectName }),
     ...(applicationReference && { applicationReference }),
     ...(submittedAt && { submittedAt })
@@ -52,14 +46,14 @@ const transformProjects = (projects, type) =>
 
 export const sortByStatus = (a, b) => {
   const statusOrder = [
-    DISPLAY_STATUS.ACTION_REQUIRED,
+    PROJECT_STATUS_LABEL.ACTION_REQUIRED,
     PROJECT_STATUS_LABEL.TRANSFERRED,
     PROJECT_STATUS_LABEL.DRAFT,
     PROJECT_STATUS_LABEL.ACTIVE
   ]
 
-  const firstStatus = statusOrder.indexOf(a.displayStatus ?? a.status)
-  const comparisonStatus = statusOrder.indexOf(b.displayStatus ?? b.status)
+  const firstStatus = statusOrder.indexOf(a.status)
+  const comparisonStatus = statusOrder.indexOf(b.status)
 
   const unknownStatusIndex = statusOrder.length
 

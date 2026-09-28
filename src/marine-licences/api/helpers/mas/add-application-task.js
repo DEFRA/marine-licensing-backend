@@ -1,10 +1,21 @@
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
-import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  MARINE_LICENCE_SUBMITTED_STATUSES,
+  MAS_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
 
 // The filter is what enforces "at most one task per type": a concurrent second
 // message cannot match it, so the invariant holds without a transaction.
+//
+// Only a submitted application moves to ACTION_REQUIRED: one withdrawn, rejected or
+// transferred before the task arrived keeps its status, or it would become withdrawable
+// again. statusBeforeActionRequired is what resolving the last outstanding task
+// restores, so a second task arriving while already ACTION_REQUIRED must not overwrite
+// it. The task is wrapped in $literal because it carries caseworker free text, and in a
+// pipeline a string starting with "$" would otherwise be read as a field path.
 const pushFirstTaskOfType = (
   db,
   { applicationReference, task, updatedBy, now }
@@ -14,10 +25,34 @@ const pushFirstTaskOfType = (
       applicationReference,
       applicationTasks: { $not: { $elemMatch: { type: task.type } } }
     },
-    {
-      $push: { applicationTasks: task },
-      $set: { updatedAt: now, updatedBy }
-    },
+    [
+      {
+        $set: {
+          applicationTasks: {
+            $concatArrays: [
+              { $ifNull: ['$applicationTasks', []] },
+              { $literal: [task] }
+            ]
+          },
+          statusBeforeActionRequired: {
+            $cond: [
+              { $eq: ['$status', MARINE_LICENCE_STATUS.SUBMITTED] },
+              '$status',
+              '$statusBeforeActionRequired'
+            ]
+          },
+          status: {
+            $cond: [
+              { $in: ['$status', MARINE_LICENCE_SUBMITTED_STATUSES] },
+              MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+              '$status'
+            ]
+          },
+          updatedAt: now,
+          updatedBy
+        }
+      }
+    ],
     { returnDocument: 'after' }
   )
 

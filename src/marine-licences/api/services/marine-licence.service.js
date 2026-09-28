@@ -1,7 +1,10 @@
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
-import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  MARINE_LICENCE_SUBMITTED_STATUSES
+} from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 import { hydrateMarinePlanPolicies } from '../helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
 
@@ -56,7 +59,7 @@ export class MarineLicenceService {
   async getPublicMarineLicenceById(id) {
     const marineLicence = await this.#findMarineLicenceById(id)
 
-    if (marineLicence?.status !== MARINE_LICENCE_STATUS.SUBMITTED) {
+    if (!MARINE_LICENCE_SUBMITTED_STATUSES.includes(marineLicence?.status)) {
       this.logger.info(
         { event: { action: 'authorization_check', outcome: 'failure' } },
         `Authorization error in getPublicMarineLicenceById: licence ${id}`
@@ -64,6 +67,8 @@ export class MarineLicenceService {
       throw Boom.forbidden(notAuthorisedMessage)
     }
 
+    // The public must not learn that a withholding decision is pending.
+    marineLicence.status = MARINE_LICENCE_STATUS.SUBMITTED
     marineLicence.whoMarineLicenceIsFor =
       await this.#getWhoMarineLicenceIsFor(marineLicence)
     return marineLicence

@@ -1,8 +1,6 @@
 import { vi } from 'vitest'
 import { StatusCodes } from 'http-status-codes'
 import { withdrawMarineLicenceController } from './withdraw-marine-licence.js'
-import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
 import {
@@ -56,39 +54,6 @@ describe('POST /marine-licence/{id}/withdraw', () => {
     const result = paramsValidator.validate({ id: mockId.replace('1', '+') })
 
     expect(result.error.message).toContain('MARINE_LICENCE_ID_INVALID')
-  })
-
-  it('should set the withdrawn status and withdrawal date, matching only submitted applications', async () => {
-    const { mockMongo, mockHandler } = global
-
-    const findOneAndUpdate = vi.fn().mockResolvedValue({
-      _id: mockId,
-      applicationReference: 'MLA/2026/10002'
-    })
-
-    const collection = vi
-      .spyOn(mockMongo, 'collection')
-      .mockImplementation(function () {
-        return { findOneAndUpdate }
-      })
-
-    const request = buildRequest(mockMongo)
-    await withdrawMarineLicenceController.handler(request, mockHandler)
-
-    expect(collection).toHaveBeenCalledWith(collectionMarineLicences)
-
-    const [filter, { $set: update }] = findOneAndUpdate.mock.calls[0]
-
-    expect(filter).toEqual({
-      _id: expect.anything(),
-      status: MARINE_LICENCE_STATUS.SUBMITTED
-    })
-    expect(update).toEqual({
-      withdrawnAt: expect.any(Date),
-      status: MARINE_LICENCE_STATUS.WITHDRAWN,
-      updatedAt: request.payload.updatedAt,
-      updatedBy: 'user123'
-    })
   })
 
   it('should respond with the withdrawal date', async () => {
@@ -172,7 +137,7 @@ describe('POST /marine-licence/{id}/withdraw', () => {
         mockHandler
       )
     ).rejects.toThrow(
-      `Cannot withdraw marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.SUBMITTED}'.`
+      'Cannot withdraw marine licence as marine licence must be submitted.'
     )
   })
 

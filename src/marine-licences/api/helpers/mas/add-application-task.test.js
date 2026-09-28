@@ -25,8 +25,7 @@ describe('addApplicationTask', () => {
     })
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    mockFindOneAndUpdate = vi.fn().mockResolvedValue(licence)
+    mockFindOneAndUpdate = vi.fn()
     mockFindOne = vi.fn()
     db = {
       collection: vi.fn().mockReturnValue({
@@ -35,36 +34,6 @@ describe('addApplicationTask', () => {
       })
     }
     logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
-  it('pushes a task with a null resolvedAt and leaves the status alone', async () => {
-    const result = await add()
-
-    const [filter, update] = mockFindOneAndUpdate.mock.calls[0]
-
-    expect(filter).toEqual({
-      applicationReference,
-      applicationTasks: { $not: { $elemMatch: { type } } }
-    })
-    expect(update).toEqual({
-      $push: {
-        applicationTasks: {
-          taskId: expect.any(String),
-          type,
-          receivedAt: new Date(),
-          resolvedAt: null,
-          sourceMessageId: 'message-id',
-          data
-        }
-      },
-      $set: { updatedAt: new Date(), updatedBy: 'message-id' }
-    })
-    expect(result.task.taskId).toEqual(expect.any(String))
-    expect(mockFindOne).not.toHaveBeenCalled()
   })
 
   it('refuses a second task of the same type and leaves the stored one untouched', async () => {

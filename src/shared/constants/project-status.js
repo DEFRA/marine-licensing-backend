@@ -6,12 +6,7 @@ export const PROJECT_STATUS_LABEL = {
   REJECTED: 'Rejected',
   SUBMITTED: 'Submitted',
   TRANSFERRED: 'Transferred',
-  WITHDRAWN: 'Withdrawn'
-}
-
-// Derived from an outstanding application task and carried alongside `status`, which
-// always stays the lifecycle status.
-export const DISPLAY_STATUS = {
+  WITHDRAWN: 'Withdrawn',
   ACTION_REQUIRED: 'Action required'
 }
 

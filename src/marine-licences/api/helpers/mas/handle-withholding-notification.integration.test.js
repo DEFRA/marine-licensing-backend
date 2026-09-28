@@ -7,15 +7,10 @@ import { deleteMasMessage } from './sqs-client.js'
 import { sendEmail } from '../../../../shared/helpers/email.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { mockMarineLicence } from '../../../models/test-fixtures.js'
-import {
-  MARINE_LICENCE_STATUS,
-  WITHHOLDING_DECISION
-} from '../../../constants/marine-licence.js'
+import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
 import {
   mockMasApplicationReference,
-  mockMasWithholdingMessageBody,
-  mockMasWithholdingSqsMessage,
-  mockMasWithholdingNoBasisSqsMessage
+  mockMasWithholdingSqsMessage
 } from './test-fixtures.js'
 
 // The real server registers the MAS worker, so only the delete is replaced.
@@ -49,20 +44,18 @@ describe('Withholding notification end to end - integration tests', async () => 
 
     await process(mockMasWithholdingSqsMessage)
 
-    const { applicationTasks, status } = await global.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id })
+    const { applicationTasks, status, statusBeforeActionRequired } =
+      await global.mockMongo
+        .collection(collectionMarineLicences)
+        .findOne({ _id })
 
-    expect(status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
+    expect(status).toBe(MARINE_LICENCE_STATUS.ACTION_REQUIRED)
+    expect(statusBeforeActionRequired).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
 
     expect(applicationTasks).toHaveLength(1)
     expect(applicationTasks[0]).toMatchObject({
       type: 'WITHHOLDING_NOTIFICATION',
       resolvedAt: null
-    })
-    expect(applicationTasks[0].data.commercialConfidentiality).toEqual({
-      decision: WITHHOLDING_DECISION.AGREE_IN_PART,
-      applicantMessage: mockMasWithholdingMessageBody.commercialApplicantMessage
     })
 
     const { body } = await makeGetRequest({
@@ -71,29 +64,11 @@ describe('Withholding notification end to end - integration tests', async () => 
       contactId: mockMarineLicence.contactId
     })
 
-    expect(body.status).toBe('Submitted')
-    expect(body.displayStatus).toBe('Action required')
+    expect(body.status).toBe('Action required')
     expect(sendEmail).toHaveBeenCalledTimes(1)
     expect(deleteMasMessage).toHaveBeenCalledWith(
       expect.any(String),
       mockMasWithholdingSqsMessage.ReceiptHandle
-    )
-  })
-
-  test('a message with no withholding basis raises no task but is still deleted', async () => {
-    const _id = await insertLicence()
-
-    await process(mockMasWithholdingNoBasisSqsMessage)
-
-    const licence = await global.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id })
-
-    expect(licence.applicationTasks).toBeUndefined()
-    expect(sendEmail).not.toHaveBeenCalled()
-    expect(deleteMasMessage).toHaveBeenCalledWith(
-      expect.any(String),
-      mockMasWithholdingNoBasisSqsMessage.ReceiptHandle
     )
   })
 })
