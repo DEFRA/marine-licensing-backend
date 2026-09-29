@@ -1,5 +1,6 @@
 import {
   MARINE_LICENCE_STATUS,
+  MAS_TASK_TYPE,
   WITHHOLDING_DECISION,
   WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
@@ -29,6 +30,7 @@ export const mockMasRejectedMessageBody = {
 
 export const mockMasWithholdingMessageBody = {
   applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
   decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
   commercialDecision: WITHHOLDING_DECISION.AGREE_IN_PART,
@@ -43,6 +45,7 @@ export const mockMasWithholdingMessageBody = {
 
 export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
   decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.NATIONAL_SECURITY,
   commercialDecision: null,
@@ -56,6 +59,7 @@ export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
 
 export const mockMasWithholdingCommercialOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
   decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.COMMERCIAL,
   commercialDecision: WITHHOLDING_DECISION.DISAGREE,
@@ -69,6 +73,7 @@ export const mockMasWithholdingCommercialOnlyMessageBody = {
 
 export const mockMasWithholdingNoBasisMessageBody = {
   applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
   decisionDate: mockMasDecisionDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
   commercialDecision: null,

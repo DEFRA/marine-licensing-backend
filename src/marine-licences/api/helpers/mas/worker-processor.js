@@ -4,7 +4,7 @@ import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string
 import {
   MARINE_LICENCE_STATUS,
   MAS_EVENT_ACTION,
-  WITHHOLDING_REQUEST_RELATES_TO
+  MAS_TASK_TYPE
 } from '../../../constants/marine-licence.js'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { deleteMasMessage } from './sqs-client.js'
@@ -55,12 +55,7 @@ export const processMasMessage = async (server, message) => {
     })
   }
 
-  // A withholding decision carries no status; requestRelatesTo is what identifies it.
-  if (
-    Object.values(WITHHOLDING_REQUEST_RELATES_TO).includes(
-      body.requestRelatesTo
-    )
-  ) {
+  if (body.taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
     await handleWithholdingNotification(db, logger, {
       body,
       id: message.MessageId
