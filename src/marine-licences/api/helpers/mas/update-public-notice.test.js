@@ -1,11 +1,11 @@
 import { vi } from 'vitest'
 import { updatePublicNotice } from './update-public-notice.js'
-import { mockMasRejectedSqsMessage } from './test-fixtures.js'
-import { sendRejectedEmail } from './send-rejected-email.js'
+import { mockMasPublicNoticeSqsMessage } from './test-fixtures.js'
+import { sendPublicNoticeEmail } from './send-public-notice-email.js'
 import { randomUUID } from 'node:crypto'
 
-vi.mock('./send-rejected-email.js', () => ({
-  sendRejectedEmail: vi.fn()
+vi.mock('./send-public-notice-email.js', () => ({
+  sendPublicNoticeEmail: vi.fn()
 }))
 
 describe('updatePublicNotice', async () => {
@@ -28,7 +28,7 @@ describe('updatePublicNotice', async () => {
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   })
 
-  const body = JSON.parse(mockMasRejectedSqsMessage.Body)
+  const body = JSON.parse(mockMasPublicNoticeSqsMessage.Body)
 
   it('should update marine licence with new status', async () => {
     const { mockMongo } = global
@@ -38,7 +38,7 @@ describe('updatePublicNotice', async () => {
 
     await updatePublicNotice(server.db, server.logger, {
       body,
-      id: mockMasRejectedSqsMessage.MessageId
+      id: mockMasPublicNoticeSqsMessage.MessageId
     })
 
     expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
@@ -49,14 +49,14 @@ describe('updatePublicNotice', async () => {
       {
         $set: {
           updatedAt: new Date(),
-          updatedBy: mockMasRejectedSqsMessage.MessageId
+          updatedBy: mockMasPublicNoticeSqsMessage.MessageId
         }
       },
       { returnDocument: 'after' }
     )
   })
 
-  it.skip('should send correct email when a licence is matched', async () => {
+  it('should send correct email when a licence is matched', async () => {
     const { mockMongo } = global
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(mockDb.collection)
@@ -64,10 +64,10 @@ describe('updatePublicNotice', async () => {
 
     await updatePublicNotice(server.db, server.logger, {
       body,
-      id: mockMasRejectedSqsMessage.MessageId
+      id: mockMasPublicNoticeSqsMessage.MessageId
     })
 
-    expect(sendRejectedEmail).toHaveBeenCalledWith({
+    expect(sendPublicNoticeEmail).toHaveBeenCalledWith({
       db: server.db,
       userName: body.userName,
       userEmail: body.userEmail,
@@ -86,7 +86,7 @@ describe('updatePublicNotice', async () => {
 
     await updatePublicNotice(server.db, server.logger, {
       body,
-      id: mockMasRejectedSqsMessage.MessageId
+      id: mockMasPublicNoticeSqsMessage.MessageId
     })
 
     expect(server.logger.warn).toHaveBeenCalledWith(
@@ -98,7 +98,7 @@ describe('updatePublicNotice', async () => {
       },
       `No marine licence found for applicationReference ${body.applicationReference}`
     )
-    expect(sendRejectedEmail).not.toHaveBeenCalled()
+    expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
   })
 
   it('should log and rethrow when the database operation fails', async () => {
@@ -113,7 +113,7 @@ describe('updatePublicNotice', async () => {
     await expect(
       updatePublicNotice(server.db, server.logger, {
         body,
-        id: mockMasRejectedSqsMessage.MessageId
+        id: mockMasPublicNoticeSqsMessage.MessageId
       })
     ).rejects.toThrow(dbError)
 
@@ -122,6 +122,6 @@ describe('updatePublicNotice', async () => {
       `Failed to update marine licence for applicationReference ${body.applicationReference}; the queue will retry`
     )
     expect(server.logger.warn).not.toHaveBeenCalled()
-    expect(sendRejectedEmail).not.toHaveBeenCalled()
+    expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
   })
 })
