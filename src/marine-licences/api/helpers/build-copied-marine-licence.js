@@ -12,7 +12,7 @@ export const FIELDS_TO_DROP_ON_COPY = [
   'marinePlanAreas',
   'redactions',
   'applicationTasks',
-  'statusBeforeActionRequired'
+  'previousStatus'
 ]
 
 export const buildCopiedMarineLicence = (

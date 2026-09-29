@@ -36,7 +36,7 @@ describe('Resolve application task - integration tests', async () => {
       _id,
       organisation: null,
       status,
-      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED,
+      previousStatus: MARINE_LICENCE_STATUS.SUBMITTED,
       applicationTasks
     })
     return _id
@@ -75,7 +75,7 @@ describe('Resolve application task - integration tests', async () => {
     expect(await getStatus(id, contactId)).toBe('Submitted')
     const stored = await storedLicence(id)
     expect(stored.status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
-    expect(stored).not.toHaveProperty('statusBeforeActionRequired')
+    expect(stored).not.toHaveProperty('previousStatus')
   })
 
   test('stays at Action required until the last outstanding task is resolved', async () => {
@@ -125,7 +125,7 @@ describe('Resolve application task - integration tests', async () => {
     const id = await insertLicence([buildTask(taskId)])
     await globalThis.mockMongo
       .collection('marine-licences')
-      .updateOne({ _id: id }, { $unset: { statusBeforeActionRequired: '' } })
+      .updateOne({ _id: id }, { $unset: { previousStatus: '' } })
 
     await resolve(id, taskId, mockMarineLicence.contactId)
 

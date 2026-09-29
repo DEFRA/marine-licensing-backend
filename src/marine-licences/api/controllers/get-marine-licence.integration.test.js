@@ -136,7 +136,7 @@ describe('Get marine licence - integration tests', async () => {
       _id: actionRequiredId,
       organisation: null,
       status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED,
+      previousStatus: MARINE_LICENCE_STATUS.SUBMITTED,
       applicationTasks: [
         {
           taskId: new ObjectId().toHexString(),
@@ -156,7 +156,7 @@ describe('Get marine licence - integration tests', async () => {
     expect(statusCode).toBe(200)
     expect(body.status).toBe(MARINE_LICENCE_STATUS_LABEL.SUBMITTED)
     expect(body).not.toHaveProperty('applicationTasks')
-    expect(body).not.toHaveProperty('statusBeforeActionRequired')
+    expect(body).not.toHaveProperty('previousStatus')
     expect(JSON.stringify(body)).not.toContain('Private')
   })
 

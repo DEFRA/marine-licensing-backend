@@ -44,13 +44,12 @@ describe('Withholding notification end to end - integration tests', async () => 
 
     await process(mockMasWithholdingSqsMessage)
 
-    const { applicationTasks, status, statusBeforeActionRequired } =
-      await global.mockMongo
-        .collection(collectionMarineLicences)
-        .findOne({ _id })
+    const { applicationTasks, status, previousStatus } = await global.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id })
 
     expect(status).toBe(MARINE_LICENCE_STATUS.ACTION_REQUIRED)
-    expect(statusBeforeActionRequired).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
+    expect(previousStatus).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
 
     expect(applicationTasks).toHaveLength(1)
     expect(applicationTasks[0]).toMatchObject({

@@ -12,7 +12,7 @@ import {
 //
 // Only a submitted application moves to ACTION_REQUIRED: one withdrawn, rejected or
 // transferred before the task arrived keeps its status, or it would become withdrawable
-// again. statusBeforeActionRequired is what resolving the last outstanding task
+// again. previousStatus is what resolving the last outstanding task
 // restores, so a second task arriving while already ACTION_REQUIRED must not overwrite
 // it. The task is wrapped in $literal because it carries caseworker free text, and in a
 // pipeline a string starting with "$" would otherwise be read as a field path.
@@ -34,11 +34,11 @@ const pushFirstTaskOfType = (
               { $literal: [task] }
             ]
           },
-          statusBeforeActionRequired: {
+          previousStatus: {
             $cond: [
               { $eq: ['$status', MARINE_LICENCE_STATUS.SUBMITTED] },
               '$status',
-              '$statusBeforeActionRequired'
+              '$previousStatus'
             ]
           },
           status: {

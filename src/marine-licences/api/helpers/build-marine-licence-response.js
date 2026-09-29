@@ -18,14 +18,8 @@ export const buildMarineLicenceResponse = (
   // Application tasks carry the caseworker's withholding comments, so they must never
   // reach the unauthenticated public register response, and nor must the fact that a
   // withholding decision is pending.
-  const {
-    _id,
-    status,
-    redactions,
-    applicationTasks,
-    statusBeforeActionRequired,
-    ...rest
-  } = marineLicence
+  const { _id, status, redactions, applicationTasks, previousStatus, ...rest } =
+    marineLicence
   const {
     responses: marinePlanPolicyResponses,
     count: marinePlanPolicyResponseCount

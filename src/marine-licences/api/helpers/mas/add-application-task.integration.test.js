@@ -113,21 +113,21 @@ describe('addApplicationTask - integration tests', () => {
 
     expect(await stored(_id)).toMatchObject({
       status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED
+      previousStatus: MARINE_LICENCE_STATUS.SUBMITTED
     })
   })
 
   it('keeps the recorded status when a second task type arrives', async () => {
     const _id = await insertLicence([buildTask({ type: otherType })], {
       status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED
+      previousStatus: MARINE_LICENCE_STATUS.SUBMITTED
     })
 
     await add({ nationalSecurity: { withheldSome: true } })
 
     expect(await stored(_id)).toMatchObject({
       status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-      statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED
+      previousStatus: MARINE_LICENCE_STATUS.SUBMITTED
     })
   })
 
@@ -144,7 +144,7 @@ describe('addApplicationTask - integration tests', () => {
     expect(result.task.type).toBe(type)
     const licence = await stored(_id)
     expect(licence.status).toBe(status)
-    expect(licence).not.toHaveProperty('statusBeforeActionRequired')
+    expect(licence).not.toHaveProperty('previousStatus')
   })
 
   it('stores an applicant message starting with $ verbatim', async () => {

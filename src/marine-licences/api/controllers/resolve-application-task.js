@@ -50,19 +50,16 @@ const restoreStatusWhenNoTaskOutstanding = {
       $cond: [
         isStillActionRequiredWithNoOutstandingTask,
         {
-          $ifNull: [
-            '$statusBeforeActionRequired',
-            MARINE_LICENCE_STATUS.SUBMITTED
-          ]
+          $ifNull: ['$previousStatus', MARINE_LICENCE_STATUS.SUBMITTED]
         },
         '$status'
       ]
     },
-    statusBeforeActionRequired: {
+    previousStatus: {
       $cond: [
         isStillActionRequiredWithNoOutstandingTask,
         '$$REMOVE',
-        '$statusBeforeActionRequired'
+        '$previousStatus'
       ]
     }
   }

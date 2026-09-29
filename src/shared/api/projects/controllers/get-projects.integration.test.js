@@ -473,7 +473,7 @@ describe('Get projects - integration tests', async () => {
           organisation: { id: testOrgId, name: 'Test Org' },
           projectName: 'ML Awaiting Applicant',
           status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-          statusBeforeActionRequired: MARINE_LICENCE_STATUS.SUBMITTED,
+          previousStatus: MARINE_LICENCE_STATUS.SUBMITTED,
           applicationTasks: [outstandingTask]
         })
 
