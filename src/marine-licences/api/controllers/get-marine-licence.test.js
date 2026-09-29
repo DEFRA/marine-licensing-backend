@@ -126,6 +126,7 @@ describe('GET /marine-licence', () => {
           message: 'success',
           value: expect.objectContaining({
             id: mockId,
+            applicationTasks: [],
             contactId: userContactId,
             feeEstimate: {
               accept: 'yes',

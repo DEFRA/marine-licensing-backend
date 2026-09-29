@@ -6,7 +6,10 @@ import {
 } from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { EXEMPTION_STATUS } from '../../../../exemptions/constants/exemption.js'
-import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS
+} from '../../../../marine-licences/constants/marine-licence.js'
 import {
   collectionExemptions,
   collectionMarineLicences
@@ -444,6 +447,67 @@ describe('Get projects - integration tests', async () => {
       expect(body.projects[0].status).toBe('Draft')
       expect(body.projects[1].status).toBe('Active')
       expect(body.projects[2].status).toBe('Active')
+    })
+
+    describe('status filtering with ACTION_REQUIRED', () => {
+      const outstandingTask = {
+        taskId: 'task-1',
+        type: APPLICATION_TASK_TYPE.WITHHOLDING_NOTIFICATION,
+        receivedAt: new Date('2026-05-21T12:00:00.000Z'),
+        resolvedAt: null,
+        data: {}
+      }
+
+      const seed = async () => {
+        const submitted = createCompleteMarineLicence({
+          _id: new ObjectId(),
+          contactId: employeeContactId,
+          organisation: { id: testOrgId, name: 'Test Org' },
+          projectName: 'Plain Submitted ML',
+          status: MARINE_LICENCE_STATUS.SUBMITTED
+        })
+
+        const awaitingApplicant = createCompleteMarineLicence({
+          _id: new ObjectId(),
+          contactId: employeeContactId,
+          organisation: { id: testOrgId, name: 'Test Org' },
+          projectName: 'ML Awaiting Applicant',
+          status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+          previousStatus: MARINE_LICENCE_STATUS.SUBMITTED,
+          applicationTasks: [outstandingTask]
+        })
+
+        await globalThis.mockMongo
+          .collection(collectionMarineLicences)
+          .insertMany([submitted, awaitingApplicant])
+      }
+
+      const filterBy = async (status) => {
+        const { body } = await makePostRequest({
+          server: getServer(),
+          url: '/projects',
+          payload: { show: 'all-projects', status },
+          contactId: employeeContactId,
+          relationships: employeeRelationships,
+          currentRelationshipId: relationshipId
+        })
+
+        return body.projects.map(({ projectName, status: label }) => [
+          projectName,
+          label
+        ])
+      }
+
+      test('ACTION_REQUIRED filters separately from SUBMITTED', async () => {
+        await seed()
+
+        expect(await filterBy(['ACTION_REQUIRED'])).toEqual([
+          ['ML Awaiting Applicant', 'Action required']
+        ])
+        expect(await filterBy(['SUBMITTED'])).toEqual([
+          ['Plain Submitted ML', 'Submitted']
+        ])
+      })
     })
   })
 

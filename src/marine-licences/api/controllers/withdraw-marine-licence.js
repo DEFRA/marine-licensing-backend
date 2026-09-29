@@ -3,7 +3,10 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  MARINE_LICENCE_SUBMITTED_STATUSES
+} from '../../constants/marine-licence.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { config } from '../../../config.js'
 import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
@@ -13,7 +16,7 @@ import {
 } from '../../../shared/common/constants/request-queue.js'
 
 // Ownership is enforced by the authorizeOwnership pre-handler; matching on status here keeps
-// the guard atomic, so a null result means the licence is not in the SUBMITTED state.
+// the guard atomic, so a null result means the licence is not in a submitted state.
 const updateMarineLicenceRecord = async ({
   request,
   params,
@@ -29,7 +32,7 @@ const updateMarineLicenceRecord = async ({
     .findOneAndUpdate(
       {
         _id: ObjectId.createFromHexString(id),
-        status: MARINE_LICENCE_STATUS.SUBMITTED
+        status: { $in: MARINE_LICENCE_SUBMITTED_STATUSES }
       },
       {
         $set: {
@@ -44,7 +47,7 @@ const updateMarineLicenceRecord = async ({
 
   if (!marineLicence) {
     throw Boom.badRequest(
-      `Cannot withdraw marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.SUBMITTED}'.`
+      'Cannot withdraw marine licence as marine licence must be submitted.'
     )
   }
 

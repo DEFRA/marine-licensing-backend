@@ -30,7 +30,7 @@ export const copyMarineLicenceController = {
         .collection(collectionMarineLicences)
         .findOne({ _id: ObjectId.createFromHexString(id) })
 
-      if (source.status !== MARINE_LICENCE_STATUS.REJECTED) {
+      if (source?.status !== MARINE_LICENCE_STATUS.REJECTED) {
         throw Boom.badRequest(
           `Cannot copy marine licence as marine licence must be the status '${MARINE_LICENCE_STATUS.REJECTED}'.`
         )

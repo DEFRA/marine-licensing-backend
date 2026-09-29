@@ -3,8 +3,10 @@ import { parseMessageBody } from '../../../../shared/common/helpers/sqs/parse-me
 import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string.js'
 import {
   MARINE_LICENCE_STATUS,
-  MAS_EVENT_ACTION
+  MAS_EVENT_ACTION,
+  MAS_TASK_TYPE
 } from '../../../constants/marine-licence.js'
+import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { deleteMasMessage } from './sqs-client.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
@@ -48,6 +50,13 @@ export const processMasMessage = async (server, message) => {
 
   if (status === MARINE_LICENCE_STATUS.REJECTED) {
     await updateRejectedMarineLicence(db, logger, {
+      body,
+      id: message.MessageId
+    })
+  }
+
+  if (body.taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
+    await handleWithholdingNotification(db, logger, {
       body,
       id: message.MessageId
     })
