@@ -5,18 +5,20 @@ import {
   mockMalformedMasSqsMessage,
   mockMasInvalidApplicationReferenceSqsMessage,
   mockMasMissingApplicationReferenceSqsMessage,
+  mockMasPublicNoticeSqsMessage,
   mockMasRejectedSqsMessage,
   mockMasSqsMessage
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
-
+import { updatePublicNotice } from './update-public-notice.js'
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
 vi.mock('./sqs-client.js', () => ({
   deleteMasMessage: vi.fn()
 }))
 
+vi.mock('./update-public-notice.js')
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
 
@@ -70,6 +72,23 @@ describe('mas-worker-processor', () => {
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
         mockMasRejectedSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should call updatePublicNotice for a public notice update message', async () => {
+      const server = buildServer()
+      const body = JSON.parse(mockMasPublicNoticeSqsMessage.Body)
+
+      await processMasMessage(server, mockMasPublicNoticeSqsMessage)
+
+      expect(updatePublicNotice).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        { body, id: mockMasPublicNoticeSqsMessage.MessageId }
+      )
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasPublicNoticeSqsMessage.ReceiptHandle
       )
     })
 

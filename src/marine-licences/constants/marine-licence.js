@@ -60,3 +60,7 @@ export const MAS_EVENT_ACTION = {
   JOB_FAILED: 'mas:job-failed',
   JOB_COMPLETE: 'mas:job-complete'
 }
+
+export const MAS_TASK_TYPES = {
+  PUBLIC_NOTICE: 'PUBLIC_NOTICE'
+}
