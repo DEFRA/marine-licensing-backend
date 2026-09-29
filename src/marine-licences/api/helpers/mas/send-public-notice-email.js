@@ -11,7 +11,7 @@ export const sendPublicNoticeEmail = async ({
   const { marineLicence } = config.get('notify')
 
   const result = await sendEmail({
-    templateId: marineLicence.notifyRejectedId,
+    templateId: marineLicence.notifyPublicNoticeId,
     userEmail,
     personalisation: {
       name: userName,
