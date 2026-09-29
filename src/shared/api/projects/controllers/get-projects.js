@@ -46,6 +46,7 @@ const transformProjects = (projects, type) =>
 
 export const sortByStatus = (a, b) => {
   const statusOrder = [
+    PROJECT_STATUS_LABEL.ACTION_REQUIRED,
     PROJECT_STATUS_LABEL.TRANSFERRED,
     PROJECT_STATUS_LABEL.DRAFT,
     PROJECT_STATUS_LABEL.ACTIVE

@@ -27,25 +27,33 @@ describe('Withdraw marine licence - integration tests', async () => {
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-  test('successfully withdraws a submitted marine licence when requested by the owner', async () => {
-    await insertMarineLicence(MARINE_LICENCE_STATUS.SUBMITTED)
+  test.each([
+    MARINE_LICENCE_STATUS.SUBMITTED,
+    MARINE_LICENCE_STATUS.ACTION_REQUIRED
+  ])(
+    'successfully withdraws a %s marine licence when requested by the owner',
+    async (status) => {
+      await insertMarineLicence(status)
 
-    const { statusCode, body } = await makePostRequest({
-      server: getServer(),
-      url: `/marine-licence/${marineLicenceId}/withdraw`,
-      contactId,
-      payload: {}
-    })
+      const { statusCode, body } = await makePostRequest({
+        server: getServer(),
+        url: `/marine-licence/${marineLicenceId}/withdraw`,
+        contactId,
+        payload: {}
+      })
 
-    expect(statusCode).toBe(200)
-    expect(body).toEqual({ withdrawnAt: expect.any(String) })
+      expect(statusCode).toBe(200)
+      expect(body).toEqual({ withdrawnAt: expect.any(String) })
 
-    const withdrawnMarineLicence = await findMarineLicence()
-    expect(withdrawnMarineLicence.status).toBe(MARINE_LICENCE_STATUS.WITHDRAWN)
-    expect(withdrawnMarineLicence.withdrawnAt).toBeInstanceOf(Date)
-    expect(withdrawnMarineLicence.updatedAt).toBeInstanceOf(Date)
-    expect(withdrawnMarineLicence.updatedBy).toBe(contactId)
-  })
+      const withdrawnMarineLicence = await findMarineLicence()
+      expect(withdrawnMarineLicence.status).toBe(
+        MARINE_LICENCE_STATUS.WITHDRAWN
+      )
+      expect(withdrawnMarineLicence.withdrawnAt).toBeInstanceOf(Date)
+      expect(withdrawnMarineLicence.updatedAt).toBeInstanceOf(Date)
+      expect(withdrawnMarineLicence.updatedBy).toBe(contactId)
+    }
+  )
 
   // The route takes everything it needs from the path, so a caller sending no
   // body at all is legitimate — it must not fall over in the audit-field extension.

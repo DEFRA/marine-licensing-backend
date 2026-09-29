@@ -33,7 +33,9 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
           await marineLicenceService.getPublicMarineLicenceById(id)
       }
 
-      const response = buildMarineLicenceResponse(marineLicence, request)
+      const response = buildMarineLicenceResponse(marineLicence, request, {
+        includeApplicationTasks: requiresAuth
+      })
 
       return h
         .response({ message: 'success', value: response })

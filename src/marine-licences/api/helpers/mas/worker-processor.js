@@ -4,8 +4,9 @@ import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string
 import {
   MARINE_LICENCE_STATUS,
   MAS_EVENT_ACTION,
-  MAS_TASK_TYPES
+  MAS_TASK_TYPE
 } from '../../../constants/marine-licence.js'
+import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { deleteMasMessage } from './sqs-client.js'
 import { updatePublicNotice } from './update-public-notice.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
@@ -49,8 +50,15 @@ export const processMasMessage = async (server, message) => {
 const handleMasTaskType = async (db, logger, { body, message }) => {
   const { taskType, status } = body
 
-  if (taskType === MAS_TASK_TYPES.PUBLIC_NOTICE) {
+  if (taskType === MAS_TASK_TYPE.PUBLIC_NOTICE) {
     await updatePublicNotice(db, logger, {
+      body,
+      id: message.MessageId
+    })
+  }
+
+  if (body.taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
+    await handleWithholdingNotification(db, logger, {
       body,
       id: message.MessageId
     })

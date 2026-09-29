@@ -7,11 +7,15 @@ import {
   mockMasMissingApplicationReferenceSqsMessage,
   mockMasPublicNoticeSqsMessage,
   mockMasRejectedSqsMessage,
-  mockMasSqsMessage
+  mockMasSqsMessage,
+  mockMasWithholdingMessageBody,
+  mockMasWithholdingSqsMessage
 } from './test-fixtures.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { updatePublicNotice } from './update-public-notice.js'
+import { handleWithholdingNotification } from './handle-withholding-notification.js'
+
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
 vi.mock('./sqs-client.js', () => ({
@@ -21,6 +25,7 @@ vi.mock('./sqs-client.js', () => ({
 vi.mock('./update-public-notice.js')
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
+vi.mock('./handle-withholding-notification.js')
 
 const sqsQueueName = 'marine_licensing_mas'
 const sqsDlqName = 'marine_licensing_mas-deadletter'
@@ -89,6 +94,50 @@ describe('mas-worker-processor', () => {
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
         mockMasPublicNoticeSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should not treat a status-only message as an application task', async () => {
+      const server = buildServer()
+
+      await processMasMessage(server, mockMasRejectedSqsMessage)
+
+      expect(handleWithholdingNotification).not.toHaveBeenCalled()
+    })
+
+    it('should call handleWithholdingNotification for a PUBLIC_REGISTER task', async () => {
+      const server = buildServer()
+
+      await processMasMessage(server, mockMasWithholdingSqsMessage)
+
+      expect(handleWithholdingNotification).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        {
+          body: mockMasWithholdingMessageBody,
+          id: mockMasWithholdingSqsMessage.MessageId
+        }
+      )
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasWithholdingSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should not treat a withholding decision without a taskType as an application task', async () => {
+      const server = buildServer()
+      const { taskType, ...body } = mockMasWithholdingMessageBody
+      const message = {
+        ...mockMasWithholdingSqsMessage,
+        Body: JSON.stringify(body)
+      }
+
+      await processMasMessage(server, message)
+
+      expect(handleWithholdingNotification).not.toHaveBeenCalled()
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        message.ReceiptHandle
       )
     })
 
