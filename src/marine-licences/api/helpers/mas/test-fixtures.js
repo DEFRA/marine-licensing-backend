@@ -1,6 +1,7 @@
 import {
   MARINE_LICENCE_STATUS,
   MAS_TASK_TYPE,
+  PUBLIC_NOTICE_REQUEST_RELATES_TO,
   WITHHOLDING_DECISION,
   WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
@@ -88,7 +89,11 @@ export const mockMasPublicNoticeSqsMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_NOTICE,
   userName: 'Jane Doe',
-  userEmail: 'jane@example.com'
+  userEmail: 'jane@example.com',
+  publicNoticeRequirement: 'NONE',
+  proposedWorksSummary: 'test proposed works summary',
+  siteNoticeSummary: 'test site notice summary',
+  requestRelatesTo: PUBLIC_NOTICE_REQUEST_RELATES_TO.BOTH
 }
 
 export const mockMasSqsMessage = {

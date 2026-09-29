@@ -1,57 +1,63 @@
 import { config } from '../../../../config.js'
-import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
-import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
-import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
+import { addApplicationTask } from './add-application-task.js'
+import { logDiscarded, logNoRecipient } from './mas-logging.js'
 import { sendPublicNoticeEmail } from './send-public-notice-email.js'
+
+const buildPublicNoticeData = (body) => {
+  return {
+    publicNoticeRequirement: body.publicNoticeRequirement,
+    summary: {
+      proposedWorksSummary: body.proposedWorksSummary,
+      siteNoticeSummary: body.siteNoticeSummary
+    },
+    requestRelatesTo: body.requestRelatesTo
+  }
+}
 
 export const updatePublicNotice = async (db, logger, { body, id }) => {
   const { applicationReference, userName, userEmail } = body
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
-  const updatedAt = new Date()
+  const data = buildPublicNoticeData(body)
 
-  let result
-
-  try {
-    result = await db.collection(collectionMarineLicences).findOneAndUpdate(
-      {
-        applicationReference
-      },
-      {
-        $set: {
-          updatedAt,
-          updatedBy: id
-        }
-      },
-      { returnDocument: 'after' }
+  if (!data) {
+    logDiscarded(
+      logger,
+      'Discarding public notice',
+      applicationReference,
+      `no valid requestRelatesTo '${body.requestRelatesTo}'`
     )
-  } catch (error) {
-    logger.error(
-      structureErrorForECS(error),
-      `Failed to update marine licence for applicationReference ${applicationReference}; the queue will retry`
-    )
-    throw error
+    return null
   }
+
+  const result = await addApplicationTask(db, logger, {
+    applicationReference,
+    type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE,
+    data,
+    updatedBy: id
+  })
 
   if (!result) {
-    logger.warn(
-      {
-        event: {
-          action: MAS_EVENT_ACTION.JOB_STALE,
-          outcome: 'success'
-        }
-      },
-      `No marine licence found for applicationReference ${applicationReference}`
-    )
-  } else {
-    await sendPublicNoticeEmail({
-      db,
-      userName,
-      userEmail,
-      applicationReference,
-      viewDetailsUrl: `${frontEndBaseUrl}/marine-licence/view-details/${result._id}`
-    })
+    return null
   }
+
+  if (!userEmail) {
+    logNoRecipient(
+      logger,
+      `Raised the public notice task`,
+      applicationReference
+    )
+    return result
+  }
+
+  await sendPublicNoticeEmail({
+    db,
+    userName,
+    userEmail,
+    applicationReference,
+    viewDetailsUrl: `${frontEndBaseUrl}/marine-licence/view-details/${result.marineLicence._id}`
+  })
 
   return result
 }

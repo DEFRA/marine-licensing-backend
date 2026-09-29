@@ -1,74 +1,68 @@
 import { vi } from 'vitest'
 import { updatePublicNotice } from './update-public-notice.js'
+import { addApplicationTask } from './add-application-task.js'
 import { mockMasPublicNoticeSqsMessage } from './test-fixtures.js'
 import { sendPublicNoticeEmail } from './send-public-notice-email.js'
+import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
 import { randomUUID } from 'node:crypto'
 
+vi.mock('./add-application-task.js', () => ({
+  addApplicationTask: vi.fn()
+}))
 vi.mock('./send-public-notice-email.js', () => ({
   sendPublicNoticeEmail: vi.fn()
 }))
 
 describe('updatePublicNotice', async () => {
+  const mockLicenceId = randomUUID()
+
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] })
+    addApplicationTask.mockResolvedValue({
+      marineLicence: { _id: mockLicenceId },
+      task: { taskId: 'abc' }
+    })
   })
 
-  const mockLicenceId = randomUUID()
-  const mockFindOneAndUpdate = vi.fn().mockResolvedValue({ _id: mockLicenceId })
-  const mockCollection = {
-    findOneAndUpdate: mockFindOneAndUpdate
-  }
-
-  const mockDb = {
-    collection: vi.fn().mockReturnValue(mockCollection)
-  }
-
   const buildServer = () => ({
-    db: mockDb,
+    db: { collection: vi.fn() },
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
   })
 
   const body = JSON.parse(mockMasPublicNoticeSqsMessage.Body)
 
-  it('should update marine licence with new status', async () => {
-    const { mockMongo } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(mockDb.collection)
-    const server = buildServer()
-
-    await updatePublicNotice(server.db, server.logger, {
-      body,
+  const run = (bodyOverride = {}) =>
+    updatePublicNotice(buildServer().db, buildServer().logger, {
+      body: { ...body, ...bodyOverride },
       id: mockMasPublicNoticeSqsMessage.MessageId
     })
 
-    expect(mockDb.collection).toHaveBeenCalledWith('marine-licences')
-    expect(mockFindOneAndUpdate).toHaveBeenCalledWith(
+  it('adds a public site notice task with the correct data', async () => {
+    await run()
+
+    expect(addApplicationTask).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Object),
       {
-        applicationReference: body.applicationReference
-      },
-      {
-        $set: {
-          updatedAt: new Date(),
-          updatedBy: mockMasPublicNoticeSqsMessage.MessageId
-        }
-      },
-      { returnDocument: 'after' }
+        applicationReference: body.applicationReference,
+        type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE,
+        data: {
+          publicNoticeRequirement: body.publicNoticeRequirement,
+          summary: {
+            proposedWorksSummary: body.proposedWorksSummary,
+            siteNoticeSummary: body.siteNoticeSummary
+          },
+          requestRelatesTo: body.requestRelatesTo
+        },
+        updatedBy: mockMasPublicNoticeSqsMessage.MessageId
+      }
     )
   })
 
-  it('should send correct email when a licence is matched', async () => {
-    const { mockMongo } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(mockDb.collection)
-    const server = buildServer()
-
-    await updatePublicNotice(server.db, server.logger, {
-      body,
-      id: mockMasPublicNoticeSqsMessage.MessageId
-    })
+  it('sends the correct email when a licence is matched', async () => {
+    await run()
 
     expect(sendPublicNoticeEmail).toHaveBeenCalledWith({
-      db: server.db,
+      db: expect.any(Object),
       userName: body.userName,
       userEmail: body.userEmail,
       applicationReference: body.applicationReference,
@@ -76,52 +70,53 @@ describe('updatePublicNotice', async () => {
     })
   })
 
-  it('should correctly log when no results are found', async () => {
-    const { mockMongo } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(mockDb.collection)
+  it('returns the result when a licence is matched', async () => {
     const server = buildServer()
-
-    mockFindOneAndUpdate.mockResolvedValueOnce(null)
-
-    await updatePublicNotice(server.db, server.logger, {
+    const result = await updatePublicNotice(server.db, server.logger, {
       body,
       id: mockMasPublicNoticeSqsMessage.MessageId
     })
 
-    expect(server.logger.warn).toHaveBeenCalledWith(
-      {
-        event: {
-          action: 'mas:job-stale',
-          outcome: 'success'
-        }
-      },
-      `No marine licence found for applicationReference ${body.applicationReference}`
-    )
+    expect(result).toEqual({
+      marineLicence: { _id: mockLicenceId },
+      task: { taskId: 'abc' }
+    })
+  })
+
+  it('returns null when addApplicationTask returns null', async () => {
+    addApplicationTask.mockResolvedValue(null)
+
+    const result = await run()
+
+    expect(result).toBeNull()
     expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
   })
 
-  it('should log and rethrow when the database operation fails', async () => {
-    const { mockMongo } = global
-
-    vi.spyOn(mockMongo, 'collection').mockImplementation(mockDb.collection)
+  it('raises the task but sends no email when the message carries no recipient', async () => {
     const server = buildServer()
+    const result = await updatePublicNotice(server.db, server.logger, {
+      body: { ...body, userName: undefined, userEmail: undefined },
+      id: mockMasPublicNoticeSqsMessage.MessageId
+    })
 
-    const dbError = new Error('connection lost')
-    mockFindOneAndUpdate.mockRejectedValueOnce(dbError)
-
-    await expect(
-      updatePublicNotice(server.db, server.logger, {
-        body,
-        id: mockMasPublicNoticeSqsMessage.MessageId
-      })
-    ).rejects.toThrow(dbError)
-
-    expect(server.logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ error: expect.anything() }),
-      `Failed to update marine licence for applicationReference ${body.applicationReference}; the queue will retry`
+    expect(result).not.toBeNull()
+    expect(addApplicationTask).toHaveBeenCalled()
+    expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
+    expect(server.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          reason: 'no recipient on message'
+        })
+      }),
+      expect.stringContaining('sent no email')
     )
-    expect(server.logger.warn).not.toHaveBeenCalled()
+  })
+
+  it('does not email when the task was not added', async () => {
+    addApplicationTask.mockResolvedValue(null)
+
+    await run()
+
     expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
   })
 })
