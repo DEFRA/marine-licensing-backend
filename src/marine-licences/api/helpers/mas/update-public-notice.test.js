@@ -122,11 +122,10 @@ describe('updatePublicNotice', async () => {
 
   it('discards a message without a publicNoticeRequirement', async () => {
     const server = buildServer()
-    const result = await updatePublicNotice(
-      server.db,
-      server.logger,
-      { body: { ...body, publicNoticeRequirement: undefined }, id: mockMasPublicNoticeSqsMessage.MessageId }
-    )
+    const result = await updatePublicNotice(server.db, server.logger, {
+      body: { ...body, publicNoticeRequirement: undefined },
+      id: mockMasPublicNoticeSqsMessage.MessageId
+    })
 
     expect(result).toBeNull()
     expect(addApplicationTask).not.toHaveBeenCalled()
