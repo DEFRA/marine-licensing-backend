@@ -5,6 +5,8 @@ import { logDiscarded, logNoRecipient } from './mas-logging.js'
 import { sendPublicNoticeEmail } from './send-public-notice-email.js'
 
 const buildPublicNoticeData = (body) => {
+  if (!body.publicNoticeRequirement) return null
+
   return {
     publicNoticeRequirement: body.publicNoticeRequirement,
     summary: {

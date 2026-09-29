@@ -119,4 +119,26 @@ describe('updatePublicNotice', async () => {
 
     expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
   })
+
+  it('discards a message without a publicNoticeRequirement', async () => {
+    const server = buildServer()
+    const result = await updatePublicNotice(
+      server.db,
+      server.logger,
+      { body: { ...body, publicNoticeRequirement: undefined }, id: mockMasPublicNoticeSqsMessage.MessageId }
+    )
+
+    expect(result).toBeNull()
+    expect(addApplicationTask).not.toHaveBeenCalled()
+    expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
+    expect(server.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'mas:application-task-skipped',
+          outcome: 'failure'
+        })
+      }),
+      expect.stringContaining('Discarding public notice')
+    )
+  })
 })
