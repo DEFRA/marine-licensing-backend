@@ -2,7 +2,9 @@ import { config } from '../../../../config.js'
 import { collectionMarinePlanPolicyWording } from '../../../../shared/common/constants/db-collections.js'
 import {
   MARINE_PLAN_POLICY_EVENT_ACTION,
-  MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS
+  MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS,
+  MARINE_PLAN_POLICY_LABEL_FIELDS as LABEL_FIELDS,
+  MARINE_PLAN_POLICY_WORDING_FIELDS as WORDING_FIELDS
 } from '../../../constants/marine-licence.js'
 import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string.js'
 import { timedJsonFetch } from './policy-http.js'
@@ -58,20 +60,25 @@ const sanitiseWordingField = ({
   return sanitised
 }
 
-const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) =>
-  CONTENT_FIELDS.reduce(
-    (doc, field) => {
-      doc[field] = sanitiseWordingField({
-        value: entry[field],
-        code: entry.code,
-        field,
-        maxFieldBytes,
-        logger
-      })
-      return doc
-    },
-    { fetchedAt }
-  )
+// Labels are rendered as escaped text, so they are trimmed rather than HTML-sanitised.
+const toLabel = (value) => (typeof value === 'string' ? value.trim() : null)
+
+const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) => {
+  const doc = { fetchedAt }
+  for (const field of WORDING_FIELDS) {
+    doc[field] = sanitiseWordingField({
+      value: entry[field],
+      code: entry.code,
+      field,
+      maxFieldBytes,
+      logger
+    })
+  }
+  for (const field of LABEL_FIELDS) {
+    doc[field] = toLabel(entry[field])
+  }
+  return doc
+}
 
 const keepValidEntries = (policies, logger) =>
   policies.filter((entry, index) => {

@@ -13,7 +13,9 @@ describe('wording-snapshots', () => {
     policyAim: '<p>aim</p>',
     whatIsIt: '<p>what</p>',
     whyIsItImportant: '<p>why</p>',
-    howWillThisBeImplemented: '<p>how</p>'
+    howWillThisBeImplemented: '<p>how</p>',
+    title: 'East Aggregates 1',
+    category: 'Economic'
   }
 
   const buildPolicy = (overrides = {}) => ({
@@ -31,6 +33,16 @@ describe('wording-snapshots', () => {
   })
 
   describe('canonicaliseWording / computeWordingRef', () => {
+    it.each(['title', 'category'])(
+      'should produce a different ref when only the %s changes',
+      (field) => {
+        expect(
+          computeWordingRef('E-AGG-1', { ...wording, [field]: 'Changed' })
+            .wordingRef
+        ).not.toBe(computeWordingRef('E-AGG-1', wording).wordingRef)
+      }
+    )
+
     it('should produce the same ref for the same wording regardless of key order', () => {
       const reordered = Object.fromEntries(Object.entries(wording).reverse())
 

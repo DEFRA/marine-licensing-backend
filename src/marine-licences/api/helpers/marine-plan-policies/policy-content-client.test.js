@@ -13,7 +13,8 @@ describe('getPoliciesContent', () => {
   const policyEntry = (code, overrides = {}) => ({
     _id: 'mongo-id',
     code,
-    title: code,
+    title: `${code} title`,
+    category: 'Economic',
     sector: 'Aggregates (31)',
     policy: `<p>${code} policy statement</p>`,
     policyAim: `<p>${code} aim</p>`,
@@ -29,7 +30,9 @@ describe('getPoliciesContent', () => {
     policyAim: `<p>${code} aim</p>`,
     whatIsIt: `<p>${code} what</p>`,
     whyIsItImportant: `<p>${code} why</p>`,
-    howWillThisBeImplemented: `<p>${code} how</p>`
+    howWillThisBeImplemented: `<p>${code} how</p>`,
+    title: `${code} title`,
+    category: 'Economic'
   })
 
   const expectedMerged = (code, extra = {}) => ({
@@ -39,7 +42,9 @@ describe('getPoliciesContent', () => {
     policyAim: `<p>${code} aim</p>`,
     whatIsIt: `<p>${code} what</p>`,
     whyIsItImportant: `<p>${code} why</p>`,
-    howWillThisBeImplemented: `<p>${code} how</p>`
+    howWillThisBeImplemented: `<p>${code} how</p>`,
+    title: `${code} title`,
+    category: 'Economic'
   })
 
   const emptyContent = {
@@ -47,7 +52,9 @@ describe('getPoliciesContent', () => {
     policyAim: '',
     whatIsIt: '',
     whyIsItImportant: '',
-    howWillThisBeImplemented: ''
+    howWillThisBeImplemented: '',
+    title: '',
+    category: ''
   }
 
   const setupMocks = ({ initialDocs = [], refreshedDocs = [] } = {}) => {
@@ -370,6 +377,61 @@ describe('getPoliciesContent', () => {
 
       const [operations] = mockBulkWrite.mock.calls[0]
       expect(operations[0].updateOne.update.$set.policy).toBe('<p>Text</p>')
+    })
+
+    it('should store title and category trimmed as plain text rather than sanitised HTML', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [
+          policyEntry('E-AGG-1', {
+            title: '  East Aggregates & Dredging 1 ',
+            category: 'Cross-cutting '
+          })
+        ]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set).toEqual(
+        expect.objectContaining({
+          title: 'East Aggregates & Dredging 1',
+          category: 'Cross-cutting'
+        })
+      )
+    })
+
+    it('should store null when title or category is missing or not a string', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      const { category, ...entryWithoutCategory } = policyEntry('E-AGG-1', {
+        title: 42
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [entryWithoutCategory]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set).toEqual(
+        expect.objectContaining({ title: null, category: null })
+      )
     })
 
     it('should store null and warn when a wording field is not a string', async () => {

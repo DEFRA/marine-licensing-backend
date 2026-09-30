@@ -336,7 +336,9 @@ describe('MarineLicenceService', () => {
           policyAim: '',
           whatIsIt: '',
           whyIsItImportant: '',
-          howWillThisBeImplemented: ''
+          howWillThisBeImplemented: '',
+          title: '',
+          category: ''
         }
       ])
     })

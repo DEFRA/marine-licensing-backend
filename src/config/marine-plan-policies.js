@@ -1,9 +1,7 @@
 const oneHundredKilobytesInBytes = 102_400
 const thirtyMegabytesInBytes = 30_000_000
 
-// CDP ENVIRONMENT=prod uses the public production policies API; all other
-// environments (local, infra-dev, management, dev, test, perf-test, ext-test)
-// default to the basic-auth-protected environment-test endpoint.
+// A convict default cannot read another config key, so cdpEnvironment's env var is read directly.
 const isCdpProd = process.env.ENVIRONMENT === 'prod'
 const govukPoliciesProductionUrl =
   'https://environment.data.gov.uk/explore-marine-plans/api/policies'
