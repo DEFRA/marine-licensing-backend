@@ -61,7 +61,23 @@ const sanitiseWordingField = ({
 }
 
 // Labels are rendered as escaped text, so they are trimmed rather than HTML-sanitised.
-const toLabel = (value) => (typeof value === 'string' ? value.trim() : null)
+const toLabel = ({ value, code, field, logger }) => {
+  if (value == null) {
+    return null
+  }
+  if (typeof value !== 'string') {
+    logFieldRejected({
+      logger,
+      action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FIELD_INVALID,
+      code,
+      field,
+      reason:
+        'Non-string label value received from the GOV.UK policies API; raise a data-quality issue with the marine plans explorer team'
+    })
+    return null
+  }
+  return value.trim()
+}
 
 const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) => {
   const doc = { fetchedAt }
@@ -75,7 +91,12 @@ const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) => {
     })
   }
   for (const field of LABEL_FIELDS) {
-    doc[field] = toLabel(entry[field])
+    doc[field] = toLabel({
+      value: entry[field],
+      code: entry.code,
+      field,
+      logger
+    })
   }
   return doc
 }
@@ -112,12 +133,33 @@ const toEmptyContent = () =>
     return content
   }, {})
 
+const HTTP_UNAUTHORIZED = 401
+
 const buildGovukPoliciesAuthHeaders = (username, password) => {
   if (!username || !password) {
     return {}
   }
   const credentials = Buffer.from(`${username}:${password}`).toString('base64')
   return { authorization: `Basic ${credentials}` }
+}
+
+const logMissingCredentialsIfUnauthorised = (error, authHeaders, logger) => {
+  if (
+    error.output?.statusCode === HTTP_UNAUTHORIZED &&
+    !authHeaders.authorization
+  ) {
+    logger.warn(
+      {
+        event: {
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
+          outcome: 'failure',
+          reason:
+            'GOVUK_MARINE_POLICIES_API_USERNAME and GOVUK_MARINE_POLICIES_API_PASSWORD are not set'
+        }
+      },
+      'GOV.UK policies API returned 401 and no basic auth credentials are configured'
+    )
+  }
 }
 
 const refreshPolicyDataset = async (collection, logger) => {
@@ -130,20 +172,23 @@ const refreshPolicyDataset = async (collection, logger) => {
     wordingMaxFieldBytes
   } = config.get('marinePlanPolicies')
 
+  const authHeaders = buildGovukPoliciesAuthHeaders(
+    govukPoliciesUsername,
+    govukPoliciesPassword
+  )
+
   // The API returns all policies in one response, so one fetch refreshes the full cache.
   const policies = await timedJsonFetch({
     url: govukPoliciesUrl,
-    options: {
-      headers: buildGovukPoliciesAuthHeaders(
-        govukPoliciesUsername,
-        govukPoliciesPassword
-      )
-    },
+    options: { headers: authHeaders },
     timeoutMs: wordingTimeoutMs,
     maxBytes: wordingMaxResponseBytes,
     eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
     upstreamName: 'marine plan policy wording',
     logger
+  }).catch((error) => {
+    logMissingCredentialsIfUnauthorised(error, authHeaders, logger)
+    throw error
   })
 
   if (!Array.isArray(policies) || policies.length === 0) {

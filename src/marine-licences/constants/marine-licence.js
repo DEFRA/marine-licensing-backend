@@ -34,7 +34,8 @@ export const MARINE_PLAN_POLICY_WORDING_FIELDS = [
 
 export const MARINE_PLAN_POLICY_LABEL_FIELDS = ['title', 'category']
 
-// Order is part of the snapshot hash: append new fields, never reorder.
+// Order and membership are part of the snapshot hash: any change mints new
+// wordingRefs for identical wording (already-pinned refs stay valid).
 export const MARINE_PLAN_POLICY_CONTENT_FIELDS = [
   ...MARINE_PLAN_POLICY_WORDING_FIELDS,
   ...MARINE_PLAN_POLICY_LABEL_FIELDS
