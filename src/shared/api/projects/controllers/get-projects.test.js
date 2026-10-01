@@ -340,30 +340,26 @@ describe('getProjectsController', () => {
   })
 
   describe('sortByStatus', () => {
-    it('should put DRAFT status at the top', () => {
+    it('should put Action required above every other status', () => {
       const projects = [
+        { status: PROJECT_STATUS_LABEL.ACTIVE, projectName: 'Active Project' },
         {
-          status: PROJECT_STATUS_LABEL.ACTIVE,
-          projectName: 'Active Project'
+          status: PROJECT_STATUS_LABEL.ACTION_REQUIRED,
+          projectName: 'Action Required Project'
+        },
+        {
+          status: PROJECT_STATUS_LABEL.TRANSFERRED,
+          projectName: 'Transferred Project'
         },
         { status: PROJECT_STATUS_LABEL.DRAFT, projectName: 'Draft Project' }
       ]
       const result = projects.sort(sortByStatus)
-      expect(result[0].status).toBe(PROJECT_STATUS_LABEL.DRAFT)
-      expect(result[1].status).toBe(PROJECT_STATUS_LABEL.ACTIVE)
-    })
-
-    it('should put TRANSFERRED status at the top', () => {
-      const projects = [
-        { status: PROJECT_STATUS_LABEL.DRAFT, projectName: 'Draft Project' },
-        {
-          status: PROJECT_STATUS_LABEL.TRANSFERRED,
-          projectName: 'Transferred Project'
-        }
-      ]
-      const result = projects.sort(sortByStatus)
-      expect(result[0].status).toBe(PROJECT_STATUS_LABEL.TRANSFERRED)
-      expect(result[1].status).toBe(PROJECT_STATUS_LABEL.DRAFT)
+      expect(result.map(({ projectName }) => projectName)).toEqual([
+        'Action Required Project',
+        'Transferred Project',
+        'Draft Project',
+        'Active Project'
+      ])
     })
 
     it('should handle unknown status by placing it last', () => {

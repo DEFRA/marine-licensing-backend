@@ -4,7 +4,8 @@ export const MARINE_LICENCE_STATUS = {
   REJECTED: 'REJECTED',
   SUBMITTED: 'SUBMITTED',
   TRANSFERRED: 'TRANSFERRED',
-  WITHDRAWN: 'WITHDRAWN'
+  WITHDRAWN: 'WITHDRAWN',
+  ACTION_REQUIRED: 'ACTION_REQUIRED'
 }
 
 export const MARINE_LICENCE_STATUS_LABEL = {
@@ -13,7 +14,43 @@ export const MARINE_LICENCE_STATUS_LABEL = {
   REJECTED: 'Rejected',
   SUBMITTED: 'Submitted',
   TRANSFERRED: 'Transferred',
-  WITHDRAWN: 'Withdrawn'
+  WITHDRAWN: 'Withdrawn',
+  ACTION_REQUIRED: 'Action required'
+}
+
+// ACTION_REQUIRED sits on top of SUBMITTED while an application task is outstanding,
+// so anything that means "submitted" must test against this rather than SUBMITTED.
+export const MARINE_LICENCE_SUBMITTED_STATUSES = [
+  MARINE_LICENCE_STATUS.SUBMITTED,
+  MARINE_LICENCE_STATUS.ACTION_REQUIRED
+]
+
+export const APPLICATION_TASK_TYPE = {
+  PUBLIC_SITE_NOTICE: 'PUBLIC_SITE_NOTICE',
+  WITHHOLDING_NOTIFICATION: 'WITHHOLDING_NOTIFICATION'
+}
+
+export const MAS_TASK_TYPE = {
+  PUBLIC_REGISTER: 'PUBLIC_REGISTER',
+  PUBLIC_NOTICE: 'PUBLIC_NOTICE'
+}
+
+export const WITHHOLDING_REQUEST_RELATES_TO = {
+  BOTH: 'BOTH',
+  COMMERCIAL: 'COMMERCIAL',
+  NATIONAL_SECURITY: 'NATIONAL_SECURITY'
+}
+
+export const PUBLIC_NOTICE_REQUEST_RELATES_TO = {
+  BOTH: 'BOTH',
+  COMMUNITY_USERS: 'COMMUNITY_USERS',
+  MARINE_USERS: 'MARINE_USERS'
+}
+
+export const WITHHOLDING_DECISION = {
+  AGREE: 'AGREE',
+  AGREE_IN_PART: 'AGREE_IN_PART',
+  DISAGREE: 'DISAGREE'
 }
 
 export const MARINE_PLAN_POLICY_JOB_STATUS = {
@@ -67,5 +104,10 @@ export const MAS_EVENT_ACTION = {
   MESSAGE_DEAD_LETTERED: 'mas:message-dead-lettered',
   JOB_STALE: 'mas:job-stale',
   JOB_FAILED: 'mas:job-failed',
-  JOB_COMPLETE: 'mas:job-complete'
+  JOB_COMPLETE: 'mas:job-complete',
+  APPLICATION_TASK_ADDED: 'mas:application-task-added',
+  APPLICATION_TASK_DUPLICATE: 'mas:application-task-duplicate',
+  APPLICATION_TASK_REDELIVERED: 'mas:application-task-redelivered',
+  APPLICATION_TASK_SKIPPED: 'mas:application-task-skipped',
+  LICENCE_NOT_FOUND: 'mas:licence-not-found'
 }

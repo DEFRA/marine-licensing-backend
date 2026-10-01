@@ -6,7 +6,8 @@ export const PROJECT_STATUS_LABEL = {
   REJECTED: 'Rejected',
   SUBMITTED: 'Submitted',
   TRANSFERRED: 'Transferred',
-  WITHDRAWN: 'Withdrawn'
+  WITHDRAWN: 'Withdrawn',
+  ACTION_REQUIRED: 'Action required'
 }
 
 export const PROJECT_TYPES = {

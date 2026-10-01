@@ -37,6 +37,19 @@ describe('buildCopiedMarineLicence', () => {
     expect(result).not.toHaveProperty('feeEstimate')
   })
 
+  it('does not carry application task state into the copy', () => {
+    const source = {
+      ...createCompleteMarineLicence(mockRejectedMarineLicenceFields),
+      applicationTasks: [{ taskId: 'task-1', resolvedAt: null }],
+      previousStatus: 'SUBMITTED'
+    }
+
+    const result = buildCopiedMarineLicence(source, audit)
+
+    expect(result).not.toHaveProperty('applicationTasks')
+    expect(result).not.toHaveProperty('previousStatus')
+  })
+
   it('deletes the fields that are excluded in the copy', () => {
     const source = createCompleteMarineLicence(mockRejectedMarineLicenceFields)
     const result = buildCopiedMarineLicence(source, audit)
