@@ -8,6 +8,7 @@ import {
 } from '../../../constants/marine-licence.js'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { deleteMasMessage } from './sqs-client.js'
+import { updatePublicNotice } from './update-public-notice.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 
@@ -35,10 +36,32 @@ export const processMasMessage = async (server, message) => {
     `Received MAS message for ${body.applicationReference}`
   )
 
-  const { applicationReference, status } = body
+  const { applicationReference } = body
 
   if (!isNonEmptyString(applicationReference)) {
     throw new Error('No Application Reference exists on message')
+  }
+
+  await handleMasTaskType(db, logger, { body, message })
+
+  await deleteMasMessage(sqsQueueName, message.ReceiptHandle)
+}
+
+const handleMasTaskType = async (db, logger, { body, message }) => {
+  const { taskType, status } = body
+
+  if (taskType === MAS_TASK_TYPE.PUBLIC_NOTICE) {
+    await updatePublicNotice(db, logger, {
+      body,
+      id: message.MessageId
+    })
+  }
+
+  if (body.taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
+    await handleWithholdingNotification(db, logger, {
+      body,
+      id: message.MessageId
+    })
   }
 
   if (status === MARINE_LICENCE_STATUS.TRANSFERRED) {
@@ -54,15 +77,6 @@ export const processMasMessage = async (server, message) => {
       id: message.MessageId
     })
   }
-
-  if (body.taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
-    await handleWithholdingNotification(db, logger, {
-      body,
-      id: message.MessageId
-    })
-  }
-
-  await deleteMasMessage(sqsQueueName, message.ReceiptHandle)
 }
 
 export const processMasDlqMessage = async (server, message) => {

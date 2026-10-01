@@ -4,6 +4,7 @@ import { sendEmail } from '../../../../shared/helpers/email.js'
 import { sendRejectedEmail } from './send-rejected-email.js'
 import { sendTransferredEmail } from './send-transferred-email.js'
 import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
+import { sendPublicNoticeEmail } from './send-public-notice-email.js'
 import {
   mockMasApplicationReference,
   mockMasUserEmail,
@@ -19,12 +20,14 @@ const viewDetailsUrl =
   'http://localhost:3000/marine-licence/view-details/507f1f77bcf86cd799439011'
 
 const templateIds = {
+  notifyPublicNoticeId: 'public-notice-template-id',
   notifyRejectedId: 'rejected-template-id',
   notifyTransferredId: 'transferred-template-id',
   notifyWithholdingNotificationId: 'withholding-template-id'
 }
 
 const senders = [
+  ['sendPublicNoticeEmail', sendPublicNoticeEmail, 'notifyPublicNoticeId'],
   ['sendRejectedEmail', sendRejectedEmail, 'notifyRejectedId'],
   ['sendTransferredEmail', sendTransferredEmail, 'notifyTransferredId'],
   [

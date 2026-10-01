@@ -1,11 +1,11 @@
 import { config } from '../../../../config.js'
 import {
   APPLICATION_TASK_TYPE,
-  MAS_EVENT_ACTION,
   WITHHOLDING_DECISION,
   WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
 import { addApplicationTask } from './add-application-task.js'
+import { logDiscarded, logNoRecipient } from './mas-logging.js'
 import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
 
 const BASES_BY_REQUEST = {
@@ -61,19 +61,6 @@ const buildWithholdingData = (body) => {
     : null
 }
 
-const logDiscarded = (logger, applicationReference, reason) =>
-  logger.warn(
-    {
-      event: {
-        action: MAS_EVENT_ACTION.APPLICATION_TASK_SKIPPED,
-        outcome: 'failure',
-        reference: applicationReference,
-        reason
-      }
-    },
-    `Discarding withholding notification for applicationReference ${applicationReference}: ${reason}`
-  )
-
 export const handleWithholdingNotification = async (
   db,
   logger,
@@ -89,6 +76,7 @@ export const handleWithholdingNotification = async (
   if (!data) {
     logDiscarded(
       logger,
+      'Discarding withholding notification',
       applicationReference,
       `no decision to show for requestRelatesTo '${body.requestRelatesTo}'`
     )
@@ -109,16 +97,10 @@ export const handleWithholdingNotification = async (
   // The task is what the applicant acts on, so a message with no recipient still
   // raises it rather than failing.
   if (!userEmail) {
-    logger.warn(
-      {
-        event: {
-          action: MAS_EVENT_ACTION.APPLICATION_TASK_SKIPPED,
-          outcome: 'failure',
-          reference: applicationReference,
-          reason: 'no recipient on message'
-        }
-      },
-      `Raised the withholding notification task for applicationReference ${applicationReference} but sent no email: the message carried no userEmail`
+    logNoRecipient(
+      logger,
+      `Raised the withholding notification task`,
+      applicationReference
     )
     return result
   }

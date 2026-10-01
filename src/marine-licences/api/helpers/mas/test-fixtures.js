@@ -1,6 +1,7 @@
 import {
   MARINE_LICENCE_STATUS,
   MAS_TASK_TYPE,
+  PUBLIC_NOTICE_REQUEST_RELATES_TO,
   WITHHOLDING_DECISION,
   WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
@@ -84,6 +85,17 @@ export const mockMasWithholdingNoBasisMessageBody = {
   userEmail: mockMasUserEmail
 }
 
+export const mockMasPublicNoticeSqsMessageBody = {
+  applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.PUBLIC_NOTICE,
+  userName: 'Jane Doe',
+  userEmail: 'jane@example.com',
+  publicNoticeRequirement: 'NONE',
+  proposedWorksSummary: 'test proposed works summary',
+  siteNoticeSummary: 'test site notice summary',
+  requestRelatesTo: PUBLIC_NOTICE_REQUEST_RELATES_TO.BOTH
+}
+
 export const mockMasSqsMessage = {
   MessageId: '11d59c92-2c1d-4d8b-9c0a-2f6b1c9e2b40',
   ReceiptHandle: 'AQEBmock-receipt-handle==',
@@ -96,6 +108,11 @@ export const mockMasSqsMessage = {
 export const mockMasRejectedSqsMessage = {
   ...mockMasSqsMessage,
   Body: JSON.stringify(mockMasRejectedMessageBody)
+}
+
+export const mockMasPublicNoticeSqsMessage = {
+  ...mockMasSqsMessage,
+  Body: JSON.stringify(mockMasPublicNoticeSqsMessageBody)
 }
 
 export const mockMasWithholdingSqsMessage = {
