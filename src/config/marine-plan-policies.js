@@ -1,12 +1,7 @@
+import { requiredFromEnvInCdp } from '../shared/common/helpers/convict/required-from-env-in-cdp.js'
+
 const oneHundredKilobytesInBytes = 102_400
 const thirtyMegabytesInBytes = 30_000_000
-
-// A convict default cannot read another config key, so cdpEnvironment's env var is read directly.
-const isCdpProd = process.env.ENVIRONMENT === 'prod'
-const govukPoliciesProductionUrl =
-  'https://environment.data.gov.uk/explore-marine-plans/api/policies'
-const govukPoliciesTestUrl =
-  'https://environment-test.data.gov.uk/explore-marine-plans/api/policies'
 
 export const marinePlanPoliciesSchema = {
   isEnabled: {
@@ -41,9 +36,9 @@ export const marinePlanPoliciesSchema = {
     env: 'ARCGIS_FEATURE_SERVER_URL'
   },
   govukPoliciesUrl: {
-    doc: 'URL of the GOV.UK marine-plans-explorer policies API. Defaults to the public production URL when ENVIRONMENT=prod, otherwise the basic-auth-protected environment-test URL',
-    format: String,
-    default: isCdpProd ? govukPoliciesProductionUrl : govukPoliciesTestUrl,
+    doc: 'URL of the GOV.UK marine-plans-explorer policies API (public in prod; basic-auth-protected environment-test elsewhere)',
+    format: requiredFromEnvInCdp,
+    default: '',
     env: 'GOVUK_MARINE_POLICIES_API_URL'
   },
   govukPoliciesUsername: {
