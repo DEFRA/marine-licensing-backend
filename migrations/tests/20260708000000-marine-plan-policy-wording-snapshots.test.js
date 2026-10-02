@@ -7,7 +7,7 @@ import {
   collectionMarineLicences,
   collectionMarinePlanPolicyWordingSnapshots
 } from '../../src/shared/common/constants/db-collections.js'
-import { computeWordingRef } from '../../src/marine-licences/api/helpers/marine-plan-policies/wording-snapshots.js'
+import { computeWordingRef } from '../helpers/wording-snapshots.js'
 
 describe('20260708000000-marine-plan-policy-wording-snapshots', () => {
   const wording = (code, overrides = {}) => ({

@@ -1,16 +1,25 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
+import Boom from '@hapi/boom'
 import { getPoliciesContent } from './policy-content-client.js'
+import { config } from '../../../../config.js'
 
 vi.mock('@hapi/wreck')
+
+const originalConfigGet = config.get.bind(config)
 
 describe('getPoliciesContent', () => {
   const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   const policyEntry = (code, overrides = {}) => ({
     _id: 'mongo-id',
     code,
-    title: code,
+    title: `${code} title`,
+    category: 'Economic',
     sector: 'Aggregates (31)',
     policy: `<p>${code} policy statement</p>`,
     policyAim: `<p>${code} aim</p>`,
@@ -26,7 +35,9 @@ describe('getPoliciesContent', () => {
     policyAim: `<p>${code} aim</p>`,
     whatIsIt: `<p>${code} what</p>`,
     whyIsItImportant: `<p>${code} why</p>`,
-    howWillThisBeImplemented: `<p>${code} how</p>`
+    howWillThisBeImplemented: `<p>${code} how</p>`,
+    title: `${code} title`,
+    category: 'Economic'
   })
 
   const expectedMerged = (code, extra = {}) => ({
@@ -36,7 +47,9 @@ describe('getPoliciesContent', () => {
     policyAim: `<p>${code} aim</p>`,
     whatIsIt: `<p>${code} what</p>`,
     whyIsItImportant: `<p>${code} why</p>`,
-    howWillThisBeImplemented: `<p>${code} how</p>`
+    howWillThisBeImplemented: `<p>${code} how</p>`,
+    title: `${code} title`,
+    category: 'Economic'
   })
 
   const emptyContent = {
@@ -44,8 +57,21 @@ describe('getPoliciesContent', () => {
     policyAim: '',
     whatIsIt: '',
     whyIsItImportant: '',
-    howWillThisBeImplemented: ''
+    howWillThisBeImplemented: '',
+    title: '',
+    category: ''
   }
+
+  const mockPoliciesCredentials = () =>
+    vi.spyOn(config, 'get').mockImplementation((key) =>
+      key === 'marinePlanPolicies'
+        ? {
+            ...originalConfigGet('marinePlanPolicies'),
+            govukPoliciesUsername: 'policies-user',
+            govukPoliciesPassword: 'policies-pass'
+          }
+        : originalConfigGet(key)
+    )
 
   const setupMocks = ({ initialDocs = [], refreshedDocs = [] } = {}) => {
     const { mockMongo } = global
@@ -278,7 +304,7 @@ describe('getPoliciesContent', () => {
   })
 
   describe('sanitisation and validation at ingest', () => {
-    it('should fetch the dataset with the configured maxBytes cap', async () => {
+    it('should fetch the dataset with the configured maxBytes cap and no auth header by default', async () => {
       setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
       Wreck.get.mockResolvedValue({
         res: { statusCode: 200 },
@@ -293,6 +319,90 @@ describe('getPoliciesContent', () => {
 
       const [, options] = Wreck.get.mock.calls[0]
       expect(options.maxBytes).toBe(30_000_000)
+      expect(options.headers).not.toHaveProperty('authorization')
+    })
+
+    it('should send a Basic auth header when GOV.UK policies credentials are configured', async () => {
+      setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
+      mockPoliciesCredentials()
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1')]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [, options] = Wreck.get.mock.calls[0]
+      expect(options.headers.authorization).toBe(
+        `Basic ${Buffer.from('policies-user:policies-pass').toString('base64')}`
+      )
+    })
+
+    it('should warn that credentials are missing when the API returns 401 to an unauthenticated request', async () => {
+      setupMocks({ initialDocs: [] })
+      Wreck.get.mockRejectedValue(
+        Boom.unauthorized('Response Error: 401 Unauthorized')
+      )
+
+      await expect(
+        getPoliciesContent({
+          policies: [{ policyCode: 'E-AGG-1' }],
+          db: global.mockMongo,
+          logger
+        })
+      ).rejects.toThrow('Response Error: 401 Unauthorized')
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        {
+          event: expect.objectContaining({
+            action: 'mp-policies:wording-fetch',
+            reason: expect.stringContaining(
+              'GOVUK_MARINE_POLICIES_API_USERNAME'
+            )
+          })
+        },
+        'GOV.UK policies API returned 401 and no basic auth credentials are configured'
+      )
+    })
+
+    it('should not blame missing credentials when a 401 follows an authenticated request', async () => {
+      setupMocks({ initialDocs: [] })
+      mockPoliciesCredentials()
+      Wreck.get.mockRejectedValue(
+        Boom.unauthorized('Response Error: 401 Unauthorized')
+      )
+
+      await expect(
+        getPoliciesContent({
+          policies: [{ policyCode: 'E-AGG-1' }],
+          db: global.mockMongo,
+          logger
+        })
+      ).rejects.toThrow('Response Error: 401 Unauthorized')
+
+      expect(logger.warn).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      ['a non-401 response', Boom.badGateway('Response Error: 502')],
+      ['a non-HTTP error', new Error('Request timed out')]
+    ])('should not blame missing credentials for %s', async (_, error) => {
+      setupMocks({ initialDocs: [] })
+      Wreck.get.mockRejectedValue(error)
+
+      await expect(
+        getPoliciesContent({
+          policies: [{ policyCode: 'E-AGG-1' }],
+          db: global.mockMongo,
+          logger
+        })
+      ).rejects.toThrow(error.message)
+
+      expect(logger.warn).toHaveBeenCalledTimes(1)
     })
 
     it('should sanitise wording fields before caching them', async () => {
@@ -318,6 +428,87 @@ describe('getPoliciesContent', () => {
 
       const [operations] = mockBulkWrite.mock.calls[0]
       expect(operations[0].updateOne.update.$set.policy).toBe('<p>Text</p>')
+    })
+
+    it('should store title and category trimmed as plain text rather than sanitised HTML', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [
+          policyEntry('E-AGG-1', {
+            title: '  East Aggregates & Dredging 1 ',
+            category: 'Cross-cutting '
+          })
+        ]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set).toEqual(
+        expect.objectContaining({
+          title: 'East Aggregates & Dredging 1',
+          category: 'Cross-cutting'
+        })
+      )
+    })
+
+    it('should store null without warning when a label is missing', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      const { category, ...entryWithoutCategory } = policyEntry('E-AGG-1')
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [entryWithoutCategory]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set.category).toBeNull()
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+
+    it('should store null and warn when a label is not a string', async () => {
+      const { mockBulkWrite } = setupMocks({
+        initialDocs: [],
+        refreshedDocs: [cachedDoc('E-AGG-1')]
+      })
+      Wreck.get.mockResolvedValue({
+        res: { statusCode: 200 },
+        payload: [policyEntry('E-AGG-1', { title: 42 })]
+      })
+
+      await getPoliciesContent({
+        policies: [{ policyCode: 'E-AGG-1' }],
+        db: global.mockMongo,
+        logger
+      })
+
+      const [operations] = mockBulkWrite.mock.calls[0]
+      expect(operations[0].updateOne.update.$set.title).toBeNull()
+      expect(logger.warn).toHaveBeenCalledWith(
+        {
+          event: expect.objectContaining({
+            action: 'mp-policies:wording-field-invalid',
+            reference: 'E-AGG-1/title'
+          })
+        },
+        expect.stringContaining('E-AGG-1')
+      )
     })
 
     it('should store null and warn when a wording field is not a string', async () => {

@@ -60,13 +60,22 @@ export const MARINE_PLAN_POLICY_JOB_STATUS = {
   FAILED: 'failed'
 }
 
-// The five wording fields of a marine plan policy, in canonical order.
-export const MARINE_PLAN_POLICY_CONTENT_FIELDS = [
+// The five wording fields of a marine plan policy (sanitised HTML), in canonical order.
+export const MARINE_PLAN_POLICY_WORDING_FIELDS = [
   'policy',
   'policyAim',
   'whatIsIt',
   'whyIsItImportant',
   'howWillThisBeImplemented'
+]
+
+export const MARINE_PLAN_POLICY_LABEL_FIELDS = ['title', 'category']
+
+// Order and membership are part of the snapshot hash: any change mints new
+// wordingRefs for identical wording (already-pinned refs stay valid).
+export const MARINE_PLAN_POLICY_CONTENT_FIELDS = [
+  ...MARINE_PLAN_POLICY_WORDING_FIELDS,
+  ...MARINE_PLAN_POLICY_LABEL_FIELDS
 ]
 
 export const MARINE_PLAN_POLICY_EVENT_ACTION = {

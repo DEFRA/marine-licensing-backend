@@ -31,7 +31,7 @@ export const hydrateMarinePlanPolicies = async (db, marineLicence) => {
     return MARINE_PLAN_POLICY_CONTENT_FIELDS.reduce(
       (policy, field) => {
         // A missing snapshot must never break the read; degrade to empty wording
-        policy[field] = snapshot ? snapshot[field] : ''
+        policy[field] = snapshot ? (snapshot[field] ?? null) : ''
         return policy
       },
       { policyCode: p.policyCode, sector: p.sector }
