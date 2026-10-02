@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { collectionMarinePlanPolicyWordingSnapshots } from '../../../../shared/common/constants/db-collections.js'
 import { MONGO_DUPLICATE_KEY_CODE } from '../../../../shared/common/constants/mongo.js'
+import { MARINE_PLAN_POLICY_CONTENT_FIELDS } from '../../../constants/marine-licence.js'
 import {
   canonicaliseWording,
   computeWordingRef,
@@ -33,8 +34,8 @@ describe('wording-snapshots', () => {
   })
 
   describe('canonicaliseWording / computeWordingRef', () => {
-    it.each(['title', 'category'])(
-      'should produce a different ref when only the %s changes',
+    it.each(MARINE_PLAN_POLICY_CONTENT_FIELDS)(
+      'should produce a different ref when only %s changes',
       (field) => {
         expect(
           computeWordingRef('E-AGG-1', { ...wording, [field]: 'Changed' })
@@ -56,14 +57,6 @@ describe('wording-snapshots', () => {
 
       expect(wordingRef).toBe(`E-AGG-1@${contentHash.slice(0, 12)}`)
       expect(contentHash).toMatch(/^[a-f0-9]{64}$/)
-    })
-
-    it('should produce different refs for different wording', () => {
-      const changed = { ...wording, policy: '<p>amended</p>' }
-
-      expect(computeWordingRef('E-AGG-1', changed).wordingRef).not.toBe(
-        computeWordingRef('E-AGG-1', wording).wordingRef
-      )
     })
 
     it('should keep null wording distinct from empty-string wording', () => {

@@ -11,6 +11,10 @@ const originalConfigGet = config.get.bind(config)
 describe('getPoliciesContent', () => {
   const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn() }
 
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   const policyEntry = (code, overrides = {}) => ({
     _id: 'mongo-id',
     code,
@@ -300,7 +304,7 @@ describe('getPoliciesContent', () => {
   })
 
   describe('sanitisation and validation at ingest', () => {
-    it('should fetch the dataset with the configured maxBytes cap', async () => {
+    it('should fetch the dataset with the configured maxBytes cap and no auth header by default', async () => {
       setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
       Wreck.get.mockResolvedValue({
         res: { statusCode: 200 },
@@ -315,34 +319,12 @@ describe('getPoliciesContent', () => {
 
       const [, options] = Wreck.get.mock.calls[0]
       expect(options.maxBytes).toBe(30_000_000)
+      expect(options.headers).not.toHaveProperty('authorization')
     })
 
     it('should send a Basic auth header when GOV.UK policies credentials are configured', async () => {
       setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
       mockPoliciesCredentials()
-      Wreck.get.mockResolvedValue({
-        res: { statusCode: 200 },
-        payload: [policyEntry('E-AGG-1')]
-      })
-
-      try {
-        await getPoliciesContent({
-          policies: [{ policyCode: 'E-AGG-1' }],
-          db: global.mockMongo,
-          logger
-        })
-
-        const [, options] = Wreck.get.mock.calls[0]
-        expect(options.headers.authorization).toBe(
-          `Basic ${Buffer.from('policies-user:policies-pass').toString('base64')}`
-        )
-      } finally {
-        config.get.mockRestore()
-      }
-    })
-
-    it('should omit the Authorization header when GOV.UK policies credentials are not configured', async () => {
-      setupMocks({ initialDocs: [], refreshedDocs: [cachedDoc('E-AGG-1')] })
       Wreck.get.mockResolvedValue({
         res: { statusCode: 200 },
         payload: [policyEntry('E-AGG-1')]
@@ -355,7 +337,9 @@ describe('getPoliciesContent', () => {
       })
 
       const [, options] = Wreck.get.mock.calls[0]
-      expect(options.headers).not.toHaveProperty('authorization')
+      expect(options.headers.authorization).toBe(
+        `Basic ${Buffer.from('policies-user:policies-pass').toString('base64')}`
+      )
     })
 
     it('should warn that credentials are missing when the API returns 401 to an unauthenticated request', async () => {
@@ -392,22 +376,33 @@ describe('getPoliciesContent', () => {
         Boom.unauthorized('Response Error: 401 Unauthorized')
       )
 
-      try {
-        await expect(
-          getPoliciesContent({
-            policies: [{ policyCode: 'E-AGG-1' }],
-            db: global.mockMongo,
-            logger
-          })
-        ).rejects.toThrow('Response Error: 401 Unauthorized')
+      await expect(
+        getPoliciesContent({
+          policies: [{ policyCode: 'E-AGG-1' }],
+          db: global.mockMongo,
+          logger
+        })
+      ).rejects.toThrow('Response Error: 401 Unauthorized')
 
-        expect(logger.warn).not.toHaveBeenCalledWith(
-          expect.anything(),
-          expect.stringContaining('no basic auth credentials')
-        )
-      } finally {
-        config.get.mockRestore()
-      }
+      expect(logger.warn).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+      ['a non-401 response', Boom.badGateway('Response Error: 502')],
+      ['a non-HTTP error', new Error('Request timed out')]
+    ])('should not blame missing credentials for %s', async (_, error) => {
+      setupMocks({ initialDocs: [] })
+      Wreck.get.mockRejectedValue(error)
+
+      await expect(
+        getPoliciesContent({
+          policies: [{ policyCode: 'E-AGG-1' }],
+          db: global.mockMongo,
+          logger
+        })
+      ).rejects.toThrow(error.message)
+
+      expect(logger.warn).toHaveBeenCalledTimes(1)
     })
 
     it('should sanitise wording fields before caching them', async () => {
