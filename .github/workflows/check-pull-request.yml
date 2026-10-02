@@ -55,16 +55,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+        with:
+          fetch-depth: 0
       - name: Select journey test profile
         id: journey-profile
         run: |
           if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
             echo "profile=smoke" >> "$GITHUB_OUTPUT"
             echo "Dependabot PR detected — running smoke journey tests only"
-          else
-            echo "profile=github" >> "$GITHUB_OUTPUT"
-            echo "Running full github journey test suite"
+            exit 0
           fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
+            echo "Changed files:"
+            printf '%s\n' "$changed"
+
+            non_pkg=$(printf '%s\n' "$changed" | grep -vE '^(package\.json|package-lock\.json)$' || true)
+            if [ -n "$changed" ] && [ -z "$non_pkg" ]; then
+              echo "profile=smoke" >> "$GITHUB_OUTPUT"
+              echo "Only package.json / package-lock.json changed — running smoke journey tests only"
+              exit 0
+            fi
+          fi
+
+          echo "profile=github" >> "$GITHUB_OUTPUT"
+          echo "Running full github journey test suite"
       - run: docker build -t defradigital/marine-licensing-backend:${{github.sha}} .
       - uses: DEFRA/marine-licensing-journey-tests/run-journey-tests@main
         with:
