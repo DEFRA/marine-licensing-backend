@@ -31,6 +31,7 @@ import { deleteConstructionDrawingController } from './controllers/delete-constr
 import { deleteConstructionDrawingsController } from './controllers/delete-construction-drawings.js'
 import { redactTextController } from './controllers/redact-text.js'
 import { updateSiteNoticeEvidenceController } from './controllers/update-site-notice-evidence.js'
+import { sendSiteNoticeEvidenceController } from './controllers/send-site-notice-evidence.js'
 
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
@@ -205,5 +206,10 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/update-site-notice-evidence',
     ...updateSiteNoticeEvidenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/send-site-notice-evidence',
+    ...sendSiteNoticeEvidenceController
   }
 ]
