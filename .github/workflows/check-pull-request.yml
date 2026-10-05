@@ -60,27 +60,74 @@ jobs:
       - name: Select journey test profile
         id: journey-profile
         run: |
+          set_profile() {
+            echo "profile=$1" >> "$GITHUB_OUTPUT"
+            echo "$2"
+          }
+
           if [ "${{ github.actor }}" = "dependabot[bot]" ]; then
-            echo "profile=smoke" >> "$GITHUB_OUTPUT"
-            echo "Dependabot PR detected — running smoke journey tests only"
+            set_profile smoke "Dependabot PR detected — running smoke journey tests only"
             exit 0
           fi
 
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
-            echo "Changed files:"
-            printf '%s\n' "$changed"
-
-            non_pkg=$(printf '%s\n' "$changed" | grep -vE '^(package\.json|package-lock\.json)$' || true)
-            if [ -n "$changed" ] && [ -z "$non_pkg" ]; then
-              echo "profile=smoke" >> "$GITHUB_OUTPUT"
-              echo "Only package.json / package-lock.json changed — running smoke journey tests only"
-              exit 0
-            fi
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            set_profile github "Running full github journey test suite"
+            exit 0
           fi
 
-          echo "profile=github" >> "$GITHUB_OUTPUT"
-          echo "Running full github journey test suite"
+          changed=$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.sha }}")
+          echo "Changed files:"
+          printf '%s\n' "$changed"
+
+          if [ -z "$changed" ]; then
+            set_profile github "No changed files detected — running full github journey test suite"
+            exit 0
+          fi
+
+          non_smoke_ci=$(printf '%s\n' "$changed" | grep -vE '^(package\.json|package-lock\.json|\.github/.*\.(yml|yaml))$' || true)
+          if [ -z "$non_smoke_ci" ]; then
+            set_profile smoke "Only dependency lockfile and/or GitHub workflow YAML changed — running smoke journey tests only"
+            exit 0
+          fi
+
+          touches_exemption=false
+          touches_lcml=false
+          touches_iat=false
+          touches_other=false
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            case "$file" in
+              package.json|package-lock.json|.github/*.yml|.github/*.yaml|.github/*/*.yml|.github/*/*.yaml)
+                ;;
+              src/exemptions/*)
+                touches_exemption=true
+                ;;
+              src/marine-licences/*)
+                touches_lcml=true
+                ;;
+              src/iat-contexts/*|src/iat-outcome-documents/*|src/iat-shared/*)
+                touches_iat=true
+                ;;
+              *)
+                touches_other=true
+                ;;
+            esac
+          done <<EOF
+          $changed
+          EOF
+
+          if [ "$touches_other" = true ]; then
+            set_profile github "Shared or non-area changes detected — running full github journey test suite"
+          elif [ "$touches_exemption" = true ] && [ "$touches_lcml" = false ] && [ "$touches_iat" = false ]; then
+            set_profile exemption "Exemption-only changes — running exemption journey tests"
+          elif [ "$touches_lcml" = true ] && [ "$touches_exemption" = false ] && [ "$touches_iat" = false ]; then
+            set_profile lcml "LCML-only changes — running lcml journey tests (+ smoke)"
+          elif [ "$touches_iat" = true ] && [ "$touches_exemption" = false ] && [ "$touches_lcml" = false ]; then
+            set_profile iat "IAT-only changes — running iat journey tests (+ smoke)"
+          else
+            set_profile github "Multi-area or unmatched changes — running full github journey test suite"
+          fi
       - run: docker build -t defradigital/marine-licensing-backend:${{github.sha}} .
       - uses: DEFRA/marine-licensing-journey-tests/run-journey-tests@main
         with:
