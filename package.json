@@ -21,8 +21,8 @@
     "postversion": "git add package.json package-lock.json && git commit -m $npm_package_version",
     "test": "TZ=UTC vitest run --coverage",
     "test:watch": "TZ=UTC vitest",
-    "server:watch": "nodemon --ext js,json --legacy-watch --polling-interval 100 ./src",
-    "server:debug": "nodemon --inspect-brk=0.0.0.0 --ext js,json --legacy-watch --polling-interval 100 ./src",
+    "server:watch": "node --watch --inspect=0.0.0.0 ./src",
+    "server:debug": "node --watch --inspect-brk=0.0.0.0 ./src",
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
     "migrate:create": "migrate-mongo create",
@@ -86,10 +86,7 @@
     "js-yaml": "4.3.2",
     "undici@^7": "^7.29.1",
     "brace-expansion@^1": "^1.1.21",
-    "brace-expansion@^5": "^5.0.12",
-    "nodemon": {
-      "chokidar": "4.0.3"
-    }
+    "brace-expansion@^5": "^5.0.12"
   },
   "devDependencies": {
     "@babel/core": "7.29.7",
@@ -100,7 +97,6 @@
     "husky": "9.1.7",
     "mongodb-memory-server": "11.3.0",
     "neostandard": "0.13.0",
-    "nodemon": "3.1.14",
     "npm-run-all": "4.1.5",
     "prettier": "3.9.9",
     "vitest": "4.1.11",
