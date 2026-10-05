@@ -45,7 +45,10 @@ export class MarineLicenceService {
       )
       throw Boom.forbidden(notAuthorisedMessage)
     }
-    if (!currentUserId) {
+
+    const isOwnerViewingDraft =
+      currentUserId && marineLicence.status === MARINE_LICENCE_STATUS.DRAFT
+    if (!isOwnerViewingDraft) {
       marineLicence.whoMarineLicenceIsFor =
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }

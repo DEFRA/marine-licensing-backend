@@ -76,6 +76,31 @@ describe('Get marine licence - integration tests', async () => {
     expect(body.whoMarineLicenceIsFor).toBeUndefined()
   })
 
+  test('includes who the marine licence is for when the creator requests a submitted licence', async () => {
+    const submittedId = new ObjectId()
+    const marineLicence = {
+      ...mockMarineLicence,
+      _id: submittedId,
+      contactId: '9687cdd5-49e7-4508-b56c-08a4d02c43c2',
+      status: MARINE_LICENCE_STATUS.SUBMITTED,
+      organisation: null
+    }
+
+    await globalThis.mockMongo
+      .collection('marine-licences')
+      .insertOne(marineLicence)
+    mockDynamicsContactDetailsApi()
+
+    const { statusCode, body } = await makeGetRequest({
+      server: getServer(),
+      url: `/marine-licence/${submittedId}`,
+      contactId: marineLicence.contactId
+    })
+
+    expect(statusCode).toBe(200)
+    expect(body.whoMarineLicenceIsFor).toBe('Dave Barnett')
+  })
+
   test('requested by a public user', async () => {
     const publicId = new ObjectId()
     const marineLicence = {

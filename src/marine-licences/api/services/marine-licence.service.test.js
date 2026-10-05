@@ -33,7 +33,7 @@ describe('MarineLicenceService', () => {
           if (_id.toHexString() !== marineLicence._id) {
             return null
           }
-          return marineLicence
+          return { ...marineLicence }
         })
       }
     })
@@ -82,7 +82,7 @@ describe('MarineLicenceService', () => {
       })
     })
 
-    it('should return marine licence if requested with a contact ID', async () => {
+    it('should return marine licence with whoMarineLicenceIsFor if the owner requests a submitted licence', async () => {
       const marineLicenceService = createService(
         global.mockMongo,
         marineLicence
@@ -91,7 +91,24 @@ describe('MarineLicenceService', () => {
         id: marineLicence._id,
         currentUserId: marineLicence.contactId
       })
-      expect(result).toEqual(marineLicence)
+      expect(result).toEqual({
+        ...marineLicence,
+        whoMarineLicenceIsFor: 'Dave Barnett'
+      })
+    })
+
+    it('should return marine licence without whoMarineLicenceIsFor if the owner requests a draft', async () => {
+      const draftLicence = {
+        ...marineLicence,
+        status: MARINE_LICENCE_STATUS.DRAFT
+      }
+      const marineLicenceService = createService(global.mockMongo, draftLicence)
+      const result = await marineLicenceService.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+      expect(result).toEqual(draftLicence)
+      expect(getContactNameById).not.toHaveBeenCalled()
     })
 
     it('should throw a not found error if marine licence not found', async () => {
