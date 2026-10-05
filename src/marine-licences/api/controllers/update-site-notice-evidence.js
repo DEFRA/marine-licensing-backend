@@ -24,10 +24,12 @@ export const updateSiteNoticeEvidenceController = {
       const { id, evidenceIndex, updatedAt, updatedBy, ...evidence } = payload
       const evidencePath = `siteNoticeEvidence.${evidenceIndex}`
 
-      for (const photo of [evidence.closeUpPhoto, evidence.positionPhoto]) {
-        if (photo) {
-          await validateSiteNoticePhotoUpload(photo.s3Location)
-        }
+      if (evidence.closeUpPhoto) {
+        await validateSiteNoticePhotoUpload(evidence.closeUpPhoto.s3Location)
+      }
+
+      if (evidence.positionPhoto) {
+        await validateSiteNoticePhotoUpload(evidence.positionPhoto.s3Location)
       }
 
       const result = await db.collection(collectionMarineLicences).updateOne(
