@@ -34,7 +34,6 @@ updates:
           - 'babel-jest'
           - 'husky'
           - 'vitest'
-          - 'nodemon'
           - 'npm-run-all'
 
       types:
