@@ -56,7 +56,8 @@ describe('MarineLicenceService', () => {
         marineLicence
       )
       const result = await MarineLicenceService.getMarineLicenceById({
-        id: marineLicence._id
+        id: marineLicence._id,
+        includeWhoMarineLicenceIsFor: true
       })
       expect(result).toEqual({
         ...marineLicence,
@@ -74,7 +75,8 @@ describe('MarineLicenceService', () => {
         marineLicenceWithOrg
       )
       const result = await marineLicenceService.getMarineLicenceById({
-        id: marineLicence._id
+        id: marineLicence._id,
+        includeWhoMarineLicenceIsFor: true
       })
       expect(result).toEqual({
         ...marineLicenceWithOrg,
@@ -89,7 +91,8 @@ describe('MarineLicenceService', () => {
       )
       const result = await marineLicenceService.getMarineLicenceById({
         id: marineLicence._id,
-        currentUserId: marineLicence.contactId
+        currentUserId: marineLicence.contactId,
+        includeWhoMarineLicenceIsFor: true
       })
       expect(result).toEqual({
         ...marineLicence,
@@ -105,9 +108,23 @@ describe('MarineLicenceService', () => {
       const marineLicenceService = createService(global.mockMongo, draftLicence)
       const result = await marineLicenceService.getMarineLicenceById({
         id: marineLicence._id,
-        currentUserId: marineLicence.contactId
+        currentUserId: marineLicence.contactId,
+        includeWhoMarineLicenceIsFor: true
       })
       expect(result).toEqual(draftLicence)
+      expect(getContactNameById).not.toHaveBeenCalled()
+    })
+
+    it('should not look up who the marine licence is for unless asked', async () => {
+      const marineLicenceService = createService(
+        global.mockMongo,
+        marineLicence
+      )
+      const result = await marineLicenceService.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+      expect(result).toEqual(marineLicence)
       expect(getContactNameById).not.toHaveBeenCalled()
     })
 

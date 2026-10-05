@@ -36,7 +36,11 @@ export class MarineLicenceService {
     )
   }
 
-  async getMarineLicenceById({ id, currentUserId }) {
+  async getMarineLicenceById({
+    id,
+    currentUserId,
+    includeWhoMarineLicenceIsFor = false
+  }) {
     const marineLicence = await this.#findMarineLicenceById(id)
     if (currentUserId && currentUserId !== marineLicence.contactId) {
       this.logger.info(
@@ -48,7 +52,7 @@ export class MarineLicenceService {
 
     const isOwnerViewingDraft =
       currentUserId && marineLicence.status === MARINE_LICENCE_STATUS.DRAFT
-    if (!isOwnerViewingDraft) {
+    if (includeWhoMarineLicenceIsFor && !isOwnerViewingDraft) {
       marineLicence.whoMarineLicenceIsFor =
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }
