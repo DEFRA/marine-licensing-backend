@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { updateSiteNoticeEvidenceSchema } from '../../models/site-notice-evidence.js'
+import { validateSiteNoticePhotoUpload } from '../helpers/validateSiteNoticePhotoUpload.js'
 
 export const updateSiteNoticeEvidenceController = {
   options: {
@@ -22,6 +23,12 @@ export const updateSiteNoticeEvidenceController = {
       const { payload, db } = request
       const { id, evidenceIndex, updatedAt, updatedBy, ...evidence } = payload
       const evidencePath = `siteNoticeEvidence.${evidenceIndex}`
+
+      for (const photo of [evidence.closeUpPhoto, evidence.positionPhoto]) {
+        if (photo) {
+          await validateSiteNoticePhotoUpload(photo.s3Location)
+        }
+      }
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         {

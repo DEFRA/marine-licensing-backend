@@ -1,6 +1,10 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
+import Boom from '@hapi/boom'
 import { updateSiteNoticeEvidenceController } from './update-site-notice-evidence.js'
+import { validateSiteNoticePhotoUpload } from '../helpers/validateSiteNoticePhotoUpload.js'
+
+vi.mock('../helpers/validateSiteNoticePhotoUpload.js')
 
 describe('PATCH /marine-licence/update-site-notice-evidence', () => {
   const mockAuditPayload = {
@@ -49,6 +53,77 @@ describe('PATCH /marine-licence/update-site-notice-evidence', () => {
           }
         }
       )
+    })
+
+    it('should validate each photo upload before saving', async () => {
+      const { mockMongo, mockHandler } = global
+      const buildPhoto = (s3Key) => ({
+        uploadedFile: { filename: `${s3Key}.jpg` },
+        s3Location: { s3Bucket: 'mmo-uploads', s3Key }
+      })
+      const closeUpPhoto = buildPhoto('close-up')
+      const positionPhoto = buildPhoto('position')
+      const mockPayload = buildPayload({ closeUpPhoto, positionPhoto })
+
+      const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        updateOne: mockUpdateOne
+      }))
+
+      await updateSiteNoticeEvidenceController.handler(
+        { db: mockMongo, payload: mockPayload },
+        mockHandler
+      )
+
+      expect(validateSiteNoticePhotoUpload).toHaveBeenCalledWith(
+        closeUpPhoto.s3Location
+      )
+      expect(validateSiteNoticePhotoUpload).toHaveBeenCalledWith(
+        positionPhoto.s3Location
+      )
+      expect(mockUpdateOne).toHaveBeenCalled()
+    })
+
+    it('should not validate photos when none are in the payload', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = buildPayload({ locationName: 'North pier' })
+
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+      }))
+
+      await updateSiteNoticeEvidenceController.handler(
+        { db: mockMongo, payload: mockPayload },
+        mockHandler
+      )
+
+      expect(validateSiteNoticePhotoUpload).not.toHaveBeenCalled()
+    })
+
+    it('should not save when a photo upload fails validation', async () => {
+      const { mockMongo, mockHandler } = global
+      const mockPayload = buildPayload({
+        positionPhoto: {
+          uploadedFile: { filename: 'position.gif' },
+          s3Location: { s3Bucket: 'mmo-uploads', s3Key: 'position' }
+        }
+      })
+
+      validateSiteNoticePhotoUpload.mockRejectedValueOnce(
+        Boom.unsupportedMediaType('File must be a JPG or PNG image')
+      )
+      const mockUpdateOne = vi.fn()
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        updateOne: mockUpdateOne
+      }))
+
+      await expect(() =>
+        updateSiteNoticeEvidenceController.handler(
+          { db: mockMongo, payload: mockPayload },
+          mockHandler
+        )
+      ).rejects.toThrow('File must be a JPG or PNG image')
+      expect(mockUpdateOne).not.toHaveBeenCalled()
     })
 
     it('should throw 404 when the evidence index does not exist', async () => {
