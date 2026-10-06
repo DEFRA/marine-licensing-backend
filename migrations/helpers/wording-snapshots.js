@@ -28,7 +28,7 @@ const canonicaliseWording = (wording) =>
     JSON.stringify(wording[field] ?? null)
   ).join('|')
 
-const computeWordingRef = (policyCode, wording) => {
+export const computeWordingRef = (policyCode, wording) => {
   const contentHash = createHash('sha256')
     .update(canonicaliseWording(wording))
     .digest('hex')
