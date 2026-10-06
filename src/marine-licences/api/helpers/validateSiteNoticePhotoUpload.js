@@ -34,9 +34,7 @@ export const validateSiteNoticePhotoUpload = async (s3Location, logger) => {
         event: {
           action: `${logSystem}:size-validation`,
           outcome: 'failure'
-        },
-        fileSize: metadata.size,
-        maxSize: MAX_SIZE_10MB
+        }
       },
       'File size validation failed'
     )

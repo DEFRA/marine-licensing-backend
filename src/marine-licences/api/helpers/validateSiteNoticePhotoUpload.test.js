@@ -71,9 +71,7 @@ describe('validateSiteNoticePhotoUpload', () => {
         event: expect.objectContaining({
           action: 'SiteNoticePhoto:Upload Validation:size-validation',
           outcome: 'failure'
-        }),
-        fileSize: 10 * 1024 * 1024 + 1,
-        maxSize: 10 * 1024 * 1024
+        })
       }),
       'File size validation failed'
     )
