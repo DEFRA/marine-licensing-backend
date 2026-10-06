@@ -2,7 +2,9 @@ import { config } from '../../../../config.js'
 import { collectionMarinePlanPolicyWording } from '../../../../shared/common/constants/db-collections.js'
 import {
   MARINE_PLAN_POLICY_EVENT_ACTION,
-  MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS
+  MARINE_PLAN_POLICY_CONTENT_FIELDS as CONTENT_FIELDS,
+  MARINE_PLAN_POLICY_LABEL_FIELDS as LABEL_FIELDS,
+  MARINE_PLAN_POLICY_WORDING_FIELDS as WORDING_FIELDS
 } from '../../../constants/marine-licence.js'
 import { isNonEmptyString } from '../../../../shared/helpers/is-non-empty-string.js'
 import { timedJsonFetch } from './policy-http.js'
@@ -58,20 +60,46 @@ const sanitiseWordingField = ({
   return sanitised
 }
 
-const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) =>
-  CONTENT_FIELDS.reduce(
-    (doc, field) => {
-      doc[field] = sanitiseWordingField({
-        value: entry[field],
-        code: entry.code,
-        field,
-        maxFieldBytes,
-        logger
-      })
-      return doc
-    },
-    { fetchedAt }
-  )
+// Labels are rendered as escaped text, so they are trimmed rather than HTML-sanitised.
+const toLabel = ({ value, code, field, logger }) => {
+  if (value == null) {
+    return null
+  }
+  if (typeof value !== 'string') {
+    logFieldRejected({
+      logger,
+      action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FIELD_INVALID,
+      code,
+      field,
+      reason:
+        'Non-string label value received from the GOV.UK policies API; raise a data-quality issue with the marine plans explorer team'
+    })
+    return null
+  }
+  return value.trim()
+}
+
+const toCacheDocument = ({ entry, fetchedAt, maxFieldBytes, logger }) => {
+  const doc = { fetchedAt }
+  for (const field of WORDING_FIELDS) {
+    doc[field] = sanitiseWordingField({
+      value: entry[field],
+      code: entry.code,
+      field,
+      maxFieldBytes,
+      logger
+    })
+  }
+  for (const field of LABEL_FIELDS) {
+    doc[field] = toLabel({
+      value: entry[field],
+      code: entry.code,
+      field,
+      logger
+    })
+  }
+  return doc
+}
 
 const keepValidEntries = (policies, logger) =>
   policies.filter((entry, index) => {
@@ -105,22 +133,62 @@ const toEmptyContent = () =>
     return content
   }, {})
 
+const HTTP_UNAUTHORIZED = 401
+
+const buildGovukPoliciesAuthHeaders = (username, password) => {
+  if (!username || !password) {
+    return {}
+  }
+  const credentials = Buffer.from(`${username}:${password}`).toString('base64')
+  return { authorization: `Basic ${credentials}` }
+}
+
+const logMissingCredentialsIfUnauthorised = (error, authHeaders, logger) => {
+  if (
+    error.output?.statusCode === HTTP_UNAUTHORIZED &&
+    !authHeaders.authorization
+  ) {
+    logger.warn(
+      {
+        event: {
+          action: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
+          outcome: 'failure',
+          reason:
+            'GOVUK_MARINE_POLICIES_API_USERNAME and GOVUK_MARINE_POLICIES_API_PASSWORD are not set'
+        }
+      },
+      'GOV.UK policies API returned 401 and no basic auth credentials are configured'
+    )
+  }
+}
+
 const refreshPolicyDataset = async (collection, logger) => {
   const {
     govukPoliciesUrl,
+    govukPoliciesUsername,
+    govukPoliciesPassword,
     wordingTimeoutMs,
     wordingMaxResponseBytes,
     wordingMaxFieldBytes
   } = config.get('marinePlanPolicies')
 
+  const authHeaders = buildGovukPoliciesAuthHeaders(
+    govukPoliciesUsername,
+    govukPoliciesPassword
+  )
+
   // The API returns all policies in one response, so one fetch refreshes the full cache.
   const policies = await timedJsonFetch({
     url: govukPoliciesUrl,
+    options: { headers: authHeaders },
     timeoutMs: wordingTimeoutMs,
     maxBytes: wordingMaxResponseBytes,
     eventAction: MARINE_PLAN_POLICY_EVENT_ACTION.WORDING_FETCH,
     upstreamName: 'marine plan policy wording',
     logger
+  }).catch((error) => {
+    logMissingCredentialsIfUnauthorised(error, authHeaders, logger)
+    throw error
   })
 
   if (!Array.isArray(policies) || policies.length === 0) {
