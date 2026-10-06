@@ -55,7 +55,7 @@
     "aws4": "1.13.2",
     "convict": "6.2.5",
     "convict-format-with-validator": "6.2.0",
-    "csv-stringify": "6.8.3",
+    "csv-stringify": "6.9.0",
     "date-fns": "4.4.0",
     "dotenv": "18.0.4",
     "global-agent": "3.0.0",
