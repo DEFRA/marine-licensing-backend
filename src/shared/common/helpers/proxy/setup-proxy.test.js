@@ -10,6 +10,7 @@ describe('setupProxy', () => {
   const originalHttpsAgent = Wreck.agents.https
   const originalHttpGlobalAgent = Http.globalAgent
   const originalHttpsGlobalAgent = Https.globalAgent
+  const originalSetGlobalProxyFromEnv = Http.setGlobalProxyFromEnv
 
   afterEach(() => {
     config.set('httpProxy', null)
@@ -17,6 +18,7 @@ describe('setupProxy', () => {
     Wreck.agents.https = originalHttpsAgent
     Http.globalAgent = originalHttpGlobalAgent
     Https.globalAgent = originalHttpsGlobalAgent
+    Http.setGlobalProxyFromEnv = originalSetGlobalProxyFromEnv
   })
 
   test('Should not setup proxy if the environment variable is not set', () => {
@@ -33,6 +35,22 @@ describe('setupProxy', () => {
 
     expect(Wreck.agents.http).toBe(Http.globalAgent)
     expect(Wreck.agents.https).toBe(Https.globalAgent)
+    expect(Https.globalAgent.options?.proxyEnv?.HTTP_PROXY).toBe(
+      'http://localhost:8080'
+    )
+  })
+
+  test('Should fall back to Agent proxyEnv when setGlobalProxyFromEnv is unavailable', () => {
+    Http.setGlobalProxyFromEnv = undefined
+    config.set('httpProxy', 'http://localhost:8080')
+
+    setupProxy()
+
+    expect(Wreck.agents.http).toBe(Http.globalAgent)
+    expect(Wreck.agents.https).toBe(Https.globalAgent)
+    expect(Http.globalAgent.options?.proxyEnv?.HTTP_PROXY).toBe(
+      'http://localhost:8080'
+    )
     expect(Https.globalAgent.options?.proxyEnv?.HTTP_PROXY).toBe(
       'http://localhost:8080'
     )
