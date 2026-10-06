@@ -57,7 +57,7 @@
     "convict-format-with-validator": "6.2.0",
     "csv-stringify": "6.8.3",
     "date-fns": "4.4.0",
-    "dotenv": "18.0.3",
+    "dotenv": "18.0.4",
     "global-agent": "3.0.0",
     "hapi-auth-jwt2": "11.0.0",
     "hapi-pino": "13.0.0",
@@ -68,7 +68,7 @@
     "jsdom": "^29.1.0",
     "migrate-mongo": "14.0.7",
     "mongo-locks": "3.2.0",
-    "mongodb": "7.6.0",
+    "mongodb": "7.7.0",
     "node-cron": "4.6.0",
     "node-fetch": "3.3.2",
     "notifications-node-client": "8.5.0",
@@ -86,7 +86,9 @@
     "js-yaml": "4.3.2",
     "undici@^7": "^7.29.1",
     "brace-expansion@^1": "^1.1.21",
-    "brace-expansion@^5": "^5.0.12"
+    "brace-expansion@^5": "^5.0.12",
+    "source-map-js": "1.2.2",
+    "fast-copy": "4.1.1"
   },
   "devDependencies": {
     "@babel/core": "7.29.7",
