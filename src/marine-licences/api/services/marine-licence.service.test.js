@@ -269,7 +269,9 @@ describe('MarineLicenceService', () => {
       policyAim: '<p>aim</p>',
       whatIsIt: '<p>what</p>',
       whyIsItImportant: null,
-      howWillThisBeImplemented: '<p>how</p>'
+      howWillThisBeImplemented: '<p>how</p>',
+      title: 'East Aggregates 1',
+      category: 'Economic'
     }
     const wordingRef = 'E-AGG-1@a1b2c3d4e5f6'
 
@@ -314,6 +316,34 @@ describe('MarineLicenceService', () => {
       })
       expect(result.marinePlanPolicies).toEqual([
         { policyCode: 'E-AGG-1', sector: 'Aggregates', ...wording }
+      ])
+    })
+
+    it('should return null title and category for snapshots pinned before labels were captured', async () => {
+      const { title, category, ...wordingWithoutLabels } = wording
+      const licence = {
+        ...marineLicence,
+        marinePlanPolicies: [
+          { policyCode: 'E-AGG-1', sector: 'Aggregates', wordingRef }
+        ]
+      }
+      const { service } = createServiceWithSnapshots(licence, [
+        { _id: wordingRef, policyCode: 'E-AGG-1', ...wordingWithoutLabels }
+      ])
+
+      const result = await service.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(result.marinePlanPolicies).toStrictEqual([
+        {
+          policyCode: 'E-AGG-1',
+          sector: 'Aggregates',
+          ...wordingWithoutLabels,
+          title: null,
+          category: null
+        }
       ])
     })
 
@@ -392,7 +422,9 @@ describe('MarineLicenceService', () => {
           policyAim: '',
           whatIsIt: '',
           whyIsItImportant: '',
-          howWillThisBeImplemented: ''
+          howWillThisBeImplemented: '',
+          title: '',
+          category: ''
         }
       ])
     })
