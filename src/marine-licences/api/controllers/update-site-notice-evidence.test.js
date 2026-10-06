@@ -76,10 +76,12 @@ describe('PATCH /marine-licence/update-site-notice-evidence', () => {
       )
 
       expect(validateSiteNoticePhotoUpload).toHaveBeenCalledWith(
-        closeUpPhoto.s3Location
+        closeUpPhoto.s3Location,
+        expect.any(Object)
       )
       expect(validateSiteNoticePhotoUpload).toHaveBeenCalledWith(
-        positionPhoto.s3Location
+        positionPhoto.s3Location,
+        expect.any(Object)
       )
       expect(mockUpdateOne).toHaveBeenCalled()
     })

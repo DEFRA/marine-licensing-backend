@@ -5,6 +5,9 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { updateSiteNoticeEvidenceSchema } from '../../models/site-notice-evidence.js'
 import { validateSiteNoticePhotoUpload } from '../helpers/validateSiteNoticePhotoUpload.js'
+import { createLogger } from '../../../shared/common/helpers/logging/logger.js'
+
+const logger = createLogger()
 
 export const updateSiteNoticeEvidenceController = {
   options: {
@@ -25,11 +28,17 @@ export const updateSiteNoticeEvidenceController = {
       const evidencePath = `siteNoticeEvidence.${evidenceIndex}`
 
       if (evidence.closeUpPhoto) {
-        await validateSiteNoticePhotoUpload(evidence.closeUpPhoto.s3Location)
+        await validateSiteNoticePhotoUpload(
+          evidence.closeUpPhoto.s3Location,
+          logger
+        )
       }
 
       if (evidence.positionPhoto) {
-        await validateSiteNoticePhotoUpload(evidence.positionPhoto.s3Location)
+        await validateSiteNoticePhotoUpload(
+          evidence.positionPhoto.s3Location,
+          logger
+        )
       }
 
       const result = await db.collection(collectionMarineLicences).updateOne(

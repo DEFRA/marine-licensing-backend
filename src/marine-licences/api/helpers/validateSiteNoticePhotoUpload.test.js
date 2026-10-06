@@ -15,22 +15,18 @@ vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
   }
 }))
 
-const mockLogger = vi.hoisted(() => ({
-  info: vi.fn(),
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn()
-}))
-
-vi.mock('../../../shared/common/helpers/logging/logger.js', () => ({
-  createLogger: vi.fn().mockReturnValue(mockLogger)
-}))
-
 describe('validateSiteNoticePhotoUpload', () => {
   const s3Location = {
     s3Bucket: 'mmo-uploads',
     s3Key: 'test-file-key',
     checksumSha256: 'test-checksum'
+  }
+
+  const mockLogger = {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
   }
 
   beforeEach(() => {
@@ -43,11 +39,21 @@ describe('validateSiteNoticePhotoUpload', () => {
 
   test('should throw forbidden error when s3Bucket does not match config', async () => {
     await expect(
-      validateSiteNoticePhotoUpload({
-        ...s3Location,
-        s3Bucket: 'wrong-bucket'
-      })
+      validateSiteNoticePhotoUpload(
+        { ...s3Location, s3Bucket: 'wrong-bucket' },
+        mockLogger
+      )
     ).rejects.toThrow(Boom.forbidden('Invalid S3 bucket'))
+
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'SiteNoticePhoto:Upload Validation:bucket-validation',
+          outcome: 'failure'
+        })
+      }),
+      'S3 bucket validation failed'
+    )
   })
 
   test('should throw entity too large error when file exceeds 10MB', async () => {
@@ -56,8 +62,20 @@ describe('validateSiteNoticePhotoUpload', () => {
       contentType: 'image/jpeg'
     })
 
-    await expect(validateSiteNoticePhotoUpload(s3Location)).rejects.toThrow(
-      /exceeds maximum allowed size/
+    await expect(
+      validateSiteNoticePhotoUpload(s3Location, mockLogger)
+    ).rejects.toThrow(/exceeds maximum allowed size/)
+
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'SiteNoticePhoto:Upload Validation:size-validation',
+          outcome: 'failure'
+        }),
+        fileSize: 10 * 1024 * 1024 + 1,
+        maxSize: 10 * 1024 * 1024
+      }),
+      'File size validation failed'
     )
   })
 
@@ -67,8 +85,21 @@ describe('validateSiteNoticePhotoUpload', () => {
       contentType: 'image/gif'
     })
 
-    await expect(validateSiteNoticePhotoUpload(s3Location)).rejects.toThrow(
+    await expect(
+      validateSiteNoticePhotoUpload(s3Location, mockLogger)
+    ).rejects.toThrow(
       Boom.unsupportedMediaType('File must be a JPG or PNG image')
+    )
+
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: 'SiteNoticePhoto:Upload Validation:type-validation',
+          outcome: 'failure'
+        }),
+        contentType: 'image/gif'
+      }),
+      'File type validation failed'
     )
   })
 
@@ -81,7 +112,7 @@ describe('validateSiteNoticePhotoUpload', () => {
       })
 
       await expect(
-        validateSiteNoticePhotoUpload(s3Location)
+        validateSiteNoticePhotoUpload(s3Location, mockLogger)
       ).resolves.toBeUndefined()
     }
   )
