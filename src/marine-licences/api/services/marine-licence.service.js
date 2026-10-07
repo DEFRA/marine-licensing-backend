@@ -38,7 +38,7 @@ export class MarineLicenceService {
       getContactNameById({ contactId: marineLicence.contactId })
     )
   }
-  
+
   async #addResolvedByNames(marineLicence) {
     const resolvedTasks = (marineLicence.applicationTasks ?? []).filter(
       (task) => task.resolvedBy
