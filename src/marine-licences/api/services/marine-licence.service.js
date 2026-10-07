@@ -1,6 +1,9 @@
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
-import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
+import {
+  batchGetContactNames,
+  getContactNameById
+} from '../../../shared/common/helpers/dynamics/get-contact-details.js'
 import {
   MARINE_LICENCE_STATUS,
   MARINE_LICENCE_SUBMITTED_STATUSES
@@ -35,6 +38,22 @@ export class MarineLicenceService {
       getContactNameById({ contactId: marineLicence.contactId })
     )
   }
+  
+  async #addResolvedByNames(marineLicence) {
+    const resolvedTasks = (marineLicence.applicationTasks ?? []).filter(
+      (task) => task.resolvedBy
+    )
+    if (!resolvedTasks.length) {
+      return
+    }
+
+    const names = await batchGetContactNames(
+      resolvedTasks.map((task) => task.resolvedBy)
+    )
+    for (const task of resolvedTasks) {
+      task.resolvedByName = names[task.resolvedBy] ?? null
+    }
+  }
 
   async getMarineLicenceById({
     id,
@@ -56,6 +75,7 @@ export class MarineLicenceService {
       marineLicence.whoMarineLicenceIsFor =
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }
+    await this.#addResolvedByNames(marineLicence)
     return marineLicence
   }
 
