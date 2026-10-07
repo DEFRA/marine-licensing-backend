@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
 import {
+  APPLICATION_TASK_TYPE,
   MARINE_LICENCE_STATUS,
   MARINE_LICENCE_SUBMITTED_STATUSES,
   MAS_EVENT_ACTION
@@ -19,42 +20,50 @@ import {
 const pushFirstTaskOfType = (
   db,
   { applicationReference, task, updatedBy, now }
-) =>
-  db.collection(collectionMarineLicences).findOneAndUpdate(
+) => {
+  const update = {
+    applicationTasks: {
+      $concatArrays: [
+        { $ifNull: ['$applicationTasks', []] },
+        { $literal: [task] }
+      ]
+    },
+    previousStatus: {
+      $cond: [
+        { $eq: ['$status', MARINE_LICENCE_STATUS.SUBMITTED] },
+        '$status',
+        '$previousStatus'
+      ]
+    },
+    status: {
+      $cond: [
+        { $in: ['$status', MARINE_LICENCE_SUBMITTED_STATUSES] },
+        MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+        '$status'
+      ]
+    },
+    updatedAt: now,
+    updatedBy
+  }
+
+  if (task.type === APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE) {
+    update.siteNoticeEvidence = {
+      $concatArrays: [
+        { $ifNull: ['$siteNoticeEvidence', []] },
+        { $literal: [{}] }
+      ]
+    }
+  }
+
+  return db.collection(collectionMarineLicences).findOneAndUpdate(
     {
       applicationReference,
       applicationTasks: { $not: { $elemMatch: { type: task.type } } }
     },
-    [
-      {
-        $set: {
-          applicationTasks: {
-            $concatArrays: [
-              { $ifNull: ['$applicationTasks', []] },
-              { $literal: [task] }
-            ]
-          },
-          previousStatus: {
-            $cond: [
-              { $eq: ['$status', MARINE_LICENCE_STATUS.SUBMITTED] },
-              '$status',
-              '$previousStatus'
-            ]
-          },
-          status: {
-            $cond: [
-              { $in: ['$status', MARINE_LICENCE_SUBMITTED_STATUSES] },
-              MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-              '$status'
-            ]
-          },
-          updatedAt: now,
-          updatedBy
-        }
-      }
-    ],
+    [{ $set: update }],
     { returnDocument: 'after' }
   )
+}
 
 const findLicence = (db, applicationReference) =>
   db

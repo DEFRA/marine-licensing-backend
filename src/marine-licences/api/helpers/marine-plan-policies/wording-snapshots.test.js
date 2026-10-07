@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { collectionMarinePlanPolicyWordingSnapshots } from '../../../../shared/common/constants/db-collections.js'
 import { MONGO_DUPLICATE_KEY_CODE } from '../../../../shared/common/constants/mongo.js'
+import { MARINE_PLAN_POLICY_CONTENT_FIELDS } from '../../../constants/marine-licence.js'
 import {
   canonicaliseWording,
   computeWordingRef,
@@ -13,7 +14,9 @@ describe('wording-snapshots', () => {
     policyAim: '<p>aim</p>',
     whatIsIt: '<p>what</p>',
     whyIsItImportant: '<p>why</p>',
-    howWillThisBeImplemented: '<p>how</p>'
+    howWillThisBeImplemented: '<p>how</p>',
+    title: 'East Aggregates 1',
+    category: 'Economic'
   }
 
   const buildPolicy = (overrides = {}) => ({
@@ -31,6 +34,16 @@ describe('wording-snapshots', () => {
   })
 
   describe('canonicaliseWording / computeWordingRef', () => {
+    it.each(MARINE_PLAN_POLICY_CONTENT_FIELDS)(
+      'should produce a different ref when only %s changes',
+      (field) => {
+        expect(
+          computeWordingRef('E-AGG-1', { ...wording, [field]: 'Changed' })
+            .wordingRef
+        ).not.toBe(computeWordingRef('E-AGG-1', wording).wordingRef)
+      }
+    )
+
     it('should produce the same ref for the same wording regardless of key order', () => {
       const reordered = Object.fromEntries(Object.entries(wording).reverse())
 
@@ -44,14 +57,6 @@ describe('wording-snapshots', () => {
 
       expect(wordingRef).toBe(`E-AGG-1@${contentHash.slice(0, 12)}`)
       expect(contentHash).toMatch(/^[a-f0-9]{64}$/)
-    })
-
-    it('should produce different refs for different wording', () => {
-      const changed = { ...wording, policy: '<p>amended</p>' }
-
-      expect(computeWordingRef('E-AGG-1', changed).wordingRef).not.toBe(
-        computeWordingRef('E-AGG-1', wording).wordingRef
-      )
     })
 
     it('should keep null wording distinct from empty-string wording', () => {

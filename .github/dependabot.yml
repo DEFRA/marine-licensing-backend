@@ -34,7 +34,6 @@ updates:
           - 'babel-jest'
           - 'husky'
           - 'vitest'
-          - 'npm-run-all'
 
       types:
         patterns:

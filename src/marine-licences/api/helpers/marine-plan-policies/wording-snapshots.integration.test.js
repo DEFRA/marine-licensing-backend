@@ -13,7 +13,9 @@ describe('Wording snapshots pin → hydrate round trip - integration tests', asy
     policyAim: '<p>aim</p>',
     whatIsIt: '<p>what</p>',
     whyIsItImportant: '<p>why</p>',
-    howWillThisBeImplemented: '<p>how</p>'
+    howWillThisBeImplemented: '<p>how</p>',
+    title: 'East Aggregates 1',
+    category: 'Economic'
   }
   const policy = { policyCode: 'E-AGG-1', sector: 'Aggregates', ...wording }
 
