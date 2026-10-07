@@ -19,6 +19,7 @@ const buildTask = (
   type,
   receivedAt: new Date(),
   resolvedAt,
+  resolvedBy: null,
   data: { nationalSecurity: { withheldSome: true, comments: 'Some comments' } }
 })
 
@@ -76,6 +77,11 @@ describe('Resolve application task - integration tests', async () => {
     const stored = await storedLicence(id)
     expect(stored.status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
     expect(stored).not.toHaveProperty('previousStatus')
+    expect(stored.applicationTasks[0]).toMatchObject({
+      resolvedAt: expect.any(Date),
+      resolvedBy: contactId
+    })
+    expect(stored.updatedBy).toBe(contactId)
   })
 
   test('stays at Action required until the last outstanding task is resolved', async () => {

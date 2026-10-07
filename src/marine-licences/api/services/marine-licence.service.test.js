@@ -1,13 +1,17 @@
 import { vi } from 'vitest'
 import { MarineLicenceService } from './marine-licence.service.js'
-import { getContactNameById } from '../../../shared/common/helpers/dynamics/get-contact-details.js'
+import {
+  batchGetContactNames,
+  getContactNameById
+} from '../../../shared/common/helpers/dynamics/get-contact-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarinePlanPolicyWordingSnapshots } from '../../../shared/common/constants/db-collections.js'
 
 vi.mock(
   '../../../shared/common/helpers/dynamics/get-contact-details.js',
   () => ({
-    getContactNameById: vi.fn().mockResolvedValue('Dave Barnett')
+    getContactNameById: vi.fn().mockResolvedValue('Dave Barnett'),
+    batchGetContactNames: vi.fn()
   })
 )
 
@@ -92,6 +96,58 @@ describe('MarineLicenceService', () => {
         currentUserId: marineLicence.contactId
       })
       expect(result).toEqual(marineLicence)
+      expect(batchGetContactNames).not.toHaveBeenCalled()
+    })
+
+    it('should add resolvedByName to resolved application tasks', async () => {
+      const resolverId = 'bdd2cd26-15a6-4e0c-9f2e-9f06f8b7c2f1'
+      const unknownResolverId = '2f6d1c4a-8b3e-4f7a-9c2d-1e5b7a9f3c80'
+      batchGetContactNames.mockResolvedValueOnce({ [resolverId]: 'Jo Bloggs' })
+      const marineLicenceService = createService(global.mockMongo, {
+        ...marineLicence,
+        applicationTasks: [
+          { taskId: 'resolved', resolvedBy: resolverId },
+          { taskId: 'unknown', resolvedBy: unknownResolverId },
+          { taskId: 'outstanding', resolvedBy: null }
+        ]
+      })
+
+      const result = await marineLicenceService.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(batchGetContactNames).toHaveBeenCalledWith([
+        resolverId,
+        unknownResolverId
+      ])
+      expect(result.applicationTasks).toEqual([
+        {
+          taskId: 'resolved',
+          resolvedBy: resolverId,
+          resolvedByName: 'Jo Bloggs'
+        },
+        {
+          taskId: 'unknown',
+          resolvedBy: unknownResolverId,
+          resolvedByName: null
+        },
+        { taskId: 'outstanding', resolvedBy: null }
+      ])
+    })
+
+    it('should not look up names when no application task is resolved', async () => {
+      const marineLicenceService = createService(global.mockMongo, {
+        ...marineLicence,
+        applicationTasks: [{ taskId: 'outstanding', resolvedAt: null }]
+      })
+
+      await marineLicenceService.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(batchGetContactNames).not.toHaveBeenCalled()
     })
 
     it('should throw a not found error if marine licence not found', async () => {
@@ -213,7 +269,9 @@ describe('MarineLicenceService', () => {
       policyAim: '<p>aim</p>',
       whatIsIt: '<p>what</p>',
       whyIsItImportant: null,
-      howWillThisBeImplemented: '<p>how</p>'
+      howWillThisBeImplemented: '<p>how</p>',
+      title: 'East Aggregates 1',
+      category: 'Economic'
     }
     const wordingRef = 'E-AGG-1@a1b2c3d4e5f6'
 
@@ -258,6 +316,34 @@ describe('MarineLicenceService', () => {
       })
       expect(result.marinePlanPolicies).toEqual([
         { policyCode: 'E-AGG-1', sector: 'Aggregates', ...wording }
+      ])
+    })
+
+    it('should return null title and category for snapshots pinned before labels were captured', async () => {
+      const { title, category, ...wordingWithoutLabels } = wording
+      const licence = {
+        ...marineLicence,
+        marinePlanPolicies: [
+          { policyCode: 'E-AGG-1', sector: 'Aggregates', wordingRef }
+        ]
+      }
+      const { service } = createServiceWithSnapshots(licence, [
+        { _id: wordingRef, policyCode: 'E-AGG-1', ...wordingWithoutLabels }
+      ])
+
+      const result = await service.getMarineLicenceById({
+        id: marineLicence._id,
+        currentUserId: marineLicence.contactId
+      })
+
+      expect(result.marinePlanPolicies).toStrictEqual([
+        {
+          policyCode: 'E-AGG-1',
+          sector: 'Aggregates',
+          ...wordingWithoutLabels,
+          title: null,
+          category: null
+        }
       ])
     })
 
@@ -336,7 +422,9 @@ describe('MarineLicenceService', () => {
           policyAim: '',
           whatIsIt: '',
           whyIsItImportant: '',
-          howWillThisBeImplemented: ''
+          howWillThisBeImplemented: '',
+          title: '',
+          category: ''
         }
       ])
     })

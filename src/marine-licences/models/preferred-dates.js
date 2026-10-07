@@ -1,48 +1,13 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
-
-const getMinYear = () => new Date().getFullYear()
-
-const MONTH_PATTERN = /^(0?[1-9]|1[0-2])$/
-const YEAR_PATTERN = /^\d{4}$/
-
-const isSameYearAndEndMonthBefore = (start, end) =>
-  Number(end.year) === Number(start.year) &&
-  Number(end.month) < Number(start.month)
-
-const isEndBeforeStart = (start, end) =>
-  Number(end.year) < Number(start.year) ||
-  isSameYearAndEndMonthBefore(start, end)
-
-const isBeforeCurrentMonth = ({ month, year }) => {
-  const now = new Date()
-  return (
-    Number(year) < now.getFullYear() ||
-    (Number(year) === now.getFullYear() && Number(month) - 1 < now.getMonth())
-  )
-}
-
-const monthSchema = (errorPrefix) =>
-  joi
-    .string()
-    .pattern(MONTH_PATTERN)
-    .required()
-    .messages({
-      'any.required': `${errorPrefix}_MONTH_REQUIRED`,
-      'string.empty': `${errorPrefix}_MONTH_REQUIRED`,
-      'string.pattern.base': `${errorPrefix}_MONTH_INVALID`
-    })
-
-const yearSchema = (errorPrefix) =>
-  joi
-    .string()
-    .pattern(YEAR_PATTERN)
-    .required()
-    .messages({
-      'any.required': `${errorPrefix}_YEAR_REQUIRED`,
-      'string.empty': `${errorPrefix}_YEAR_REQUIRED`,
-      'string.pattern.base': `${errorPrefix}_YEAR_INVALID`
-    })
+import {
+  datePartSchema,
+  getMinYear,
+  isBeforeCurrentMonth,
+  isEndBeforeStart,
+  MONTH_PATTERN,
+  YEAR_PATTERN
+} from './date-utils.js'
 
 const preferredDatePartSchema = (
   errorPrefix,
@@ -50,8 +15,8 @@ const preferredDatePartSchema = (
 ) =>
   joi
     .object({
-      month: monthSchema(errorPrefix),
-      year: yearSchema(errorPrefix)
+      month: datePartSchema(MONTH_PATTERN, errorPrefix, 'MONTH'),
+      year: datePartSchema(YEAR_PATTERN, errorPrefix, 'YEAR')
     })
     .custom((value, helpers) => {
       const year = Number(value.year)
