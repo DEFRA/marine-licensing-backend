@@ -35,6 +35,8 @@ export const deleteSiteNoticeEvidenceController = {
         )
       }
 
+      const siteNoticeEvidenceReference = '$siteNoticeEvidence'
+
       const result = await db
         .collection(collectionMarineLicences)
         .updateOne({ _id, updatedAt: marineLicence.updatedAt }, [
@@ -42,12 +44,12 @@ export const deleteSiteNoticeEvidenceController = {
             $set: {
               siteNoticeEvidence: {
                 $concatArrays: [
-                  { $slice: ['$siteNoticeEvidence', evidenceIndex] },
+                  { $slice: [siteNoticeEvidenceReference, evidenceIndex] },
                   {
                     $slice: [
-                      '$siteNoticeEvidence',
+                      siteNoticeEvidenceReference,
                       evidenceIndex + 1,
-                      { $size: '$siteNoticeEvidence' }
+                      { $size: siteNoticeEvidenceReference }
                     ]
                   }
                 ]
