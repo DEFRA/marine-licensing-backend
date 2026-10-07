@@ -69,6 +69,24 @@ export const dynamicsSchema = {
       default: '',
       env: 'DYNAMICS_MARINE_LICENCE_API_URL'
     },
+    sqsQueueName: {
+      doc: 'Name of the marine licence Dynamics SQS queue',
+      format: String,
+      default: 'marine_licensing_d365_marine_licence',
+      env: 'DYNAMICS_MARINE_LICENCE_SQS_QUEUE_NAME'
+    },
+    sqsDlqName: {
+      doc: 'Name of the marine licence Dynamics dead-letter queue',
+      format: String,
+      default: 'marine_licensing_d365_marine_licence-deadletter',
+      env: 'DYNAMICS_MARINE_LICENCE_SQS_DLQ_NAME'
+    },
+    sqsMaxReceiveCount: {
+      doc: 'Number of delivery attempts before a marine licence Dynamics message is dead-lettered; must match the queue RedrivePolicy',
+      format: Number,
+      default: 3,
+      env: 'DYNAMICS_MARINE_LICENCE_SQS_MAX_RECEIVE_COUNT'
+    },
     httpTimeoutMs: {
       doc: 'Per-request timeout for the marine licence Dynamics token fetch and POST. Token fetch + POST must stay under the queue VisibilityTimeout (300 s)',
       format: Number,
