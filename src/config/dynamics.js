@@ -68,6 +68,12 @@ export const dynamicsSchema = {
       format: requiredFromEnvInCdp,
       default: '',
       env: 'DYNAMICS_MARINE_LICENCE_API_URL'
+    },
+    httpTimeoutMs: {
+      doc: 'Per-request timeout for the marine licence Dynamics token fetch and POST. Token fetch + POST must stay under the queue VisibilityTimeout (300 s)',
+      format: Number,
+      default: 120_000,
+      env: 'DYNAMICS_MARINE_LICENCE_HTTP_TIMEOUT_MS'
     }
   },
   contactDetails: {
