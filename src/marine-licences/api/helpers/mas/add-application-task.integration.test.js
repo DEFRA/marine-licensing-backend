@@ -62,6 +62,7 @@ describe('addApplicationTask - integration tests', () => {
       sourceMessageId: 'message-id',
       data: { nationalSecurity: { withheldSome: true } }
     })
+    expect(await stored(_id)).not.toHaveProperty('siteNoticeEvidence')
   })
 
   it.each([
@@ -145,6 +146,41 @@ describe('addApplicationTask - integration tests', () => {
     const licence = await stored(_id)
     expect(licence.status).toBe(status)
     expect(licence).not.toHaveProperty('previousStatus')
+  })
+
+  it('seeds an empty site notice evidence item with a public site notice task', async () => {
+    const _id = await insertLicence()
+
+    const result = await addApplicationTask(global.mockMongo, logger, {
+      applicationReference: mockMasApplicationReference,
+      type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE,
+      data: { publicNoticeRequirement: 'SITE_NOTICE' },
+      updatedBy: 'message-id'
+    })
+
+    expect(result.task.type).toBe(APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE)
+    expect((await stored(_id)).siteNoticeEvidence).toEqual([{}])
+  })
+
+  it('does not append another evidence item when the public site notice task already exists', async () => {
+    const existing = buildTask({
+      type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE
+    })
+    const _id = await insertLicence([existing], {
+      siteNoticeEvidence: [{ locationName: 'North pier' }]
+    })
+
+    const result = await addApplicationTask(global.mockMongo, logger, {
+      applicationReference: mockMasApplicationReference,
+      type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE,
+      data: { publicNoticeRequirement: 'SITE_NOTICE' },
+      updatedBy: 'another-message'
+    })
+
+    expect(result).toBeNull()
+    expect((await stored(_id)).siteNoticeEvidence).toEqual([
+      { locationName: 'North pier' }
+    ])
   })
 
   it('stores an applicant message starting with $ verbatim', async () => {

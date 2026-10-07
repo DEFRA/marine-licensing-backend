@@ -7,7 +7,7 @@ import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 
-const markTaskResolved = (taskId, resolvedAt) => ({
+const markTaskResolved = (taskId, resolvedAt, resolvedBy) => ({
   $set: {
     applicationTasks: {
       $map: {
@@ -16,7 +16,7 @@ const markTaskResolved = (taskId, resolvedAt) => ({
         in: {
           $cond: [
             { $eq: ['$$task.taskId', taskId] },
-            { $mergeObjects: ['$$task', { resolvedAt }] },
+            { $mergeObjects: ['$$task', { resolvedAt, resolvedBy }] },
             '$$task'
           ]
         }
@@ -66,7 +66,7 @@ const restoreStatusWhenNoTaskOutstanding = {
 }
 
 const buildResolvePipeline = (taskId, resolvedAt, resolvedBy) => [
-  markTaskResolved(taskId, resolvedAt),
+  markTaskResolved(taskId, resolvedAt, resolvedBy),
   restoreStatusWhenNoTaskOutstanding,
   { $set: { updatedAt: resolvedAt, updatedBy: resolvedBy } }
 ]
