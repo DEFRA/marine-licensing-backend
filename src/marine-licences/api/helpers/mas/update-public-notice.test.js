@@ -46,7 +46,6 @@ describe('updatePublicNotice', async () => {
         applicationReference: body.applicationReference,
         type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE,
         data: {
-          publicNoticeRequirement: body.publicNoticeRequirement,
           summary: {
             proposedWorksSummary: body.proposedWorksSummary,
             siteNoticeSummary: body.siteNoticeSummary
@@ -118,26 +117,5 @@ describe('updatePublicNotice', async () => {
     await run()
 
     expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
-  })
-
-  it('discards a message without a publicNoticeRequirement', async () => {
-    const server = buildServer()
-    const result = await updatePublicNotice(server.db, server.logger, {
-      body: { ...body, publicNoticeRequirement: undefined },
-      id: mockMasPublicNoticeSqsMessage.MessageId
-    })
-
-    expect(result).toBeNull()
-    expect(addApplicationTask).not.toHaveBeenCalled()
-    expect(sendPublicNoticeEmail).not.toHaveBeenCalled()
-    expect(server.logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: expect.objectContaining({
-          action: 'mas:application-task-skipped',
-          outcome: 'failure'
-        })
-      }),
-      expect.stringContaining('Discarding public notice')
-    )
   })
 })
