@@ -26,7 +26,8 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
         const { currentUserId } = getAuthUserContext(request)
         marineLicence = await marineLicenceService.getMarineLicenceById({
           id,
-          currentUserId
+          currentUserId,
+          includeWhoMarineLicenceIsFor: true
         })
       } else {
         marineLicence =
