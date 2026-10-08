@@ -11,6 +11,7 @@ import {
 } from '../../constants/request-queue.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
 import { sendToDynamics } from './dynamics-client.js'
+import { sendDynamicsJob } from '../../../../marine-licences/api/helpers/dynamics/sqs-client.js'
 import { expectRecentDate } from '../../../../../tests/test-helpers.js'
 
 vi.mock('../../../../config.js')
@@ -20,6 +21,12 @@ vi.mock('./get-access-token.js', () => ({
 vi.mock('./dynamics-client.js', () => ({
   sendToDynamics: vi.fn()
 }))
+vi.mock(
+  '../../../../marine-licences/api/helpers/dynamics/sqs-client.js',
+  () => ({
+    sendDynamicsJob: vi.fn()
+  })
+)
 
 const EXEMPTION_QUEUE = 'exemption-dynamics-queue'
 const EXEMPTION_QUEUE_FAILED = 'exemption-dynamics-queue-failed'
@@ -601,11 +608,12 @@ describe('Dynamics Processor integration', () => {
       })
     })
 
-    it('should insert into the marine licence queue when type is marineLicence', async () => {
+    it('should send a marine licence to SQS without writing to Mongo or kicking the poller', async () => {
       const db = globalThis.mockMongo
       mockServer.methods = {
         processDynamicsQueue: vi.fn().mockResolvedValue({})
       }
+      vi.mocked(sendDynamicsJob).mockResolvedValue({})
 
       await dynamicsModule.addToDynamicsQueue({
         request: makeRequest(mockServer),
@@ -614,21 +622,42 @@ describe('Dynamics Processor integration', () => {
         type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
       })
 
-      const mlDoc = await db.collection(ML_QUEUE).findOne({
-        applicationReferenceNumber: 'MLA/2025/00001'
+      expect(sendDynamicsJob).toHaveBeenCalledWith({
+        applicationReference: 'MLA/2025/00001',
+        action: DYNAMICS_REQUEST_ACTIONS.SUBMIT
       })
-      expect(mlDoc).toMatchObject({
-        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
-        action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
-        applicationReferenceNumber: 'MLA/2025/00001',
-        status: REQUEST_QUEUE_STATUS.PENDING,
-        retries: 0
+      expect(await db.collection(ML_QUEUE).countDocuments({})).toBe(0)
+      expect(await db.collection(EXEMPTION_QUEUE).countDocuments({})).toBe(0)
+      expect(mockServer.methods.processDynamicsQueue).not.toHaveBeenCalled()
+    })
+
+    it('should reject when the marine licence SQS send fails', async () => {
+      mockServer.methods = { processDynamicsQueue: vi.fn() }
+      vi.mocked(sendDynamicsJob).mockRejectedValue(new Error('SQS down'))
+
+      await expect(
+        dynamicsModule.addToDynamicsQueue({
+          request: makeRequest(mockServer),
+          applicationReference: 'MLA/2025/00002',
+          action: DYNAMICS_REQUEST_ACTIONS.WITHDRAW,
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+        })
+      ).rejects.toThrow('SQS down')
+    })
+
+    it('should keep exemptions on the Mongo queue and kick the poller', async () => {
+      mockServer.methods = {
+        processDynamicsQueue: vi.fn().mockResolvedValue({})
+      }
+
+      await dynamicsModule.addToDynamicsQueue({
+        request: makeRequest(mockServer),
+        applicationReference: 'EXE/2025/00002',
+        action: DYNAMICS_REQUEST_ACTIONS.SUBMIT
       })
 
-      const exCount = await db.collection(EXEMPTION_QUEUE).countDocuments({
-        applicationReferenceNumber: 'MLA/2025/00001'
-      })
-      expect(exCount).toBe(0)
+      expect(sendDynamicsJob).not.toHaveBeenCalled()
+      expect(mockServer.methods.processDynamicsQueue).toHaveBeenCalledTimes(1)
     })
   })
   describe('claim state', () => {

@@ -5,6 +5,7 @@ import {
 } from '../../constants/request-queue.js'
 import { config } from '../../../../config.js'
 import { sendToDynamics } from './dynamics-client.js'
+import { sendDynamicsJob } from '../../../../marine-licences/api/helpers/dynamics/sqs-client.js'
 import { structureErrorForECS } from '../../helpers/logging/logger.js'
 import {
   collectionDynamicsQueue,
@@ -222,15 +223,15 @@ export const addToDynamicsQueue = async ({
   action,
   type = DYNAMICS_QUEUE_TYPES.EXEMPTION
 }) => {
+  if (type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
+    await sendDynamicsJob({ applicationReference, action })
+    return
+  }
+
   const { payload, db } = request
   const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
-  const collection =
-    type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
-      ? collectionMarineLicenceDynamicsQueue
-      : collectionDynamicsQueue
-
-  await db.collection(collection).insertOne({
+  await db.collection(collectionDynamicsQueue).insertOne({
     type,
     action,
     applicationReferenceNumber: applicationReference,
