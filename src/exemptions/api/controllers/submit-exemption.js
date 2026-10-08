@@ -135,7 +135,7 @@ const runPostSubmitBackgroundWork = ({
   ])
     .then(async ([, marinePlanAreas]) => {
       if (shouldPublishToPublicRegister) {
-        publishPublicRegisterSubmittedEvent({
+        await publishPublicRegisterSubmittedEvent({
           applicationId,
           applicationReference,
           projectName: exemption.projectName,
