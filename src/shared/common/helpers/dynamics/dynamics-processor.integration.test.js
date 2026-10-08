@@ -171,26 +171,6 @@ describe('Dynamics Processor integration', () => {
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
       expectRecentDate(doc.updatedAt, before)
     })
-
-    it('should update the marine licence queue item status to SUCCESS', async () => {
-      const db = globalThis.mockMongo
-      const _id = new ObjectId()
-      await db.collection(ML_QUEUE).insertOne({
-        _id,
-        ...queueDocBase,
-        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
-        applicationReferenceNumber: 'MLA/SUCCESS/1',
-        status: REQUEST_QUEUE_STATUS.IN_PROGRESS
-      })
-
-      await dynamicsModule.handleDynamicsQueueItemSuccess(mockServer, {
-        _id,
-        _sourceCollection: ML_QUEUE
-      })
-
-      const doc = await db.collection(ML_QUEUE).findOne({ _id })
-      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
-    })
   })
 
   describe('handleDynamicsQueueItemFailure', () => {
@@ -218,29 +198,6 @@ describe('Dynamics Processor integration', () => {
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
       expect(doc.retries).toBe(2)
       expectRecentDate(doc.updatedAt, before)
-    })
-
-    it('should increment retries on a marine licence queue item', async () => {
-      const db = globalThis.mockMongo
-      const _id = new ObjectId()
-      await db.collection(ML_QUEUE).insertOne({
-        _id,
-        ...queueDocBase,
-        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
-        applicationReferenceNumber: 'MLA/FAIL/1',
-        status: REQUEST_QUEUE_STATUS.FAILED,
-        retries: 1
-      })
-
-      await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, {
-        _id,
-        retries: 1,
-        _sourceCollection: ML_QUEUE
-      })
-
-      const doc = await db.collection(ML_QUEUE).findOne({ _id })
-      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.FAILED)
-      expect(doc.retries).toBe(2)
     })
 
     it('should move exemption item to exemption dead letter queue after max retries', async () => {
@@ -319,39 +276,10 @@ describe('Dynamics Processor integration', () => {
         await db.collection(EXEMPTION_QUEUE).findOne({ _id })
       ).toMatchObject({ retries: 2 })
     })
-
-    it('should move marine licence item to marine licence dead letter queue after max retries', async () => {
-      const db = globalThis.mockMongo
-      const _id = new ObjectId()
-      const base = {
-        _id,
-        ...queueDocBase,
-        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
-        applicationReferenceNumber: 'MLA/DL/1',
-        status: REQUEST_QUEUE_STATUS.FAILED
-      }
-      await db.collection(ML_QUEUE).insertOne({ ...base, retries: 2 })
-
-      await dynamicsModule.handleDynamicsQueueItemFailure(mockServer, {
-        ...base,
-        retries: 2,
-        _sourceCollection: ML_QUEUE
-      })
-
-      const main = await db.collection(ML_QUEUE).findOne({ _id })
-      expect(main).toBeNull()
-
-      const dead = await db.collection(ML_QUEUE_FAILED).findOne({ _id })
-      expect(dead).toMatchObject({
-        retries: 3,
-        status: REQUEST_QUEUE_STATUS.FAILED
-      })
-      expect(dead).not.toHaveProperty('_sourceCollection')
-    })
   })
 
   describe('processDynamicsQueue', () => {
-    it('should claim from both collections and process combined results', async () => {
+    it('should leave rows in the marine licence queue unclaimed', async () => {
       const db = globalThis.mockMongo
       await db.collection(EXEMPTION_QUEUE).insertOne({
         ...queueDocBase,
@@ -375,8 +303,8 @@ describe('Dynamics Processor integration', () => {
         applicationReferenceNumber: 'MLA/2025/00001'
       })
       expect(ex.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
-      expect(ml.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
-      expect(vi.mocked(sendToDynamics)).toHaveBeenCalledTimes(2)
+      expect(ml.status).toBe(REQUEST_QUEUE_STATUS.PENDING)
+      expect(vi.mocked(sendToDynamics)).toHaveBeenCalledTimes(1)
     })
 
     it('should tag items with _sourceCollection when processing', async () => {
@@ -477,13 +405,13 @@ describe('Dynamics Processor integration', () => {
       expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
     })
 
-    it('should log errors and skip processing if claim fails on both collections', async () => {
+    it('should log the error and skip processing if the claim fails', async () => {
       const db = globalThis.mockMongo
       const rejectClaim = () => Promise.reject(new Error('Database error'))
 
       mockServer.db = {
         collection: (name) => {
-          if (name === EXEMPTION_QUEUE || name === ML_QUEUE) {
+          if (name === EXEMPTION_QUEUE) {
             const col = db.collection(name)
             return new Proxy(col, {
               get(target, prop) {
@@ -500,48 +428,8 @@ describe('Dynamics Processor integration', () => {
 
       await dynamicsModule.processDynamicsQueue(mockServer)
 
-      expect(mockServer.logger.error).toHaveBeenCalledTimes(2)
+      expect(mockServer.logger.error).toHaveBeenCalledTimes(1)
       expect(vi.mocked(sendToDynamics)).not.toHaveBeenCalled()
-    })
-
-    it('should still process the successful collection if one claim fails', async () => {
-      const db = globalThis.mockMongo
-      await db.collection(EXEMPTION_QUEUE).insertOne({
-        ...queueDocBase,
-        type: DYNAMICS_QUEUE_TYPES.EXEMPTION,
-        applicationReferenceNumber: 'EXE/2025/00999',
-        status: REQUEST_QUEUE_STATUS.PENDING
-      })
-
-      const mlCol = db.collection(ML_QUEUE)
-      mockServer.db = {
-        collection: (name) => {
-          if (name === ML_QUEUE) {
-            return new Proxy(mlCol, {
-              get(target, prop) {
-                if (prop === 'findOneAndUpdate') {
-                  return () =>
-                    Promise.reject(new Error('ML collection unavailable'))
-                }
-                return Reflect.get(target, prop)
-              }
-            })
-          }
-          return db.collection(name)
-        }
-      }
-
-      await dynamicsModule.processDynamicsQueue(mockServer)
-
-      expect(mockServer.logger.error).toHaveBeenCalledWith(
-        expect.anything(),
-        `Failed to claim dynamics queue item from ${ML_QUEUE}`
-      )
-
-      const doc = await db.collection(EXEMPTION_QUEUE).findOne({
-        applicationReferenceNumber: 'EXE/2025/00999'
-      })
-      expect(doc.status).toBe(REQUEST_QUEUE_STATUS.SUCCESS)
     })
 
     it('should process at most DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN items per run', async () => {

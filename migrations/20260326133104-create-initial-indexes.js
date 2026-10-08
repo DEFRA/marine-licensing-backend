@@ -3,12 +3,13 @@ import {
   collectionDynamicsQueue,
   collectionDynamicsQueueFailed,
   collectionExemptions,
-  collectionMarineLicenceDynamicsQueue,
-  collectionMarineLicenceDynamicsQueueFailed,
   collectionMarineLicences,
   collectionMarinePlanAreas
 } from '../src/shared/common/constants/db-collections.js'
 import { safeDropIndex } from './helpers/utils.js'
+
+const marineLicenceDynamicsQueue = 'marine-licence-dynamics-queue'
+const marineLicenceDynamicsQueueFailed = 'marine-licence-dynamics-queue-failed'
 
 export const up = async (db, _client) => {
   await db.collection(collectionExemptions).createIndex({ id: 1 })
@@ -17,12 +18,8 @@ export const up = async (db, _client) => {
     .createIndex({ key: 1 }, { unique: true })
   await db.collection(collectionDynamicsQueue).createIndex({ status: 1 })
   await db.collection(collectionDynamicsQueueFailed).createIndex({ id: 1 })
-  await db
-    .collection(collectionMarineLicenceDynamicsQueue)
-    .createIndex({ status: 1 })
-  await db
-    .collection(collectionMarineLicenceDynamicsQueueFailed)
-    .createIndex({ id: 1 })
+  await db.collection(marineLicenceDynamicsQueue).createIndex({ status: 1 })
+  await db.collection(marineLicenceDynamicsQueueFailed).createIndex({ id: 1 })
   await db.collection(collectionMarineLicences).createIndex({ id: 1 })
   await db
     .collection(collectionCoastalOperationsAreas)
@@ -37,8 +34,8 @@ export const down = async (db, _client) => {
   await safeDropIndex(db, 'reference-sequences', 'key_1')
   await safeDropIndex(db, collectionDynamicsQueue, 'status_1')
   await safeDropIndex(db, collectionDynamicsQueueFailed, 'id_1')
-  await safeDropIndex(db, collectionMarineLicenceDynamicsQueue, 'status_1')
-  await safeDropIndex(db, collectionMarineLicenceDynamicsQueueFailed, 'id_1')
+  await safeDropIndex(db, marineLicenceDynamicsQueue, 'status_1')
+  await safeDropIndex(db, marineLicenceDynamicsQueueFailed, 'id_1')
   await safeDropIndex(db, collectionMarineLicences, 'id_1')
   await safeDropIndex(db, collectionCoastalOperationsAreas, 'geometry_2dsphere')
   await safeDropIndex(db, collectionMarinePlanAreas, 'geometry_2dsphere')
