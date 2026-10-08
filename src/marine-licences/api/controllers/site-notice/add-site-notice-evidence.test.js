@@ -32,7 +32,10 @@ describe('POST /marine-licence/add-site-notice-evidence', () => {
     )
     expect(mockMongo.collection).toHaveBeenCalledWith(collectionMarineLicences)
     expect(mockUpdateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(mockPayload.id) },
+      {
+        _id: ObjectId.createFromHexString(mockPayload.id),
+        'siteNoticeEvidence.29': { $exists: false }
+      },
       {
         $push: {
           siteNoticeEvidence: {}
@@ -64,7 +67,7 @@ describe('POST /marine-licence/add-site-notice-evidence', () => {
     ).rejects.toThrow(`Error adding site notice evidence: ${mockError}`)
   })
 
-  test('should return a 404 if id is not correct', async () => {
+  test('should return a 409 if the evidence cap has been reached', async () => {
     const { mockMongo, mockHandler } = global
 
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
@@ -78,6 +81,8 @@ describe('POST /marine-licence/add-site-notice-evidence', () => {
         { db: mockMongo, payload: mockPayload },
         mockHandler
       )
-    ).rejects.toThrow('Marine licence not found')
+    ).rejects.toThrow(
+      'already has the maximum of 30 site notice evidence entries'
+    )
   })
 })

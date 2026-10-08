@@ -46,6 +46,30 @@ describe('POST /marine-licence/add-site-notice-evidence - integration tests', as
     expect(updated.updatedAt.getTime()).toBeLessThanOrEqual(Date.now())
   })
 
+  test('returns 409 and does not add an entry once 30 already exist', async () => {
+    await globalThis.mockMongo.collection(collectionMarineLicences).insertOne({
+      ...mockMarineLicence,
+      _id: marineLicenceId,
+      contactId,
+      siteNoticeEvidence: Array.from({ length: 30 }, () => ({}))
+    })
+
+    const { statusCode } = await makePostRequest({
+      server: getServer(),
+      url: '/marine-licence/add-site-notice-evidence',
+      contactId,
+      payload: mockPayload
+    })
+
+    expect(statusCode).toBe(409)
+
+    const updated = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(updated.siteNoticeEvidence).toHaveLength(30)
+  })
+
   test('returns 404 when marine licence does not exist', async () => {
     const { statusCode, body } = await makePostRequest({
       server: getServer(),

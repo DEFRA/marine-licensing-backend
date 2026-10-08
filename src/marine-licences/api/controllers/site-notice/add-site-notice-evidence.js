@@ -5,6 +5,8 @@ import { collectionMarineLicences } from '../../../../shared/common/constants/db
 import { authorizeOwnership } from '../../../../shared/helpers/authorize-ownership.js'
 import { addSiteNoticeEvidenceSchema } from '../../../models/site-notice-evidence.js'
 
+export const MAX_SITE_NOTICE_EVIDENCE = 30
+
 export const addSiteNoticeEvidenceController = {
   options: {
     payload: {
@@ -23,7 +25,12 @@ export const addSiteNoticeEvidenceController = {
       const { id, updatedAt, updatedBy } = payload
 
       const result = await db.collection(collectionMarineLicences).updateOne(
-        { _id: ObjectId.createFromHexString(id) },
+        {
+          _id: ObjectId.createFromHexString(id),
+          [`siteNoticeEvidence.${MAX_SITE_NOTICE_EVIDENCE - 1}`]: {
+            $exists: false
+          }
+        },
         {
           $push: { siteNoticeEvidence: {} },
           $set: {
@@ -34,7 +41,9 @@ export const addSiteNoticeEvidenceController = {
       )
 
       if (result.matchedCount === 0) {
-        throw Boom.notFound(`Marine licence not found for Marine Licence ${id}`)
+        throw Boom.conflict(
+          `Marine licence ${id} already has the maximum of ${MAX_SITE_NOTICE_EVIDENCE} site notice evidence entries`
+        )
       }
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
