@@ -90,7 +90,7 @@ export const withdrawExemptionController = {
       }
 
       if (isSnsEnabled && exemption.publicRegister?.consent === 'yes') {
-        publishPublicRegisterWithdrawnEvent({
+        await publishPublicRegisterWithdrawnEvent({
           applicationId: params.id,
           applicationReference: exemption.applicationReference,
           projectName: exemption.projectName,

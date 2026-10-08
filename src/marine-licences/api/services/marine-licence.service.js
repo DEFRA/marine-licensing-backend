@@ -55,7 +55,11 @@ export class MarineLicenceService {
     }
   }
 
-  async getMarineLicenceById({ id, currentUserId }) {
+  async getMarineLicenceById({
+    id,
+    currentUserId,
+    includeWhoMarineLicenceIsFor = false
+  }) {
     const marineLicence = await this.#findMarineLicenceById(id)
     if (currentUserId && currentUserId !== marineLicence.contactId) {
       this.logger.info(
@@ -64,7 +68,10 @@ export class MarineLicenceService {
       )
       throw Boom.forbidden(notAuthorisedMessage)
     }
-    if (!currentUserId) {
+
+    const isOwnerViewingDraft =
+      currentUserId && marineLicence.status === MARINE_LICENCE_STATUS.DRAFT
+    if (includeWhoMarineLicenceIsFor && !isOwnerViewingDraft) {
       marineLicence.whoMarineLicenceIsFor =
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }
