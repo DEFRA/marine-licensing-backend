@@ -13,6 +13,8 @@ import { marinePlanPoliciesWorkerPlugin } from './shared/plugins/marine-plan-pol
 import { marinePlanPoliciesDlqWorkerPlugin } from './shared/plugins/marine-plan-policies/dlq-worker.js'
 import { masWorkerPlugin } from './shared/plugins/mas/mas-worker.js'
 import { masDlqWorkerPlugin } from './shared/plugins/mas/mas-dlq-worker.js'
+import { marineLicenceDynamicsWorkerPlugin } from './shared/plugins/marine-licence-dynamics/worker.js'
+import { marineLicenceDynamicsDlqWorkerPlugin } from './shared/plugins/marine-licence-dynamics/dlq-worker.js'
 import { schedulerPlugin } from './shared/plugins/scheduler/index.js'
 import { populateCoastalOperationsAreasPlugin } from './shared/plugins/geo-areas/populate-coastal-operations-areas.js'
 import { populateMarinePlanAreasPlugin } from './shared/plugins/geo-areas/populate-marine-plan-areas.js'
@@ -59,6 +61,18 @@ vi.mock('./shared/plugins/mas/mas-worker.js', () => ({
 }))
 vi.mock('./shared/plugins/mas/mas-dlq-worker.js', () => ({
   masDlqWorkerPlugin: { name: 'mas-dlq-worker', register: () => {} }
+}))
+vi.mock('./shared/plugins/marine-licence-dynamics/worker.js', () => ({
+  marineLicenceDynamicsWorkerPlugin: {
+    name: 'marine-licence-dynamics-worker',
+    register: () => {}
+  }
+}))
+vi.mock('./shared/plugins/marine-licence-dynamics/dlq-worker.js', () => ({
+  marineLicenceDynamicsDlqWorkerPlugin: {
+    name: 'marine-licence-dynamics-dlq-worker',
+    register: () => {}
+  }
 }))
 vi.mock('./shared/plugins/scheduler/index.js', () => ({
   schedulerPlugin: { name: 'scheduler', register: () => {} }
@@ -210,6 +224,8 @@ describe('createServer', () => {
       marinePlanPoliciesDlqWorkerPlugin,
       masWorkerPlugin,
       masDlqWorkerPlugin,
+      marineLicenceDynamicsWorkerPlugin,
+      marineLicenceDynamicsDlqWorkerPlugin,
       schedulerPlugin
     ]) {
       expect(plugins).toContain(backgroundPlugin)
