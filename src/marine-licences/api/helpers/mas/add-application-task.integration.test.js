@@ -154,7 +154,7 @@ describe('addApplicationTask - integration tests', () => {
     const result = await addApplicationTask(global.mockMongo, logger, {
       applicationReference: mockMasApplicationReference,
       type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE,
-      data: { publicNoticeRequirement: 'SITE_NOTICE' },
+      data: {},
       updatedBy: 'message-id'
     })
 
@@ -173,7 +173,7 @@ describe('addApplicationTask - integration tests', () => {
     const result = await addApplicationTask(global.mockMongo, logger, {
       applicationReference: mockMasApplicationReference,
       type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE,
-      data: { publicNoticeRequirement: 'SITE_NOTICE' },
+      data: {},
       updatedBy: 'another-message'
     })
 

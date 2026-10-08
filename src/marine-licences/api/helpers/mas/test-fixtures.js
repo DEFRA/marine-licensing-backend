@@ -90,7 +90,6 @@ export const mockMasPublicNoticeSqsMessageBody = {
   taskType: MAS_TASK_TYPE.PUBLIC_NOTICE,
   userName: 'Jane Doe',
   userEmail: 'jane@example.com',
-  publicNoticeRequirement: 'NONE',
   proposedWorksSummary: 'test proposed works summary',
   siteNoticeSummary: 'test site notice summary',
   requestRelatesTo: PUBLIC_NOTICE_REQUEST_RELATES_TO.BOTH
