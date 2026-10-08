@@ -58,7 +58,9 @@ describe('marine licence dynamics worker-processor', () => {
   const setupMocks = (licence) => {
     const { mockMongo } = global
     const mockFindOne = vi.fn().mockResolvedValue(licence)
-    const mockUpdateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+    const mockUpdateOne = vi
+      .fn()
+      .mockResolvedValue({ matchedCount: 1, modifiedCount: 1 })
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
       findOne: mockFindOne,
       updateOne: mockUpdateOne
@@ -148,7 +150,7 @@ describe('marine licence dynamics worker-processor', () => {
         { projection: { dynamicsOutbound: 1 } }
       )
       expect(getDynamicsAccessToken).toHaveBeenCalledWith({
-        timeoutMs: 120_000
+        timeoutMs: 60_000
       })
       expect(sendToDynamics).toHaveBeenCalledWith(server, 'token', {
         applicationReferenceNumber: applicationReference,
@@ -224,6 +226,65 @@ describe('marine licence dynamics worker-processor', () => {
       expect(deleteDynamicsJob).not.toHaveBeenCalled()
     })
 
+    it('should log the retry wording when a non-final attempt fails', async () => {
+      const { server } = setupMocks({})
+      vi.mocked(sendToDynamics).mockRejectedValue(new Error('502'))
+
+      await processDynamicsJob(server, buildMessage(undefined, '2'))
+
+      expect(server.logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: expect.objectContaining({ reason: 'The queue will retry' })
+        }),
+        expect.stringContaining('the queue will retry')
+      )
+    })
+
+    it('should log the dead-letter wording when the final attempt fails', async () => {
+      const { server } = setupMocks({})
+      vi.mocked(sendToDynamics).mockRejectedValue(new Error('502'))
+
+      await processDynamicsJob(server, buildMessage(undefined, '3'))
+
+      const [logged, text] = server.logger.error.mock.calls[0]
+      expect(logged.event.reason).toBe(
+        'No automatic retry; the action is being marked failed and will dead-letter'
+      )
+      expect(text).not.toContain('queue will retry')
+    })
+
+    it('should treat a failed licence lookup as a send failure on a non-final attempt', async () => {
+      const { server, mockFindOne, mockUpdateOne } = setupMocks({})
+      mockFindOne.mockRejectedValue(new Error('mongo down'))
+
+      await processDynamicsJob(server, buildMessage(undefined, '1'))
+
+      expectEvent(
+        server.logger.error,
+        MARINE_LICENCE_DYNAMICS_EVENT_ACTION.SEND_FAILED
+      )
+      expect(sendToDynamics).not.toHaveBeenCalled()
+      expect(mockUpdateOne).not.toHaveBeenCalled()
+      expect(deleteDynamicsJob).not.toHaveBeenCalled()
+    })
+
+    it('should mark the action failed when the licence lookup fails on the final attempt', async () => {
+      const { server, mockFindOne, mockUpdateOne } = setupMocks({})
+      mockFindOne.mockRejectedValue(new Error('mongo down'))
+
+      await processDynamicsJob(server, buildMessage(undefined, '3'))
+
+      expectEvent(
+        server.logger.error,
+        MARINE_LICENCE_DYNAMICS_EVENT_ACTION.SEND_FAILED
+      )
+      expect(mockUpdateOne).toHaveBeenCalledWith(expect.anything(), {
+        $set: { 'dynamicsOutbound.submit': 'failed' }
+      })
+      expect(sendToDynamics).not.toHaveBeenCalled()
+      expect(deleteDynamicsJob).not.toHaveBeenCalled()
+    })
+
     it('should not treat a failed delete after a successful send as a send failure', async () => {
       const { server, mockUpdateOne } = setupMocks({})
       vi.mocked(deleteDynamicsJob).mockRejectedValue(new Error('SQS down'))
@@ -263,7 +324,7 @@ describe('marine licence dynamics worker-processor', () => {
 
     it('should log and delete a dead letter that matched nothing', async () => {
       const { server, mockUpdateOne } = setupMocks(null)
-      mockUpdateOne.mockResolvedValue({ matchedCount: 0 })
+      mockUpdateOne.mockResolvedValue({ matchedCount: 0, modifiedCount: 0 })
 
       await processDynamicsDlqJob(server, buildMessage())
 
@@ -273,6 +334,19 @@ describe('marine licence dynamics worker-processor', () => {
       )
       expect(server.logger.warn).not.toHaveBeenCalled()
       expect(deleteDynamicsJob).toHaveBeenCalledWith(dlqName, receiptHandle)
+    })
+
+    it('should log an ignored dead letter when the write changed nothing', async () => {
+      const { server, mockUpdateOne } = setupMocks(null)
+      mockUpdateOne.mockResolvedValue({ matchedCount: 1, modifiedCount: 0 })
+
+      await processDynamicsDlqJob(server, buildMessage())
+
+      expectEvent(
+        server.logger.info,
+        MARINE_LICENCE_DYNAMICS_EVENT_ACTION.DEAD_LETTER_IGNORED
+      )
+      expect(server.logger.warn).not.toHaveBeenCalled()
     })
 
     it('should delete a malformed dead letter without writing', async () => {

@@ -521,7 +521,7 @@ describe('Dynamics Processor integration', () => {
 
     it('should reject when the marine licence SQS send fails', async () => {
       mockServer.methods = { processDynamicsQueue: vi.fn() }
-      vi.mocked(sendDynamicsJob).mockRejectedValue(new Error('SQS down'))
+      vi.mocked(sendDynamicsJob).mockRejectedValueOnce(new Error('SQS down'))
 
       await expect(
         dynamicsModule.addToDynamicsQueue({

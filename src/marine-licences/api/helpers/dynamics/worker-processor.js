@@ -90,6 +90,13 @@ const sendAndFlag = async (server, { applicationReference, action }) => {
 
 const handleSendFailure = async (server, message, job, error) => {
   const { applicationReference, action } = job
+  const receiveCount = Number(message.Attributes?.ApproximateReceiveCount ?? 0)
+  const { sqsMaxReceiveCount } = config.get('dynamics').marineLicences
+  const isFinalAttempt = receiveCount >= sqsMaxReceiveCount
+
+  const outcomeWording = isFinalAttempt
+    ? 'No automatic retry; the action is being marked failed and will dead-letter'
+    : 'The queue will retry'
   server.logger.error(
     {
       ...structureErrorForECS(error),
@@ -97,15 +104,13 @@ const handleSendFailure = async (server, message, job, error) => {
         EVENT_ACTION.SEND_FAILED,
         'failure',
         applicationReference,
-        'The queue will retry'
+        outcomeWording
       )
     },
-    `Failed to send marine licence ${action} for ${applicationReference} to Dynamics; the queue will retry`
+    `Failed to send marine licence ${action} for ${applicationReference} to Dynamics; ${outcomeWording.toLowerCase()}`
   )
 
-  const receiveCount = Number(message.Attributes?.ApproximateReceiveCount ?? 0)
-  const { sqsMaxReceiveCount } = config.get('dynamics').marineLicences
-  if (receiveCount >= sqsMaxReceiveCount) {
+  if (isFinalAttempt) {
     await markFailedToSendToDynamics(server.db, applicationReference, action)
     server.logger.warn(
       event(
@@ -119,17 +124,10 @@ const handleSendFailure = async (server, message, job, error) => {
   }
 }
 
-export const processDynamicsJob = async (server, message) => {
-  const { db, logger } = server
-  const { sqsQueueName } = config.get('dynamics').marineLicences
-  const deleteMessage = () =>
-    deleteDynamicsJob(sqsQueueName, message.ReceiptHandle)
+const JOB_OUTCOME = { FINISHED: 'finished', WAITING: 'waiting' }
 
-  const job = parseDynamicsJobBody(message, logger)
-  if (!job) {
-    await deleteMessage()
-    return
-  }
+const attemptDynamicsJob = async (server, job) => {
+  const { db, logger } = server
   const { applicationReference, action } = job
 
   const licence = await db
@@ -140,8 +138,7 @@ export const processDynamicsJob = async (server, message) => {
       event(EVENT_ACTION.LICENCE_NOT_FOUND, 'failure', applicationReference),
       `No marine licence found for ${applicationReference}; discarding Dynamics ${action}`
     )
-    await deleteMessage()
-    return
+    return JOB_OUTCOME.FINISHED
   }
 
   const outbound = licence.dynamicsOutbound ?? {}
@@ -150,8 +147,7 @@ export const processDynamicsJob = async (server, message) => {
       event(EVENT_ACTION.ALREADY_SENT, 'success', applicationReference),
       `Marine licence ${action} for ${applicationReference} already sent to Dynamics; discarding duplicate`
     )
-    await deleteMessage()
-    return
+    return JOB_OUTCOME.FINISHED
   }
 
   if (isWithdrawalAwaitingSubmit(action, outbound)) {
@@ -164,21 +160,39 @@ export const processDynamicsJob = async (server, message) => {
       ),
       `Marine licence withdrawal for ${applicationReference} is waiting for its submit to reach Dynamics`
     )
+    return JOB_OUTCOME.WAITING
+  }
+
+  await sendAndFlag(server, job)
+  logger.info(
+    event(EVENT_ACTION.SENT, 'success', applicationReference),
+    `Marine licence ${action} for ${applicationReference} sent to Dynamics`
+  )
+  return JOB_OUTCOME.FINISHED
+}
+
+export const processDynamicsJob = async (server, message) => {
+  const { sqsQueueName } = config.get('dynamics').marineLicences
+  const deleteMessage = () =>
+    deleteDynamicsJob(sqsQueueName, message.ReceiptHandle)
+
+  const job = parseDynamicsJobBody(message, server.logger)
+  if (!job) {
+    await deleteMessage()
     return
   }
 
+  let outcome
   try {
-    await sendAndFlag(server, job)
+    outcome = await attemptDynamicsJob(server, job)
   } catch (error) {
     await handleSendFailure(server, message, job, error)
     return
   }
 
-  logger.info(
-    event(EVENT_ACTION.SENT, 'success', applicationReference),
-    `Marine licence ${action} for ${applicationReference} sent to Dynamics`
-  )
-  await deleteMessage()
+  if (outcome === JOB_OUTCOME.FINISHED) {
+    await deleteMessage()
+  }
 }
 
 export const processDynamicsDlqJob = async (server, message) => {
@@ -193,7 +207,7 @@ export const processDynamicsDlqJob = async (server, message) => {
       applicationReference,
       action
     )
-    if (result.matchedCount > 0) {
+    if (result.modifiedCount > 0) {
       logger.warn(
         event(
           EVENT_ACTION.MARKED_FAILED,
@@ -210,7 +224,7 @@ export const processDynamicsDlqJob = async (server, message) => {
           'success',
           applicationReference
         ),
-        `Ignoring dead-lettered marine licence ${action} for ${applicationReference}: already sent or licence not found`
+        `Ignoring dead-lettered marine licence ${action} for ${applicationReference}: already sent, already marked failed, or licence not found`
       )
     }
   }

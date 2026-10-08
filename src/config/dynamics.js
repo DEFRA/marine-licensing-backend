@@ -88,9 +88,9 @@ export const dynamicsSchema = {
       env: 'DYNAMICS_MARINE_LICENCE_SQS_MAX_RECEIVE_COUNT'
     },
     httpTimeoutMs: {
-      doc: 'Per-request timeout for the marine licence Dynamics token fetch and POST. Token fetch + POST must stay under the queue VisibilityTimeout (300 s)',
+      doc: 'Per-request timeout for the marine licence Dynamics token fetch and POST. Wreck applies it to the response and again to reading the body, so each call may take up to twice this; token fetch + POST stays within 4x this, which must be under the queue VisibilityTimeout (300 s)',
       format: Number,
-      default: 120_000,
+      default: 60_000,
       env: 'DYNAMICS_MARINE_LICENCE_HTTP_TIMEOUT_MS'
     }
   },

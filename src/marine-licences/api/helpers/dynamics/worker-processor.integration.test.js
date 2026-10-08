@@ -7,7 +7,10 @@ import { sendToDynamics } from '../../../../shared/common/helpers/dynamics/dynam
 import { getDynamicsAccessToken } from '../../../../shared/common/helpers/dynamics/get-access-token.js'
 import { deleteDynamicsJob } from './sqs-client.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
-import { MARINE_LICENCE_STATUS } from '../../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_DYNAMICS_EVENT_ACTION,
+  MARINE_LICENCE_STATUS
+} from '../../../constants/marine-licence.js'
 
 vi.mock('./sqs-client.js', () => ({
   deleteDynamicsJob: vi.fn()
@@ -120,6 +123,23 @@ describe('marine licence dynamics worker-processor with real Mongo', () => {
     await processDynamicsDlqJob(server(), message('submit'))
 
     expect((await reload()).dynamicsOutbound.submit).toBe('sent')
+  })
+
+  it('should log a dead letter as ignored when the licence is already failed', async () => {
+    await insertLicence({ dynamicsOutbound: { submit: 'failed' } })
+    const dlqServer = server()
+
+    await processDynamicsDlqJob(dlqServer, message('submit'))
+
+    expect(dlqServer.logger.warn).not.toHaveBeenCalled()
+    expect(dlqServer.logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          action: MARINE_LICENCE_DYNAMICS_EVENT_ACTION.DEAD_LETTER_IGNORED
+        })
+      }),
+      expect.any(String)
+    )
   })
 
   it('should mark a dead-lettered submit failed', async () => {
