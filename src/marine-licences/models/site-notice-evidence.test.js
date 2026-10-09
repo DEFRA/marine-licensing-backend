@@ -1,5 +1,8 @@
 import { vi } from 'vitest'
-import { updateSiteNoticeEvidenceSchema } from './site-notice-evidence.js'
+import {
+  deleteSiteNoticeEvidenceSchema,
+  updateSiteNoticeEvidenceSchema
+} from './site-notice-evidence.js'
 
 const validId = 'a'.repeat(24)
 
@@ -179,5 +182,38 @@ describe('updateSiteNoticeEvidenceSchema', () => {
       locationName: 'North pier'
     })
     expect(error.message).toContain('MARINE_LICENCE_ID_REQUIRED')
+  })
+})
+
+describe('deleteSiteNoticeEvidenceSchema', () => {
+  const validate = (overrides = {}) =>
+    deleteSiteNoticeEvidenceSchema.validate({
+      id: validId,
+      evidenceIndex: 0,
+      ...overrides
+    })
+
+  test('should pass with a valid id and evidenceIndex', () => {
+    const { error } = validate({ evidenceIndex: 2 })
+    expect(error).toBeUndefined()
+  })
+
+  test('should fail when evidenceIndex is missing', () => {
+    const { error } = validate({ evidenceIndex: undefined })
+    expect(error.message).toContain('EVIDENCE_INDEX_REQUIRED')
+  })
+
+  test.each([
+    [-1, 'EVIDENCE_INDEX_INVALID'],
+    [1.5, 'EVIDENCE_INDEX_INVALID'],
+    ['abc', 'EVIDENCE_INDEX_REQUIRED']
+  ])('should fail when evidenceIndex is %s', (evidenceIndex, code) => {
+    const { error } = validate({ evidenceIndex })
+    expect(error.message).toContain(code)
+  })
+
+  test('should fail when id is invalid', () => {
+    const { error } = validate({ id: 'z'.repeat(24) })
+    expect(error.message).toContain('MARINE_LICENCE_ID_INVALID')
   })
 })

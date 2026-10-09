@@ -49,6 +49,14 @@ const evidenceIndexSchema = joi.number().integer().min(0).required().messages({
   'any.required': 'EVIDENCE_INDEX_REQUIRED'
 })
 
+export const addSiteNoticeEvidenceSchema = joi
+  .object({})
+  .append(marineLicenceId)
+
+export const deleteSiteNoticeEvidenceSchema = joi
+  .object({ evidenceIndex: evidenceIndexSchema })
+  .append(marineLicenceId)
+
 export const updateSiteNoticeEvidenceSchema = joi
   .object({
     evidenceIndex: evidenceIndexSchema,

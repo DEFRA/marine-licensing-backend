@@ -30,7 +30,9 @@ import { updateConstructionDrawingController } from './controllers/update-constr
 import { deleteConstructionDrawingController } from './controllers/delete-construction-drawing.js'
 import { deleteConstructionDrawingsController } from './controllers/delete-construction-drawings.js'
 import { redactTextController } from './controllers/redact-text.js'
-import { updateSiteNoticeEvidenceController } from './controllers/update-site-notice-evidence.js'
+import { updateSiteNoticeEvidenceController } from './controllers/site-notice/update-site-notice-evidence.js'
+import { addSiteNoticeEvidenceController } from './controllers/site-notice/add-site-notice-evidence.js'
+import { deleteSiteNoticeEvidenceController } from './controllers/site-notice/delete-site-notice-evidence.js'
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
  */
@@ -204,5 +206,15 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/update-site-notice-evidence',
     ...updateSiteNoticeEvidenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/add-site-notice-evidence',
+    ...addSiteNoticeEvidenceController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-site-notice-evidence',
+    ...deleteSiteNoticeEvidenceController
   }
 ]
