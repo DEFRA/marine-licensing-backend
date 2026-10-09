@@ -279,11 +279,14 @@ backend outside docker (`npm run dev`), your local `.env` is what counts.
 
 #### Dynamics submissions
 
-`DYNAMICS_ENABLED` also switches on the exemption submission queue poller, and its four
-endpoints are stubbed too: exemption submit (`DYNAMICS_API_URL`), withdraw, update and marine
-licence submission. The stub accepts any payload and returns `202`, which is the only thing
-the backend checks — so queued items reach `status: 'success'` instead of retrying into
-`exemption-dynamics-queue-failed`.
+`DYNAMICS_ENABLED` also switches on the exemption submission queue poller and the
+marine licence Dynamics SQS workers, and their endpoints are stubbed too: exemption
+submit (`DYNAMICS_API_URL`), withdraw, update and marine licence submission. The stub
+accepts any payload and returns `202`, which is the only thing the backend checks — so
+exemption queue items reach `status: 'success'` instead of retrying into
+`exemption-dynamics-queue-failed`, and marine licences get
+`dynamicsOutbound.submit: 'sent'`. Marine licence jobs travel over the
+`marine_licensing_d365_marine_licence` queue created by `compose/start-floci.sh`.
 
 The stub does not store submissions. To see what was sent, read its logs — each accepted
 submission is logged with the operation and exemption reference:

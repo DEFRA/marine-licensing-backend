@@ -59,7 +59,8 @@ describe('Dynamics Client', () => {
             updateUrl: 'https://localhost/api/data/v9.2/exemptions/update'
           },
           marineLicences: {
-            apiUrl: 'https://localhost/api/data/v9.2/marine-licences'
+            apiUrl: 'https://localhost/api/data/v9.2/marine-licences',
+            httpTimeoutMs: 120_000
           },
           tokenUrl: 'https://localhost/oauth2/token'
         }
@@ -226,6 +227,14 @@ describe('Dynamics Client', () => {
         'Exemption not found for applicationReference: TEST-REF-001'
       )
     })
+
+    it('should not set a timeout on the exemption POST', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+
+      await sendExemptionToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      expect(mockWreckPost.mock.calls[0][1]).not.toHaveProperty('timeout')
+    })
   })
 
   describe('sendWithdrawToDynamics', () => {
@@ -282,6 +291,24 @@ describe('Dynamics Client', () => {
       await expect(
         sendWithdrawToDynamics(mockServer, mockAccessToken, mockQueueItem)
       ).rejects.toThrow('Dynamics API returned status 400')
+    })
+
+    it('should not set a timeout on an exemption withdrawal', async () => {
+      await sendWithdrawToDynamics(mockServer, mockAccessToken, mockQueueItem)
+
+      expect(mockWreckPost.mock.calls[0][1]).not.toHaveProperty('timeout')
+    })
+
+    it('should time out a marine licence withdrawal after the configured marine licence timeout', async () => {
+      await sendWithdrawToDynamics(mockServer, mockAccessToken, {
+        ...mockQueueItem,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+      })
+
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2',
+        expect.objectContaining({ timeout: 120_000 })
+      )
     })
   })
 
@@ -393,6 +420,18 @@ describe('Dynamics Client', () => {
           mockQueueItem
         )
       ).rejects.toThrow('Dynamics API returned status 400')
+    })
+
+    it('should not set a timeout on the exemption update POST', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
+
+      await sendUpdateExemptionToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1]).not.toHaveProperty('timeout')
     })
   })
 
@@ -675,6 +714,21 @@ describe('Dynamics Client', () => {
       await expect(
         sendMarineLicenceToDynamics(mockServer, mockAccessToken, mockQueueItem)
       ).rejects.toThrow('Dynamics API returned status 400')
+    })
+
+    it('should time out the POST after the configured marine licence timeout', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue(mockMarineLicence)
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/marine-licences',
+        expect.objectContaining({ timeout: 120_000 })
+      )
     })
   })
 

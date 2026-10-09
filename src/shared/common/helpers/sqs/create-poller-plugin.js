@@ -4,14 +4,14 @@ import { runPollLoop } from './poll-loop.js'
 export const createSqsPollerPlugin = ({
   name,
   configKey,
+  isEnabled = () => config.get(configKey).isEnabled,
   receiveMessages,
   processMessage
 }) => ({
   plugin: {
     name,
     register: (server) => {
-      const { isEnabled } = config.get(configKey)
-      if (!isEnabled) {
+      if (!isEnabled()) {
         return
       }
 
