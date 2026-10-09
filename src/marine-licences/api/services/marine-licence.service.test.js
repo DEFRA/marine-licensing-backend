@@ -259,25 +259,53 @@ describe('MarineLicenceService', () => {
   describe('getMarineLicenceByApplicationReference', () => {
     const applicationReference = 'MLA/2026/10001'
 
-    it('should return marine licence found by applicationReference', async () => {
-      const licence = { ...marineLicence, applicationReference }
+    const createServiceByReference = (licence) => {
       vi.spyOn(global.mockMongo, 'collection').mockImplementation(() => ({
         findOne: vi
           .fn()
           .mockImplementation((query) =>
-            query.applicationReference === applicationReference ? licence : null
+            query.applicationReference === applicationReference
+              ? { ...licence }
+              : null
           )
       }))
-      const marineLicenceService = new MarineLicenceService({
-        db: global.mockMongo,
-        logger
-      })
+      return new MarineLicenceService({ db: global.mockMongo, logger })
+    }
+
+    it('should return marine licence found by applicationReference with individual contact name', async () => {
+      const licence = { ...marineLicence, applicationReference }
+      const marineLicenceService = createServiceByReference(licence)
 
       const result =
         await marineLicenceService.getMarineLicenceByApplicationReference(
           applicationReference
         )
-      expect(result).toEqual(licence)
+      expect(result).toEqual({
+        ...licence,
+        whoMarineLicenceIsFor: 'Dave Barnett'
+      })
+      expect(getContactNameById).toHaveBeenCalledWith({
+        contactId: marineLicence.contactId
+      })
+    })
+
+    it('should return marine licence found by applicationReference with organisation name', async () => {
+      const licence = {
+        ...marineLicence,
+        applicationReference,
+        organisation: { name: 'Dredging Co' }
+      }
+      const marineLicenceService = createServiceByReference(licence)
+
+      const result =
+        await marineLicenceService.getMarineLicenceByApplicationReference(
+          applicationReference
+        )
+      expect(result).toEqual({
+        ...licence,
+        whoMarineLicenceIsFor: 'Dredging Co'
+      })
+      expect(getContactNameById).not.toHaveBeenCalled()
     })
 
     it('should throw a not found error if marine licence not found', async () => {

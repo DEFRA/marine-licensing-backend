@@ -80,7 +80,12 @@ export class MarineLicenceService {
   }
 
   async getMarineLicenceByApplicationReference(applicationReference) {
-    return this.#findMarineLicenceByQuery({ applicationReference })
+    const marineLicence = await this.#findMarineLicenceByQuery({
+      applicationReference
+    })
+    marineLicence.whoMarineLicenceIsFor =
+      await this.#getWhoMarineLicenceIsFor(marineLicence)
+    return marineLicence
   }
 
   async getPublicMarineLicenceById(id) {
