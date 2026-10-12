@@ -2,9 +2,9 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import Boom from '@hapi/boom'
 import { updateSiteNoticeEvidenceController } from './update-site-notice-evidence.js'
-import { validateSiteNoticePhotoUpload } from '../helpers/validateSiteNoticePhotoUpload.js'
+import { validateSiteNoticePhotoUpload } from '../../helpers/validateSiteNoticePhotoUpload.js'
 
-vi.mock('../helpers/validateSiteNoticePhotoUpload.js')
+vi.mock('../../helpers/validateSiteNoticePhotoUpload.js')
 
 describe('PATCH /marine-licence/update-site-notice-evidence', () => {
   const mockAuditPayload = {

@@ -1,11 +1,11 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
-import { updateSiteNoticeEvidenceSchema } from '../../models/site-notice-evidence.js'
-import { validateSiteNoticePhotoUpload } from '../helpers/validateSiteNoticePhotoUpload.js'
-import { createLogger } from '../../../shared/common/helpers/logging/logger.js'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
+import { authorizeOwnership } from '../../../../shared/helpers/authorize-ownership.js'
+import { updateSiteNoticeEvidenceSchema } from '../../../models/site-notice-evidence.js'
+import { validateSiteNoticePhotoUpload } from '../../helpers/validateSiteNoticePhotoUpload.js'
+import { createLogger } from '../../../../shared/common/helpers/logging/logger.js'
 
 const logger = createLogger()
 
