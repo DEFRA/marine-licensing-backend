@@ -51,7 +51,7 @@ export const validateSiteNoticePhotoUpload = async (s3Location, logger) => {
           action: `${logSystem}:type-validation`,
           outcome: 'failure'
         },
-        contentType: metadata.contentType
+        tenant: { message: `contentType: ${metadata.contentType}` }
       },
       'File type validation failed'
     )

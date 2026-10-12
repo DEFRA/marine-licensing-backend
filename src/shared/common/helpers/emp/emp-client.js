@@ -6,18 +6,12 @@ import {
   collectionExemptions
 } from '../../constants/db-collections.js'
 import { addFeatures, updateFeatures } from '@esri/arcgis-rest-feature-service'
-import { createLogger } from '../logging/logger.js'
+import { createLogger, structureErrorForECS } from '../logging/logger.js'
 import { ExemptionService } from '../../../../exemptions/api/services/exemption.service.js'
 import { EXEMPTION_STATUS_LABEL } from '../../../../exemptions/constants/exemption.js'
 import { empFeaturesCreated } from './emp-queue.js'
 
 const logger = createLogger()
-
-const extractStatusCodeFromError = (error) => {
-  return (
-    error.response?.statusCode || error.statusCode || error.status || error.code
-  )
-}
 
 const buildHttpLogContext = (statusCode) => {
   return statusCode
@@ -38,10 +32,13 @@ const logEmpSuccess = (applicationReference) => {
         }
       },
       service: 'arcgis',
-      operation: 'addFeatures',
-      applicationReference
+      event: {
+        action: 'add-features',
+        outcome: 'success',
+        reference: applicationReference
+      }
     },
-    'Successfully sent exemption to ArcGIS/EMP'
+    `Successfully sent exemption to ArcGIS/EMP for applicationReference ${applicationReference}`
   )
 }
 
@@ -54,29 +51,28 @@ const logEmpApiError = (errorMessage, statusCode, applicationReference) => {
       },
       http: buildHttpLogContext(statusCode),
       service: 'arcgis',
-      operation: 'addFeatures',
-      applicationReference
+      event: {
+        action: 'add-features',
+        outcome: 'failure',
+        reference: applicationReference
+      }
     },
-    errorMessage
+    `${errorMessage} for applicationReference ${applicationReference}`
   )
 }
 
 const logEmpExceptionError = (error, applicationReference) => {
-  const statusCode = extractStatusCodeFromError(error)
   logger.error(
     {
-      error: {
-        message: error.message || String(error),
-        stack_trace: error.stack,
-        type: error.name || error.constructor?.name || 'Error',
-        code: error.code || 'EMP_API_ERROR'
-      },
-      http: buildHttpLogContext(statusCode),
+      ...structureErrorForECS(error),
       service: 'arcgis',
-      operation: 'addFeatures',
-      applicationReference
+      event: {
+        action: 'add-features',
+        outcome: 'failure',
+        reference: applicationReference
+      }
     },
-    `EMP addFeatures failed: ${error.message}`
+    `EMP addFeatures failed: ${error.message} for applicationReference ${applicationReference}`
   )
 }
 
@@ -163,10 +159,13 @@ const logEmpUpdateSuccess = (applicationReference) => {
         }
       },
       service: 'arcgis',
-      operation: 'updateFeatures',
-      applicationReference
+      event: {
+        action: 'update-features',
+        outcome: 'success',
+        reference: applicationReference
+      }
     },
-    'Successfully updated exemption status in ArcGIS/EMP'
+    `Successfully updated exemption status in ArcGIS/EMP for applicationReference ${applicationReference}`
   )
 }
 
@@ -183,29 +182,28 @@ const logEmpUpdateApiError = (
       },
       http: buildHttpLogContext(statusCode),
       service: 'arcgis',
-      operation: 'updateFeatures',
-      applicationReference
+      event: {
+        action: 'update-features',
+        outcome: 'failure',
+        reference: applicationReference
+      }
     },
-    errorMessage
+    `${errorMessage} for applicationReference ${applicationReference}`
   )
 }
 
 const logEmpUpdateExceptionError = (error, applicationReference) => {
-  const statusCode = extractStatusCodeFromError(error)
   logger.error(
     {
-      error: {
-        message: error.message || String(error),
-        stack_trace: error.stack,
-        type: error.name || error.constructor?.name || 'Error',
-        code: error.code || 'EMP_API_ERROR'
-      },
-      http: buildHttpLogContext(statusCode),
+      ...structureErrorForECS(error),
       service: 'arcgis',
-      operation: 'updateFeatures',
-      applicationReference
+      event: {
+        action: 'update-features',
+        outcome: 'failure',
+        reference: applicationReference
+      }
     },
-    `EMP updateFeatures failed: ${error.message}`
+    `EMP updateFeatures failed: ${error.message} for applicationReference ${applicationReference}`
   )
 }
 

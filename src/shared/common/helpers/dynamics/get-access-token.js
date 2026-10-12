@@ -2,7 +2,10 @@ import { config } from '../../../../config.js'
 import Wreck from '@hapi/wreck'
 import Boom from '@hapi/boom'
 import querystring from 'node:querystring'
-import { createLogger } from '../../helpers/logging/logger.js'
+import {
+  createLogger,
+  structureErrorForECS
+} from '../../helpers/logging/logger.js'
 
 const logger = createLogger()
 
@@ -32,7 +35,7 @@ export const getDynamicsAccessToken = async ({ type = 'projects' } = {}) => {
           }
         },
         service: 'dynamics',
-        operation: 'getAccessToken'
+        event: { action: 'get-access-token', outcome: 'success' }
       },
       'Dynamics 365 access token request successful'
     )
@@ -45,27 +48,11 @@ export const getDynamicsAccessToken = async ({ type = 'projects' } = {}) => {
 
     return responsePayload.access_token
   } catch (error) {
-    const statusCode =
-      error.output?.statusCode ||
-      error.response?.statusCode ||
-      error.res?.statusCode
     logger.error(
       {
-        error: {
-          message: error.message || String(error),
-          stack_trace: error.stack,
-          type: error.name || error.constructor?.name || 'Error',
-          code: error.code || error.statusCode
-        },
-        http: statusCode
-          ? {
-              response: {
-                status_code: statusCode
-              }
-            }
-          : undefined,
+        ...structureErrorForECS(error),
         service: 'dynamics',
-        operation: 'getAccessToken'
+        event: { action: 'get-access-token', outcome: 'failure' }
       },
       'Dynamics 365 access token request failed'
     )

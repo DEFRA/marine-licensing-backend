@@ -125,10 +125,13 @@ const validateDynamicsResponse = (
           }
         },
         service: 'dynamics',
-        operation,
-        applicationReference: applicationReferenceNumber
+        event: {
+          action: operation,
+          outcome: 'failure',
+          reference: applicationReferenceNumber
+        }
       },
-      `Dynamics API returned unexpected status ${statusCode}`
+      `Dynamics API returned unexpected status ${statusCode} for applicationReference ${applicationReferenceNumber}`
     )
     throw Boom.badImplementation(`Dynamics API returned status ${statusCode}`)
   }
@@ -155,10 +158,13 @@ const logDynamicsSuccess = (
         }
       },
       service: 'dynamics',
-      operation,
-      applicationReference: applicationReferenceNumber
+      event: {
+        action: operation,
+        outcome: 'success',
+        reference: applicationReferenceNumber
+      }
     },
-    message
+    `${message} for applicationReference ${applicationReferenceNumber}`
   )
 }
 
@@ -195,12 +201,12 @@ export const sendExemptionToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    'sendExemption'
+    'send-exemption'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    'sendExemption',
+    'send-exemption',
     'Successfully sent exemption to Dynamics 365'
   )
 
@@ -276,12 +282,12 @@ export const sendUpdateExemptionToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    'updateExemption'
+    'update-exemption'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    'updateExemption',
+    'update-exemption',
     'Successfully sent exemption update to Dynamics 365'
   )
 
@@ -352,12 +358,12 @@ export const sendMarineLicenceToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    'sendMarineLicence'
+    'send-marine-licence'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    'sendMarineLicence',
+    'send-marine-licence',
     'Successfully sent Marine Licence to Dynamics 365'
   )
 
