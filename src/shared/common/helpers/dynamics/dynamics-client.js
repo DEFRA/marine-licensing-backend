@@ -213,15 +213,14 @@ export const sendWithdrawToDynamics = async (
   queueItem
 ) => {
   const {
-    exemptions: { withdrawUrl }
+    exemptions: { withdrawUrl },
+    marineLicences: { httpTimeoutMs }
   } = config.get('dynamics')
   const { applicationReferenceNumber, type } = queueItem
 
   const isMarineLicence = type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
   const subject = isMarineLicence ? 'marine licence' : 'exemption'
-  const timeoutOption = isMarineLicence
-    ? { timeout: config.get('dynamics').marineLicences.httpTimeoutMs }
-    : {}
+  const timeoutOption = isMarineLicence ? { timeout: httpTimeoutMs } : {}
 
   const payload = {
     status: EXEMPTION_STATUS.WITHDRAWN,

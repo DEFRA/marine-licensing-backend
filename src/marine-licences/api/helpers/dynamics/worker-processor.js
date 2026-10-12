@@ -18,6 +18,8 @@ import { deleteDynamicsJob } from './sqs-client.js'
 const discardMalformedMessage =
   'Discarding malformed marine licence Dynamics message'
 
+const markedFailedReason = 'No automatic retry; the licence is marked failed'
+
 const supportedActions = new Set([
   DYNAMICS_REQUEST_ACTIONS.SUBMIT,
   DYNAMICS_REQUEST_ACTIONS.WITHDRAW
@@ -117,7 +119,7 @@ const handleSendFailure = async (server, message, job, error) => {
         EVENT_ACTION.MARKED_FAILED,
         'failure',
         applicationReference,
-        'No automatic retry; the licence is marked failed'
+        markedFailedReason
       ),
       `Marine licence ${action} for ${applicationReference} marked failed after ${receiveCount} attempts`
     )
@@ -213,7 +215,7 @@ export const processDynamicsDlqJob = async (server, message) => {
           EVENT_ACTION.MARKED_FAILED,
           'failure',
           applicationReference,
-          'No automatic retry; the licence is marked failed'
+          markedFailedReason
         ),
         `Marine licence ${action} for ${applicationReference} dead-lettered and marked failed`
       )
