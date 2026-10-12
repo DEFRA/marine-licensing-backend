@@ -13,6 +13,9 @@ import { empFeaturesCreated } from './emp-queue.js'
 
 const logger = createLogger()
 
+const ADD_FEATURES_ACTION = 'add-features'
+const UPDATE_FEATURES_ACTION = 'update-features'
+
 const buildHttpLogContext = (statusCode) => {
   return statusCode
     ? {
@@ -33,7 +36,7 @@ const logEmpSuccess = (applicationReference) => {
       },
       service: 'arcgis',
       event: {
-        action: 'add-features',
+        action: ADD_FEATURES_ACTION,
         outcome: 'success',
         reference: applicationReference
       }
@@ -52,7 +55,7 @@ const logEmpApiError = (errorMessage, statusCode, applicationReference) => {
       http: buildHttpLogContext(statusCode),
       service: 'arcgis',
       event: {
-        action: 'add-features',
+        action: ADD_FEATURES_ACTION,
         outcome: 'failure',
         reference: applicationReference
       }
@@ -67,7 +70,7 @@ const logEmpExceptionError = (error, applicationReference) => {
       ...structureErrorForECS(error),
       service: 'arcgis',
       event: {
-        action: 'add-features',
+        action: ADD_FEATURES_ACTION,
         outcome: 'failure',
         reference: applicationReference
       }
@@ -160,7 +163,7 @@ const logEmpUpdateSuccess = (applicationReference) => {
       },
       service: 'arcgis',
       event: {
-        action: 'update-features',
+        action: UPDATE_FEATURES_ACTION,
         outcome: 'success',
         reference: applicationReference
       }
@@ -183,7 +186,7 @@ const logEmpUpdateApiError = (
       http: buildHttpLogContext(statusCode),
       service: 'arcgis',
       event: {
-        action: 'update-features',
+        action: UPDATE_FEATURES_ACTION,
         outcome: 'failure',
         reference: applicationReference
       }
@@ -198,7 +201,7 @@ const logEmpUpdateExceptionError = (error, applicationReference) => {
       ...structureErrorForECS(error),
       service: 'arcgis',
       event: {
-        action: 'update-features',
+        action: UPDATE_FEATURES_ACTION,
         outcome: 'failure',
         reference: applicationReference
       }
