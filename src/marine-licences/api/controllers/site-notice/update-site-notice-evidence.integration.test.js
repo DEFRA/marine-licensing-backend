@@ -1,8 +1,8 @@
-import { setupTestServer } from '../../../../tests/test-server.js'
-import { makePatchRequest } from '../../../../tests/server-requests.js'
+import { setupTestServer } from '../../../../../tests/test-server.js'
+import { makePatchRequest } from '../../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
+import { createCompleteMarineLicence } from '../../../../../tests/test.fixture.js'
 
 describe('PATCH /marine-licence/update-site-notice-evidence - integration tests', async () => {
   const getServer = await setupTestServer()
