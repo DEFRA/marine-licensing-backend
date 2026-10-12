@@ -438,6 +438,7 @@ describe('Dynamics Client', () => {
             marineLicenceId: 'ml-123',
             feeBand: '2A',
             projectName: 'Test Marine Project',
+            projectBackground: null,
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
@@ -486,6 +487,7 @@ describe('Dynamics Client', () => {
             marineLicenceId: 'ml-123',
             feeBand: '2A',
             projectName: 'Test Marine Project',
+            projectBackground: null,
             reference: 'MLA/2025/00001',
             applicantOrganisationId: 'test-org-id',
             applicationUrl:
@@ -510,6 +512,25 @@ describe('Dynamics Client', () => {
             Authorization: 'Bearer test-access-token',
             'Content-Type': 'application/json'
           }
+        })
+      )
+    })
+
+    it('should include projectBackground when present on the marine licence', async () => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        projectBackground: 'Maintenance of navigation channel'
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1].payload).toEqual(
+        expect.objectContaining({
+          projectBackground: 'Maintenance of navigation channel'
         })
       )
     })
