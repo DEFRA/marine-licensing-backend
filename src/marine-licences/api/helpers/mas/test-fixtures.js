@@ -1,5 +1,6 @@
 import {
   MARINE_LICENCE_STATUS,
+  MAS_CONSULTATION_APPLICATION_TYPES,
   MAS_TASK_TYPE,
   PUBLIC_NOTICE_REQUEST_RELATES_TO,
   WITHHOLDING_DECISION,
@@ -94,6 +95,21 @@ export const mockMasPublicNoticeSqsMessageBody = {
   siteNoticeSummary: 'test site notice summary',
   requestRelatesTo: PUBLIC_NOTICE_REQUEST_RELATES_TO.BOTH
 }
+export const mockMasConsultationRequestMessageBody = {
+  applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.ADD_CONSULTATION_REQUEST,
+  userName: 'Jane Doe',
+  userEmail: 'jane@example.com',
+  consultationStartDate: '2026-05-21T12:00:00.000Z',
+  consultees: [
+    {
+      organisation: 'Test org',
+      consultationType:
+        MAS_CONSULTATION_APPLICATION_TYPES.APPLICATION_NOTIFICATION,
+      notes: 'Test notes'
+    }
+  ]
+}
 
 export const mockMasSqsMessage = {
   MessageId: '11d59c92-2c1d-4d8b-9c0a-2f6b1c9e2b40',
@@ -117,6 +133,11 @@ export const mockMasPublicNoticeSqsMessage = {
 export const mockMasWithholdingSqsMessage = {
   ...mockMasSqsMessage,
   Body: JSON.stringify(mockMasWithholdingMessageBody)
+}
+
+export const mockMasConsultationRequestSqsMessage = {
+  ...mockMasSqsMessage,
+  Body: JSON.stringify(mockMasConsultationRequestMessageBody)
 }
 
 export const mockMasMissingApplicationReferenceSqsMessage = {
