@@ -1,4 +1,5 @@
 services:
+  # Web console: http://localhost:4566/_floci/ui
   floci:
     image: floci/floci:latest-compat
     ports:
@@ -7,15 +8,20 @@ services:
       - 'compose/aws.env'
     environment:
       FLOCI_HOSTNAME: 127.0.0.1
+      FLOCI_DEFAULT_REGION: eu-west-2
       QUARKUS_LOG_LEVEL: WARN
       FLOCI_STORAGE_MODE: memory
       FLOCI_STORAGE_SERVICES_RESOURCEEXPLORER2_MODE: memory
+      FLOCI_SERVICES_UI_ENDPOINT: http://floci:4566
+      FLOCI_SERVICES_UI_DOCKER_NETWORK: cdp-tenant
+      FLOCI_SERVICES_UI_BIND_ADDRESS: 127.0.0.1
     volumes:
       - ./compose/start-floci.sh:/etc/floci/init/ready.d/start-floci.sh
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ['CMD', 'curl', 'localhost:4566']
       interval: 5s
-      start_period: 5s
+      start_period: 60s
       retries: 3
     networks:
       - cdp-tenant
