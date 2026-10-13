@@ -25,7 +25,7 @@ export const extractController = {
     const { s3Bucket, s3Key, fileType, singleSiteOnly } = request.payload
 
     logger.info(
-      { fileType },
+      { tenant: { message: `fileType: ${fileType}` } },
       `${logSystem}: Processing geo-parser extract request`
     )
 
@@ -44,8 +44,9 @@ export const extractController = {
 
       logger.info(
         {
-          fileType,
-          featureCount: geoJSON.features?.length || 0
+          tenant: {
+            message: `fileType: ${fileType}, featureCount: ${geoJSON.features?.length || 0}`
+          }
         },
         `${logSystem}: Successfully processed geo-parser extract request`
       )

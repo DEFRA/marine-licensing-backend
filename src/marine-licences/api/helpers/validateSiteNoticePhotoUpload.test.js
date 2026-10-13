@@ -95,7 +95,7 @@ describe('validateSiteNoticePhotoUpload', () => {
           action: 'SiteNoticePhoto:Upload Validation:type-validation',
           outcome: 'failure'
         }),
-        contentType: 'image/gif'
+        tenant: { message: 'contentType: image/gif' }
       }),
       'File type validation failed'
     )
