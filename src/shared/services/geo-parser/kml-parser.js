@@ -26,7 +26,7 @@ export class KmlParser {
 
       logger.info(
         {
-          featureCount: geoJSON.features?.length || 0
+          tenant: { message: `featureCount: ${geoJSON.features?.length || 0}` }
         },
         `${this.logSystem}: Successfully parsed KML file`
       )
