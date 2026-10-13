@@ -199,14 +199,22 @@ a single status.
 
 ### Dynamics 365 Integration
 
-- **Queue-based:** Exemptions and marine licences both queued for sync, processed
-  asynchronously (shared client ID/secret, separate queue collections per domain)
-- **Retry logic:** fixed-interval retries — **not** exponential backoff.
-  Intervals, counts and the polling cadence are convict-configured (`dynamics`
-  section of `src/config.js`).
-- **Failed items:** Moved to the failed-queue collection matching the source
-  queue (per domain)
-- **Feature flag:** `DYNAMICS_ENABLED` environment variable
+- **Exemptions — Mongo queue:** submissions are queued in
+  `exemption-dynamics-queue` and polled in-process; failures retry at a fixed
+  interval (**not** exponential backoff) and then move to
+  `exemption-dynamics-queue-failed`. Intervals, counts and cadence are
+  convict-configured (`dynamics` section of `src/config.js`).
+- **Marine licences — SQS:** submit and withdraw go to the
+  `marine_licensing_d365_marine_licence` queue (plus `-deadletter`), processed by
+  `src/shared/plugins/marine-licence-dynamics/` via
+  `src/marine-licences/api/helpers/dynamics/worker-processor.js`. Per-action
+  send state lives on the licence as `dynamicsOutbound.{submit,withdraw}`
+  (`sent` / `failed`); those writes deliberately leave `updatedAt` alone (it is
+  the optimistic-concurrency token) and can never overwrite `sent`. A
+  withdrawal waits on the queue until its submit is `sent`, because standard
+  SQS doesn't preserve order. The old `marine-licence-dynamics-queue`
+  collections are no longer written.
+- **Feature flag:** `DYNAMICS_ENABLED` gates both paths
 
 ### File Upload & S3
 

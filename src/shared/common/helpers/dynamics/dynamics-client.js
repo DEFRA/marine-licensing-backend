@@ -219,14 +219,14 @@ export const sendWithdrawToDynamics = async (
   queueItem
 ) => {
   const {
-    exemptions: { withdrawUrl }
+    exemptions: { withdrawUrl },
+    marineLicences: { httpTimeoutMs }
   } = config.get('dynamics')
   const { applicationReferenceNumber, type } = queueItem
 
-  const subject =
-    type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
-      ? 'marine licence'
-      : 'exemption'
+  const isMarineLicence = type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+  const subject = isMarineLicence ? 'marine licence' : 'exemption'
+  const timeoutOption = isMarineLicence ? { timeout: httpTimeoutMs } : {}
 
   const payload = {
     status: EXEMPTION_STATUS.WITHDRAWN,
@@ -238,7 +238,8 @@ export const sendWithdrawToDynamics = async (
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
-    }
+    },
+    ...timeoutOption
   })
 
   const statusCode = response.res?.statusCode
@@ -300,7 +301,7 @@ export const sendMarineLicenceToDynamics = async (
   queueItem
 ) => {
   const {
-    marineLicences: { apiUrl }
+    marineLicences: { apiUrl, httpTimeoutMs }
   } = config.get('dynamics')
 
   const { applicationReferenceNumber } = queueItem
@@ -351,7 +352,8 @@ export const sendMarineLicenceToDynamics = async (
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
-    }
+    },
+    timeout: httpTimeoutMs
   })
 
   const statusCode = response.res?.statusCode

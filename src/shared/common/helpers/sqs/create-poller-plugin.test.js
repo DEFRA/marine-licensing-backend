@@ -72,4 +72,32 @@ describe('createSqsPollerPlugin', () => {
 
     expect(server.app['test-poller'].running).toBe(false)
   })
+
+  it('should start when the isEnabled override returns true, without reading configKey', () => {
+    const configGet = vi.spyOn(config, 'get')
+    const server = buildServer()
+
+    createSqsPollerPlugin({
+      name: 'test-poller',
+      isEnabled: () => true,
+      receiveMessages: vi.fn(),
+      processMessage: vi.fn()
+    }).plugin.register(server)
+
+    expect(configGet).not.toHaveBeenCalled()
+    expect(server.ext).toHaveBeenCalledWith('onPostStart', expect.any(Function))
+  })
+
+  it('should not start when the isEnabled override returns false', () => {
+    const server = buildServer()
+
+    createSqsPollerPlugin({
+      name: 'test-poller',
+      isEnabled: () => false,
+      receiveMessages: vi.fn(),
+      processMessage: vi.fn()
+    }).plugin.register(server)
+
+    expect(server.ext).not.toHaveBeenCalled()
+  })
 })

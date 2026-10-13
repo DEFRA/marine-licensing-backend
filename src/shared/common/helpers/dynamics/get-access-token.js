@@ -9,7 +9,10 @@ import {
 
 const logger = createLogger()
 
-export const getDynamicsAccessToken = async ({ type = 'projects' } = {}) => {
+export const getDynamicsAccessToken = async ({
+  type = 'projects',
+  timeoutMs
+} = {}) => {
   const dynamics = config.get('dynamics')
   const { clientId, clientSecret, scope } = dynamics[type]
 
@@ -23,7 +26,8 @@ export const getDynamicsAccessToken = async ({ type = 'projects' } = {}) => {
       }),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
-      }
+      },
+      ...(timeoutMs ? { timeout: timeoutMs } : {})
     })
 
     const statusCode = response.res?.statusCode
