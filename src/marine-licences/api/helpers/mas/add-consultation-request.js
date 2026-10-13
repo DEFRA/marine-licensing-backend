@@ -15,7 +15,7 @@ export const addConsultationRequest = async (db, logger, { body, id }) => {
         applicationReference
       },
       {
-        $push: {
+        $addToSet: {
           consultationRequests: {
             consultationStartDate,
             consultees

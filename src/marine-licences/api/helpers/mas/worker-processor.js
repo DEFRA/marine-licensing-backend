@@ -58,14 +58,14 @@ const handleMasTaskType = async (db, logger, { body, message }) => {
     })
   }
 
-  if (body.taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
+  if (taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
     await handleWithholdingNotification(db, logger, {
       body,
       id: message.MessageId
     })
   }
 
-  if (body.taskType === MAS_TASK_TYPE.ADD_CONSULTATION_REQUEST) {
+  if (taskType === MAS_TASK_TYPE.ADD_CONSULTATION_REQUEST) {
     await addConsultationRequest(db, logger, {
       body,
       id: message.MessageId

@@ -45,7 +45,7 @@ describe('addConsultationRequest', async () => {
         applicationReference: body.applicationReference
       },
       {
-        $push: {
+        $addToSet: {
           consultationRequests: {
             consultationStartDate:
               mockMasConsultationRequestMessageBody.consultationStartDate,
