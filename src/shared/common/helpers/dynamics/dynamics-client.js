@@ -125,10 +125,13 @@ const validateDynamicsResponse = (
           }
         },
         service: 'dynamics',
-        operation,
-        applicationReference: applicationReferenceNumber
+        event: {
+          action: operation,
+          outcome: 'failure',
+          reference: applicationReferenceNumber
+        }
       },
-      `Dynamics API returned unexpected status ${statusCode}`
+      `Dynamics API returned unexpected status ${statusCode} for applicationReference ${applicationReferenceNumber}`
     )
     throw Boom.badImplementation(`Dynamics API returned status ${statusCode}`)
   }
@@ -155,10 +158,13 @@ const logDynamicsSuccess = (
         }
       },
       service: 'dynamics',
-      operation,
-      applicationReference: applicationReferenceNumber
+      event: {
+        action: operation,
+        outcome: 'success',
+        reference: applicationReferenceNumber
+      }
     },
-    message
+    `${message} for applicationReference ${applicationReferenceNumber}`
   )
 }
 
@@ -195,12 +201,12 @@ export const sendExemptionToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    'sendExemption'
+    'send-exemption'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    'sendExemption',
+    'send-exemption',
     'Successfully sent exemption to Dynamics 365'
   )
 
@@ -213,14 +219,14 @@ export const sendWithdrawToDynamics = async (
   queueItem
 ) => {
   const {
-    exemptions: { withdrawUrl }
+    exemptions: { withdrawUrl },
+    marineLicences: { httpTimeoutMs }
   } = config.get('dynamics')
   const { applicationReferenceNumber, type } = queueItem
 
-  const subject =
-    type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
-      ? 'marine licence'
-      : 'exemption'
+  const isMarineLicence = type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
+  const subject = isMarineLicence ? 'marine licence' : 'exemption'
+  const timeoutOption = isMarineLicence ? { timeout: httpTimeoutMs } : {}
 
   const payload = {
     status: EXEMPTION_STATUS.WITHDRAWN,
@@ -232,7 +238,8 @@ export const sendWithdrawToDynamics = async (
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
-    }
+    },
+    ...timeoutOption
   })
 
   const statusCode = response.res?.statusCode
@@ -276,12 +283,12 @@ export const sendUpdateExemptionToDynamics = async (
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    'updateExemption'
+    'update-exemption'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    'updateExemption',
+    'update-exemption',
     'Successfully sent exemption update to Dynamics 365'
   )
 
@@ -294,7 +301,7 @@ export const sendMarineLicenceToDynamics = async (
   queueItem
 ) => {
   const {
-    marineLicences: { apiUrl }
+    marineLicences: { apiUrl, httpTimeoutMs }
   } = config.get('dynamics')
 
   const { applicationReferenceNumber } = queueItem
@@ -345,19 +352,20 @@ export const sendMarineLicenceToDynamics = async (
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
-    }
+    },
+    timeout: httpTimeoutMs
   })
 
   const statusCode = response.res?.statusCode
   validateDynamicsResponse(
     statusCode,
     applicationReferenceNumber,
-    'sendMarineLicence'
+    'send-marine-licence'
   )
   logDynamicsSuccess(
     statusCode,
     applicationReferenceNumber,
-    'sendMarineLicence',
+    'send-marine-licence',
     'Successfully sent Marine Licence to Dynamics 365'
   )
 

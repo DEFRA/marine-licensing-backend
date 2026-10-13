@@ -5,12 +5,11 @@ import {
 } from '../../constants/request-queue.js'
 import { config } from '../../../../config.js'
 import { sendToDynamics } from './dynamics-client.js'
+import { sendDynamicsJob } from '../../../../marine-licences/api/helpers/dynamics/sqs-client.js'
 import { structureErrorForECS } from '../../helpers/logging/logger.js'
 import {
   collectionDynamicsQueue,
-  collectionDynamicsQueueFailed,
-  collectionMarineLicenceDynamicsQueue,
-  collectionMarineLicenceDynamicsQueueFailed
+  collectionDynamicsQueueFailed
 } from '../../constants/db-collections.js'
 import { getDynamicsAccessToken } from './get-access-token.js'
 import { withMongoTransaction } from '../mongo-transactions.js'
@@ -68,18 +67,8 @@ const claimOneQueueItem = async (server, collectionName, filter) => {
   }
 }
 
-const claimNextQueueItemFair = async (server, filter, preferExemptionFirst) => {
-  const order = preferExemptionFirst
-    ? [collectionDynamicsQueue, collectionMarineLicenceDynamicsQueue]
-    : [collectionMarineLicenceDynamicsQueue, collectionDynamicsQueue]
-  for (const collectionName of order) {
-    const item = await claimOneQueueItem(server, collectionName, filter)
-    if (item) {
-      return item
-    }
-  }
-  return null
-}
+const claimNextQueueItem = (server, filter) =>
+  claimOneQueueItem(server, collectionDynamicsQueue, filter)
 
 export const startDynamicsQueuePolling = (server, intervalMs) => {
   processDynamicsQueue(server)
@@ -114,10 +103,6 @@ export const handleDynamicsQueueItemFailure = async (server, item) => {
   } = config.get('dynamics')
 
   const retries = item.retries + 1
-  const failedCollection =
-    item._sourceCollection === collectionMarineLicenceDynamicsQueue
-      ? collectionMarineLicenceDynamicsQueueFailed
-      : collectionDynamicsQueueFailed
 
   if (retries >= maxRetries) {
     const { _sourceCollection, ...itemToStore } = item
@@ -125,7 +110,7 @@ export const handleDynamicsQueueItemFailure = async (server, item) => {
     // crash between the writes leaves the item in both queues, and the
     // duplicate _id then blocks every later move attempt.
     await withMongoTransaction(server.mongoClient, async (session) => {
-      await server.db.collection(failedCollection).insertOne(
+      await server.db.collection(collectionDynamicsQueueFailed).insertOne(
         {
           ...itemToStore,
           retries: maxRetries,
@@ -166,12 +151,7 @@ export const processDynamicsQueue = async (server) => {
 
     const filter = buildClaimFilter(now, retryDelayMs, claimStaleMs)
 
-    let preferExemptionFirst = true
-    let item = await claimNextQueueItemFair(
-      server,
-      filter,
-      preferExemptionFirst
-    )
+    let item = await claimNextQueueItem(server, filter)
 
     if (!item) {
       return
@@ -195,8 +175,7 @@ export const processDynamicsQueue = async (server) => {
       if (processedCount >= DYNAMICS_QUEUE_MAX_ITEMS_PER_PROCESS_RUN) {
         break
       }
-      preferExemptionFirst = !preferExemptionFirst
-      item = await claimNextQueueItemFair(server, filter, preferExemptionFirst)
+      item = await claimNextQueueItem(server, filter)
     }
 
     if (processedCount > 0) {
@@ -222,15 +201,15 @@ export const addToDynamicsQueue = async ({
   action,
   type = DYNAMICS_QUEUE_TYPES.EXEMPTION
 }) => {
+  if (type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
+    await sendDynamicsJob({ applicationReference, action })
+    return
+  }
+
   const { payload, db } = request
   const { createdAt, createdBy, updatedAt, updatedBy } = payload
 
-  const collection =
-    type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
-      ? collectionMarineLicenceDynamicsQueue
-      : collectionDynamicsQueue
-
-  await db.collection(collection).insertOne({
+  await db.collection(collectionDynamicsQueue).insertOne({
     type,
     action,
     applicationReferenceNumber: applicationReference,

@@ -111,3 +111,18 @@ export const MAS_EVENT_ACTION = {
   APPLICATION_TASK_SKIPPED: 'mas:application-task-skipped',
   LICENCE_NOT_FOUND: 'mas:licence-not-found'
 }
+
+export const MARINE_LICENCE_DYNAMICS_EVENT_ACTION = {
+  LICENCE_NOT_FOUND: 'ml-dynamics:licence-not-found',
+  ALREADY_SENT: 'ml-dynamics:already-sent',
+  AWAITING_SUBMIT: 'ml-dynamics:withdraw-awaiting-submit',
+  SENT: 'ml-dynamics:sent',
+  SEND_FAILED: 'ml-dynamics:send-failed',
+  MARKED_FAILED: 'ml-dynamics:marked-failed',
+  DEAD_LETTER_IGNORED: 'ml-dynamics:dead-letter-ignored'
+}
+
+export const DYNAMICS_OUTBOUND_STATUS = {
+  SENT: 'sent',
+  FAILED: 'failed'
+}

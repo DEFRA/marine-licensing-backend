@@ -12,6 +12,9 @@ describe('getDynamicsAccessToken', () => {
   })
 
   beforeEach(() => {
+    mockWreckPost.mockResolvedValue({
+      payload: Buffer.from(JSON.stringify({ access_token: 'test_token' }))
+    })
     config.get.mockReturnValue({
       projects: {
         clientId: 'projects-client-id',
@@ -84,5 +87,20 @@ describe('getDynamicsAccessToken', () => {
     await expect(getDynamicsAccessToken()).rejects.toThrow(
       'Response Error: 400 Bad Request'
     )
+  })
+
+  it('should pass a timeout to Wreck when timeoutMs is given', async () => {
+    await getDynamicsAccessToken({ timeoutMs: 120_000 })
+
+    expect(mockWreckPost).toHaveBeenCalledWith(
+      'https://localhost/oauth2/token',
+      expect.objectContaining({ timeout: 120_000 })
+    )
+  })
+
+  it('should not pass a timeout to Wreck when timeoutMs is not given', async () => {
+    await getDynamicsAccessToken()
+
+    expect(mockWreckPost.mock.calls[0][1]).not.toHaveProperty('timeout')
   })
 })

@@ -50,6 +50,9 @@ aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_li
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_mas-deadletter
 aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_mas --attributes "{\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_mas-deadletter\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}"
 
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_d365_marine_licence-deadletter
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name marine_licensing_d365_marine_licence --attributes "{\"VisibilityTimeout\":\"300\",\"RedrivePolicy\":\"{\\\"deadLetterTargetArn\\\":\\\"arn:aws:sqs:eu-west-2:000000000000:marine_licensing_d365_marine_licence-deadletter\\\",\\\"maxReceiveCount\\\":\\\"3\\\"}\"}"
+
 # Public register: publisher-owned SNS topic (this service) + consumer-owned SQS
 # (marine-licensing-public-register). Local subscription lets us verify the
 # messaging path end-to-end without the consumer service running.
