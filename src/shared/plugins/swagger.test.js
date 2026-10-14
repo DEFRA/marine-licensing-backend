@@ -60,6 +60,15 @@ describe('swagger plugin', () => {
       })
     })
 
+    test('gives every schema definition a PascalCase name from a Joi label', async () => {
+      const spec = await getSpec()
+      const unnamed = Object.keys(spec.definitions).filter(
+        (name) => !/^[A-Z][A-Za-z]+$/.test(name)
+      )
+
+      expect(unnamed).toEqual([])
+    })
+
     test('leaves untagged routes out of the spec', async () => {
       const spec = await getSpec()
 

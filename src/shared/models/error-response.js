@@ -5,6 +5,6 @@ export const errorResponseSchema = joi
     statusCode: joi.number().integer().required(),
     error: joi.string().required(),
     message: joi.string().allow('').required(),
-    validation: joi.object().unknown(true)
+    validation: joi.object().unknown(true).label('ErrorValidation')
   })
   .label('ErrorResponse')

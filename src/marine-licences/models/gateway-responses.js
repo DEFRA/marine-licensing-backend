@@ -14,16 +14,22 @@ const gatewayActivitySchema = joi
     activityIndex: joi.number().integer().required(),
     activityType: nullableString.required(),
     activitySubType: nullableString.required(),
-    subActivities: joi.array().items(joi.string()).required(),
+    subActivities: joi
+      .array()
+      .items(joi.string())
+      .required()
+      .label('GatewaySubActivities'),
     otherActivity: nullableString.required(),
     activityDescription: nullableString.required(),
     activityDuration: nullableString.required(),
     activityMonths: joi
       .object({ applicable: nullableString, details: nullableString })
-      .required(),
+      .required()
+      .label('GatewayActivityMonths'),
     completionDate: joi
       .object({ hasSpecificDate: nullableString, reason: nullableString })
-      .required(),
+      .required()
+      .label('GatewayCompletionDate'),
     workingHours: nullableString.required()
   })
   .label('GatewayActivity')
@@ -47,14 +53,26 @@ const gatewaySiteSchema = joi
     circleWidthMetres: joi.number().allow(null).required(),
     geometry: joi
       .object({
-        type: joi.string().valid('FeatureCollection').required(),
-        crs: joi.object().unknown(true),
-        features: joi.array().items(joi.object().unknown(true)).required()
+        type: joi
+          .string()
+          .valid('FeatureCollection')
+          .required()
+          .label('GatewayGeometryType'),
+        crs: joi.object().unknown(true).label('GatewayGeometryCrs'),
+        features: joi
+          .array()
+          .items(joi.object().unknown(true).label('GatewayGeometryFeature'))
+          .required()
+          .label('GatewayGeometryFeatures')
       })
       .allow(null)
       .required()
       .label('GatewaySiteGeometry'),
-    activities: joi.array().items(gatewayActivitySchema).required()
+    activities: joi
+      .array()
+      .items(gatewayActivitySchema)
+      .required()
+      .label('GatewayActivities')
   })
   .label('GatewaySite')
 
@@ -103,23 +121,29 @@ export const marineLicenceGatewayResponseSchema = joi
       'GatewayPublicConsultation'
     ).required(),
     waterFrameworkDirective: gatewayWaterFrameworkDirectiveSchema.required(),
-    sites: joi.array().items(gatewaySiteSchema).required(),
+    sites: joi
+      .array()
+      .items(gatewaySiteSchema)
+      .required()
+      .label('GatewaySites'),
     marinePlanPolicies: joi
       .array()
       .items(gatewayMarinePlanPolicySchema)
-      .required(),
+      .required()
+      .label('GatewayMarinePlanPolicies'),
     withdrawnAt: joi.date().iso().allow(null).required()
   })
   .label('MarineLicenceGatewayResponse')
 
 export const wfdDocumentDownloadUrlResponseSchema = joi
   .object({
-    message: joi.string().valid('success').required(),
+    message: joi.string().valid('success').required().label('SuccessMessage'),
     value: joi
       .object({
         url: joi.string().uri().required(),
         expiresIn: joi.number().integer().required()
       })
       .required()
+      .label('WfdDocumentDownloadUrl')
   })
   .label('WfdDocumentDownloadUrlResponse')
