@@ -12,6 +12,9 @@ import { formatSitesForGateway } from '../helpers/format-sites-for-gateway.js'
 import { formatMarinePlanPoliciesForGateway } from '../helpers/format-marine-plan-policies-for-gateway.js'
 import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
 import { hydrateMarinePlanPolicies } from '../helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
+import { errorResponseSchema } from '../../../shared/models/error-response.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
+import { marineLicenceGatewayResponseSchema } from '../../models/gateway-responses.js'
 
 // Keeps the nullable pass-through fields below out of the handler's cyclomatic
 // complexity, which the response body would otherwise breach as it grows.
@@ -20,8 +23,33 @@ const orNull = (value) => value ?? null
 export const getMarineLicenceGatewayController = {
   options: {
     auth: false,
+    tags: ['api'],
+    description: 'Get a submitted marine licence for MAS',
+    notes:
+      'Returns the project, site, Water Framework Directive and marine plan policy details of a submitted or withdrawn marine licence. Site file URLs are presigned and expire after 4 hours.',
     validate: {
       params: getMarineLicence
+    },
+    response: {
+      status: {
+        200: marineLicenceGatewayResponseSchema,
+        400: errorResponseSchema,
+        403: errorResponseSchema,
+        404: errorResponseSchema,
+        500: errorResponseSchema
+      },
+      failAction: logResponseSchemaMismatch
+    },
+    plugins: {
+      'hapi-swagger': {
+        responses: {
+          200: { description: 'The marine licence' },
+          400: { description: 'The id is not a 24-character hex string' },
+          403: { description: 'The marine licence is a draft' },
+          404: { description: 'No marine licence has this id' },
+          500: { description: 'Unexpected server error' }
+        }
+      }
     }
   },
   handler: async (request, h) => {

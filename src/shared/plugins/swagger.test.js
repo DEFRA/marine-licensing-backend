@@ -61,6 +61,31 @@ describe('swagger plugin', () => {
       expect(spec.paths['/exemption/{id}']).toBeUndefined()
       expect(spec.paths['/health']).toBeUndefined()
     })
+
+    test('documents the marine licence MAS route', async () => {
+      const spec = await getSpec()
+      const operation = spec.paths['/public/marine-licence/mas/{id}'].get
+
+      expect(operation.summary).toBe('Get a submitted marine licence for MAS')
+      expect(operation.parameters).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'id', in: 'path', required: true })
+        ])
+      )
+      expect(Object.keys(operation.responses).sort()).toEqual([
+        '200',
+        '400',
+        '403',
+        '404',
+        '500'
+      ])
+      expect(operation.responses['403'].description).toBe(
+        'The marine licence is a draft'
+      )
+      expect(
+        spec.definitions.MarineLicenceGatewayResponse.properties
+      ).toHaveProperty('sites')
+    })
   })
 
   describe('with a deployed service version', () => {
