@@ -128,6 +128,21 @@ describe('swagger plugin', () => {
         '500'
       ])
     })
+
+    test('documents the public exemption route', async () => {
+      const spec = await getSpec()
+      const operation = spec.paths['/public/exemption/{id}'].get
+
+      expect(operation.summary).toBe('Get a publicly viewable exemption')
+      expect(Object.keys(operation.responses).sort()).toEqual([
+        '200',
+        '400',
+        '403',
+        '404',
+        '500'
+      ])
+      expect(spec.definitions).toHaveProperty('PublicExemption')
+    })
   })
 
   describe('with a deployed service version', () => {

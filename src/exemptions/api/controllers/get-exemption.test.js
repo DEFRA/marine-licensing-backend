@@ -9,6 +9,7 @@ import {
   EXEMPTION_STATUS,
   EXEMPTION_STATUS_LABEL
 } from '../../constants/exemption.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 vi.mock(
   '../../../shared/common/helpers/dynamics/get-contact-details.js',
   () => ({
@@ -320,6 +321,20 @@ describe('GET /exemption', () => {
       const controller = getExemptionController({ requiresAuth: false })
 
       expect(controller.options.auth).toBe(false)
+    })
+
+    it('should document the public route and log response schema mismatches', () => {
+      const { options } = getExemptionController({ requiresAuth: false })
+
+      expect(options.tags).toEqual(['api'])
+      expect(options.response.failAction).toBe(logResponseSchemaMismatch)
+    })
+
+    it('should leave the authenticated route undocumented and unvalidated', () => {
+      const { options } = getExemptionController({ requiresAuth: true })
+
+      expect(options.tags).toBeUndefined()
+      expect(options.response).toBeUndefined()
     })
 
     it('should return exemption when exemption is active and publicRegister consent is yes', async () => {
