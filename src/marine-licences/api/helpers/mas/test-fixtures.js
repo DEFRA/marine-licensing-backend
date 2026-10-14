@@ -98,12 +98,10 @@ export const mockMasPublicNoticeSqsMessageBody = {
 export const mockMasConsultationRequestMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.ADD_CONSULTATION_REQUEST,
-  userName: mockMasUserName,
-  userEmail: mockMasUserEmail,
   consultationStartDate: mockMasDate,
   consultees: [
     {
-      organisation: 'Test org',
+      organisationId: 'Test org id',
       consultationType:
         MAS_CONSULTATION_APPLICATION_TYPES.APPLICATION_NOTIFICATION,
       notes: 'Test notes'
