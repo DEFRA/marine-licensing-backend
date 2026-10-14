@@ -89,8 +89,8 @@ export const mockMasWithholdingNoBasisMessageBody = {
 export const mockMasPublicNoticeSqsMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_NOTICE,
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com',
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail,
   proposedWorksSummary: 'test proposed works summary',
   siteNoticeSummary: 'test site notice summary',
   requestRelatesTo: PUBLIC_NOTICE_REQUEST_RELATES_TO.BOTH
@@ -98,8 +98,8 @@ export const mockMasPublicNoticeSqsMessageBody = {
 export const mockMasConsultationRequestMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.ADD_CONSULTATION_REQUEST,
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com',
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail,
   consultationStartDate: mockMasDate,
   consultees: [
     {
