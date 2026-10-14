@@ -101,7 +101,7 @@ export const mockMasConsultationRequestMessageBody = {
   consultationStartDate: mockMasDate,
   consultees: [
     {
-      organisationId: 'Test org id',
+      organisationId: 'c1b2c3d4-e5f6-7890-abcd-ef1234567890',
       consultationType:
         MAS_CONSULTATION_APPLICATION_TYPES.APPLICATION_NOTIFICATION,
       notes: 'Test notes'
