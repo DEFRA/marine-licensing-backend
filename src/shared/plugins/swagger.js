@@ -1,5 +1,3 @@
-import Inert from '@hapi/inert'
-import Vision from '@hapi/vision'
 import HapiSwagger from 'hapi-swagger'
 import { config } from '../../config.js'
 
@@ -43,14 +41,10 @@ export const swagger = {
       const version = config.get('serviceVersion') ?? 'local'
       const documentationPage = buildDocumentationPage(version)
 
-      await server.register([
-        Inert,
-        Vision,
-        {
-          plugin: HapiSwagger,
-          options: buildSwaggerOptions(version)
-        }
-      ])
+      await server.register({
+        plugin: HapiSwagger,
+        options: buildSwaggerOptions(version)
+      })
 
       server.route({
         method: 'GET',
