@@ -106,6 +106,28 @@ describe('swagger plugin', () => {
       ])
       expect(spec.definitions).toHaveProperty('WfdDocumentDownloadUrlResponse')
     })
+
+    test('documents the coordinates download route as a ZIP file', async () => {
+      const spec = await getSpec()
+      const operation =
+        spec.paths['/public/marine-licence/{id}/generate-coordinates-csv'].get
+
+      expect(operation.summary).toBe(
+        'Download the site coordinates of a submitted marine licence'
+      )
+      expect(operation.produces).toEqual(['application/zip'])
+      expect(operation.responses['200']).toEqual({
+        description: 'A ZIP file of site coordinate CSVs',
+        schema: { type: 'file' }
+      })
+      expect(Object.keys(operation.responses).sort()).toEqual([
+        '200',
+        '400',
+        '403',
+        '404',
+        '500'
+      ])
+    })
   })
 
   describe('with a deployed service version', () => {
