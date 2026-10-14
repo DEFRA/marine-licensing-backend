@@ -40,6 +40,36 @@ describe('logResponseSchemaMismatch', () => {
       },
       {
         method: 'GET',
+        path: '/labelled',
+        options: {
+          response: {
+            status: {
+              200: joi.object({
+                sites: joi.array().items(
+                  joi.object({
+                    type: joi.string().valid('Site').label('SiteType')
+                  })
+                )
+              })
+            },
+            failAction: logResponseSchemaMismatch
+          }
+        },
+        handler: () => ({ sites: [{ type: 'Site' }, { type: 'Other' }] })
+      },
+      {
+        method: 'GET',
+        path: '/not-an-object',
+        options: {
+          response: {
+            status: { 200: countSchema },
+            failAction: logResponseSchemaMismatch
+          }
+        },
+        handler: () => 'plain text'
+      },
+      {
+        method: 'GET',
         path: '/missing/{id}',
         options: {
           response: {
@@ -74,10 +104,36 @@ describe('logResponseSchemaMismatch', () => {
         event: {
           action: 'openapi:response-schema-mismatch',
           reference: 'GET /mismatch 200',
-          reason: '"count" must be a number'
+          reason: '"count" must be a number (at count)'
         }
       },
       'Response does not match its documented schema: GET /mismatch'
+    )
+  })
+
+  test('reports where a mismatch is when a label hides the path', async () => {
+    await server.inject('/labelled')
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          reason: '"SiteType" must be [Site] (at sites.1.type)'
+        })
+      }),
+      expect.any(String)
+    )
+  })
+
+  test('omits the location when the whole response is the mismatch', async () => {
+    await server.inject('/not-an-object')
+
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({
+          reason: '"value" must be of type object'
+        })
+      }),
+      expect.any(String)
     )
   })
 
