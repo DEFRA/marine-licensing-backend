@@ -60,6 +60,8 @@ describe('swagger plugin', () => {
 
       expect(spec.paths['/exemption/{id}']).toBeUndefined()
       expect(spec.paths['/health']).toBeUndefined()
+      expect(spec.paths['/public/exemption/{id}']).toBeUndefined()
+      expect(spec.paths['/public/marine-licence/{id}']).toBeUndefined()
     })
 
     test('documents the marine licence MAS route', async () => {
@@ -127,21 +129,6 @@ describe('swagger plugin', () => {
         '404',
         '500'
       ])
-    })
-
-    test('documents the public exemption route', async () => {
-      const spec = await getSpec()
-      const operation = spec.paths['/public/exemption/{id}'].get
-
-      expect(operation.summary).toBe('Get a publicly viewable exemption')
-      expect(Object.keys(operation.responses).sort()).toEqual([
-        '200',
-        '400',
-        '403',
-        '404',
-        '500'
-      ])
-      expect(spec.definitions).toHaveProperty('PublicExemption')
     })
   })
 

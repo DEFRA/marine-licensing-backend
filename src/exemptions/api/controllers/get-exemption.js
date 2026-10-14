@@ -7,48 +7,13 @@ import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { getOrganisationIdFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { EXEMPTION_STATUS_LABEL } from '../../constants/exemption.js'
 import { isApplicantUser } from '../../../shared/helpers/is-applicant-user.js'
-import { errorResponseSchema } from '../../../shared/models/error-response.js'
-import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
-import { publicExemptionResponseSchema } from '../../models/public-exemption-response.js'
-
-const publicRouteOptions = {
-  auth: false,
-  tags: ['api'],
-  description: 'Get a publicly viewable exemption',
-  notes:
-    'Returns a submitted or withdrawn exemption whose applicant consented to publication on the public register.',
-  response: {
-    status: {
-      200: publicExemptionResponseSchema,
-      400: errorResponseSchema,
-      403: errorResponseSchema,
-      404: errorResponseSchema,
-      500: errorResponseSchema
-    },
-    failAction: logResponseSchemaMismatch
-  },
-  plugins: {
-    'hapi-swagger': {
-      responses: {
-        200: { description: 'The exemption' },
-        400: { description: 'The id is not a 24-character hex string' },
-        403: {
-          description:
-            'The exemption is not submitted or withdrawn, or the applicant did not consent to the public register'
-        },
-        404: { description: 'No exemption has this id' },
-        500: { description: 'Unexpected server error' }
-      }
-    }
-  }
-}
 
 export const getExemptionController = ({ requiresAuth }) => ({
   options: {
     validate: {
       params: getExemption
     },
-    ...(requiresAuth ? {} : publicRouteOptions)
+    ...(requiresAuth ? {} : { auth: false })
   },
   handler: async (request, h) => {
     try {

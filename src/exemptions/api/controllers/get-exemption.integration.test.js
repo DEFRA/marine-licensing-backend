@@ -8,20 +8,10 @@ import {
 import { collectionExemptions } from '../../../shared/common/constants/db-collections.js'
 import Wreck from '@hapi/wreck'
 import { ObjectId } from 'mongodb'
-import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 vi.mock('../../../shared/common/helpers/dynamics/get-access-token.js', () => ({
   getDynamicsAccessToken: vi.fn().mockResolvedValue('abc')
 }))
 vi.mock('@hapi/wreck')
-vi.mock(
-  '../../../shared/common/helpers/log-response-schema-mismatch.js',
-  async (importOriginal) => {
-    const actual = await importOriginal()
-    return {
-      logResponseSchemaMismatch: vi.fn(actual.logResponseSchemaMismatch)
-    }
-  }
-)
 
 const mockDynamicsContactDetailsApi = () => {
   vi.mocked(Wreck.get).mockResolvedValue({
@@ -60,10 +50,6 @@ describe('Get exemption - integration tests', async () => {
   process.env.DYNAMICS_ENABLED = true
   const getServer = await setupTestServer()
   const exemptionId = new ObjectId()
-
-  afterEach(() => {
-    expect(logResponseSchemaMismatch).not.toHaveBeenCalled()
-  })
 
   test('requested by an applicant', async () => {
     const exemption = createCompleteExemption({

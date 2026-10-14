@@ -190,8 +190,10 @@ API routes are defined under the `api` folders in each domain:
 ### API documentation
 
 Outside prod the service publishes an OpenAPI (Swagger 2.0) description of its
-unauthenticated gateway routes (the `/public/...` routes used by Dynamics 365 and
-other external consumers):
+gateway routes (`src/marine-licences/api/gateway-routes.js`): the unauthenticated
+routes used by Dynamics 365 and other non-frontend callers via the CDP gateway. The
+unauthenticated `/public/exemption/{id}` and `/public/marine-licence/{id}` routes,
+which the frontend calls, are not included.
 
 | Endpoint              | Description             |
 | :-------------------- | :---------------------- |
