@@ -37,6 +37,10 @@ describe('swagger plugin', () => {
       expect(headers['content-type']).toContain('text/html')
       expect(payload).toContain('<redoc spec-url="/swagger.json"></redoc>')
       expect(payload).toContain(
+        '<script src="https://cdn.jsdelivr.net/npm/redoc@2.5.4/bundles/redoc.standalone.js" integrity="sha384-w447zOpYfw/1Tv/5AK9NfHTlQIqE3RVR6KY62jCyy9zNDgO64cMwGGP1Fj0zJVf5" crossorigin="anonymous"></script>'
+      )
+      expect(payload).not.toContain('latest')
+      expect(payload).toContain(
         '<title>Marine Licensing Backend API Documentation (local)</title>'
       )
     })

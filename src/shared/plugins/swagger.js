@@ -31,7 +31,7 @@ const buildDocumentationPage = (version) => `<!DOCTYPE html>
   </head>
   <body>
     <redoc spec-url="/swagger.json"></redoc>
-    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/redoc@2.5.4/bundles/redoc.standalone.js" integrity="sha384-w447zOpYfw/1Tv/5AK9NfHTlQIqE3RVR6KY62jCyy9zNDgO64cMwGGP1Fj0zJVf5" crossorigin="anonymous"></script>
   </body>
 </html>
 `
