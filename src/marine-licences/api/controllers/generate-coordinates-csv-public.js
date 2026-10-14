@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import { COORDINATES_ZIP_FILENAME } from '../../constants/coordinates-csv.js'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { errorResponseSchema } from '../../../shared/models/error-response.js'
 import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
@@ -36,7 +37,13 @@ export const generateCoordinatesCsvPublicController = {
         responses: {
           200: {
             description: 'A ZIP file of site coordinate CSVs',
-            schema: { type: 'file' }
+            schema: { type: 'file' },
+            headers: {
+              'Content-Disposition': {
+                type: 'string',
+                description: `attachment; filename="${COORDINATES_ZIP_FILENAME}"`
+              }
+            }
           },
           400: { description: 'The id is not a 24-character hex string' },
           403: { description: 'The marine licence is a draft' },

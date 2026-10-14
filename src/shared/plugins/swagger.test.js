@@ -1,4 +1,5 @@
 import { config } from '../../config.js'
+import { COORDINATES_ZIP_FILENAME } from '../../marine-licences/constants/coordinates-csv.js'
 
 const startServer = async () => {
   const { createServer } = await import('../../server.js')
@@ -150,7 +151,13 @@ describe('swagger plugin', () => {
       expect(operation.produces).toEqual(['application/zip'])
       expect(operation.responses['200']).toEqual({
         description: 'A ZIP file of site coordinate CSVs',
-        schema: { type: 'file' }
+        schema: { type: 'file' },
+        headers: {
+          'Content-Disposition': {
+            type: 'string',
+            description: `attachment; filename="${COORDINATES_ZIP_FILENAME}"`
+          }
+        }
       })
       expect(Object.keys(operation.responses).sort()).toEqual([
         '200',
