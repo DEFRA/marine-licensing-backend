@@ -111,3 +111,15 @@ export const marineLicenceGatewayResponseSchema = joi
     withdrawnAt: joi.date().allow(null).required()
   })
   .label('MarineLicenceGatewayResponse')
+
+export const wfdDocumentDownloadUrlResponseSchema = joi
+  .object({
+    message: joi.string().valid('success').required(),
+    value: joi
+      .object({
+        url: joi.string().uri().required(),
+        expiresIn: joi.number().integer().required()
+      })
+      .required()
+  })
+  .label('WfdDocumentDownloadUrlResponse')

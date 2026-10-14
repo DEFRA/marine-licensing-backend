@@ -5,6 +5,7 @@ import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 import { blobService } from '../../../shared/services/data-service/blob-service.js'
 import { WFD_PRESIGNED_URL_EXPIRES_IN_SECONDS } from '../../constants/water-framework-directive.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 
 vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
   blobService: {
@@ -115,5 +116,12 @@ describe('GET /public/marine-licence/{id}/water-framework-directive/download-url
       }
     })
     expect(mockH.code).toHaveBeenCalledWith(200)
+  })
+
+  test('documents the route and logs response schema mismatches', () => {
+    const { options } = getWfdDocumentDownloadUrlController
+
+    expect(options.tags).toEqual(['api'])
+    expect(options.response.failAction).toBe(logResponseSchemaMismatch)
   })
 })

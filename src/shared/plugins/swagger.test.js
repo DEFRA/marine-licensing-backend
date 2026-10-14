@@ -86,6 +86,26 @@ describe('swagger plugin', () => {
         spec.definitions.MarineLicenceGatewayResponse.properties
       ).toHaveProperty('sites')
     })
+
+    test('documents the Water Framework Directive download URL route', async () => {
+      const spec = await getSpec()
+      const operation =
+        spec.paths[
+          '/public/marine-licence/{id}/water-framework-directive/download-url'
+        ].get
+
+      expect(operation.summary).toBe(
+        'Get a download URL for a marine licence Water Framework Directive document'
+      )
+      expect(Object.keys(operation.responses).sort()).toEqual([
+        '200',
+        '400',
+        '403',
+        '404',
+        '500'
+      ])
+      expect(spec.definitions).toHaveProperty('WfdDocumentDownloadUrlResponse')
+    })
   })
 
   describe('with a deployed service version', () => {

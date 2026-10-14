@@ -1,4 +1,7 @@
-import { marineLicenceGatewayResponseSchema } from './gateway-responses.js'
+import {
+  marineLicenceGatewayResponseSchema,
+  wfdDocumentDownloadUrlResponseSchema
+} from './gateway-responses.js'
 
 const validResponse = {
   projectName: 'Harbour dredging',
@@ -64,6 +67,26 @@ describe('marineLicenceGatewayResponseSchema', () => {
 
     expect(
       marineLicenceGatewayResponseSchema.validate(withoutSites).error
+    ).toBeDefined()
+  })
+})
+
+describe('wfdDocumentDownloadUrlResponseSchema', () => {
+  test('accepts a download URL response', () => {
+    expect(
+      wfdDocumentDownloadUrlResponseSchema.validate({
+        message: 'success',
+        value: { url: 'https://s3.example.com/key', expiresIn: 3600 }
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('rejects a response without a url', () => {
+    expect(
+      wfdDocumentDownloadUrlResponseSchema.validate({
+        message: 'success',
+        value: { expiresIn: 3600 }
+      }).error
     ).toBeDefined()
   })
 })
