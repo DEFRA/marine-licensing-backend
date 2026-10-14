@@ -26,7 +26,7 @@ export const getMarineLicenceGatewayController = {
     tags: ['api'],
     description: 'Get a submitted marine licence for MAS',
     notes:
-      'Returns the project, site, Water Framework Directive and marine plan policy details of a submitted or withdrawn marine licence. Site file URLs are presigned and expire after 4 hours.',
+      'Returns the project, site, Water Framework Directive and marine plan policy details of any marine licence that is not a draft. Site file URLs are presigned and expire after 4 hours. Most fields may be null when the applicant did not provide them.',
     validate: {
       params: getMarineLicence
     },

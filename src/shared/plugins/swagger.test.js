@@ -89,6 +89,32 @@ describe('swagger plugin', () => {
       ).toHaveProperty('sites')
     })
 
+    test('documents the MAS withdrawal time as a date-time', async () => {
+      const spec = await getSpec()
+
+      expect(
+        spec.definitions.MarineLicenceGatewayResponse.properties.withdrawnAt
+      ).toEqual(expect.objectContaining({ format: 'date-time' }))
+    })
+
+    test('documents that the MAS route serves any marine licence that is not a draft and that fields may be null', async () => {
+      const spec = await getSpec()
+      const { description } = spec.paths['/public/marine-licence/mas/{id}'].get
+
+      expect(description).toContain('any marine licence that is not a draft')
+      expect(description).toContain('may be null')
+    })
+
+    test('documents that the Water Framework Directive route serves any marine licence that is not a draft', async () => {
+      const spec = await getSpec()
+      const { description } =
+        spec.paths[
+          '/public/marine-licence/{id}/water-framework-directive/download-url'
+        ].get
+
+      expect(description).toContain('any marine licence that is not a draft')
+    })
+
     test('documents the Water Framework Directive download URL route', async () => {
       const spec = await getSpec()
       const operation =

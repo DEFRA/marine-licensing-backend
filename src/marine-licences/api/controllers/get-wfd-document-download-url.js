@@ -18,7 +18,7 @@ export const getWfdDocumentDownloadUrlController = {
     description:
       'Get a download URL for a marine licence Water Framework Directive document',
     notes:
-      'Returns a presigned S3 URL for the Water Framework Directive document uploaded with a submitted or withdrawn marine licence. The URL expires after expiresIn seconds.',
+      'Returns a presigned S3 URL for the Water Framework Directive document uploaded with any marine licence that is not a draft. The URL expires after expiresIn seconds.',
     validate: {
       params: getMarineLicence
     },

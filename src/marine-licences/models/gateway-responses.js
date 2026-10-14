@@ -108,7 +108,7 @@ export const marineLicenceGatewayResponseSchema = joi
       .array()
       .items(gatewayMarinePlanPolicySchema)
       .required(),
-    withdrawnAt: joi.date().allow(null).required()
+    withdrawnAt: joi.date().iso().allow(null).required()
   })
   .label('MarineLicenceGatewayResponse')
 
