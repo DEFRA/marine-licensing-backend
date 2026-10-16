@@ -69,6 +69,12 @@ describe('swagger plugin', () => {
       expect(unnamed).toEqual([])
     })
 
+    test('does not mention the CDP gateway anywhere consumers read', async () => {
+      const spec = await getSpec()
+
+      expect(JSON.stringify(spec)).not.toMatch(/gateway/i)
+    })
+
     test('leaves untagged routes out of the spec', async () => {
       const spec = await getSpec()
 
@@ -98,17 +104,15 @@ describe('swagger plugin', () => {
       expect(operation.responses['403'].description).toBe(
         'The marine licence is a draft'
       )
-      expect(
-        spec.definitions.MarineLicenceGatewayResponse.properties
-      ).toHaveProperty('sites')
+      expect(spec.definitions.MarineLicence.properties).toHaveProperty('sites')
     })
 
     test('documents the MAS withdrawal time as a date-time', async () => {
       const spec = await getSpec()
 
-      expect(
-        spec.definitions.MarineLicenceGatewayResponse.properties.withdrawnAt
-      ).toEqual(expect.objectContaining({ format: 'date-time' }))
+      expect(spec.definitions.MarineLicence.properties.withdrawnAt).toEqual(
+        expect.objectContaining({ format: 'date-time' })
+      )
     })
 
     test('documents that the MAS route serves any marine licence that is not a draft and that fields may be null', async () => {

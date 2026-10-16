@@ -18,21 +18,21 @@ const gatewayActivitySchema = joi
       .array()
       .items(joi.string())
       .required()
-      .label('GatewaySubActivities'),
+      .label('SubActivities'),
     otherActivity: nullableString.required(),
     activityDescription: nullableString.required(),
     activityDuration: nullableString.required(),
     activityMonths: joi
       .object({ applicable: nullableString, details: nullableString })
       .required()
-      .label('GatewayActivityMonths'),
+      .label('ActivityMonths'),
     completionDate: joi
       .object({ hasSpecificDate: nullableString, reason: nullableString })
       .required()
-      .label('GatewayCompletionDate'),
+      .label('CompletionDate'),
     workingHours: nullableString.required()
   })
-  .label('GatewayActivity')
+  .label('Activity')
 
 const gatewaySiteSchema = joi
   .object({
@@ -49,7 +49,7 @@ const gatewaySiteSchema = joi
       })
       .allow(null)
       .required()
-      .label('GatewayUploadedFile'),
+      .label('UploadedFile'),
     circleWidthMetres: joi.number().allow(null).required(),
     geometry: joi
       .object({
@@ -57,24 +57,24 @@ const gatewaySiteSchema = joi
           .string()
           .valid('FeatureCollection')
           .required()
-          .label('GatewayGeometryType'),
-        crs: joi.object().unknown(true).label('GatewayGeometryCrs'),
+          .label('GeometryType'),
+        crs: joi.object().unknown(true).label('GeometryCrs'),
         features: joi
           .array()
-          .items(joi.object().unknown(true).label('GatewayGeometryFeature'))
+          .items(joi.object().unknown(true).label('GeometryFeature'))
           .required()
-          .label('GatewayGeometryFeatures')
+          .label('GeometryFeatures')
       })
       .allow(null)
       .required()
-      .label('GatewaySiteGeometry'),
+      .label('SiteGeometry'),
     activities: joi
       .array()
       .items(gatewayActivitySchema)
       .required()
-      .label('GatewayActivities')
+      .label('Activities')
   })
-  .label('GatewaySite')
+  .label('Site')
 
 const gatewayMarinePlanPolicySchema = joi
   .object({
@@ -82,7 +82,7 @@ const gatewayMarinePlanPolicySchema = joi
     policyInformation: nullableString.required(),
     applicantAnswer: nullableString.required()
   })
-  .label('GatewayMarinePlanPolicy')
+  .label('MarinePlanPolicy')
 
 const gatewayWaterFrameworkDirectiveSchema = joi
   .object({
@@ -91,7 +91,7 @@ const gatewayWaterFrameworkDirectiveSchema = joi
     documentUrl: joi.string().uri().allow(null).required(),
     fileName: nullableString.required()
   })
-  .label('GatewayWaterFrameworkDirective')
+  .label('WaterFrameworkDirective')
 
 export const marineLicenceGatewayResponseSchema = joi
   .object({
@@ -103,37 +103,27 @@ export const marineLicenceGatewayResponseSchema = joi
       .unknown(true)
       .allow(null)
       .required()
-      .label('GatewayPublicRegister'),
+      .label('PublicRegister'),
     specialLegalPowers: answerWithDetails(
       'agree',
-      'GatewaySpecialLegalPowers'
+      'SpecialLegalPowers'
     ).required(),
-    harbourAuthority: answerWithDetails(
-      'area',
-      'GatewayHarbourAuthority'
-    ).required(),
-    otherAuthorities: answerWithDetails(
-      'agree',
-      'GatewayOtherAuthorities'
-    ).required(),
+    harbourAuthority: answerWithDetails('area', 'HarbourAuthority').required(),
+    otherAuthorities: answerWithDetails('agree', 'OtherAuthorities').required(),
     publicConsultation: answerWithDetails(
       'consulted',
-      'GatewayPublicConsultation'
+      'PublicConsultation'
     ).required(),
     waterFrameworkDirective: gatewayWaterFrameworkDirectiveSchema.required(),
-    sites: joi
-      .array()
-      .items(gatewaySiteSchema)
-      .required()
-      .label('GatewaySites'),
+    sites: joi.array().items(gatewaySiteSchema).required().label('Sites'),
     marinePlanPolicies: joi
       .array()
       .items(gatewayMarinePlanPolicySchema)
       .required()
-      .label('GatewayMarinePlanPolicies'),
+      .label('MarinePlanPolicies'),
     withdrawnAt: joi.date().iso().allow(null).required()
   })
-  .label('MarineLicenceGatewayResponse')
+  .label('MarineLicence')
 
 export const wfdDocumentDownloadUrlResponseSchema = joi
   .object({
