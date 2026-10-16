@@ -1,7 +1,7 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 
-const OTHER_AUTHORITIES_DETAILS_MAX_TEXT_LENGTH = 1000
+export const OTHER_AUTHORITIES_DETAILS_MAX_TEXT_LENGTH = 1000
 
 export const otherAuthorities = joi
   .object({

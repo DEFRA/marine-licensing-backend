@@ -1,10 +1,38 @@
 import joi from 'joi'
+import { PROJECT_NAME_MAX_LENGTH } from '../../shared/models/project-name.js'
+import { SITE_NAME_MAX_LENGTH } from '../../shared/models/site-details/site-name.js'
+import { ACTIVITY_DESCRIPTION_MAX_LENGTH } from './activity-details/activity-description.js'
+import { MONTHS_OF_ACTIVITY_DETAILS_MAX_LENGTH } from './activity-details/activity-months.js'
+import { OTHER_ACTIVITY_MAX_LENGTH } from './activity-details/activity-type.js'
+import { COMPLETION_DATE_REASON_MAX_LENGTH } from './activity-details/completion-date.js'
+import { WORKING_HOURS_MAX_LENGTH } from './activity-details/working-hours.js'
+import { HARBOUR_AUTHORITY_DETAILS_MAX_TEXT_LENGTH } from './harbour-authority.js'
+import {
+  POLICY_CODE_MAX_LENGTH,
+  POLICY_RESPONSE_MAX_LENGTH
+} from './marine-plan-policy.js'
+import { OTHER_AUTHORITIES_DETAILS_MAX_TEXT_LENGTH } from './other-authorities.js'
+import { PROJECT_BACKGROUND_MAX_TEXT_LENGTH } from './project-background.js'
+import { PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH } from './public-consultation.js'
+import { PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH } from './public-register.js'
+import { SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH } from './special-legal-powers.js'
 
 export const nullableString = joi.string().allow('', null)
 
-const answerWithDetails = (answerKey, label) =>
+const yesNoAnswer = joi
+  .string()
+  .valid('yes', 'no')
+  .allow(null)
+  .label('YesNoAnswer')
+
+const limitedText = (maxLength) => nullableString.max(maxLength)
+
+const answerWithDetails = (answerKey, detailsMaxLength, label) =>
   joi
-    .object({ [answerKey]: nullableString, details: nullableString })
+    .object({
+      [answerKey]: yesNoAnswer,
+      details: limitedText(detailsMaxLength)
+    })
     .unknown(true)
     .allow(null)
     .label(label)
@@ -19,25 +47,33 @@ const gatewayActivitySchema = joi
       .items(joi.string())
       .required()
       .label('SubActivities'),
-    otherActivity: nullableString.required(),
-    activityDescription: nullableString.required(),
+    otherActivity: limitedText(OTHER_ACTIVITY_MAX_LENGTH).required(),
+    activityDescription: limitedText(
+      ACTIVITY_DESCRIPTION_MAX_LENGTH
+    ).required(),
     activityDuration: nullableString.required(),
     activityMonths: joi
-      .object({ applicable: nullableString, details: nullableString })
+      .object({
+        applicable: nullableString,
+        details: limitedText(MONTHS_OF_ACTIVITY_DETAILS_MAX_LENGTH)
+      })
       .required()
       .label('ActivityMonths'),
     completionDate: joi
-      .object({ hasSpecificDate: nullableString, reason: nullableString })
+      .object({
+        hasSpecificDate: nullableString,
+        reason: limitedText(COMPLETION_DATE_REASON_MAX_LENGTH)
+      })
       .required()
       .label('CompletionDate'),
-    workingHours: nullableString.required()
+    workingHours: limitedText(WORKING_HOURS_MAX_LENGTH).required()
   })
   .label('Activity')
 
 const gatewaySiteSchema = joi
   .object({
     siteIndex: joi.number().integer().required(),
-    siteName: nullableString.required(),
+    siteName: limitedText(SITE_NAME_MAX_LENGTH).required(),
     locationMethod: nullableString.required(),
     coordinatesEntry: nullableString.required(),
     coordinateSystem: nullableString.required(),
@@ -78,16 +114,16 @@ const gatewaySiteSchema = joi
 
 const gatewayMarinePlanPolicySchema = joi
   .object({
-    policyCode: nullableString.required(),
+    policyCode: limitedText(POLICY_CODE_MAX_LENGTH).required(),
     policyInformation: nullableString.required(),
-    applicantAnswer: nullableString.required()
+    applicantAnswer: limitedText(POLICY_RESPONSE_MAX_LENGTH).required()
   })
   .label('MarinePlanPolicy')
 
 const gatewayWaterFrameworkDirectiveSchema = joi
   .object({
-    nauticalMile: nullableString.required(),
-    excludedActivities: nullableString.required(),
+    nauticalMile: yesNoAnswer.required(),
+    excludedActivities: yesNoAnswer.required(),
     documentUrl: joi.string().uri().allow(null).required(),
     fileName: nullableString.required()
   })
@@ -95,23 +131,38 @@ const gatewayWaterFrameworkDirectiveSchema = joi
 
 export const marineLicenceGatewayResponseSchema = joi
   .object({
-    projectName: nullableString.required(),
-    projectBackground: nullableString.required(),
+    projectName: limitedText(PROJECT_NAME_MAX_LENGTH).required(),
+    projectBackground: limitedText(
+      PROJECT_BACKGROUND_MAX_TEXT_LENGTH
+    ).required(),
     preferredLicenceDates: nullableString.required(),
     publicRegister: joi
-      .object({ withholdConsent: nullableString, reason: nullableString })
+      .object({
+        withholdConsent: yesNoAnswer,
+        reason: limitedText(PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH)
+      })
       .unknown(true)
       .allow(null)
       .required()
       .label('PublicRegister'),
     specialLegalPowers: answerWithDetails(
       'agree',
+      SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH,
       'SpecialLegalPowers'
     ).required(),
-    harbourAuthority: answerWithDetails('area', 'HarbourAuthority').required(),
-    otherAuthorities: answerWithDetails('agree', 'OtherAuthorities').required(),
+    harbourAuthority: answerWithDetails(
+      'area',
+      HARBOUR_AUTHORITY_DETAILS_MAX_TEXT_LENGTH,
+      'HarbourAuthority'
+    ).required(),
+    otherAuthorities: answerWithDetails(
+      'agree',
+      OTHER_AUTHORITIES_DETAILS_MAX_TEXT_LENGTH,
+      'OtherAuthorities'
+    ).required(),
     publicConsultation: answerWithDetails(
       'consulted',
+      PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH,
       'PublicConsultation'
     ).required(),
     waterFrameworkDirective: gatewayWaterFrameworkDirectiveSchema.required(),

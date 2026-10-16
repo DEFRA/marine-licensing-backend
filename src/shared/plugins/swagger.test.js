@@ -69,6 +69,49 @@ describe('swagger plugin', () => {
       expect(unnamed).toEqual([])
     })
 
+    test.each([
+      ['PublicRegister', 'withholdConsent'],
+      ['SpecialLegalPowers', 'agree'],
+      ['HarbourAuthority', 'area'],
+      ['OtherAuthorities', 'agree'],
+      ['PublicConsultation', 'consulted'],
+      ['WaterFrameworkDirective', 'nauticalMile'],
+      ['WaterFrameworkDirective', 'excludedActivities']
+    ])('documents %s.%s as a yes or no answer', async (definition, field) => {
+      const spec = await getSpec()
+      const { $ref } = spec.definitions[definition].properties[field]
+      const answer = spec.definitions[$ref.replace('#/definitions/', '')]
+
+      expect(answer.enum).toEqual(['yes', 'no'])
+    })
+
+    test.each([
+      ['MarineLicence', 'projectName', 250],
+      ['MarineLicence', 'projectBackground', 1000],
+      ['PublicRegister', 'reason', 1000],
+      ['SpecialLegalPowers', 'details', 1000],
+      ['HarbourAuthority', 'details', 1000],
+      ['OtherAuthorities', 'details', 1000],
+      ['PublicConsultation', 'details', 1000],
+      ['Site', 'siteName', 250],
+      ['Activity', 'otherActivity', 1000],
+      ['Activity', 'activityDescription', 1000],
+      ['Activity', 'workingHours', 1000],
+      ['ActivityMonths', 'details', 1000],
+      ['CompletionDate', 'reason', 1000],
+      ['MarinePlanPolicy', 'policyCode', 100],
+      ['MarinePlanPolicy', 'applicantAnswer', 5000]
+    ])(
+      'documents the maximum length of %s.%s',
+      async (definition, field, maxLength) => {
+        const spec = await getSpec()
+
+        expect(spec.definitions[definition].properties[field].maxLength).toBe(
+          maxLength
+        )
+      }
+    )
+
     test('does not mention the CDP gateway anywhere consumers read', async () => {
       const spec = await getSpec()
 
