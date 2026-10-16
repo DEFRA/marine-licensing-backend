@@ -123,6 +123,7 @@ describe('swagger plugin', () => {
       ['Site', 'circleWidthMetres', 'diameter in metres'],
       ['Site', 'coordinateSystem', 'geometry is always WGS84 (EPSG:4326)'],
       ['Site', 'locationMethod', "'Manual coordinate entry'"],
+      ['CompletionDate', 'hasSpecificDate', 'Not a date'],
       [
         'Site',
         'coordinatesEntry',

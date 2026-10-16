@@ -79,7 +79,9 @@ const gatewayActivitySchema = joi
       .label('ActivityMonths'),
     completionDate: joi
       .object({
-        hasSpecificDate: nullableString,
+        hasSpecificDate: nullableString.description(
+          "Answer to 'Does any part of the activity need to be completed by a certain date?': 'Yes' or 'Not needed to be completed by a certain date'. Not a date. Null if not answered. reason is given only when the answer is Yes."
+        ),
         reason: limitedText(COMPLETION_DATE_REASON_MAX_LENGTH)
       })
       .required()
