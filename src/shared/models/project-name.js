@@ -1,6 +1,6 @@
 import joi from 'joi'
 
-const PROJECT_NAME_MAX_LENGTH = 250
+export const PROJECT_NAME_MAX_LENGTH = 250
 const ORG_STRING_MIN_LENGTH = 1
 
 export const organisation = {

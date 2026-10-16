@@ -3,6 +3,7 @@ import Hapi from '@hapi/hapi'
 import { config } from './config.js'
 import { router } from './shared/plugins/router.js'
 import { auth } from './shared/plugins/auth.js'
+import { swagger } from './shared/plugins/swagger.js'
 import { processDynamicsQueuePlugin } from './shared/plugins/dynamics.js'
 import { processEmpQueuePlugin } from './shared/plugins/emp.js'
 import { marinePlanPoliciesWorkerPlugin } from './shared/plugins/marine-plan-policies/worker.js'
@@ -62,6 +63,7 @@ async function createServer() {
   // populateMarinePlanAreasPlugin - checks if marine-plan-areas collection is empty and populates it
   // simplifyMarinePlanAreasPlugin - rebuilds a simplified copy of marine-plan-areas for the nearest-area fallback
   // auth           - JWT authentication strategy
+  // swagger        - OpenAPI spec at /swagger.json and Redoc docs at /documentation (not registered in prod)
   // router         - routes used in the app
   // processDynamicsQueuePlugin - polls exemption queue and syncs to Dynamics 365
   // processEmpQueuePlugin - polls exemption queue and syncs to "Explore Marine Planning"
@@ -72,6 +74,9 @@ async function createServer() {
   // marineLicenceDynamicsWorkerPlugin - sends marine licence submit/withdraw SQS jobs to Dynamics 365
   // marineLicenceDynamicsDlqWorkerPlugin - marks dead-lettered marine licence Dynamics jobs as failed
   // schedulerPlugin - runs daily jobs on one instance per fire
+  const apiDocsPlugins =
+    config.get('cdpEnvironment') === 'prod' ? [] : [swagger]
+
   await server.register([
     requestTracing,
     requestLogger,
@@ -86,6 +91,7 @@ async function createServer() {
     simplifyMarinePlanAreasPlugin,
     hapiAuthJwt2,
     auth,
+    ...apiDocsPlugins,
     router,
     processDynamicsQueuePlugin,
     processEmpQueuePlugin,

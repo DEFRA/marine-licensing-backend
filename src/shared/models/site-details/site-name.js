@@ -1,6 +1,6 @@
 import joi from 'joi'
 
-const SITE_NAME_MAX_LENGTH = 250
+export const SITE_NAME_MAX_LENGTH = 250
 
 export const siteNameFieldSchema = joi
   .string()
