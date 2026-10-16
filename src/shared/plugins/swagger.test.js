@@ -122,6 +122,12 @@ describe('swagger plugin', () => {
       ['Site', 'siteIndex', 'Zero-based'],
       ['Site', 'circleWidthMetres', 'diameter in metres'],
       ['Site', 'coordinateSystem', 'geometry is always WGS84 (EPSG:4326)'],
+      ['Site', 'locationMethod', "'Manual coordinate entry'"],
+      [
+        'Site',
+        'coordinatesEntry',
+        "'Enter multiple sets of coordinates to mark the boundary of the site'"
+      ],
       ['Site', 'coordinateSystem', "'British National Grid (OSGB36)'"],
       ['MarinePlanPolicy', 'policyInformation', 'sanitised HTML'],
       ['WfdDocumentDownloadUrl', 'expiresIn', 'in seconds']

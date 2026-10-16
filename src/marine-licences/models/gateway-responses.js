@@ -96,8 +96,16 @@ const gatewaySiteSchema = joi
       .required()
       .description('Zero-based position of the site in the licence.'),
     siteName: limitedText(SITE_NAME_MAX_LENGTH).required(),
-    locationMethod: nullableString.required(),
-    coordinatesEntry: nullableString.required(),
+    locationMethod: nullableString
+      .required()
+      .description(
+        "How the applicant gave the site location: 'File upload' (KML or Shapefile; see uploadedFile) or 'Manual coordinate entry' (see coordinatesEntry and coordinateSystem)."
+      ),
+    coordinatesEntry: nullableString
+      .required()
+      .description(
+        "For manual coordinate entry: 'Enter a single set of coordinates and a width for a circle' (see circleWidthMetres) or 'Enter multiple sets of coordinates to mark the boundary of the site'. Null for file-upload sites."
+      ),
     coordinateSystem: nullableString
       .required()
       .description(
