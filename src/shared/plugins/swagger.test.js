@@ -112,6 +112,59 @@ describe('swagger plugin', () => {
       }
     )
 
+    test.each([
+      ['MarineLicence', 'withdrawnAt', 'ISO 8601 UTC timestamp'],
+      ['MarineLicence', 'preferredLicenceDates', 'Month YYYY to Month YYYY'],
+      ['Activity', 'activityDuration', 'years and/or months'],
+      ['Activity', 'activityIndex', 'Zero-based'],
+      ['WaterFrameworkDirective', 'documentUrl', 'Not the document itself'],
+      ['UploadedFile', 'presignedFileUrl', 'Expires after 4 hours'],
+      ['Site', 'siteIndex', 'Zero-based'],
+      ['Site', 'circleWidthMetres', 'diameter in metres'],
+      ['MarinePlanPolicy', 'policyInformation', 'sanitised HTML'],
+      ['WfdDocumentDownloadUrl', 'expiresIn', 'in seconds']
+    ])('describes %s.%s', async (definition, field, text) => {
+      const spec = await getSpec()
+
+      expect(
+        spec.definitions[definition].properties[field].description
+      ).toContain(text)
+    })
+
+    test.each([
+      ['PublicRegister', 'Do you want to request that information is withheld'],
+      [
+        'SpecialLegalPowers',
+        'Does your organisation have special legal powers'
+      ],
+      ['HarbourAuthority', 'located in a harbour authority area'],
+      ['OtherAuthorities', 'got permission from, any other authorities'],
+      ['PublicConsultation', 'consulted with any public groups'],
+      ['WaterFrameworkDirective', 'within one nautical mile'],
+      ['SiteGeometry', 'WGS84 (EPSG:4326)']
+    ])('describes the %s object', async (definition, text) => {
+      const spec = await getSpec()
+
+      expect(spec.definitions[definition].description).toContain(text)
+    })
+
+    test.each([
+      ['MarineLicence', 'withdrawnAt', '2026-09-15T10:30:00.000Z'],
+      [
+        'MarineLicence',
+        'preferredLicenceDates',
+        'August 2026 to November 2026'
+      ],
+      ['Activity', 'activityDuration', '1 year 6 months'],
+      ['MarinePlanPolicy', 'policyCode', 'E-AGG-3']
+    ])('gives an example for %s.%s', async (definition, field, example) => {
+      const spec = await getSpec()
+
+      expect(spec.definitions[definition].properties[field].example).toBe(
+        example
+      )
+    })
+
     test('does not mention the CDP gateway anywhere consumers read', async () => {
       const spec = await getSpec()
 
