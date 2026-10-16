@@ -121,6 +121,8 @@ describe('swagger plugin', () => {
       ['UploadedFile', 'presignedFileUrl', 'Expires after 4 hours'],
       ['Site', 'siteIndex', 'Zero-based'],
       ['Site', 'circleWidthMetres', 'diameter in metres'],
+      ['Site', 'coordinateSystem', 'geometry is always WGS84 (EPSG:4326)'],
+      ['Site', 'coordinateSystem', "'British National Grid (OSGB36)'"],
       ['MarinePlanPolicy', 'policyInformation', 'sanitised HTML'],
       ['WfdDocumentDownloadUrl', 'expiresIn', 'in seconds']
     ])('describes %s.%s', async (definition, field, text) => {

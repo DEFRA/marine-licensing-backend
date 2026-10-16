@@ -98,7 +98,11 @@ const gatewaySiteSchema = joi
     siteName: limitedText(SITE_NAME_MAX_LENGTH).required(),
     locationMethod: nullableString.required(),
     coordinatesEntry: nullableString.required(),
-    coordinateSystem: nullableString.required(),
+    coordinateSystem: nullableString
+      .required()
+      .description(
+        "How the applicant entered the coordinates: 'WGS84 (World Geodetic System 1984)' or 'British National Grid (OSGB36)'. Null for file-upload sites. Informational only: geometry is always WGS84 (EPSG:4326), whatever this says."
+      ),
     uploadedFile: joi
       .object({
         filename: joi.string().required(),
