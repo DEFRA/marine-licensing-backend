@@ -95,6 +95,23 @@ export const mockMasPublicNoticeSqsMessageBody = {
   requestRelatesTo: PUBLIC_NOTICE_REQUEST_RELATES_TO.BOTH
 }
 
+export const mockMasSiteNoticeEvidenceRejectionMessageBody = {
+  applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.PUBLIC_NOTICE_EVIDENCE,
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail,
+  rejectedLocations: [
+    {
+      locationNumber: 3,
+      reason: 'The position photo does not show where the notice is.'
+    },
+    {
+      locationNumber: 1,
+      reason: 'The close-up photo is blurred, so we cannot read the notice.'
+    }
+  ]
+}
+
 export const mockMasSqsMessage = {
   MessageId: '11d59c92-2c1d-4d8b-9c0a-2f6b1c9e2b40',
   ReceiptHandle: 'AQEBmock-receipt-handle==',
@@ -112,6 +129,11 @@ export const mockMasRejectedSqsMessage = {
 export const mockMasPublicNoticeSqsMessage = {
   ...mockMasSqsMessage,
   Body: JSON.stringify(mockMasPublicNoticeSqsMessageBody)
+}
+
+export const mockMasSiteNoticeEvidenceRejectionSqsMessage = {
+  ...mockMasSqsMessage,
+  Body: JSON.stringify(mockMasSiteNoticeEvidenceRejectionMessageBody)
 }
 
 export const mockMasWithholdingSqsMessage = {

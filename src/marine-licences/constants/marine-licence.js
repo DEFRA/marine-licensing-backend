@@ -27,12 +27,20 @@ export const MARINE_LICENCE_SUBMITTED_STATUSES = [
 
 export const APPLICATION_TASK_TYPE = {
   PUBLIC_SITE_NOTICE: 'PUBLIC_SITE_NOTICE',
-  WITHHOLDING_NOTIFICATION: 'WITHHOLDING_NOTIFICATION'
+  WITHHOLDING_NOTIFICATION: 'WITHHOLDING_NOTIFICATION',
+  RESUBMIT_SITE_NOTICE_EVIDENCE: 'RESUBMIT_SITE_NOTICE_EVIDENCE'
 }
+
+// A caseworker can reject the evidence again after it is resubmitted, so these types
+// may recur once the previous task of the type is resolved.
+export const REPEATABLE_APPLICATION_TASK_TYPES = [
+  APPLICATION_TASK_TYPE.RESUBMIT_SITE_NOTICE_EVIDENCE
+]
 
 export const MAS_TASK_TYPE = {
   PUBLIC_REGISTER: 'PUBLIC_REGISTER',
-  PUBLIC_NOTICE: 'PUBLIC_NOTICE'
+  PUBLIC_NOTICE: 'PUBLIC_NOTICE',
+  PUBLIC_NOTICE_EVIDENCE: 'PUBLIC_NOTICE_EVIDENCE'
 }
 
 export const WITHHOLDING_REQUEST_RELATES_TO = {
@@ -102,6 +110,7 @@ export const LAND_POLICY_CODE = 'Land'
 export const MAS_EVENT_ACTION = {
   MESSAGE_RECEIVED: 'mas:message-received',
   MESSAGE_DEAD_LETTERED: 'mas:message-dead-lettered',
+  MESSAGE_UNPROCESSABLE: 'mas:message-unprocessable',
   JOB_STALE: 'mas:job-stale',
   JOB_FAILED: 'mas:job-failed',
   JOB_COMPLETE: 'mas:job-complete',

@@ -7,6 +7,8 @@ import {
   mockMasMissingApplicationReferenceSqsMessage,
   mockMasPublicNoticeSqsMessage,
   mockMasRejectedSqsMessage,
+  mockMasSiteNoticeEvidenceRejectionMessageBody,
+  mockMasSiteNoticeEvidenceRejectionSqsMessage,
   mockMasSqsMessage,
   mockMasWithholdingMessageBody,
   mockMasWithholdingSqsMessage
@@ -15,6 +17,7 @@ import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { updatePublicNotice } from './update-public-notice.js'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
+import { handleSiteNoticeEvidenceRejection } from './handle-site-notice-evidence-rejection.js'
 
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 
@@ -26,6 +29,7 @@ vi.mock('./update-public-notice.js')
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
 vi.mock('./handle-withholding-notification.js')
+vi.mock('./handle-site-notice-evidence-rejection.js')
 
 const sqsQueueName = 'marine_licensing_mas'
 const sqsDlqName = 'marine_licensing_mas-deadletter'
@@ -122,6 +126,42 @@ describe('mas-worker-processor', () => {
         sqsQueueName,
         mockMasWithholdingSqsMessage.ReceiptHandle
       )
+    })
+
+    it('should call handleSiteNoticeEvidenceRejection for a PUBLIC_NOTICE_EVIDENCE task', async () => {
+      const server = buildServer()
+
+      await processMasMessage(
+        server,
+        mockMasSiteNoticeEvidenceRejectionSqsMessage
+      )
+
+      expect(handleSiteNoticeEvidenceRejection).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        {
+          body: mockMasSiteNoticeEvidenceRejectionMessageBody,
+          id: mockMasSiteNoticeEvidenceRejectionSqsMessage.MessageId
+        }
+      )
+      expect(updatePublicNotice).not.toHaveBeenCalled()
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasSiteNoticeEvidenceRejectionSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should leave a site notice evidence rejection on the queue when it cannot be processed', async () => {
+      const server = buildServer()
+      vi.mocked(handleSiteNoticeEvidenceRejection).mockRejectedValue(
+        new Error('Unprocessable site notice evidence rejection')
+      )
+
+      await expect(
+        processMasMessage(server, mockMasSiteNoticeEvidenceRejectionSqsMessage)
+      ).rejects.toThrow('Unprocessable site notice evidence rejection')
+
+      expect(deleteMasMessage).not.toHaveBeenCalled()
     })
 
     it('should not treat a withholding decision without a taskType as an application task', async () => {

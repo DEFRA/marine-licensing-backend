@@ -5,6 +5,7 @@ import { sendRejectedEmail } from './send-rejected-email.js'
 import { sendTransferredEmail } from './send-transferred-email.js'
 import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
 import { sendPublicNoticeEmail } from './send-public-notice-email.js'
+import { sendResubmitSiteNoticeEvidenceEmail } from './send-resubmit-site-notice-evidence-email.js'
 import {
   mockMasApplicationReference,
   mockMasUserEmail,
@@ -23,7 +24,9 @@ const templateIds = {
   notifyPublicNoticeId: 'public-notice-template-id',
   notifyRejectedId: 'rejected-template-id',
   notifyTransferredId: 'transferred-template-id',
-  notifyWithholdingNotificationId: 'withholding-template-id'
+  notifyWithholdingNotificationId: 'withholding-template-id',
+  notifyResubmitSiteNoticeEvidenceId:
+    'resubmit-site-notice-evidence-template-id'
 }
 
 const senders = [
@@ -34,6 +37,11 @@ const senders = [
     'sendWithholdingNotificationEmail',
     sendWithholdingNotificationEmail,
     'notifyWithholdingNotificationId'
+  ],
+  [
+    'sendResubmitSiteNoticeEvidenceEmail',
+    sendResubmitSiteNoticeEvidenceEmail,
+    'notifyResubmitSiteNoticeEvidenceId'
   ]
 ]
 
@@ -111,14 +119,15 @@ describe('MAS notification emails', () => {
     })
   })
 
-  // Only this sender awaits the queue write; its two siblings still fire and
+  // Only these senders await the queue write; their siblings still fire and
   // forget, so a failed insert there surfaces as an unhandled rejection.
-  it('surfaces a failed queue write for the withholding notification', async () => {
+  it.each([
+    ['withholding notification', sendWithholdingNotificationEmail],
+    ['resubmit site notice evidence', sendResubmitSiteNoticeEvidenceEmail]
+  ])('surfaces a failed queue write for the %s', async (_name, sender) => {
     vi.mocked(sendEmail).mockResolvedValue({ status: 'success' })
     mockCollection.insertOne.mockRejectedValue(new Error('mongo is down'))
 
-    await expect(send(sendWithholdingNotificationEmail)).rejects.toThrow(
-      'mongo is down'
-    )
+    await expect(send(sender)).rejects.toThrow('mongo is down')
   })
 })

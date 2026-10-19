@@ -5,7 +5,10 @@ import { resolveApplicationTask } from '../../models/resolve-application-task.js
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS
+} from '../../constants/marine-licence.js'
 
 const markTaskResolved = (taskId, resolvedAt, resolvedBy) => ({
   $set: {
@@ -65,6 +68,29 @@ const restoreStatusWhenNoTaskOutstanding = {
   }
 }
 
+const isIncompleteResubmission = (task) =>
+  task?.type === APPLICATION_TASK_TYPE.RESUBMIT_SITE_NOTICE_EVIDENCE &&
+  task.data.locations.some(
+    ({ closeUpPhoto, positionPhoto }) => !closeUpPhoto || !positionPhoto
+  )
+
+// Photos are only ever added or replaced, never removed, so a resubmission found
+// complete here is still complete when the update below runs.
+const assertTaskCanBeResolved = async (db, _id, taskId) => {
+  const marineLicence = await db
+    .collection(collectionMarineLicences)
+    .findOne(
+      { _id, 'applicationTasks.taskId': taskId },
+      { projection: { applicationTasks: { $elemMatch: { taskId } } } }
+    )
+
+  if (isIncompleteResubmission(marineLicence?.applicationTasks?.[0])) {
+    throw Boom.conflict(
+      `Application task ${taskId} still has site notice photos to add`
+    )
+  }
+}
+
 const buildResolvePipeline = (taskId, resolvedAt, resolvedBy) => [
   markTaskResolved(taskId, resolvedAt, resolvedBy),
   restoreStatusWhenNoTaskOutstanding,
@@ -83,14 +109,17 @@ export const resolveApplicationTaskController = {
       const { db, params, auth } = request
       const { id, taskId } = params
 
+      const _id = ObjectId.createFromHexString(id)
       const resolvedAt = new Date()
       const resolvedBy = getContactId(auth)
+
+      await assertTaskCanBeResolved(db, _id, taskId)
 
       const result = await db
         .collection(collectionMarineLicences)
         .findOneAndUpdate(
           {
-            _id: ObjectId.createFromHexString(id),
+            _id,
             applicationTasks: { $elemMatch: { taskId, resolvedAt: null } }
           },
           buildResolvePipeline(taskId, resolvedAt, resolvedBy)
