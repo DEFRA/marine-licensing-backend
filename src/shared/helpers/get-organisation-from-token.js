@@ -63,7 +63,11 @@ export const getOrganisationDetailsFromAuthToken = (auth) => {
   const [, organisationId, organisationName, , relationshipType] = parts
 
   let userRelationshipType = relationshipType
-  if (!['Employee', 'Agent', 'Citizen'].includes(userRelationshipType)) {
+  if (
+    !['Employee', 'Agent', 'Citizen', 'Consultee'].includes(
+      userRelationshipType
+    )
+  ) {
     userRelationshipType = 'Citizen'
   }
 
