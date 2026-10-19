@@ -1,11 +1,11 @@
-import { setupTestServer } from '../../../../../tests/test-server.js'
-import { makeGetRequest } from '../../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../../tests/test.fixture.js'
+import { setupTestServer } from '../../../../tests/test-server.js'
+import { makeGetRequest } from '../../../../tests/server-requests.js'
+import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../common/constants/db-collections.js'
+import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { randomUUID } from 'node:crypto'
 
-describe('GET /projects/consultations - integration tests', async () => {
+describe('GET /marine-licence/consultations - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = randomUUID()
   const relationshipId = randomUUID()
@@ -21,7 +21,7 @@ describe('GET /projects/consultations - integration tests', async () => {
   const getConsultations = (relationshipType) =>
     makeGetRequest({
       server: getServer(),
-      url: '/projects/consultations',
+      url: '/marine-licence/consultations',
       contactId,
       relationships: [
         `${relationshipId}:${consulteeOrgId}:Consultee Org:0:${relationshipType}:0`

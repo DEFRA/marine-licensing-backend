@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
-import { collectionMarineLicences } from '../../../common/constants/db-collections.js'
-import { getConsulteeOrganisationIdFromAuthToken } from '../../../helpers/is-consultee-user.js'
+import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { getConsulteeOrganisationIdFromAuthToken } from '../../../shared/helpers/is-consultee-user.js'
 
 export const getConsultationsController = {
   handler: async (request, h) => {
