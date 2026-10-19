@@ -1,29 +1,19 @@
 import { config } from '../../../../config.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
-import {
-  APPLICATION_TASK_TYPE,
-  MAS_EVENT_ACTION
-} from '../../../constants/marine-licence.js'
-import { siteNoticeEvidenceRejectionMessageSchema } from '../../../models/resubmit-site-notice-evidence.js'
+import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
+import { siteNoticeEvidenceRejectionMessageSchema } from '../../../models/site-notice-evidence-rejection-message.js'
 import { addApplicationTask } from './add-application-task.js'
-import { logNoRecipient } from './mas-logging.js'
-import { sendResubmitSiteNoticeEvidenceEmail } from './send-resubmit-site-notice-evidence-email.js'
+import { logDiscarded, logNoRecipient } from './mas-logging.js'
+import { sendResubmitSiteNoticeEvidenceEmail } from './send-application-task-email.js'
 
-// Throwing leaves the message on the queue, so after its retries it is dead-lettered
-// rather than lost.
-const rejectUnprocessable = (logger, applicationReference, reason) => {
-  logger.error(
-    {
-      event: {
-        action: MAS_EVENT_ACTION.MESSAGE_UNPROCESSABLE,
-        outcome: 'failure',
-        reference: applicationReference,
-        reason
-      }
-    },
-    `Cannot process site notice evidence rejection for applicationReference ${applicationReference}: ${reason}`
+const discard = (logger, applicationReference, reason) => {
+  logDiscarded(
+    logger,
+    'Discarding site notice evidence rejection',
+    applicationReference,
+    reason
   )
-  throw new Error(`Unprocessable site notice evidence rejection: ${reason}`)
+  return null
 }
 
 const findUnprocessableReason = (marineLicence, rejectedLocations) => {
@@ -47,7 +37,7 @@ const findUnprocessableReason = (marineLicence, rejectedLocations) => {
 
 // A missing licence is left for addApplicationTask to report, as it is for every
 // other task type.
-const assertProcessable = async (db, logger, body) => {
+const findReasonToDiscard = async (db, body) => {
   const marineLicence = await db
     .collection(collectionMarineLicences)
     .findOne(
@@ -55,15 +45,9 @@ const assertProcessable = async (db, logger, body) => {
       { projection: { applicationTasks: 1, siteNoticeEvidence: 1 } }
     )
 
-  if (!marineLicence) {
-    return
-  }
-
-  const reason = findUnprocessableReason(marineLicence, body.rejectedLocations)
-
-  if (reason) {
-    rejectUnprocessable(logger, body.applicationReference, reason)
-  }
+  return marineLicence
+    ? findUnprocessableReason(marineLicence, body.rejectedLocations)
+    : null
 }
 
 const buildLocations = (rejectedLocations) =>
@@ -80,12 +64,16 @@ export const handleSiteNoticeEvidenceRejection = async (
     siteNoticeEvidenceRejectionMessageSchema.validate(rawBody)
 
   if (error) {
-    rejectUnprocessable(logger, rawBody.applicationReference, error.message)
+    return discard(logger, rawBody.applicationReference, error.message)
   }
 
-  await assertProcessable(db, logger, body)
-
   const { applicationReference, userName, userEmail } = body
+
+  const reason = await findReasonToDiscard(db, body)
+
+  if (reason) {
+    return discard(logger, applicationReference, reason)
+  }
 
   const result = await addApplicationTask(db, logger, {
     applicationReference,

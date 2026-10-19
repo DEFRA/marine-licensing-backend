@@ -16,10 +16,10 @@ describe('addApplicationTask', () => {
   let db
   let logger
 
-  const add = () =>
+  const add = (taskType = type) =>
     addApplicationTask(db, logger, {
       applicationReference,
-      type,
+      type: taskType,
       data,
       updatedBy: 'message-id'
     })
@@ -108,6 +108,53 @@ describe('addApplicationTask', () => {
       }),
       expect.stringContaining(applicationReference)
     )
+  })
+
+  describe('a repeatable task type', () => {
+    const repeatable = APPLICATION_TASK_TYPE.RESUBMIT_SITE_NOTICE_EVIDENCE
+    const resolvedRound = {
+      taskId: 'first-round',
+      type: repeatable,
+      resolvedAt: new Date(),
+      sourceMessageId: 'an-earlier-message'
+    }
+
+    it('names the outstanding task when refusing a second one', async () => {
+      mockFindOneAndUpdate.mockResolvedValue(null)
+      mockFindOne.mockResolvedValue({
+        ...licence,
+        applicationTasks: [
+          resolvedRound,
+          {
+            taskId: 'second-round',
+            type: repeatable,
+            resolvedAt: null,
+            sourceMessageId: 'another-message'
+          }
+        ]
+      })
+
+      expect(await add(repeatable)).toBeNull()
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: expect.objectContaining({
+            action: MAS_EVENT_ACTION.APPLICATION_TASK_DUPLICATE
+          })
+        }),
+        expect.stringContaining('task second-round is still outstanding')
+      )
+    })
+
+    it('throws so the queue retries when the blocking task was resolved after the push missed it', async () => {
+      mockFindOneAndUpdate.mockResolvedValue(null)
+      mockFindOne.mockResolvedValue({
+        ...licence,
+        applicationTasks: [resolvedRound]
+      })
+
+      await expect(add(repeatable)).rejects.toThrow('the queue will retry')
+      expect(logger.error).not.toHaveBeenCalled()
+    })
   })
 
   it('rethrows so the queue retries when the update fails', async () => {

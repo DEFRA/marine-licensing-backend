@@ -171,19 +171,6 @@ describe('mas-worker-processor', () => {
       )
     })
 
-    it('should leave a site notice evidence rejection on the queue when it cannot be processed', async () => {
-      const server = buildServer()
-      vi.mocked(handleSiteNoticeEvidenceRejection).mockRejectedValue(
-        new Error('Unprocessable site notice evidence rejection')
-      )
-
-      await expect(
-        processMasMessage(server, mockMasSiteNoticeEvidenceRejectionSqsMessage)
-      ).rejects.toThrow('Unprocessable site notice evidence rejection')
-
-      expect(deleteMasMessage).not.toHaveBeenCalled()
-    })
-
     it('should not treat a withholding decision without a taskType as an application task', async () => {
       const server = buildServer()
       const { taskType, ...body } = mockMasWithholdingMessageBody

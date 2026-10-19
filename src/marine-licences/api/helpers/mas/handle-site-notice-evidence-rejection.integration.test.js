@@ -250,43 +250,43 @@ describe('Site notice evidence rejection end to end - integration tests', async 
         'names a location the applicant never sent',
         { rejectedLocations: [{ locationNumber: 4, reason: 'a' }] }
       ]
-    ])(
-      'is logged and left for the dead-letter queue when it %s',
-      async (_case, body) => {
-        const _id = await insertLicence()
-        const logError = vi.spyOn(getServer().logger, 'error')
+    ])('is logged and discarded when it %s', async (_case, body) => {
+      const _id = await insertLicence()
+      const logWarn = vi.spyOn(getServer().logger, 'warn')
 
-        await expect(process(messageWith(body))).rejects.toThrow(
-          'Unprocessable site notice evidence rejection'
-        )
+      await process(messageWith(body))
 
-        expect(logError).toHaveBeenCalledWith(
-          expect.objectContaining({
-            event: expect.objectContaining({
-              action: MAS_EVENT_ACTION.MESSAGE_UNPROCESSABLE,
-              reference: mockMasApplicationReference
-            })
-          }),
-          expect.any(String)
-        )
-        expect(await resubmitTasksOf(_id)).toHaveLength(0)
-        expect((await stored(_id)).status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
-        expect(sendEmail).not.toHaveBeenCalled()
-        expect(deleteMasMessage).not.toHaveBeenCalled()
-      }
-    )
+      expect(logWarn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: expect.objectContaining({
+            action: MAS_EVENT_ACTION.APPLICATION_TASK_SKIPPED,
+            reference: mockMasApplicationReference
+          })
+        }),
+        expect.stringContaining('Discarding site notice evidence rejection')
+      )
+      expect(await resubmitTasksOf(_id)).toHaveLength(0)
+      expect((await stored(_id)).status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
+      expect(sendEmail).not.toHaveBeenCalled()
+      expect(deleteMasMessage).toHaveBeenCalled()
+    })
 
-    test('is left for the dead-letter queue when the applicant has not sent evidence yet', async () => {
+    test('is discarded when the applicant has not sent evidence yet', async () => {
       const _id = await insertLicence({
         applicationTasks: [{ ...resolvedSiteNoticeTask, resolvedAt: null }]
       })
+      const logWarn = vi.spyOn(getServer().logger, 'warn')
 
-      await expect(process()).rejects.toThrow(
-        'the applicant has not sent any site notice evidence'
+      await process()
+
+      expect(logWarn).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.stringContaining(
+          'the applicant has not sent any site notice evidence'
+        )
       )
-
       expect(await resubmitTasksOf(_id)).toHaveLength(0)
-      expect(deleteMasMessage).not.toHaveBeenCalled()
+      expect(deleteMasMessage).toHaveBeenCalled()
     })
   })
 })

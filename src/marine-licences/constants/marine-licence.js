@@ -111,7 +111,6 @@ export const LAND_POLICY_CODE = 'Land'
 export const MAS_EVENT_ACTION = {
   MESSAGE_RECEIVED: 'mas:message-received',
   MESSAGE_DEAD_LETTERED: 'mas:message-dead-lettered',
-  MESSAGE_UNPROCESSABLE: 'mas:message-unprocessable',
   JOB_STALE: 'mas:job-stale',
   JOB_FAILED: 'mas:job-failed',
   JOB_COMPLETE: 'mas:job-complete',

@@ -120,15 +120,18 @@ const logDuplicate = (logger, { applicationReference, type, existing }) =>
         reference: applicationReference
       }
     },
-    isRepeatable(type)
-      ? `Refused a second ${type} application task for applicationReference ${applicationReference}; task ${existing.taskId} is still outstanding`
-      : `Refused a second ${type} application task for applicationReference ${applicationReference}; MAS sends one per application and task ${existing.taskId} already exists`
+    `Refused a second ${type} application task for applicationReference ${applicationReference}; ${
+      isRepeatable(type)
+        ? `task ${existing.taskId} is still outstanding`
+        : `MAS sends one per application and task ${existing.taskId} already exists`
+    }`
   )
 
 // Resolves why the conditional push matched nothing: the licence is missing, the same
 // queue message has already been processed, or MAS has broken its one-per-application
-// (one-outstanding, for a repeatable type) contract. A duplicate leaves the stored task exactly as it is, so an applicant who
-// has already read a notification keeps that acknowledgement.
+// (one-outstanding, for a repeatable type) contract. A duplicate leaves the stored task
+// exactly as it is, so an applicant who has already read a notification keeps that
+// acknowledgement.
 const explainMissedPush = async (
   db,
   logger,
@@ -151,6 +154,14 @@ const explainMissedPush = async (
   const existing = tasks.find(
     (task) => task.type === type && !(isRepeatable(type) && task.resolvedAt)
   )
+
+  // The blocking task of a repeatable type was resolved after the push missed it, so
+  // a retry will add this one.
+  if (!existing) {
+    throw new Error(
+      `The outstanding ${type} application task for applicationReference ${applicationReference} was resolved while another was being added; the queue will retry`
+    )
+  }
 
   logDuplicate(logger, { applicationReference, type, existing })
   return null

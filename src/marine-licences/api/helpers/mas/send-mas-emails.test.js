@@ -3,9 +3,11 @@ import { config } from '../../../../config.js'
 import { sendEmail } from '../../../../shared/helpers/email.js'
 import { sendRejectedEmail } from './send-rejected-email.js'
 import { sendTransferredEmail } from './send-transferred-email.js'
-import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
 import { sendPublicNoticeEmail } from './send-public-notice-email.js'
-import { sendResubmitSiteNoticeEvidenceEmail } from './send-resubmit-site-notice-evidence-email.js'
+import {
+  sendResubmitSiteNoticeEvidenceEmail,
+  sendWithholdingNotificationEmail
+} from './send-application-task-email.js'
 import {
   mockMasApplicationReference,
   mockMasUserEmail,
