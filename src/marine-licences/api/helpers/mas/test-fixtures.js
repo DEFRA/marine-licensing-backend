@@ -109,7 +109,7 @@ export const mockMasConsultationRequestMessageBody = {
   ]
 }
 
-export const mockMasSiteNoticeEvidenceRejectionMessageBody = {
+export const mockMasResubmitSiteNoticeEvidenceMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_NOTICE_EVIDENCE,
   userName: mockMasUserName,
@@ -145,9 +145,9 @@ export const mockMasPublicNoticeSqsMessage = {
   Body: JSON.stringify(mockMasPublicNoticeSqsMessageBody)
 }
 
-export const mockMasSiteNoticeEvidenceRejectionSqsMessage = {
+export const mockMasResubmitSiteNoticeEvidenceSqsMessage = {
   ...mockMasSqsMessage,
-  Body: JSON.stringify(mockMasSiteNoticeEvidenceRejectionMessageBody)
+  Body: JSON.stringify(mockMasResubmitSiteNoticeEvidenceMessageBody)
 }
 
 export const mockMasWithholdingSqsMessage = {

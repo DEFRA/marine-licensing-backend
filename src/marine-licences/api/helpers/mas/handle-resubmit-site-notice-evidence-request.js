@@ -1,7 +1,7 @@
 import { config } from '../../../../config.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
-import { siteNoticeEvidenceRejectionMessageSchema } from '../../../models/site-notice-evidence-rejection-message.js'
+import { resubmitSiteNoticeEvidenceMessageSchema } from '../../../models/resubmit-site-notice-evidence.js'
 import { addApplicationTask } from './add-application-task.js'
 import { logDiscarded, logNoRecipient } from './mas-logging.js'
 import { sendResubmitSiteNoticeEvidenceEmail } from './send-application-task-email.js'
@@ -9,7 +9,7 @@ import { sendResubmitSiteNoticeEvidenceEmail } from './send-application-task-ema
 const discard = (logger, applicationReference, reason) => {
   logDiscarded(
     logger,
-    'Discarding site notice evidence rejection',
+    'Discarding resubmit site notice evidence request',
     applicationReference,
     reason
   )
@@ -55,13 +55,13 @@ const buildLocations = (rejectedLocations) =>
     .map(({ locationNumber, reason }) => ({ locationNumber, reason }))
     .sort((a, b) => a.locationNumber - b.locationNumber)
 
-export const handleSiteNoticeEvidenceRejection = async (
+export const handleResubmitSiteNoticeEvidenceRequest = async (
   db,
   logger,
   { body: rawBody, id }
 ) => {
   const { value: body, error } =
-    siteNoticeEvidenceRejectionMessageSchema.validate(rawBody)
+    resubmitSiteNoticeEvidenceMessageSchema.validate(rawBody)
 
   if (error) {
     return discard(logger, rawBody.applicationReference, error.message)

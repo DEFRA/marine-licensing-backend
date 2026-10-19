@@ -13,8 +13,8 @@ import {
 } from '../../../constants/marine-licence.js'
 import {
   mockMasApplicationReference,
-  mockMasSiteNoticeEvidenceRejectionMessageBody,
-  mockMasSiteNoticeEvidenceRejectionSqsMessage,
+  mockMasResubmitSiteNoticeEvidenceMessageBody,
+  mockMasResubmitSiteNoticeEvidenceSqsMessage,
   mockMasUserEmail,
   mockMasUserName
 } from './test-fixtures.js'
@@ -44,7 +44,7 @@ const evidence = (locationName) => ({
   dateDisplayed: { day: '1', month: '9', year: '2026' }
 })
 
-describe('Site notice evidence rejection end to end - integration tests', async () => {
+describe('Resubmit site notice evidence request end to end - integration tests', async () => {
   const getServer = await setupTestServer()
 
   const collection = () => global.mockMongo.collection(collectionMarineLicences)
@@ -73,11 +73,11 @@ describe('Site notice evidence rejection end to end - integration tests', async 
   const resubmitTasksOf = async (_id) =>
     (await stored(_id)).applicationTasks.filter(({ type }) => type === RESUBMIT)
 
-  const messageWith = (body, MessageId = 'rejection-message') => ({
-    ...mockMasSiteNoticeEvidenceRejectionSqsMessage,
+  const messageWith = (body, MessageId = 'resubmit-request-message') => ({
+    ...mockMasResubmitSiteNoticeEvidenceSqsMessage,
     MessageId,
     Body: JSON.stringify({
-      ...mockMasSiteNoticeEvidenceRejectionMessageBody,
+      ...mockMasResubmitSiteNoticeEvidenceMessageBody,
       ...body
     })
   })
@@ -93,7 +93,7 @@ describe('Site notice evidence rejection end to end - integration tests', async 
     const [task] = await resubmitTasksOf(_id)
     expect(task).toMatchObject({
       resolvedAt: null,
-      sourceMessageId: 'rejection-message',
+      sourceMessageId: 'resubmit-request-message',
       data: {
         locations: [
           {
@@ -151,7 +151,7 @@ describe('Site notice evidence rejection end to end - integration tests', async 
     )
     expect(deleteMasMessage).toHaveBeenCalledWith(
       expect.any(String),
-      mockMasSiteNoticeEvidenceRejectionSqsMessage.ReceiptHandle
+      mockMasResubmitSiteNoticeEvidenceSqsMessage.ReceiptHandle
     )
   })
 
@@ -179,7 +179,7 @@ describe('Site notice evidence rejection end to end - integration tests', async 
     expect(sendEmail).toHaveBeenCalledTimes(1)
   })
 
-  test('a later rejection adds a second round and keeps the first', async () => {
+  test('a later request adds a second round and keeps the first', async () => {
     const _id = await insertLicence()
     await process()
     await collection().updateOne(
@@ -190,7 +190,7 @@ describe('Site notice evidence rejection end to end - integration tests', async 
     await process(
       messageWith(
         { rejectedLocations: [{ locationNumber: 2, reason: 'Too dark' }] },
-        'second-rejection-message'
+        'second-resubmit-request-message'
       )
     )
 
@@ -204,11 +204,11 @@ describe('Site notice evidence rejection end to end - integration tests', async 
     expect(sendEmail).toHaveBeenCalledTimes(2)
   })
 
-  test('refuses a second rejection while the first is still outstanding', async () => {
+  test('refuses a second request while the first is still outstanding', async () => {
     const _id = await insertLicence()
     await process()
 
-    await process(messageWith({}, 'second-rejection-message'))
+    await process(messageWith({}, 'second-resubmit-request-message'))
 
     expect(await resubmitTasksOf(_id)).toHaveLength(1)
     expect(sendEmail).toHaveBeenCalledTimes(1)
@@ -263,7 +263,9 @@ describe('Site notice evidence rejection end to end - integration tests', async 
             reference: mockMasApplicationReference
           })
         }),
-        expect.stringContaining('Discarding site notice evidence rejection')
+        expect.stringContaining(
+          'Discarding resubmit site notice evidence request'
+        )
       )
       expect(await resubmitTasksOf(_id)).toHaveLength(0)
       expect((await stored(_id)).status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)

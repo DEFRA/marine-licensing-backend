@@ -8,8 +8,8 @@ import {
   mockMasMissingApplicationReferenceSqsMessage,
   mockMasPublicNoticeSqsMessage,
   mockMasRejectedSqsMessage,
-  mockMasSiteNoticeEvidenceRejectionMessageBody,
-  mockMasSiteNoticeEvidenceRejectionSqsMessage,
+  mockMasResubmitSiteNoticeEvidenceMessageBody,
+  mockMasResubmitSiteNoticeEvidenceSqsMessage,
   mockMasSqsMessage,
   mockMasWithholdingMessageBody,
   mockMasWithholdingSqsMessage
@@ -18,7 +18,7 @@ import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { updatePublicNotice } from './update-public-notice.js'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
-import { handleSiteNoticeEvidenceRejection } from './handle-site-notice-evidence-rejection.js'
+import { handleResubmitSiteNoticeEvidenceRequest } from './handle-resubmit-site-notice-evidence-request.js'
 
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import { addConsultationRequest } from './add-consultation-request.js'
@@ -32,7 +32,7 @@ vi.mock('./update-public-notice.js')
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
 vi.mock('./handle-withholding-notification.js')
-vi.mock('./handle-site-notice-evidence-rejection.js')
+vi.mock('./handle-resubmit-site-notice-evidence-request.js')
 
 const sqsQueueName = 'marine_licensing_mas'
 const sqsDlqName = 'marine_licensing_mas-deadletter'
@@ -148,26 +148,26 @@ describe('mas-worker-processor', () => {
       )
     })
 
-    it('should call handleSiteNoticeEvidenceRejection for a PUBLIC_NOTICE_EVIDENCE task', async () => {
+    it('should call handleResubmitSiteNoticeEvidenceRequest for a PUBLIC_NOTICE_EVIDENCE task', async () => {
       const server = buildServer()
 
       await processMasMessage(
         server,
-        mockMasSiteNoticeEvidenceRejectionSqsMessage
+        mockMasResubmitSiteNoticeEvidenceSqsMessage
       )
 
-      expect(handleSiteNoticeEvidenceRejection).toHaveBeenCalledWith(
+      expect(handleResubmitSiteNoticeEvidenceRequest).toHaveBeenCalledWith(
         server.db,
         server.logger,
         {
-          body: mockMasSiteNoticeEvidenceRejectionMessageBody,
-          id: mockMasSiteNoticeEvidenceRejectionSqsMessage.MessageId
+          body: mockMasResubmitSiteNoticeEvidenceMessageBody,
+          id: mockMasResubmitSiteNoticeEvidenceSqsMessage.MessageId
         }
       )
       expect(updatePublicNotice).not.toHaveBeenCalled()
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
-        mockMasSiteNoticeEvidenceRejectionSqsMessage.ReceiptHandle
+        mockMasResubmitSiteNoticeEvidenceSqsMessage.ReceiptHandle
       )
     })
 
