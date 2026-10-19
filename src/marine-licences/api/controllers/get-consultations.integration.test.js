@@ -15,6 +15,7 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
   const consultee = (organisationId) => ({
     organisationId,
     consultationType: 'APPLICATION_NOTIFICATION',
+    consultationStatus: 'NO_RESPONSE_NEEDED',
     notes: `Notes for ${organisationId}`
   })
 
@@ -72,12 +73,13 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
     const { statusCode, body } = await getConsultations('Consultee')
 
     expect(statusCode).toBe(200)
-    expect(body.projects).toEqual([
+    expect(body.consultations).toEqual([
       {
         id: newerForOrg.toString(),
         projectName: 'Test Marine Licence Project',
         applicationReference: 'MLA/2026/00002',
         consultationType: 'APPLICATION_NOTIFICATION',
+        consultationStatus: 'NO_RESPONSE_NEEDED',
         consultationStartDate: '2026-03-01T00:00:00.000Z'
       },
       {
@@ -85,6 +87,7 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
         projectName: 'Test Marine Licence Project',
         applicationReference: 'MLA/2026/00001',
         consultationType: 'APPLICATION_NOTIFICATION',
+        consultationStatus: 'NO_RESPONSE_NEEDED',
         consultationStartDate: '2026-01-01T00:00:00.000Z'
       }
     ])

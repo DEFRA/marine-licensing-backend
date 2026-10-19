@@ -21,11 +21,11 @@ export const getConsultationsController = {
       )
       .toArray()
 
-    const projects = marineLicences
+    const consultations = marineLicences
       .map(
         ({ _id, projectName, applicationReference, consultationRequests }) => {
           const [{ consultationStartDate, consultees }] = consultationRequests
-          const { consultationType } = consultees.find(
+          const { consultationType, consultationStatus } = consultees.find(
             (consultee) => consultee.organisationId === organisationId
           )
 
@@ -34,6 +34,7 @@ export const getConsultationsController = {
             projectName,
             applicationReference,
             consultationType,
+            consultationStatus,
             consultationStartDate
           }
         }
@@ -43,7 +44,7 @@ export const getConsultationsController = {
       )
 
     return h
-      .response({ message: 'success', value: { projects } })
+      .response({ message: 'success', value: { consultations } })
       .code(StatusCodes.OK)
   }
 }
