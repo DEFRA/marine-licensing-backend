@@ -3,6 +3,7 @@ import { processMasMessage, processMasDlqMessage } from './worker-processor.js'
 import { deleteMasMessage } from './sqs-client.js'
 import {
   mockMalformedMasSqsMessage,
+  mockMasConsultationRequestSqsMessage,
   mockMasInvalidApplicationReferenceSqsMessage,
   mockMasMissingApplicationReferenceSqsMessage,
   mockMasPublicNoticeSqsMessage,
@@ -20,11 +21,13 @@ import { handleWithholdingNotification } from './handle-withholding-notification
 import { handleSiteNoticeEvidenceRejection } from './handle-site-notice-evidence-rejection.js'
 
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import { addConsultationRequest } from './add-consultation-request.js'
 
 vi.mock('./sqs-client.js', () => ({
   deleteMasMessage: vi.fn()
 }))
 
+vi.mock('./add-consultation-request.js')
 vi.mock('./update-public-notice.js')
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
@@ -81,6 +84,23 @@ describe('mas-worker-processor', () => {
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
         mockMasRejectedSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should call addConsultationRequest for a consultation request', async () => {
+      const server = buildServer()
+      const body = JSON.parse(mockMasConsultationRequestSqsMessage.Body)
+
+      await processMasMessage(server, mockMasConsultationRequestSqsMessage)
+
+      expect(addConsultationRequest).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        { body, id: mockMasConsultationRequestSqsMessage.MessageId }
+      )
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasConsultationRequestSqsMessage.ReceiptHandle
       )
     })
 

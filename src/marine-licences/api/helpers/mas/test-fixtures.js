@@ -1,5 +1,6 @@
 import {
   MARINE_LICENCE_STATUS,
+  MAS_CONSULTATION_APPLICATION_TYPES,
   MAS_TASK_TYPE,
   PUBLIC_NOTICE_REQUEST_RELATES_TO,
   WITHHOLDING_DECISION,
@@ -9,12 +10,12 @@ import {
 export const mockMasApplicationReference = 'MMO-2027-00123'
 export const mockMasUserName = 'Jane Doe'
 export const mockMasUserEmail = 'jane@example.com'
-export const mockMasDecisionDate = '2026-09-22T11:14:35.102Z'
+export const mockMasDate = '2026-09-22T11:14:35.102Z'
 
 export const mockMasTransferredMessageBody = {
   applicationReference: mockMasApplicationReference,
   status: MARINE_LICENCE_STATUS.TRANSFERRED,
-  transferredDate: '2026-05-21T12:00:00.000Z',
+  transferredDate: mockMasDate,
   userName: mockMasUserName,
   userEmail: mockMasUserEmail
 }
@@ -22,7 +23,7 @@ export const mockMasTransferredMessageBody = {
 export const mockMasRejectedMessageBody = {
   applicationReference: mockMasApplicationReference,
   status: MARINE_LICENCE_STATUS.REJECTED,
-  rejectedDate: '2026-05-21T12:00:00.000Z',
+  rejectedDate: mockMasDate,
   rejectedReasons: 'Marine plan policies, Another reason',
   rejectedInformation: 'Test free text',
   userName: mockMasUserName,
@@ -32,7 +33,7 @@ export const mockMasRejectedMessageBody = {
 export const mockMasWithholdingMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
-  decisionDate: mockMasDecisionDate,
+  decisionDate: mockMasDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
   commercialDecision: WITHHOLDING_DECISION.AGREE_IN_PART,
   commercialApplicantMessage:
@@ -47,7 +48,7 @@ export const mockMasWithholdingMessageBody = {
 export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
-  decisionDate: mockMasDecisionDate,
+  decisionDate: mockMasDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.NATIONAL_SECURITY,
   commercialDecision: null,
   commercialApplicantMessage: null,
@@ -61,7 +62,7 @@ export const mockMasWithholdingNationalSecurityOnlyMessageBody = {
 export const mockMasWithholdingCommercialOnlyMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
-  decisionDate: mockMasDecisionDate,
+  decisionDate: mockMasDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.COMMERCIAL,
   commercialDecision: WITHHOLDING_DECISION.DISAGREE,
   commercialApplicantMessage:
@@ -75,7 +76,7 @@ export const mockMasWithholdingCommercialOnlyMessageBody = {
 export const mockMasWithholdingNoBasisMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_REGISTER,
-  decisionDate: mockMasDecisionDate,
+  decisionDate: mockMasDate,
   requestRelatesTo: WITHHOLDING_REQUEST_RELATES_TO.BOTH,
   commercialDecision: null,
   commercialApplicantMessage: null,
@@ -88,11 +89,24 @@ export const mockMasWithholdingNoBasisMessageBody = {
 export const mockMasPublicNoticeSqsMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_NOTICE,
-  userName: 'Jane Doe',
-  userEmail: 'jane@example.com',
+  userName: mockMasUserName,
+  userEmail: mockMasUserEmail,
   proposedWorksSummary: 'test proposed works summary',
   siteNoticeSummary: 'test site notice summary',
   requestRelatesTo: PUBLIC_NOTICE_REQUEST_RELATES_TO.BOTH
+}
+export const mockMasConsultationRequestMessageBody = {
+  applicationReference: mockMasApplicationReference,
+  taskType: MAS_TASK_TYPE.ADD_CONSULTATION_REQUEST,
+  consultationStartDate: mockMasDate,
+  consultees: [
+    {
+      organisationId: 'c1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      consultationType:
+        MAS_CONSULTATION_APPLICATION_TYPES.APPLICATION_NOTIFICATION,
+      notes: 'Test notes'
+    }
+  ]
 }
 
 export const mockMasSiteNoticeEvidenceRejectionMessageBody = {
@@ -139,6 +153,11 @@ export const mockMasSiteNoticeEvidenceRejectionSqsMessage = {
 export const mockMasWithholdingSqsMessage = {
   ...mockMasSqsMessage,
   Body: JSON.stringify(mockMasWithholdingMessageBody)
+}
+
+export const mockMasConsultationRequestSqsMessage = {
+  ...mockMasSqsMessage,
+  Body: JSON.stringify(mockMasConsultationRequestMessageBody)
 }
 
 export const mockMasMissingApplicationReferenceSqsMessage = {

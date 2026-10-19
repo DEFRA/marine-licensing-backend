@@ -7,6 +7,7 @@ import {
   MAS_TASK_TYPE
 } from '../../../constants/marine-licence.js'
 import { handleSiteNoticeEvidenceRejection } from './handle-site-notice-evidence-rejection.js'
+import { addConsultationRequest } from './add-consultation-request.js'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { deleteMasMessage } from './sqs-client.js'
 import { updatePublicNotice } from './update-public-notice.js'
@@ -65,8 +66,15 @@ const handleMasTaskType = async (db, logger, { body, message }) => {
     })
   }
 
-  if (body.taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
+  if (taskType === MAS_TASK_TYPE.PUBLIC_REGISTER) {
     await handleWithholdingNotification(db, logger, {
+      body,
+      id: message.MessageId
+    })
+  }
+
+  if (taskType === MAS_TASK_TYPE.ADD_CONSULTATION_REQUEST) {
+    await addConsultationRequest(db, logger, {
       body,
       id: message.MessageId
     })
