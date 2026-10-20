@@ -495,25 +495,6 @@ describe('getOrganisationDetailsFromAuthToken', () => {
     })
   })
 
-  describe('Valid cases - Consultee', () => {
-    it('should return organisation details for Consultee relationship', () => {
-      const auth = {
-        artifacts: {
-          decoded: {
-            currentRelationshipId: 'rel-id',
-            relationships: ['rel-id:org-123:Consultee Org:0:Consultee:0']
-          }
-        }
-      }
-      const result = getOrganisationDetailsFromAuthToken(auth)
-      expect(result).toEqual({
-        organisationId: 'org-123',
-        organisationName: 'Consultee Org',
-        userRelationshipType: 'Consultee'
-      })
-    })
-  })
-
   describe('Invalid relationship type - defaults to Citizen', () => {
     it('should default to Citizen when relationship type is unknown', () => {
       const auth = {

@@ -19,14 +19,15 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
     notes: `Notes for ${organisationId}`
   })
 
-  const getConsultations = (relationshipType) =>
+  const getConsultations = (roles) =>
     makeGetRequest({
       server: getServer(),
       url: '/marine-licence/consultations',
       contactId,
       relationships: [
-        `${relationshipId}:${consulteeOrgId}:Consultee Org:0:${relationshipType}:0`
+        `${relationshipId}:${consulteeOrgId}:Consultee Org:0:Employee:0`
       ],
+      roles,
       currentRelationshipId: relationshipId
     })
 
@@ -70,7 +71,9 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
       createCompleteMarineLicence()
     ])
 
-    const { statusCode, body } = await getConsultations('Consultee')
+    const { statusCode, body } = await getConsultations([
+      `${relationshipId}:Consultee:3`
+    ])
 
     expect(statusCode).toBe(200)
     expect(body.consultations).toEqual([
@@ -93,8 +96,10 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
     ])
   })
 
-  test('returns 403 when the user is not signed in as a consultee', async () => {
-    const { statusCode } = await getConsultations('Employee')
+  test('returns 403 when the user does not have the Consultee role', async () => {
+    const { statusCode } = await getConsultations([
+      `${relationshipId}:Reader:3`
+    ])
 
     expect(statusCode).toBe(403)
   })
