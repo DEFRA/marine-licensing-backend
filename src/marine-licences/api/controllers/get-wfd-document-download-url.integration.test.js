@@ -5,12 +5,23 @@ import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
 import { buildWfdDocumentDownloadPathById } from '../../constants/water-framework-directive.js'
 import { blobService } from '../../../shared/services/data-service/blob-service.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 
 vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
   blobService: {
     getPresignedUrl: vi.fn()
   }
 }))
+
+vi.mock(
+  '../../../shared/common/helpers/log-response-schema-mismatch.js',
+  async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+      logResponseSchemaMismatch: vi.fn(actual.logResponseSchemaMismatch)
+    }
+  }
+)
 
 describe('WFD document download URL - public integration tests', async () => {
   const getServer = await setupTestServer()
@@ -39,6 +50,10 @@ describe('WFD document download URL - public integration tests', async () => {
 
   beforeEach(() => {
     blobService.getPresignedUrl.mockResolvedValue(mockPresignedUrl)
+  })
+
+  afterEach(() => {
+    expect(logResponseSchemaMismatch).not.toHaveBeenCalled()
   })
 
   test('returns 200 with a presigned URL without authentication', async () => {

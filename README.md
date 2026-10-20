@@ -187,6 +187,36 @@ API routes are defined under the `api` folders in each domain:
 - `src/marine-licences/api/`
 - `src/shared/api/geo-parser/`
 
+### API documentation
+
+Outside prod the service publishes an OpenAPI (Swagger 2.0) description of its
+gateway routes (`src/marine-licences/api/gateway-routes.js`): the unauthenticated
+routes used by Dynamics 365 and other non-frontend callers via the CDP gateway. The
+unauthenticated `/public/exemption/{id}` and `/public/marine-licence/{id}` routes,
+which the frontend calls, are not included.
+
+| Endpoint              | Description             |
+| :-------------------- | :---------------------- |
+| `GET: /swagger.json`  | OpenAPI specification   |
+| `GET: /documentation` | Redoc API documentation |
+
+Locally, with the service running, open http://localhost:3001/documentation.
+
+Neither endpoint is registered when `ENVIRONMENT` is `prod`; no configuration is
+needed for this. The documented version is the deployed release (`SERVICE_VERSION`),
+or `local` when that is not set.
+
+A route appears in the spec only when its options include `tags: ['api']`. Documented
+routes declare `response.status` Joi schemas; a response that does not match its schema
+is still returned unchanged, and a `warn` with `event.action`
+`openapi:response-schema-mismatch` is logged.
+
+In deployed non-prod environments the docs are viewed through the CDP API Hub, e.g.
+https://cdp-api-hub.dev.cdp-int.defra.cloud/hub/internal/marine-licensing-backend.
+This requires the service's `api_docs` entry in `cdp-tenant-config`
+(`"url": "/swagger.json"`, `"doc_type": "openapi"`, `"internal": true`). The prod API
+Hub entry shows "Docs unavailable" by design.
+
 ## Docker
 
 ### Development image

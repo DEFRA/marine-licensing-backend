@@ -1,7 +1,7 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 
-const SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH = 1000
+export const SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH = 1000
 
 export const specialLegalPowers = joi
   .object({
