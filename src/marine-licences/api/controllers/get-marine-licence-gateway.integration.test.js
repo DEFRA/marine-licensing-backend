@@ -3,11 +3,15 @@ import { ObjectId } from 'mongodb'
 import {
   mockWaterFrameworkDirective,
   mockMarinePlanPolicies,
-  mockMarinePlanPolicyResponses
+  mockMarinePlanPolicyResponses,
+  mockCircleSite,
+  mockFileUploadSite
 } from '../../../../tests/test.fixture.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarinePlanPolicyWordingSnapshots } from '../../../shared/common/constants/db-collections.js'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 
 vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
   blobService: {
@@ -15,9 +19,54 @@ vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
   }
 }))
 
+vi.mock(
+  '../../../shared/common/helpers/log-response-schema-mismatch.js',
+  async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+      logResponseSchemaMismatch: vi.fn(actual.logResponseSchemaMismatch)
+    }
+  }
+)
+
 describe('GET /public/marine-licence/mas/{id} - integration tests', async () => {
   const getServer = await setupTestServer()
   const backendGatewayUrl = 'http://localhost:3001'
+
+  afterEach(() => {
+    expect(logResponseSchemaMismatch).not.toHaveBeenCalled()
+  })
+
+  test('returns sites that match the documented schema', async () => {
+    const publicId = new ObjectId()
+    blobService.getPresignedUrl.mockResolvedValue(
+      'https://s3.example.com/site-file'
+    )
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: publicId,
+      status: MARINE_LICENCE_STATUS.SUBMITTED,
+      siteDetails: [mockCircleSite, mockFileUploadSite]
+    })
+
+    const response = await getServer().inject({
+      method: 'GET',
+      url: `/public/marine-licence/mas/${publicId}`
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(JSON.parse(response.payload).sites).toHaveLength(2)
+  })
+
+  test('returns 400 for a malformed id', async () => {
+    const response = await getServer().inject({
+      method: 'GET',
+      url: '/public/marine-licence/mas/not-a-hex-id'
+    })
+
+    expect(response.statusCode).toBe(400)
+  })
 
   test('returns project fields for a SUBMITTED marine licence', async () => {
     const publicId = new ObjectId()

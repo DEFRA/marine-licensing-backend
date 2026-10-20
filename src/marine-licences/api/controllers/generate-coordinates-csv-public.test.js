@@ -6,6 +6,7 @@ import { generateCoordinatesCsvPublicController } from './generate-coordinates-c
 import * as siteDetailsModule from '../csv/site-details.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 import {
   mockCircleSite,
   mockMultipleSite
@@ -147,5 +148,13 @@ describe('GET /public/marine-licence/{id}/generate-coordinates-csv', () => {
       'Content-Disposition',
       'attachment; filename="Download CSV.zip"'
     )
+  })
+
+  test('documents the route without validating the ZIP response body', () => {
+    const { options } = generateCoordinatesCsvPublicController
+
+    expect(options.tags).toEqual(['api'])
+    expect(options.response.failAction).toBe(logResponseSchemaMismatch)
+    expect(options.response.status[200]).toBeUndefined()
   })
 })

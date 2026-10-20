@@ -3,6 +3,7 @@ import { vi } from 'vitest'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { preferredDates } from '../../models/test-fixtures.js'
 import { blobService } from '../../../shared/services/data-service/blob-service.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 
 vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
   blobService: {
@@ -370,5 +371,12 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         })
       )
     })
+  })
+
+  test('documents the route and logs response schema mismatches', () => {
+    const { options } = getMarineLicenceGatewayController
+
+    expect(options.tags).toEqual(['api'])
+    expect(options.response.failAction).toBe(logResponseSchemaMismatch)
   })
 })

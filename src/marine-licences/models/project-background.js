@@ -1,7 +1,7 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 
-const PROJECT_BACKGROUND_MAX_TEXT_LENGTH = 1000
+export const PROJECT_BACKGROUND_MAX_TEXT_LENGTH = 1000
 
 export const projectBackgroundSchema = joi
   .object({
