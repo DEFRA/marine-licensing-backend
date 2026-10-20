@@ -33,6 +33,7 @@ describe('resolveApplicationTaskController', () => {
       params: { id, taskId },
       db: {
         collection: vi.fn().mockReturnValue({
+          findOne: vi.fn().mockResolvedValue(null),
           findOneAndUpdate: vi
             .fn()
             .mockRejectedValue(new Error('mongo is down'))
@@ -46,6 +47,8 @@ describe('resolveApplicationTaskController', () => {
 
     await expect(
       resolveApplicationTaskController.handler(request, global.mockHandler)
-    ).rejects.toThrow('Error when attempting to resolve application task')
+    ).rejects.toThrow(
+      'Error when attempting to resolve application task: mongo is down'
+    )
   })
 })

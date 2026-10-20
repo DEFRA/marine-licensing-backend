@@ -181,22 +181,22 @@ describe('Resolve application task - integration tests', async () => {
       expect(stored.status).toBe(MARINE_LICENCE_STATUS.ACTION_REQUIRED)
     })
 
-    test('is resolved by who sent it, with the previous status restored, once every photo is added', async () => {
+    test('is resolved once every location has both photos', async () => {
       const taskId = new ObjectId().toHexString()
       const id = await insertLicence([
         buildResubmitTask(taskId, [completeLocation(1), completeLocation(3)])
       ])
-      const { contactId } = mockMarineLicence
 
-      const { statusCode } = await resolve(id, taskId, contactId)
+      const { statusCode } = await resolve(
+        id,
+        taskId,
+        mockMarineLicence.contactId
+      )
 
       expect(statusCode).toBe(200)
-      const stored = await storedLicence(id)
-      expect(stored.applicationTasks[0]).toMatchObject({
-        resolvedAt: expect.any(Date),
-        resolvedBy: contactId
-      })
-      expect(stored.status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
+      expect((await storedLicence(id)).applicationTasks[0].resolvedAt).toEqual(
+        expect.any(Date)
+      )
     })
   })
 

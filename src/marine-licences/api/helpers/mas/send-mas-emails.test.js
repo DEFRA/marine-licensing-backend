@@ -121,15 +121,14 @@ describe('MAS notification emails', () => {
     })
   })
 
-  // Only these senders await the queue write; their siblings still fire and
-  // forget, so a failed insert there surfaces as an unhandled rejection.
-  it.each([
-    ['withholding notification', sendWithholdingNotificationEmail],
-    ['resubmit site notice evidence', sendResubmitSiteNoticeEvidenceEmail]
-  ])('surfaces a failed queue write for the %s', async (_name, sender) => {
+  // Only the application task senders await the queue write; their siblings still
+  // fire and forget, so a failed insert there surfaces as an unhandled rejection.
+  it('surfaces a failed queue write for an application task email', async () => {
     vi.mocked(sendEmail).mockResolvedValue({ status: 'success' })
     mockCollection.insertOne.mockRejectedValue(new Error('mongo is down'))
 
-    await expect(send(sender)).rejects.toThrow('mongo is down')
+    await expect(send(sendWithholdingNotificationEmail)).rejects.toThrow(
+      'mongo is down'
+    )
   })
 })

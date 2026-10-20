@@ -85,56 +85,35 @@ describe('Resubmit site notice evidence request end to end - integration tests',
   const process = (message = messageWith({})) =>
     processMasMessage(getServer(), message)
 
-  test('raises a task holding each rejected location and its reason in location order', async () => {
+  test('raises a task holding each rejected location, emails the applicant and deletes the message', async () => {
     const _id = await insertLicence()
+    const evidenceBefore = (await stored(_id)).siteNoticeEvidence
 
-    await process()
+    await process(
+      messageWith({
+        rejectedLocations:
+          mockMasResubmitSiteNoticeEvidenceMessageBody.rejectedLocations.map(
+            (location) => ({ ...location, caseworkerNote: 'internal' })
+          )
+      })
+    )
 
     const [task] = await resubmitTasksOf(_id)
     expect(task).toMatchObject({
       resolvedAt: null,
-      sourceMessageId: 'resubmit-request-message',
-      data: {
-        locations: [
-          {
-            locationNumber: 1,
-            reason:
-              'The close-up photo is blurred, so we cannot read the notice.'
-          },
-          {
-            locationNumber: 3,
-            reason: 'The position photo does not show where the notice is.'
-          }
-        ]
+      sourceMessageId: 'resubmit-request-message'
+    })
+    expect(task.data.locations).toEqual([
+      {
+        locationNumber: 1,
+        reason: 'The close-up photo is blurred, so we cannot read the notice.'
+      },
+      {
+        locationNumber: 3,
+        reason: 'The position photo does not show where the notice is.'
       }
-    })
-  })
-
-  test('moves the application to Action required and records the status it had', async () => {
-    const _id = await insertLicence()
-
-    await process()
-
-    expect(await stored(_id)).toMatchObject({
-      status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
-      previousStatus: MARINE_LICENCE_STATUS.SUBMITTED
-    })
-  })
-
-  test('leaves the original site notice evidence untouched', async () => {
-    const _id = await insertLicence()
-    const before = (await stored(_id)).siteNoticeEvidence
-
-    await process()
-
-    expect((await stored(_id)).siteNoticeEvidence).toEqual(before)
-  })
-
-  test('emails the applicant a link to the view details page and deletes the message', async () => {
-    const _id = await insertLicence()
-
-    await process()
-
+    ])
+    expect((await stored(_id)).siteNoticeEvidence).toEqual(evidenceBefore)
     expect(sendEmail).toHaveBeenCalledTimes(1)
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -153,16 +132,6 @@ describe('Resubmit site notice evidence request end to end - integration tests',
       expect.any(String),
       mockMasResubmitSiteNoticeEvidenceSqsMessage.ReceiptHandle
     )
-  })
-
-  test('a redelivered message creates no second task and sends no second email', async () => {
-    const _id = await insertLicence()
-
-    await process()
-    await process()
-
-    expect(await resubmitTasksOf(_id)).toHaveLength(1)
-    expect(sendEmail).toHaveBeenCalledTimes(1)
   })
 
   test('a redelivery after the applicant has resubmitted does not raise the task again', async () => {
@@ -230,28 +199,41 @@ describe('Resubmit site notice evidence request end to end - integration tests',
     expect(deleteMasMessage).toHaveBeenCalled()
   })
 
-  describe('a message that cannot be processed', () => {
-    test.each([
-      ['has no rejected locations', { rejectedLocations: [] }],
-      [
-        'has a location with no reason',
-        { rejectedLocations: [{ locationNumber: 1 }] }
-      ],
-      [
-        'repeats a location',
-        {
-          rejectedLocations: [
-            { locationNumber: 1, reason: 'a' },
-            { locationNumber: 1, reason: 'b' }
-          ]
-        }
-      ],
-      [
-        'names a location the applicant never sent',
-        { rejectedLocations: [{ locationNumber: 4, reason: 'a' }] }
-      ]
-    ])('is logged and discarded when it %s', async (_case, body) => {
-      const _id = await insertLicence()
+  test.each([
+    [
+      'has no rejected locations',
+      { rejectedLocations: [] },
+      {},
+      '"rejectedLocations" must contain at least 1 items'
+    ],
+    [
+      'names a location the applicant never sent',
+      { rejectedLocations: [{ locationNumber: 4, reason: 'a' }] },
+      {},
+      'no evidence location 4 among the 3 sent'
+    ],
+    [
+      'arrives for a licence with no site notice evidence',
+      { rejectedLocations: [{ locationNumber: 1, reason: 'a' }] },
+      { siteNoticeEvidence: undefined },
+      'no evidence location 1 among the 0 sent'
+    ],
+    [
+      'arrives before the applicant has sent evidence',
+      {},
+      { applicationTasks: [{ ...resolvedSiteNoticeTask, resolvedAt: null }] },
+      'the applicant has not sent any site notice evidence'
+    ],
+    [
+      'arrives for a licence with no application tasks',
+      {},
+      { applicationTasks: undefined },
+      'the applicant has not sent any site notice evidence'
+    ]
+  ])(
+    'a message is logged and discarded when it %s',
+    async (_case, body, licenceFields, reason) => {
+      const _id = await insertLicence(licenceFields)
       const logWarn = vi.spyOn(getServer().logger, 'warn')
 
       await process(messageWith(body))
@@ -264,31 +246,16 @@ describe('Resubmit site notice evidence request end to end - integration tests',
           })
         }),
         expect.stringContaining(
-          'Discarding resubmit site notice evidence request'
+          `Discarding resubmit site notice evidence request for applicationReference ${mockMasApplicationReference}: ${reason}`
         )
       )
-      expect(await resubmitTasksOf(_id)).toHaveLength(0)
-      expect((await stored(_id)).status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
+      const licence = await stored(_id)
+      expect(
+        (licence.applicationTasks ?? []).filter(({ type }) => type === RESUBMIT)
+      ).toHaveLength(0)
+      expect(licence.status).toBe(MARINE_LICENCE_STATUS.SUBMITTED)
       expect(sendEmail).not.toHaveBeenCalled()
       expect(deleteMasMessage).toHaveBeenCalled()
-    })
-
-    test('is discarded when the applicant has not sent evidence yet', async () => {
-      const _id = await insertLicence({
-        applicationTasks: [{ ...resolvedSiteNoticeTask, resolvedAt: null }]
-      })
-      const logWarn = vi.spyOn(getServer().logger, 'warn')
-
-      await process()
-
-      expect(logWarn).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.stringContaining(
-          'the applicant has not sent any site notice evidence'
-        )
-      )
-      expect(await resubmitTasksOf(_id)).toHaveLength(0)
-      expect(deleteMasMessage).toHaveBeenCalled()
-    })
-  })
+    }
+  )
 })

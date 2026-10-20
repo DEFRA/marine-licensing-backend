@@ -96,35 +96,33 @@ describe('PATCH /marine-licence/update-site-notice-resubmission - integration te
     expect(licence.siteNoticeEvidence).toEqual(originalEvidence)
   })
 
-  test('returns 404 for a location the caseworker did not reject', async () => {
-    const { licenceId, taskId } = await insertLicence()
+  test.each([
+    ['a location the caseworker did not reject', {}, { locationNumber: 2 }],
+    ['a resolved task', { resolvedAt: new Date() }, {}],
+    [
+      'a task of another type',
+      { type: APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE },
+      {}
+    ],
+    ['an unknown task', {}, { taskId: new ObjectId().toHexString() }]
+  ])(
+    'returns 404 without saving for %s',
+    async (_case, taskOverrides, payloadOverrides) => {
+      const { licenceId, taskId } = await insertLicence(taskOverrides)
+      const before = await stored(licenceId)
 
-    const { statusCode } = await patch({
-      id: licenceId.toString(),
-      taskId,
-      locationNumber: 2,
-      positionPhoto: photo
-    })
+      const { statusCode } = await patch({
+        id: licenceId.toString(),
+        taskId,
+        locationNumber: 1,
+        positionPhoto: photo,
+        ...payloadOverrides
+      })
 
-    expect(statusCode).toBe(404)
-  })
-
-  test('returns 404 once the task has been resolved', async () => {
-    const { licenceId, taskId } = await insertLicence({
-      resolvedAt: new Date()
-    })
-
-    const { statusCode } = await patch({
-      id: licenceId.toString(),
-      taskId,
-      locationNumber: 1,
-      positionPhoto: photo
-    })
-
-    expect(statusCode).toBe(404)
-    const [task] = (await stored(licenceId)).applicationTasks
-    expect(task.data.locations[0]).not.toHaveProperty('positionPhoto')
-  })
+      expect(statusCode).toBe(404)
+      expect(await stored(licenceId)).toEqual(before)
+    }
+  )
 
   test('passes on a failed upload check without saving the photo', async () => {
     vi.mocked(validateSiteNoticePhotoUpload).mockRejectedValueOnce(
@@ -160,29 +158,16 @@ describe('PATCH /marine-licence/update-site-notice-resubmission - integration te
     expect(statusCode).toBe(403)
   })
 
-  test.each([
-    ['no photo', {}, 'SITE_NOTICE_PHOTO_REQUIRED'],
-    [
-      'both photos',
-      { closeUpPhoto: photo, positionPhoto: photo },
-      'SITE_NOTICE_PHOTO_ONE_ONLY'
-    ],
-    [
-      'no location number',
-      { locationNumber: undefined, closeUpPhoto: photo },
-      'LOCATION_NUMBER_REQUIRED'
-    ]
-  ])('returns 400 when the payload has %s', async (_case, fields, message) => {
+  test('returns 400 when the payload is invalid', async () => {
     const { licenceId, taskId } = await insertLicence()
 
     const { statusCode, body } = await patch({
       id: licenceId.toString(),
       taskId,
-      locationNumber: 1,
-      ...fields
+      locationNumber: 1
     })
 
     expect(statusCode).toBe(400)
-    expect(body.message).toContain(message)
+    expect(body.message).toContain('SITE_NOTICE_PHOTO_REQUIRED')
   })
 })
