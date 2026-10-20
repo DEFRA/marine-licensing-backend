@@ -10,10 +10,21 @@ import {
   mockFileUploadSite,
   mockMultipleSite
 } from '../../../../tests/test.fixture.js'
+import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
 
 vi.mock('adm-zip', () => ({
   default: vi.fn(function () {})
 }))
+
+vi.mock(
+  '../../../shared/common/helpers/log-response-schema-mismatch.js',
+  async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+      logResponseSchemaMismatch: vi.fn(actual.logResponseSchemaMismatch)
+    }
+  }
+)
 
 describe('Generate coordinates CSV by id - public integration tests', async () => {
   const getServer = await setupTestServer()
@@ -26,6 +37,10 @@ describe('Generate coordinates CSV by id - public integration tests', async () =
     AdmZip.mockImplementation(function () {
       return { addFile, toBuffer: vi.fn(() => Buffer.from('zip-bytes')) }
     })
+  })
+
+  afterEach(() => {
+    expect(logResponseSchemaMismatch).not.toHaveBeenCalled()
   })
 
   const csvFromLastZip = () => addFile.mock.calls[0][1].toString()

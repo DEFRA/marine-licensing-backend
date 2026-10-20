@@ -2,6 +2,8 @@ import joi from 'joi'
 
 const activityTypeValues = ['construction', 'deposit', 'removal']
 
+export const OTHER_ACTIVITY_MAX_LENGTH = 1000
+
 export const activityTypeFields = {
   activityType: joi
     .string()
@@ -45,11 +47,16 @@ export const activityTypeFields = {
         selectionLabels: joi.array().items(joi.string()).optional(),
         otherActivity: joi.when('selections', {
           is: joi.array().has(joi.string().valid('other')),
-          then: joi.string().trim().max(1000).required().messages({
-            'string.empty': 'ACTIVITIES_OTHER_REASON_REQUIRED',
-            'any.required': 'ACTIVITIES_OTHER_REASON_REQUIRED',
-            'string.max': 'ACTIVITIES_OTHER_REASON_MAX_LENGTH'
-          }),
+          then: joi
+            .string()
+            .trim()
+            .max(OTHER_ACTIVITY_MAX_LENGTH)
+            .required()
+            .messages({
+              'string.empty': 'ACTIVITIES_OTHER_REASON_REQUIRED',
+              'any.required': 'ACTIVITIES_OTHER_REASON_REQUIRED',
+              'string.max': 'ACTIVITIES_OTHER_REASON_MAX_LENGTH'
+            }),
           otherwise: joi.optional()
         })
       })
