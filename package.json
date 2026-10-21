@@ -102,7 +102,7 @@
     "husky": "9.1.7",
     "mongodb-memory-server": "11.3.0",
     "neostandard": "0.13.0",
-    "prettier": "3.9.9",
+    "prettier": "3.9.10",
     "vitest": "4.1.11",
     "vitest-fetch-mock": "0.4.5"
   }
