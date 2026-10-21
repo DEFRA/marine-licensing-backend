@@ -6,15 +6,7 @@ import { addApplicationTask } from './add-application-task.js'
 import { logDiscarded, logNoRecipient } from './mas-logging.js'
 import { sendResubmitSiteNoticeEvidenceEmail } from './send-application-task-email.js'
 
-const discard = (logger, applicationReference, reason) => {
-  logDiscarded(
-    logger,
-    'Discarding resubmit site notice evidence request',
-    applicationReference,
-    reason
-  )
-  return null
-}
+const DISCARD_MESSAGE = 'Discarding resubmit site notice evidence request'
 
 const findUnprocessableReason = (marineLicence, rejectedLocations) => {
   const siteNoticeTask = (marineLicence.applicationTasks ?? []).find(
@@ -64,15 +56,23 @@ export const handleResubmitSiteNoticeEvidenceRequest = async (
     resubmitSiteNoticeEvidenceMessageSchema.validate(rawBody)
 
   if (error) {
-    return discard(logger, rawBody.applicationReference, error.message)
+    logDiscarded(
+      logger,
+      DISCARD_MESSAGE,
+      rawBody.applicationReference,
+      error.message
+    )
+    return null
   }
 
   const { applicationReference, userName, userEmail } = body
+  const frontEndBaseUrl = config.get('frontEndBaseUrl')
 
   const reason = await findReasonToDiscard(db, body)
 
   if (reason) {
-    return discard(logger, applicationReference, reason)
+    logDiscarded(logger, DISCARD_MESSAGE, applicationReference, reason)
+    return null
   }
 
   const result = await addApplicationTask(db, logger, {
@@ -100,7 +100,7 @@ export const handleResubmitSiteNoticeEvidenceRequest = async (
     userName,
     userEmail,
     applicationReference,
-    viewDetailsUrl: `${config.get('frontEndBaseUrl')}/marine-licence/view-details/${result.marineLicence._id}`
+    viewDetailsUrl: `${frontEndBaseUrl}/marine-licence/view-details/${result.marineLicence._id}`
   })
 
   return result

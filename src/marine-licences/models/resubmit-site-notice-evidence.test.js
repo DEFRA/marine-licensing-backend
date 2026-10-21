@@ -77,9 +77,12 @@ describe('updateSiteNoticeResubmissionSchema', () => {
     expect(validate().error).toBeUndefined()
   })
 
+  test('passes with both photos', () => {
+    expect(validate({ positionPhoto: photo }).error).toBeUndefined()
+  })
+
   test.each([
     ['no photo', { closeUpPhoto: undefined }, 'SITE_NOTICE_PHOTO_REQUIRED'],
-    ['both photos', { positionPhoto: photo }, 'SITE_NOTICE_PHOTO_ONE_ONLY'],
     ['no task id', { taskId: undefined }, 'APPLICATION_TASK_ID_REQUIRED'],
     ['a short task id', { taskId: '123' }, 'APPLICATION_TASK_ID_REQUIRED'],
     [

@@ -29,3 +29,7 @@ export const sendWithholdingNotificationEmail =
 
 export const sendResubmitSiteNoticeEvidenceEmail =
   createApplicationTaskEmailSender('notifyResubmitSiteNoticeEvidenceId')
+
+export const sendPublicNoticeEmail = createApplicationTaskEmailSender(
+  'notifyPublicNoticeId'
+)

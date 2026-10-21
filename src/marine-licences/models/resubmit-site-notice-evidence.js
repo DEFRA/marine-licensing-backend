@@ -37,12 +37,11 @@ export const updateSiteNoticeResubmissionSchema = joi
       'number.min': 'LOCATION_NUMBER_INVALID',
       'any.required': 'LOCATION_NUMBER_REQUIRED'
     }),
-    closeUpPhoto: photoSchema,
-    positionPhoto: photoSchema
+    closeUpPhoto: photoSchema.optional(),
+    positionPhoto: photoSchema.optional()
   })
-  .xor('closeUpPhoto', 'positionPhoto')
+  .or('closeUpPhoto', 'positionPhoto')
   .messages({
-    'object.missing': 'SITE_NOTICE_PHOTO_REQUIRED',
-    'object.xor': 'SITE_NOTICE_PHOTO_ONE_ONLY'
+    'object.missing': 'SITE_NOTICE_PHOTO_REQUIRED'
   })
   .append(marineLicenceId)

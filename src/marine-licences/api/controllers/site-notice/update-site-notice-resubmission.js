@@ -27,19 +27,23 @@ export const updateSiteNoticeResubmissionController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const {
-        id,
-        taskId,
-        locationNumber,
-        updatedAt,
-        updatedBy,
-        closeUpPhoto,
-        positionPhoto
-      } = payload
-      const field = closeUpPhoto ? 'closeUpPhoto' : 'positionPhoto'
-      const photo = closeUpPhoto ?? positionPhoto
+      const { id, taskId, locationNumber, updatedAt, updatedBy, ...photos } =
+        payload
+      const locationPath = 'applicationTasks.$[task].data.locations.$[location]'
 
-      await validateSiteNoticePhotoUpload(photo.s3Location, logger)
+      if (photos.closeUpPhoto) {
+        await validateSiteNoticePhotoUpload(
+          photos.closeUpPhoto.s3Location,
+          logger
+        )
+      }
+
+      if (photos.positionPhoto) {
+        await validateSiteNoticePhotoUpload(
+          photos.positionPhoto.s3Location,
+          logger
+        )
+      }
 
       const result = await db.collection(collectionMarineLicences).updateOne(
         {
@@ -55,8 +59,12 @@ export const updateSiteNoticeResubmissionController = {
         },
         {
           $set: {
-            [`applicationTasks.$[task].data.locations.$[location].${field}`]:
-              photo,
+            ...Object.fromEntries(
+              Object.entries(photos).map(([field, photo]) => [
+                `${locationPath}.${field}`,
+                photo
+              ])
+            ),
             updatedAt,
             updatedBy
           }

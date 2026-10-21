@@ -68,27 +68,42 @@ const restoreStatusWhenNoTaskOutstanding = {
   }
 }
 
-const isIncompleteResubmission = (task) =>
-  task?.type === APPLICATION_TASK_TYPE.RESUBMIT_SITE_NOTICE_EVIDENCE &&
-  task.data.locations.some(
-    ({ closeUpPhoto, positionPhoto }) => !closeUpPhoto || !positionPhoto
-  )
+const isNotIncompleteResubmission = {
+  $or: [
+    { type: { $ne: APPLICATION_TASK_TYPE.RESUBMIT_SITE_NOTICE_EVIDENCE } },
+    {
+      'data.locations': {
+        $not: {
+          $elemMatch: { $or: [{ closeUpPhoto: null }, { positionPhoto: null }] }
+        }
+      }
+    }
+  ]
+}
 
-// Photos are only ever added or replaced, never removed, so a resubmission found
-// complete here is still complete when the update below runs.
-const assertTaskCanBeResolved = async (db, _id, taskId) => {
-  const marineLicence = await db
+// The filter only refuses an outstanding task when it is a resubmission still missing
+// a photo, so a task found outstanding after a miss is one of those.
+const explainMissedResolve = async (request, _id, taskId) => {
+  const marineLicence = await request.db
     .collection(collectionMarineLicences)
     .findOne(
       { _id, 'applicationTasks.taskId': taskId },
       { projection: { applicationTasks: { $elemMatch: { taskId } } } }
     )
+  const task = marineLicence?.applicationTasks?.[0]
 
-  if (isIncompleteResubmission(marineLicence?.applicationTasks?.[0])) {
+  if (task && !task.resolvedAt) {
     throw Boom.conflict(
       `Application task ${taskId} still has site notice photos to add`
     )
   }
+
+  // Already resolved, or no such task: a double submit must not break the
+  // applicant's journey back to the View details page.
+  request.logger.info(
+    { event: { action: 'resolve-application-task', outcome: 'success' } },
+    `Application task ${taskId} on marine licence ${_id} was already resolved or does not exist`
+  )
 }
 
 const buildResolvePipeline = (taskId, resolvedAt, resolvedBy) => [
@@ -113,25 +128,24 @@ export const resolveApplicationTaskController = {
       const resolvedAt = new Date()
       const resolvedBy = getContactId(auth)
 
-      await assertTaskCanBeResolved(db, _id, taskId)
-
       const result = await db
         .collection(collectionMarineLicences)
         .findOneAndUpdate(
           {
             _id,
-            applicationTasks: { $elemMatch: { taskId, resolvedAt: null } }
+            applicationTasks: {
+              $elemMatch: {
+                taskId,
+                resolvedAt: null,
+                ...isNotIncompleteResubmission
+              }
+            }
           },
           buildResolvePipeline(taskId, resolvedAt, resolvedBy)
         )
 
-      // Already resolved, or no such task: a double submit must not break the
-      // applicant's journey back to the View details page.
       if (!result) {
-        request.logger.info(
-          { event: { action: 'resolve-application-task', outcome: 'success' } },
-          `Application task ${taskId} on marine licence ${id} was already resolved or does not exist`
-        )
+        await explainMissedResolve(request, _id, taskId)
       }
 
       return h

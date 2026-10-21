@@ -96,6 +96,28 @@ describe('PATCH /marine-licence/update-site-notice-resubmission - integration te
     expect(licence.siteNoticeEvidence).toEqual(originalEvidence)
   })
 
+  test('stores both photos when sent together', async () => {
+    const { licenceId, taskId } = await insertLicence()
+
+    const { statusCode } = await patch({
+      id: licenceId.toString(),
+      taskId,
+      locationNumber: 1,
+      closeUpPhoto: photo,
+      positionPhoto: photo
+    })
+
+    expect(statusCode).toBe(200)
+    expect(validateSiteNoticePhotoUpload).toHaveBeenCalledTimes(2)
+    const [task] = (await stored(licenceId)).applicationTasks
+    expect(task.data.locations[0]).toEqual({
+      locationNumber: 1,
+      reason: 'Blurred',
+      closeUpPhoto: photo,
+      positionPhoto: photo
+    })
+  })
+
   test.each([
     ['a location the caseworker did not reject', {}, { locationNumber: 2 }],
     ['a resolved task', { resolvedAt: new Date() }, {}],
