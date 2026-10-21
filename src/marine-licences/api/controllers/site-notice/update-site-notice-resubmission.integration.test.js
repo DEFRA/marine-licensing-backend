@@ -72,17 +72,19 @@ describe('PATCH /marine-licence/update-site-notice-resubmission - integration te
       payload
     })
 
-  test('stores the photo against the location on the task, leaving the original evidence alone', async () => {
+  test('stores the photos against the location on the task, leaving the original evidence alone', async () => {
     const { licenceId, taskId } = await insertLicence()
 
     const { statusCode } = await patch({
       id: licenceId.toString(),
       taskId,
       locationNumber: 3,
-      closeUpPhoto: photo
+      closeUpPhoto: photo,
+      positionPhoto: photo
     })
 
     expect(statusCode).toBe(200)
+    expect(validateSiteNoticePhotoUpload).toHaveBeenCalledTimes(2)
     expect(validateSiteNoticePhotoUpload).toHaveBeenCalledWith(
       photo.s3Location,
       expect.any(Object)
@@ -91,31 +93,14 @@ describe('PATCH /marine-licence/update-site-notice-resubmission - integration te
     const licence = await stored(licenceId)
     expect(licence.applicationTasks[0].data.locations).toEqual([
       { locationNumber: 1, reason: 'Blurred' },
-      { locationNumber: 3, reason: 'Too dark', closeUpPhoto: photo }
+      {
+        locationNumber: 3,
+        reason: 'Too dark',
+        closeUpPhoto: photo,
+        positionPhoto: photo
+      }
     ])
     expect(licence.siteNoticeEvidence).toEqual(originalEvidence)
-  })
-
-  test('stores both photos when sent together', async () => {
-    const { licenceId, taskId } = await insertLicence()
-
-    const { statusCode } = await patch({
-      id: licenceId.toString(),
-      taskId,
-      locationNumber: 1,
-      closeUpPhoto: photo,
-      positionPhoto: photo
-    })
-
-    expect(statusCode).toBe(200)
-    expect(validateSiteNoticePhotoUpload).toHaveBeenCalledTimes(2)
-    const [task] = (await stored(licenceId)).applicationTasks
-    expect(task.data.locations[0]).toEqual({
-      locationNumber: 1,
-      reason: 'Blurred',
-      closeUpPhoto: photo,
-      positionPhoto: photo
-    })
   })
 
   test.each([

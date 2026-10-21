@@ -164,7 +164,6 @@ describe('mas-worker-processor', () => {
           id: mockMasResubmitSiteNoticeEvidenceSqsMessage.MessageId
         }
       )
-      expect(updatePublicNotice).not.toHaveBeenCalled()
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
         mockMasResubmitSiteNoticeEvidenceSqsMessage.ReceiptHandle

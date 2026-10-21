@@ -73,12 +73,11 @@ describe('updateSiteNoticeResubmissionSchema', () => {
       ...overrides
     })
 
-  test('passes with one photo', () => {
-    expect(validate().error).toBeUndefined()
-  })
-
-  test('passes with both photos', () => {
-    expect(validate({ positionPhoto: photo }).error).toBeUndefined()
+  test.each([
+    ['one photo', {}],
+    ['both photos', { positionPhoto: photo }]
+  ])('passes with %s', (_case, overrides) => {
+    expect(validate(overrides).error).toBeUndefined()
   })
 
   test.each([
