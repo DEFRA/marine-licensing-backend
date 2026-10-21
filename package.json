@@ -103,7 +103,7 @@
     "mongodb-memory-server": "11.3.0",
     "neostandard": "0.13.0",
     "prettier": "3.9.10",
-    "vitest": "4.1.11",
+    "vitest": "5.0.4",
     "vitest-fetch-mock": "0.4.5"
   }
 }
