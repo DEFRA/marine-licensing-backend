@@ -1,6 +1,6 @@
 import joi from 'joi'
 import { MAS_TASK_TYPE } from '../constants/marine-licence.js'
-import { marineLicenceId } from './shared-models.js'
+import { applicationTaskId, marineLicenceId } from './shared-models.js'
 import { photoSchema } from './site-notice-evidence.js'
 
 export const resubmitSiteNoticeEvidenceMessageSchema = joi
@@ -30,12 +30,7 @@ export const resubmitSiteNoticeEvidenceMessageSchema = joi
 
 export const updateSiteNoticeResubmissionSchema = joi
   .object({
-    taskId: joi.string().length(24).hex().required().messages({
-      'string.empty': 'APPLICATION_TASK_ID_REQUIRED',
-      'string.length': 'APPLICATION_TASK_ID_REQUIRED',
-      'string.hex': 'APPLICATION_TASK_ID_INVALID',
-      'any.required': 'APPLICATION_TASK_ID_REQUIRED'
-    }),
+    ...applicationTaskId,
     locationNumber: joi.number().integer().min(1).required().messages({
       'number.base': 'LOCATION_NUMBER_REQUIRED',
       'number.integer': 'LOCATION_NUMBER_INVALID',

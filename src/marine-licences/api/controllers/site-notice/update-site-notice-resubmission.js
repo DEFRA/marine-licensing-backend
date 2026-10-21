@@ -27,9 +27,17 @@ export const updateSiteNoticeResubmissionController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const { id, taskId, locationNumber, updatedAt, updatedBy, ...photos } =
-        payload
-      const [[field, photo]] = Object.entries(photos)
+      const {
+        id,
+        taskId,
+        locationNumber,
+        updatedAt,
+        updatedBy,
+        closeUpPhoto,
+        positionPhoto
+      } = payload
+      const field = closeUpPhoto ? 'closeUpPhoto' : 'positionPhoto'
+      const photo = closeUpPhoto ?? positionPhoto
 
       await validateSiteNoticePhotoUpload(photo.s3Location, logger)
 

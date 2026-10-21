@@ -124,7 +124,7 @@ describe('PATCH /marine-licence/update-site-notice-resubmission - integration te
     }
   )
 
-  test('passes on a failed upload check without saving the photo', async () => {
+  test('returns the upload check error without saving the photo', async () => {
     vi.mocked(validateSiteNoticePhotoUpload).mockRejectedValueOnce(
       Boom.unsupportedMediaType('File must be a JPG or PNG image')
     )
@@ -142,7 +142,7 @@ describe('PATCH /marine-licence/update-site-notice-resubmission - integration te
     expect(task.data.locations[0]).not.toHaveProperty('closeUpPhoto')
   })
 
-  test('returns 403 when updating another users marine licence', async () => {
+  test(`returns 403 when updating another user's marine licence`, async () => {
     const { licenceId, taskId } = await insertLicence()
 
     const { statusCode } = await patch(
