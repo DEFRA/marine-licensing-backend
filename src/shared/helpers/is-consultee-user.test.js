@@ -14,14 +14,24 @@ describe('getConsulteeOrganisationIdFromAuthToken', () => {
     }
   })
 
-  it.each(['3', '2'])(
-    'should return the organisation ID when the current relationship has a Consultee role with status %s',
+  it('should return the organisation ID when the current relationship has an approved Consultee role', () => {
+    expect(
+      getConsulteeOrganisationIdFromAuthToken(
+        createAuth(['other-rel:Reader:3', 'rel-id:Consultee:3'])
+      )
+    ).toBe('org-123')
+  })
+
+  it.each(['1', '2', '4', '5', '6', '7'])(
+    'should throw forbidden for a Consultee role with status %s',
     (status) => {
-      expect(
+      expect(() =>
         getConsulteeOrganisationIdFromAuthToken(
-          createAuth(['other-rel:Reader:3', `rel-id:Consultee:${status}`])
+          createAuth([`rel-id:Consultee:${status}`])
         )
-      ).toBe('org-123')
+      ).toThrow(
+        'Not authorised to view consultations: user does not have an approved Consultee role for this organisation'
+      )
     }
   )
 
@@ -43,7 +53,7 @@ describe('getConsulteeOrganisationIdFromAuthToken', () => {
     ['no relationships', { artifacts: { decoded: {} } }]
   ])('should throw forbidden for %s', (_, auth) => {
     expect(() => getConsulteeOrganisationIdFromAuthToken(auth)).toThrow(
-      'Not authorised to view consultations: user does not have the Consultee role for this organisation'
+      'Not authorised to view consultations: user does not have an approved Consultee role for this organisation'
     )
   })
 })
