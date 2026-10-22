@@ -40,36 +40,31 @@ const collectApplicationReferences = (projects) => [
   )
 ]
 
+const deleteFromCollections = async (db, collectionNames, filter) => {
+  const results = await Promise.all(
+    collectionNames.map(async (collectionName) => {
+      const { deletedCount } = await db
+        .collection(collectionName)
+        .deleteMany(filter)
+      return [collectionName, deletedCount]
+    })
+  )
+
+  return Object.fromEntries(results)
+}
+
 const deleteQueueItemsForReferences = async (db, applicationReferences) => {
   if (applicationReferences.length === 0) {
     return Object.fromEntries(QUEUE_COLLECTIONS.map((name) => [name, 0]))
   }
 
-  const filter = {
+  return deleteFromCollections(db, QUEUE_COLLECTIONS, {
     applicationReferenceNumber: { $in: applicationReferences }
-  }
-  const deleted = {}
-
-  for (const collectionName of QUEUE_COLLECTIONS) {
-    const { deletedCount } = await db
-      .collection(collectionName)
-      .deleteMany(filter)
-    deleted[collectionName] = deletedCount
-  }
-
-  return deleted
+  })
 }
 
-const deleteAllTestData = async (db) => {
-  const deleted = emptyCounts()
-
-  for (const collectionName of [...PROJECT_COLLECTIONS, ...QUEUE_COLLECTIONS]) {
-    const { deletedCount } = await db.collection(collectionName).deleteMany({})
-    deleted[collectionName] = deletedCount
-  }
-
-  return deleted
-}
+const deleteAllTestData = (db) =>
+  deleteFromCollections(db, [...PROJECT_COLLECTIONS, ...QUEUE_COLLECTIONS], {})
 
 const summariseContactIds = async (db) => {
   const [exemptions, marineLicences] = await Promise.all([
@@ -151,12 +146,10 @@ const deleteContactTestData = async (db, contactId) => {
     await deleteQueueItemsForReferences(db, applicationReferences)
   )
 
-  for (const collectionName of PROJECT_COLLECTIONS) {
-    const { deletedCount } = await db
-      .collection(collectionName)
-      .deleteMany(contactFilter)
-    deleted[collectionName] = deletedCount
-  }
+  Object.assign(
+    deleted,
+    await deleteFromCollections(db, PROJECT_COLLECTIONS, contactFilter)
+  )
 
   return deleted
 }
