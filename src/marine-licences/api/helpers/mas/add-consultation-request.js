@@ -1,6 +1,19 @@
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { structureErrorForECS } from '../../../../shared/common/helpers/logging/logger.js'
-import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
+import {
+  MAS_CONSULTATION_APPLICATION_TYPES,
+  MAS_CONSULTATION_STATUS,
+  MAS_EVENT_ACTION
+} from '../../../constants/marine-licence.js'
+
+const withConsultationStatus = (consultee) => ({
+  ...consultee,
+  consultationStatus:
+    consultee.consultationType ===
+    MAS_CONSULTATION_APPLICATION_TYPES.APPLICATION_NOTIFICATION
+      ? MAS_CONSULTATION_STATUS.NO_RESPONSE_NEEDED
+      : MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+})
 
 export const addConsultationRequest = async (db, logger, { body, id }) => {
   const { applicationReference, consultationStartDate, consultees } = body
@@ -18,7 +31,7 @@ export const addConsultationRequest = async (db, logger, { body, id }) => {
         $addToSet: {
           consultationRequests: {
             consultationStartDate,
-            consultees
+            consultees: consultees?.map(withConsultationStatus)
           }
         },
         $set: {

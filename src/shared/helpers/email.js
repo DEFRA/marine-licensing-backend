@@ -74,6 +74,7 @@ export const sendEmail = async ({
   projectType
 }) => {
   const logger = createLogger()
+
   const { apiKey, retryIntervalSeconds, retries } = config.get('notify')
   if (!apiKey) {
     throw new Error('Notify API key is not set')
