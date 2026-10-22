@@ -4,6 +4,7 @@ export const makeGetRequest = async ({
   contactId,
   isInternalUser,
   relationships,
+  roles,
   currentRelationshipId
 }) => {
   const response = await server.inject({
@@ -14,6 +15,7 @@ export const makeGetRequest = async ({
         decoded: {
           tid: isInternalUser ? 'abc' : undefined,
           relationships,
+          roles,
           currentRelationshipId
         }
       }

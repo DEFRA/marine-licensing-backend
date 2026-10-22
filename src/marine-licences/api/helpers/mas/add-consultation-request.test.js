@@ -49,7 +49,12 @@ describe('addConsultationRequest', async () => {
           consultationRequests: {
             consultationStartDate:
               mockMasConsultationRequestMessageBody.consultationStartDate,
-            consultees: mockMasConsultationRequestMessageBody.consultees
+            consultees: [
+              {
+                ...mockMasConsultationRequestMessageBody.consultees[0],
+                consultationStatus: 'NO_RESPONSE_NEEDED'
+              }
+            ]
           }
         },
         $set: {
@@ -59,6 +64,24 @@ describe('addConsultationRequest', async () => {
       },
       { returnDocument: 'after' }
     )
+  })
+
+  it('should set RESPONSE_NEEDED for any consultation type other than APPLICATION_NOTIFICATION', async () => {
+    const server = buildServer()
+    const consultee = {
+      organisationId: 'org-1',
+      consultationType: 'REQUEST_FOR_ADVICE'
+    }
+
+    await addConsultationRequest(server.db, server.logger, {
+      body: { ...body, consultees: [consultee] },
+      id: mockMasConsultationRequestSqsMessage.MessageId
+    })
+
+    expect(
+      mockFindOneAndUpdate.mock.calls[0][1].$addToSet.consultationRequests
+        .consultees
+    ).toEqual([{ ...consultee, consultationStatus: 'RESPONSE_NEEDED' }])
   })
 
   it('should correctly log when no results are found', async () => {
