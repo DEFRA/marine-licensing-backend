@@ -215,6 +215,72 @@ describe('MarineLicenceService', () => {
       expect(getContactNameById).not.toHaveBeenCalled()
       expect(global.mockMongo.collection).toHaveBeenCalled()
     })
+
+    describe('organisation colleagues', () => {
+      const organisationId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
+      const colleagueId = 'b1a2c3d4-0000-4000-8000-000000000001'
+      const orgLicence = {
+        ...marineLicence,
+        organisation: { id: organisationId, name: 'Dredging Co' }
+      }
+      const employeeOf = (id) => ({
+        organisationId: id,
+        organisationName: 'Dredging Co',
+        userRelationshipType: 'Employee'
+      })
+
+      it('should return the marine licence to an employee of the same organisation', async () => {
+        const marineLicenceService = createService(global.mockMongo, orgLicence)
+
+        const result = await marineLicenceService.getMarineLicenceById({
+          id: marineLicence._id,
+          currentUserId: colleagueId,
+          currentOrganisation: employeeOf(organisationId)
+        })
+
+        expect(result).toEqual(orgLicence)
+      })
+
+      it.each([
+        [
+          'an employee of a different organisation',
+          orgLicence,
+          employeeOf('another-org-id')
+        ],
+        [
+          'a citizen with no organisation',
+          orgLicence,
+          {
+            organisationId: null,
+            organisationName: null,
+            userRelationshipType: 'Citizen'
+          }
+        ],
+        [
+          'an employee when the licence has no organisation',
+          marineLicence,
+          employeeOf(organisationId)
+        ],
+        [
+          'an employee with no organisation id when the licence has a null organisation id',
+          { ...marineLicence, organisation: { id: null } },
+          employeeOf(null)
+        ]
+      ])(
+        'should throw a not authorised error for %s',
+        async (_, licence, currentOrganisation) => {
+          const marineLicenceService = createService(global.mockMongo, licence)
+
+          await expect(() =>
+            marineLicenceService.getMarineLicenceById({
+              id: marineLicence._id,
+              currentUserId: colleagueId,
+              currentOrganisation
+            })
+          ).rejects.toThrow('Not authorised to request this resource')
+        }
+      )
+    })
   })
 
   describe('getPublicMarineLicenceById', () => {
