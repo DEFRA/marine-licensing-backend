@@ -46,6 +46,8 @@ describe('resolveApplicationTaskController', () => {
 
     await expect(
       resolveApplicationTaskController.handler(request, global.mockHandler)
-    ).rejects.toThrow('Error when attempting to resolve application task')
+    ).rejects.toThrow(
+      'Error when attempting to resolve application task: mongo is down'
+    )
   })
 })

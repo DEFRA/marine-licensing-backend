@@ -8,6 +8,8 @@ import {
   mockMasMissingApplicationReferenceSqsMessage,
   mockMasPublicNoticeSqsMessage,
   mockMasRejectedSqsMessage,
+  mockMasResubmitSiteNoticeEvidenceMessageBody,
+  mockMasResubmitSiteNoticeEvidenceSqsMessage,
   mockMasSqsMessage,
   mockMasWithholdingMessageBody,
   mockMasWithholdingSqsMessage
@@ -16,6 +18,7 @@ import { updateTransferredMarineLicence } from './update-transferred-licence.js'
 import { updateRejectedMarineLicence } from './update-rejected-licence.js'
 import { updatePublicNotice } from './update-public-notice.js'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
+import { handleResubmitSiteNoticeEvidenceRequest } from './handle-resubmit-site-notice-evidence-request.js'
 
 import { MAS_EVENT_ACTION } from '../../../constants/marine-licence.js'
 import { addConsultationRequest } from './add-consultation-request.js'
@@ -29,6 +32,7 @@ vi.mock('./update-public-notice.js')
 vi.mock('./update-rejected-licence.js')
 vi.mock('./update-transferred-licence.js')
 vi.mock('./handle-withholding-notification.js')
+vi.mock('./handle-resubmit-site-notice-evidence-request.js')
 
 const sqsQueueName = 'marine_licensing_mas'
 const sqsDlqName = 'marine_licensing_mas-deadletter'
@@ -141,6 +145,28 @@ describe('mas-worker-processor', () => {
       expect(deleteMasMessage).toHaveBeenCalledWith(
         sqsQueueName,
         mockMasWithholdingSqsMessage.ReceiptHandle
+      )
+    })
+
+    it('should call handleResubmitSiteNoticeEvidenceRequest for a PUBLIC_NOTICE_EVIDENCE task', async () => {
+      const server = buildServer()
+
+      await processMasMessage(
+        server,
+        mockMasResubmitSiteNoticeEvidenceSqsMessage
+      )
+
+      expect(handleResubmitSiteNoticeEvidenceRequest).toHaveBeenCalledWith(
+        server.db,
+        server.logger,
+        {
+          body: mockMasResubmitSiteNoticeEvidenceMessageBody,
+          id: mockMasResubmitSiteNoticeEvidenceSqsMessage.MessageId
+        }
+      )
+      expect(deleteMasMessage).toHaveBeenCalledWith(
+        sqsQueueName,
+        mockMasResubmitSiteNoticeEvidenceSqsMessage.ReceiptHandle
       )
     })
 

@@ -8,3 +8,12 @@ export const marineLicenceId = {
     'any.required': 'MARINE_LICENCE_ID_REQUIRED'
   })
 }
+
+export const applicationTaskId = {
+  taskId: joi.string().length(24).hex().required().messages({
+    'string.empty': 'APPLICATION_TASK_ID_REQUIRED',
+    'string.length': 'APPLICATION_TASK_ID_REQUIRED',
+    'string.hex': 'APPLICATION_TASK_ID_INVALID',
+    'any.required': 'APPLICATION_TASK_ID_REQUIRED'
+  })
+}

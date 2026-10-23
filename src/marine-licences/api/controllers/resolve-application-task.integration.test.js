@@ -140,6 +140,66 @@ describe('Resolve application task - integration tests', async () => {
     )
   })
 
+  describe('a resubmit site notice evidence task', () => {
+    const photo = (filename) => ({
+      uploadedFile: { filename },
+      s3Location: { s3Bucket: 'mmo-uploads', s3Key: filename }
+    })
+
+    const buildResubmitTask = (taskId, locations) => ({
+      ...buildTask(
+        taskId,
+        null,
+        APPLICATION_TASK_TYPE.RESUBMIT_SITE_NOTICE_EVIDENCE
+      ),
+      data: { locations }
+    })
+
+    const completeLocation = (locationNumber) => ({
+      locationNumber,
+      reason: 'Blurred',
+      closeUpPhoto: photo(`close-up-${locationNumber}.jpg`),
+      positionPhoto: photo(`position-${locationNumber}.jpg`)
+    })
+
+    test('is refused while a location is missing a photo', async () => {
+      const taskId = new ObjectId().toHexString()
+      const { closeUpPhoto, ...missingCloseUp } = completeLocation(3)
+      const id = await insertLicence([
+        buildResubmitTask(taskId, [completeLocation(1), missingCloseUp])
+      ])
+
+      const { statusCode } = await resolve(
+        id,
+        taskId,
+        mockMarineLicence.contactId
+      )
+
+      expect(statusCode).toBe(409)
+      const stored = await storedLicence(id)
+      expect(stored.applicationTasks[0].resolvedAt).toBeNull()
+      expect(stored.status).toBe(MARINE_LICENCE_STATUS.ACTION_REQUIRED)
+    })
+
+    test('is resolved once every location has both photos', async () => {
+      const taskId = new ObjectId().toHexString()
+      const id = await insertLicence([
+        buildResubmitTask(taskId, [completeLocation(1), completeLocation(3)])
+      ])
+
+      const { statusCode } = await resolve(
+        id,
+        taskId,
+        mockMarineLicence.contactId
+      )
+
+      expect(statusCode).toBe(200)
+      expect((await storedLicence(id)).applicationTasks[0].resolvedAt).toEqual(
+        expect.any(Date)
+      )
+    })
+  })
+
   test('rejects a user who did not submit the application', async () => {
     const taskId = new ObjectId().toHexString()
     const id = await insertLicence([buildTask(taskId)])

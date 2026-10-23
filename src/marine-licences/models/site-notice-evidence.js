@@ -37,7 +37,7 @@ const dateDisplayedSchema = joi
     'date.max': 'DATE_DISPLAYED_DATE_TODAY_OR_PAST'
   })
 
-const photoSchema = joi.object({
+export const photoSchema = joi.object({
   uploadedFile: uploadedFileFieldSchema,
   s3Location: s3LocationFieldSchema
 })

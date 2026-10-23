@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { handleWithholdingNotification } from './handle-withholding-notification.js'
 import { addApplicationTask } from './add-application-task.js'
-import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
+import { sendWithholdingNotificationEmail } from './send-application-task-email.js'
 import {
   APPLICATION_TASK_TYPE,
   MAS_EVENT_ACTION,
@@ -19,7 +19,7 @@ import {
 vi.mock('./add-application-task.js', () => ({
   addApplicationTask: vi.fn()
 }))
-vi.mock('./send-withholding-notification-email.js', () => ({
+vi.mock('./send-application-task-email.js', () => ({
   sendWithholdingNotificationEmail: vi.fn()
 }))
 
