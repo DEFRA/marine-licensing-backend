@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  isOrganisationColleague,
+  isConsulteeOrganisation,
   isOrganisationEmployee
 } from './organisations.js'
 
@@ -34,38 +34,49 @@ describe('isOrganisationEmployee', () => {
   })
 })
 
-describe('isOrganisationColleague', () => {
+describe('isConsulteeOrganisation', () => {
   const organisationId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
-  const employee = { organisationId, userRelationshipType: 'Employee' }
-  const project = { organisation: { id: organisationId } }
+  const consultee = { organisationId, userRelationshipType: 'Citizen' }
+  const consulteesOf = (...ids) => ({
+    consultees: ids.map((id) => ({ organisationId: id }))
+  })
+  const project = {
+    organisation: { id: 'applicant-org-id' },
+    consultationRequests: [
+      consulteesOf('other-org-id'),
+      consulteesOf('other-org-id', organisationId)
+    ]
+  }
 
-  it.each(['Employee', 'Agent', 'Citizen'])(
-    'should return true for any member of the project organisation (%s)',
-    (userRelationshipType) => {
-      expect(
-        isOrganisationColleague(
-          { organisationId, userRelationshipType },
-          project
-        )
-      ).toBe(true)
-    }
-  )
+  it('should return true when the organisation is a consultee on any consultation request', () => {
+    expect(isConsulteeOrganisation(consultee, project)).toBe(true)
+  })
 
   it.each([
     [
-      'a member of a different organisation',
-      { ...employee, organisationId: 'another-org-id' },
+      'an organisation not among the consultees',
+      { ...consultee, organisationId: 'another-org-id' },
+      project
+    ],
+    [
+      'a member of the applicant organisation',
+      { ...consultee, organisationId: 'applicant-org-id' },
       project
     ],
     ['no current organisation', undefined, project],
-    ['a project with no organisation', employee, {}],
-    ['no project', employee, undefined],
+    ['a project with no consultation requests', consultee, {}],
+    [
+      'a consultation request with no consultees',
+      consultee,
+      { consultationRequests: [{}] }
+    ],
+    ['no project', consultee, undefined],
     [
       'null organisation ids on both sides',
-      { ...employee, organisationId: null },
-      { organisation: { id: null } }
+      { ...consultee, organisationId: null },
+      { consultationRequests: [consulteesOf(null)] }
     ]
   ])('should return false for %s', (_, currentOrganisation, proj) => {
-    expect(isOrganisationColleague(currentOrganisation, proj)).toBe(false)
+    expect(isConsulteeOrganisation(currentOrganisation, proj)).toBe(false)
   })
 })

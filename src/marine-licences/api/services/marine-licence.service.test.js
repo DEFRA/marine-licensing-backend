@@ -216,65 +216,54 @@ describe('MarineLicenceService', () => {
       expect(global.mockMongo.collection).toHaveBeenCalled()
     })
 
-    describe('organisation colleagues', () => {
+    describe('consultee organisations', () => {
       const organisationId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
-      const colleagueId = 'b1a2c3d4-0000-4000-8000-000000000001'
-      const orgLicence = {
+      const consulteeUserId = 'b1a2c3d4-0000-4000-8000-000000000001'
+      const consultedLicence = {
         ...marineLicence,
-        organisation: { id: organisationId, name: 'Dredging Co' }
+        organisation: { id: 'applicant-org-id', name: 'Dredging Co' },
+        consultationRequests: [{ consultees: [{ organisationId }] }]
       }
-      const employeeOf = (id) => ({
+      const memberOf = (id) => ({
         organisationId: id,
-        organisationName: 'Dredging Co',
-        userRelationshipType: 'Employee'
+        organisationName: 'Consultee Org',
+        userRelationshipType: 'Citizen'
       })
 
-      it('should return the marine licence to an employee of the same organisation', async () => {
-        const marineLicenceService = createService(global.mockMongo, orgLicence)
+      it('should return the marine licence to a member of a consultee organisation', async () => {
+        const marineLicenceService = createService(
+          global.mockMongo,
+          consultedLicence
+        )
 
         const result = await marineLicenceService.getMarineLicenceById({
           id: marineLicence._id,
-          currentUserId: colleagueId,
-          currentOrganisation: employeeOf(organisationId)
+          currentUserId: consulteeUserId,
+          currentOrganisation: memberOf(organisationId)
         })
 
-        expect(result).toEqual(orgLicence)
+        expect(result).toEqual(consultedLicence)
       })
 
       it.each([
+        ['an organisation that is not a consultee', memberOf('another-org-id')],
         [
-          'an employee of a different organisation',
-          orgLicence,
-          employeeOf('another-org-id')
+          'a colleague in the applicant organisation',
+          memberOf('applicant-org-id')
         ],
-        [
-          'a citizen with no organisation',
-          orgLicence,
-          {
-            organisationId: null,
-            organisationName: null,
-            userRelationshipType: 'Citizen'
-          }
-        ],
-        [
-          'an employee when the licence has no organisation',
-          marineLicence,
-          employeeOf(organisationId)
-        ],
-        [
-          'an employee with no organisation id when the licence has a null organisation id',
-          { ...marineLicence, organisation: { id: null } },
-          employeeOf(null)
-        ]
+        ['a user with no organisation', memberOf(null)]
       ])(
         'should throw a not authorised error for %s',
-        async (_, licence, currentOrganisation) => {
-          const marineLicenceService = createService(global.mockMongo, licence)
+        async (_, currentOrganisation) => {
+          const marineLicenceService = createService(
+            global.mockMongo,
+            consultedLicence
+          )
 
           await expect(() =>
             marineLicenceService.getMarineLicenceById({
               id: marineLicence._id,
-              currentUserId: colleagueId,
+              currentUserId: consulteeUserId,
               currentOrganisation
             })
           ).rejects.toThrow('Not authorised to request this resource')

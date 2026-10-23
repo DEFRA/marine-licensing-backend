@@ -10,7 +10,7 @@ import {
 } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 import { hydrateMarinePlanPolicies } from '../helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
-import { isOrganisationColleague } from '../../../shared/common/helpers/organisations.js'
+import { isConsulteeOrganisation } from '../../../shared/common/helpers/organisations.js'
 
 export class MarineLicenceService {
   constructor({ db, logger }) {
@@ -65,11 +65,11 @@ export class MarineLicenceService {
     const marineLicence = await this.#findMarineLicenceById(id)
     const isOwner = currentUserId === marineLicence.contactId
 
-    // Read-only: other employees can view, but not edit,
+    // Read-only: consultee organisations can view, but not edit
     if (
       currentUserId &&
       !isOwner &&
-      !isOrganisationColleague(currentOrganisation, marineLicence)
+      !isConsulteeOrganisation(currentOrganisation, marineLicence)
     ) {
       this.logger.info(
         { event: { action: 'authorization_check', outcome: 'failure' } },

@@ -238,7 +238,7 @@ describe('GET /marine-licence', () => {
       )
     })
 
-    it('should allow an employee to view a marine licence created by a colleague in the same organisation', async () => {
+    it('should allow a member of a consultee organisation to view a marine licence', async () => {
       const { mockHandler } = global
       const organisationId = 'org-1'
 
@@ -246,7 +246,8 @@ describe('GET /marine-licence', () => {
         _id: mockId,
         projectName: 'Test project',
         contactId: 'colleague-id',
-        organisation: { id: organisationId, name: 'Dredging Co' }
+        organisation: { id: 'org-2', name: 'Dredging Co' },
+        consultationRequests: [{ consultees: [{ organisationId }] }]
       })
 
       await authenticatedController.handler(
@@ -269,14 +270,15 @@ describe('GET /marine-licence', () => {
       )
     })
 
-    it('should error if an employee requests a marine licence from a different organisation', async () => {
+    it('should error if a colleague in the applicant organisation who is not a consultee requests a marine licence', async () => {
       const { mockHandler } = global
 
       mockedFindOne.mockResolvedValue({
         _id: mockId,
         projectName: 'Test project',
         contactId: 'colleague-id',
-        organisation: { id: 'org-2', name: 'Other Co' }
+        organisation: { id: 'org-1', name: 'Dredging Co' },
+        consultationRequests: [{ consultees: [{ organisationId: 'org-3' }] }]
       })
 
       await expect(
