@@ -4,6 +4,7 @@ import { getMarineLicenceController } from './controllers/get-marine-licence.js'
 import { getMarineLicenceByApplicationReferenceController } from './controllers/get-marine-licence-by-application-reference.js'
 import { getConsultationsController } from './controllers/get-consultations.js'
 import { getConsultationController } from './controllers/get-consultation.js'
+import { getConsultationMarineLicenceController } from './controllers/get-consultation-marine-licence.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
 import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
@@ -64,6 +65,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'GET',
     path: '/marine-licence/consultation/{id}',
     ...getConsultationController
+  },
+  {
+    method: 'GET',
+    path: '/marine-licence/consultation/{id}/details',
+    ...getConsultationMarineLicenceController
   },
   {
     method: 'POST',

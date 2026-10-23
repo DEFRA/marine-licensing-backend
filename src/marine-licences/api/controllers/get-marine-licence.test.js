@@ -238,61 +238,6 @@ describe('GET /marine-licence', () => {
       )
     })
 
-    it('should allow a member of a consultee organisation to view a marine licence', async () => {
-      const { mockHandler } = global
-      const organisationId = 'org-1'
-
-      mockedFindOne.mockResolvedValue({
-        _id: mockId,
-        projectName: 'Test project',
-        contactId: 'colleague-id',
-        organisation: { id: 'org-2', name: 'Dredging Co' },
-        consultationRequests: [{ consultees: [{ organisationId }] }]
-      })
-
-      await authenticatedController.handler(
-        requestFromApplicantUser({
-          userContactId: 'abc',
-          organisationId,
-          params: { id: mockId }
-        }),
-        mockHandler
-      )
-
-      expect(mockHandler.response).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'success',
-          value: expect.objectContaining({
-            id: mockId,
-            contactId: 'colleague-id'
-          })
-        })
-      )
-    })
-
-    it('should error if a colleague in the applicant organisation who is not a consultee requests a marine licence', async () => {
-      const { mockHandler } = global
-
-      mockedFindOne.mockResolvedValue({
-        _id: mockId,
-        projectName: 'Test project',
-        contactId: 'colleague-id',
-        organisation: { id: 'org-1', name: 'Dredging Co' },
-        consultationRequests: [{ consultees: [{ organisationId: 'org-3' }] }]
-      })
-
-      await expect(
-        authenticatedController.handler(
-          requestFromApplicantUser({
-            userContactId: 'abc',
-            organisationId: 'org-1',
-            params: { id: mockId }
-          }),
-          mockHandler
-        )
-      ).rejects.toThrow('Not authorised to request this resource')
-    })
-
     describe('Redactions', () => {
       const redactions = mockRedactions
 

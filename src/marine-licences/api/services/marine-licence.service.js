@@ -10,7 +10,6 @@ import {
 } from '../../constants/marine-licence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 import { hydrateMarinePlanPolicies } from '../helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
-import { isConsulteeOrganisation } from '../../../shared/common/helpers/organisations.js'
 
 export class MarineLicenceService {
   constructor({ db, logger }) {
@@ -59,18 +58,10 @@ export class MarineLicenceService {
   async getMarineLicenceById({
     id,
     currentUserId,
-    currentOrganisation,
     includeWhoMarineLicenceIsFor = false
   }) {
     const marineLicence = await this.#findMarineLicenceById(id)
-    const isOwner = currentUserId === marineLicence.contactId
-
-    // Read-only: consultee organisations can view, but not edit
-    if (
-      currentUserId &&
-      !isOwner &&
-      !isConsulteeOrganisation(currentOrganisation, marineLicence)
-    ) {
+    if (currentUserId && currentUserId !== marineLicence.contactId) {
       this.logger.info(
         { event: { action: 'authorization_check', outcome: 'failure' } },
         `Authorization error in getMarineLicenceById: licence ${id}, user ${currentUserId}, owner ${marineLicence.contactId}`
@@ -85,6 +76,16 @@ export class MarineLicenceService {
         await this.#getWhoMarineLicenceIsFor(marineLicence)
     }
     await this.#addResolvedByNames(marineLicence)
+    return marineLicence
+  }
+
+  async getConsultationMarineLicenceById({ id, organisationId }) {
+    const marineLicence = await this.#findMarineLicenceByQuery({
+      _id: ObjectId.createFromHexString(id),
+      'consultationRequests.consultees.organisationId': organisationId
+    })
+    marineLicence.whoMarineLicenceIsFor =
+      await this.#getWhoMarineLicenceIsFor(marineLicence)
     return marineLicence
   }
 

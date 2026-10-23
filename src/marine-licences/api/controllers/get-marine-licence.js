@@ -3,7 +3,6 @@ import { StatusCodes } from 'http-status-codes'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
 import { getAuthUserContext } from '../../../shared/helpers/get-auth-user-context.js'
-import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
 import { buildMarineLicenceResponse } from '../helpers/build-marine-licence-response.js'
 
 export const getMarineLicenceController = ({ requiresAuth }) => ({
@@ -28,9 +27,6 @@ export const getMarineLicenceController = ({ requiresAuth }) => ({
         marineLicence = await marineLicenceService.getMarineLicenceById({
           id,
           currentUserId,
-          currentOrganisation: getOrganisationDetailsFromAuthToken(
-            request.auth
-          ),
           includeWhoMarineLicenceIsFor: true
         })
       } else {

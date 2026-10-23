@@ -101,60 +101,6 @@ describe('Get marine licence - integration tests', async () => {
     expect(body.whoMarineLicenceIsFor).toBe('Dave Barnett')
   })
 
-  describe('requested by a member of another organisation', () => {
-    const organisationId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
-    const currentRelationshipId = '81d48d6c-6e94-f011-b4cc-000d3ac28f39'
-    const otherUserContactId = 'b1a2c3d4-0000-4000-8000-000000000001'
-    const relationshipsFor = (orgId, relationshipType = 'Employee') => [
-      `${currentRelationshipId}:${orgId}:Consultee Org:0:${relationshipType}:0`
-    ]
-
-    const insertConsultedLicence = async () => {
-      const id = new ObjectId()
-      await globalThis.mockMongo.collection('marine-licences').insertOne({
-        ...mockMarineLicence,
-        _id: id,
-        organisation: {
-          id: 'applicant-org-id',
-          name: 'Dredging Co',
-          userRelationshipType: 'Employee'
-        },
-        consultationRequests: [{ consultees: [{ organisationId }] }]
-      })
-      return id
-    }
-
-    test('returns the licence to a member of a consultee organisation', async () => {
-      const id = await insertConsultedLicence()
-
-      const { statusCode, body } = await makeGetRequest({
-        server: getServer(),
-        url: `/marine-licence/${id}`,
-        contactId: otherUserContactId,
-        currentRelationshipId,
-        relationships: relationshipsFor(organisationId, 'Consultee')
-      })
-
-      expect(statusCode).toBe(200)
-      expect(body.id).toBe(id.toString())
-      expect(body.contactId).toBe(mockMarineLicence.contactId)
-    })
-
-    test('returns 403 to a colleague in the applicant organisation', async () => {
-      const id = await insertConsultedLicence()
-
-      const { statusCode } = await makeGetRequest({
-        server: getServer(),
-        url: `/marine-licence/${id}`,
-        contactId: otherUserContactId,
-        currentRelationshipId,
-        relationships: relationshipsFor('applicant-org-id')
-      })
-
-      expect(statusCode).toBe(403)
-    })
-  })
-
   test('requested by a public user', async () => {
     const publicId = new ObjectId()
     const marineLicence = {

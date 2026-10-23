@@ -215,61 +215,6 @@ describe('MarineLicenceService', () => {
       expect(getContactNameById).not.toHaveBeenCalled()
       expect(global.mockMongo.collection).toHaveBeenCalled()
     })
-
-    describe('consultee organisations', () => {
-      const organisationId = '27d48d6c-6e94-f011-b4cc-000d3ac28f39'
-      const consulteeUserId = 'b1a2c3d4-0000-4000-8000-000000000001'
-      const consultedLicence = {
-        ...marineLicence,
-        organisation: { id: 'applicant-org-id', name: 'Dredging Co' },
-        consultationRequests: [{ consultees: [{ organisationId }] }]
-      }
-      const memberOf = (id) => ({
-        organisationId: id,
-        organisationName: 'Consultee Org',
-        userRelationshipType: 'Citizen'
-      })
-
-      it('should return the marine licence to a member of a consultee organisation', async () => {
-        const marineLicenceService = createService(
-          global.mockMongo,
-          consultedLicence
-        )
-
-        const result = await marineLicenceService.getMarineLicenceById({
-          id: marineLicence._id,
-          currentUserId: consulteeUserId,
-          currentOrganisation: memberOf(organisationId)
-        })
-
-        expect(result).toEqual(consultedLicence)
-      })
-
-      it.each([
-        ['an organisation that is not a consultee', memberOf('another-org-id')],
-        [
-          'a colleague in the applicant organisation',
-          memberOf('applicant-org-id')
-        ],
-        ['a user with no organisation', memberOf(null)]
-      ])(
-        'should throw a not authorised error for %s',
-        async (_, currentOrganisation) => {
-          const marineLicenceService = createService(
-            global.mockMongo,
-            consultedLicence
-          )
-
-          await expect(() =>
-            marineLicenceService.getMarineLicenceById({
-              id: marineLicence._id,
-              currentUserId: consulteeUserId,
-              currentOrganisation
-            })
-          ).rejects.toThrow('Not authorised to request this resource')
-        }
-      )
-    })
   })
 
   describe('getPublicMarineLicenceById', () => {
