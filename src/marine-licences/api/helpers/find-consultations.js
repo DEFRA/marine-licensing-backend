@@ -1,3 +1,4 @@
+import Boom from '@hapi/boom'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
 export const findConsultations = async (db, organisationId, filter = {}) => {
@@ -21,9 +22,13 @@ export const findConsultations = async (db, organisationId, filter = {}) => {
   return marineLicences.map(
     ({ _id, projectName, applicationReference, consultationRequests }) => {
       const [{ consultationStartDate, consultees }] = consultationRequests
-      const { consultationType, consultationStatus } = consultees.find(
+      const consultee = consultees.find(
         (consultee) => consultee.organisationId === organisationId
       )
+      if (!consultee) {
+        throw Boom.badRequest('Consultee not found for this organisation')
+      }
+      const { consultationType, consultationStatus } = consultee
 
       return {
         id: _id.toString(),

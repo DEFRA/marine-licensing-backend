@@ -11,13 +11,16 @@ export const getConsultationMarineLicenceController = {
     }
   },
   handler: async (request, h) => {
-    const { db, logger, auth, params } = request
+    const { db, auth, params } = request
     const organisationId = getConsulteeOrganisationIdFromAuthToken(auth)
 
-    const marineLicence = await new MarineLicenceService({
-      db,
-      logger
-    }).getConsultationMarineLicenceById({ id: params.id, organisationId })
+    const marineLicenceService = new MarineLicenceService({ db })
+
+    const marineLicence =
+      await marineLicenceService.getConsultationMarineLicenceById({
+        id: params.id,
+        organisationId
+      })
 
     return h
       .response({
