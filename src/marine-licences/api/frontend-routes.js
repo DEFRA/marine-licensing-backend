@@ -34,6 +34,7 @@ import { redactTextController } from './controllers/redact-text.js'
 import { updateSiteNoticeEvidenceController } from './controllers/site-notice/update-site-notice-evidence.js'
 import { addSiteNoticeEvidenceController } from './controllers/site-notice/add-site-notice-evidence.js'
 import { deleteSiteNoticeEvidenceController } from './controllers/site-notice/delete-site-notice-evidence.js'
+import { updateSiteNoticeResubmissionController } from './controllers/site-notice/update-site-notice-resubmission.js'
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
  */
@@ -222,5 +223,10 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/delete-site-notice-evidence',
     ...deleteSiteNoticeEvidenceController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/update-site-notice-resubmission',
+    ...updateSiteNoticeResubmissionController
   }
 ]

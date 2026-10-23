@@ -6,7 +6,7 @@ import {
 } from '../../../constants/marine-licence.js'
 import { addApplicationTask } from './add-application-task.js'
 import { logDiscarded, logNoRecipient } from './mas-logging.js'
-import { sendWithholdingNotificationEmail } from './send-withholding-notification-email.js'
+import { sendWithholdingNotificationEmail } from './send-application-task-email.js'
 
 const BASES_BY_REQUEST = {
   [WITHHOLDING_REQUEST_RELATES_TO.BOTH]: [

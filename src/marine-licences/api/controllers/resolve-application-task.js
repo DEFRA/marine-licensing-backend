@@ -5,7 +5,10 @@ import { resolveApplicationTask } from '../../models/resolve-application-task.js
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import {
+  APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_STATUS
+} from '../../constants/marine-licence.js'
 
 const markTaskResolved = (taskId, resolvedAt, resolvedBy) => ({
   $set: {
@@ -65,6 +68,44 @@ const restoreStatusWhenNoTaskOutstanding = {
   }
 }
 
+const isNotIncompleteResubmission = {
+  $or: [
+    { type: { $ne: APPLICATION_TASK_TYPE.RESUBMIT_SITE_NOTICE_EVIDENCE } },
+    {
+      'data.locations': {
+        $not: {
+          $elemMatch: { $or: [{ closeUpPhoto: null }, { positionPhoto: null }] }
+        }
+      }
+    }
+  ]
+}
+
+// The filter only refuses an outstanding task when it is a resubmission still missing
+// a photo, so a task found outstanding after a miss is one of those.
+const explainMissedResolve = async (request, _id, taskId) => {
+  const marineLicence = await request.db
+    .collection(collectionMarineLicences)
+    .findOne(
+      { _id, 'applicationTasks.taskId': taskId },
+      { projection: { applicationTasks: { $elemMatch: { taskId } } } }
+    )
+  const task = marineLicence?.applicationTasks?.[0]
+
+  if (task && !task.resolvedAt) {
+    throw Boom.conflict(
+      `Application task ${taskId} still has site notice photos to add`
+    )
+  }
+
+  // Already resolved, or no such task: a double submit must not break the
+  // applicant's journey back to the View details page.
+  request.logger.info(
+    { event: { action: 'resolve-application-task', outcome: 'success' } },
+    `Application task ${taskId} on marine licence ${_id} was already resolved or does not exist`
+  )
+}
+
 const buildResolvePipeline = (taskId, resolvedAt, resolvedBy) => [
   markTaskResolved(taskId, resolvedAt, resolvedBy),
   restoreStatusWhenNoTaskOutstanding,
@@ -83,6 +124,7 @@ export const resolveApplicationTaskController = {
       const { db, params, auth } = request
       const { id, taskId } = params
 
+      const _id = ObjectId.createFromHexString(id)
       const resolvedAt = new Date()
       const resolvedBy = getContactId(auth)
 
@@ -90,19 +132,20 @@ export const resolveApplicationTaskController = {
         .collection(collectionMarineLicences)
         .findOneAndUpdate(
           {
-            _id: ObjectId.createFromHexString(id),
-            applicationTasks: { $elemMatch: { taskId, resolvedAt: null } }
+            _id,
+            applicationTasks: {
+              $elemMatch: {
+                taskId,
+                resolvedAt: null,
+                ...isNotIncompleteResubmission
+              }
+            }
           },
           buildResolvePipeline(taskId, resolvedAt, resolvedBy)
         )
 
-      // Already resolved, or no such task: a double submit must not break the
-      // applicant's journey back to the View details page.
       if (!result) {
-        request.logger.info(
-          { event: { action: 'resolve-application-task', outcome: 'success' } },
-          `Application task ${taskId} on marine licence ${id} was already resolved or does not exist`
-        )
+        await explainMissedResolve(request, _id, taskId)
       }
 
       return h

@@ -2,7 +2,7 @@ import { config } from '../../../../config.js'
 import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
 import { addApplicationTask } from './add-application-task.js'
 import { logNoRecipient } from './mas-logging.js'
-import { sendPublicNoticeEmail } from './send-public-notice-email.js'
+import { sendPublicNoticeEmail } from './send-application-task-email.js'
 
 export const updatePublicNotice = async (db, logger, { body, id }) => {
   const { applicationReference, userName, userEmail } = body
