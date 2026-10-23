@@ -23,7 +23,8 @@ export const findConsultations = async (db, organisationId, filter = {}) => {
     ({ _id, projectName, applicationReference, consultationRequests }) => {
       const [{ consultationStartDate, consultees }] = consultationRequests
       const consultee = consultees.find(
-        (consultee) => consultee.organisationId === organisationId
+        (consulteeInOrganisation) =>
+          consulteeInOrganisation.organisationId === organisationId
       )
       if (!consultee) {
         throw Boom.badRequest('Consultee not found for this organisation')
