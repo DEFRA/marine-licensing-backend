@@ -2,7 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 import { getConsulteeOrganisationIdFromAuthToken } from '../../../shared/helpers/is-consultee-user.js'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { MarineLicenceService } from '../services/marine-licence.service.js'
-import { buildMarineLicenceResponse } from '../helpers/build-marine-licence-response.js'
+import { buildConsultationMarineLicenceResponse } from '../helpers/build-consultation-marine-licence-response.js'
 
 export const getConsultationMarineLicenceController = {
   options: {
@@ -25,7 +25,11 @@ export const getConsultationMarineLicenceController = {
     return h
       .response({
         message: 'success',
-        value: buildMarineLicenceResponse(marineLicence, request)
+        value: buildConsultationMarineLicenceResponse(
+          marineLicence,
+          request,
+          organisationId
+        )
       })
       .code(StatusCodes.OK)
   }
