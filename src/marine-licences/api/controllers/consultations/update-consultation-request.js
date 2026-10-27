@@ -1,10 +1,10 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { getConsulteeOrganisationIdFromAuthToken } from '../../../shared/helpers/is-consultee-user.js'
-import { updateConsultationRequestSchema } from '../../models/consultation-request.js'
-import { MAS_CONSULTATION_STATUS } from '../../constants/marine-licence.js'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
+import { getConsulteeOrganisationIdFromAuthToken } from '../../../../shared/helpers/is-consultee-user.js'
+import { updateConsultationRequestSchema } from '../../../models/consultation-request.js'
+import { MAS_CONSULTATION_STATUS } from '../../../constants/marine-licence.js'
 
 export const updateConsultationRequestController = {
   options: {

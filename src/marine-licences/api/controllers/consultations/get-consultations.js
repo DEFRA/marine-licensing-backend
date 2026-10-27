@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
-import { getConsulteeOrganisationIdFromAuthToken } from '../../../shared/helpers/is-consultee-user.js'
-import { findConsultations } from '../helpers/find-consultations.js'
+import { getConsulteeOrganisationIdFromAuthToken } from '../../../../shared/helpers/is-consultee-user.js'
+import { findConsultations } from '../../helpers/find-consultations.js'
 
 export const getConsultationsController = {
   handler: async (request, h) => {

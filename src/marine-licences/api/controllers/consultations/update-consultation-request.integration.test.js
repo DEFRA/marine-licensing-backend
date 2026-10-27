@@ -1,10 +1,10 @@
-import { setupTestServer } from '../../../../tests/test-server.js'
-import { makePatchRequest } from '../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import { setupTestServer } from '../../../../../tests/test-server.js'
+import { makePatchRequest } from '../../../../../tests/server-requests.js'
+import { createCompleteMarineLicence } from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { randomUUID } from 'node:crypto'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { MAS_CONSULTATION_STATUS } from '../../constants/marine-licence.js'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
+import { MAS_CONSULTATION_STATUS } from '../../../constants/marine-licence.js'
 
 describe('PATCH /marine-licence/update-consultation-request - integration tests', async () => {
   const getServer = await setupTestServer()
