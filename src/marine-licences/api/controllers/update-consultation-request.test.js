@@ -24,7 +24,7 @@ describe('PATCH /marine-licence/update-consultation-request', () => {
     const mockError = 'Database failed'
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
-        updateOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
+        findOne: vi.fn().mockRejectedValueOnce(new Error(mockError))
       }
     })
 

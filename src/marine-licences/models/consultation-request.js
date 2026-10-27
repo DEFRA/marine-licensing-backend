@@ -9,11 +9,9 @@ export const updateConsultationRequestSchema = joi
       .string()
       .trim()
       .required()
-      .min(1)
       .max(CONSULTATION_RESPONSE_MAX_LENGTH)
       .messages({
         'string.empty': 'CONSULTATION_RESPONSE_REQUIRED',
-        'string.min': 'CONSULTATION_RESPONSE_REQUIRED',
         'string.base': 'CONSULTATION_RESPONSE_REQUIRED',
         'string.max': 'CONSULTATION_RESPONSE_MAX_LENGTH',
         'any.required': 'CONSULTATION_RESPONSE_REQUIRED'
