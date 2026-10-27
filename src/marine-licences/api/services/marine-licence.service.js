@@ -79,6 +79,16 @@ export class MarineLicenceService {
     return marineLicence
   }
 
+  async getConsultationMarineLicenceById({ id, organisationId }) {
+    const marineLicence = await this.#findMarineLicenceByQuery({
+      _id: ObjectId.createFromHexString(id),
+      'consultationRequests.consultees.organisationId': organisationId
+    })
+    marineLicence.whoMarineLicenceIsFor =
+      await this.#getWhoMarineLicenceIsFor(marineLicence)
+    return marineLicence
+  }
+
   async getMarineLicenceByApplicationReference(applicationReference) {
     const marineLicence = await this.#findMarineLicenceByQuery({
       applicationReference
