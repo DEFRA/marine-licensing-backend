@@ -55,14 +55,14 @@ export const updateConsultationRequestController = {
         )
       }
 
-      const consultees = `consultationRequests.${consultationRequestIndex}.consultees`
+      const consulteeToUpdate = `consultationRequests.${consultationRequestIndex}.consultees`
 
       await marineLicences.updateOne(
         { _id },
         {
           $set: {
-            [`${consultees}.$[consultee].response`]: response,
-            [`${consultees}.$[consultee].consultationStatus`]:
+            [`${consulteeToUpdate}.$[consultee].response`]: response,
+            [`${consulteeToUpdate}.$[consultee].consultationStatus`]:
               MAS_CONSULTATION_STATUS.RESPONDED,
             updatedAt,
             updatedBy
