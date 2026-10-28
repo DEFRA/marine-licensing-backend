@@ -3,6 +3,7 @@ import { EXEMPTION_STATUS } from '../../../exemptions/constants/exemption.js'
 import { londonToday } from '../../common/helpers/london-today.js'
 import { updateExemptionStatuses } from '../../../exemptions/api/helpers/update-exemption-statuses.js'
 import { formatNumber } from '../../common/helpers/format-number.js'
+import { reconcilePayments } from '../../../marine-licences/api/helpers/reconcile-payments.js'
 
 /**
  * Every scheduled job is declared here.
@@ -60,5 +61,10 @@ export const scheduledJobs = [
     name: 'exemption-status',
     methodName: 'runSchedulerExemptionStatus',
     run: async (server) => updateExemptionStatuses(server, londonToday())
+  },
+  {
+    name: 'payment-reconciliation',
+    methodName: 'runSchedulerPaymentReconciliation',
+    run: async (server) => reconcilePayments(server)
   }
 ]

@@ -67,6 +67,20 @@ export const schedulerSchema = {
         default: '5 0 * * *',
         env: 'SCHEDULER_EXEMPTION_STATUS_SCHEDULE'
       }
+    },
+    'payment-reconciliation': {
+      isEnabled: {
+        doc: 'Enable the GOV.UK Pay reconciliation job. It also does nothing while GOVPAY_ENABLED is false.',
+        format: Boolean,
+        default: true,
+        env: 'SCHEDULER_PAYMENT_RECONCILIATION_ENABLED'
+      },
+      schedule: {
+        doc: 'Cron schedule for the GOV.UK Pay reconciliation job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
+        format: 'cron-expression',
+        default: '*/15 * * * *',
+        env: 'SCHEDULER_PAYMENT_RECONCILIATION_SCHEDULE'
+      }
     }
   }
 }

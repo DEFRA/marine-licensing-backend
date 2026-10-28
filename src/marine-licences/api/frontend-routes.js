@@ -6,6 +6,8 @@ import { getConsultationsController } from './controllers/get-consultations.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
 import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
+import { createMarineLicencePaymentController } from './controllers/create-marine-licence-payment.js'
+import { getMarineLicencePaymentController } from './controllers/get-marine-licence-payment.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
 import { updatePreferredDatesController } from './controllers/update-preferred-dates.js'
@@ -83,6 +85,16 @@ export const marineLicenceFrontendRoutes = [
     method: 'POST',
     path: '/marine-licence/submit',
     ...submitMarineLicenceController
+  },
+  {
+    method: 'POST',
+    path: '/marine-licence/payment',
+    ...createMarineLicencePaymentController
+  },
+  {
+    method: 'GET',
+    path: '/marine-licence/payment/{returnId}',
+    ...getMarineLicencePaymentController
   },
   {
     method: 'POST',
