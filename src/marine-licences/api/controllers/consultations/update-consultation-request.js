@@ -57,8 +57,16 @@ export const updateConsultationRequestController = {
 
       const consulteeToUpdate = `consultationRequests.${consultationRequestIndex}.consultees`
 
-      await marineLicences.updateOne(
-        { _id },
+      const { matchedCount } = await marineLicences.updateOne(
+        {
+          _id,
+          [consulteeToUpdate]: {
+            $elemMatch: {
+              organisationId,
+              consultationStatus: MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+            }
+          }
+        },
         {
           $set: {
             [`${consulteeToUpdate}.$[consultee].response`]: response,
@@ -68,8 +76,22 @@ export const updateConsultationRequestController = {
             updatedBy
           }
         },
-        { arrayFilters: [{ 'consultee.organisationId': organisationId }] }
+        {
+          arrayFilters: [
+            {
+              'consultee.organisationId': organisationId,
+              'consultee.consultationStatus':
+                MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+            }
+          ]
+        }
       )
+
+      if (matchedCount === 0) {
+        throw Boom.conflict(
+          `Consultation in Marine Licence ${id} does not need a response`
+        )
+      }
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {
