@@ -199,10 +199,11 @@ export const addToDynamicsQueue = async ({
   request,
   applicationReference,
   action,
-  type = DYNAMICS_QUEUE_TYPES.EXEMPTION
+  type = DYNAMICS_QUEUE_TYPES.EXEMPTION,
+  ...params
 }) => {
   if (type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
-    await sendDynamicsJob({ applicationReference, action })
+    await sendDynamicsJob({ ...params, applicationReference, action })
     return
   }
 

@@ -5,7 +5,6 @@ import {
   EXEMPTION_STATUS,
   EXEMPTION_TYPE
 } from '../../../../exemptions/constants/exemption.js'
-import { StatusCodes } from 'http-status-codes'
 import {
   DYNAMICS_REQUEST_ACTIONS,
   DYNAMICS_QUEUE_TYPES
@@ -14,13 +13,15 @@ import {
   collectionExemptions,
   collectionMarineLicences
 } from '../../constants/db-collections.js'
-import { createLogger } from '../../helpers/logging/logger.js'
 import { MARINE_LICENCE_STATUS } from '../../../../marine-licences/constants/marine-licence.js'
 import { buildCoordinatesCsvUrlById } from '../../../../marine-licences/constants/coordinates-csv.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../../../marine-licences/constants/water-framework-directive.js'
 import { toUrlSafeApplicationReference } from '../../../../marine-licences/api/helpers/url-transform.js'
-
-const logger = createLogger()
+import {
+  logDynamicsSuccess,
+  validateDynamicsResponse
+} from './dynamics-response.js'
+import { sendConsultationResponseToDynamics } from './requests/send-consultation-response.js'
 
 /**
  * Fetches an exemption from the database by application reference
@@ -99,73 +100,6 @@ const buildDynamicsPayload = (
     marinePlanAreas: exemption.marinePlanAreas ?? [],
     coastalOperationsAreas: exemption.coastalOperationsAreas ?? []
   }
-}
-
-/**
- * Validates the Dynamics API response
- * @param {number} statusCode - HTTP status code
- * @param {string} applicationReferenceNumber - Application reference number
- * @param {string} operation - Operation name for logging
- */
-const validateDynamicsResponse = (
-  statusCode,
-  applicationReferenceNumber,
-  operation
-) => {
-  if (statusCode !== StatusCodes.ACCEPTED) {
-    logger.error(
-      {
-        error: {
-          message: `Dynamics API returned status ${statusCode}`,
-          code: 'DYNAMICS_API_ERROR'
-        },
-        http: {
-          response: {
-            status_code: statusCode
-          }
-        },
-        service: 'dynamics',
-        event: {
-          action: operation,
-          outcome: 'failure',
-          reference: applicationReferenceNumber
-        }
-      },
-      `Dynamics API returned unexpected status ${statusCode} for applicationReference ${applicationReferenceNumber}`
-    )
-    throw Boom.badImplementation(`Dynamics API returned status ${statusCode}`)
-  }
-}
-
-/**
- * Logs successful Dynamics API request
- * @param {number} statusCode - HTTP status code
- * @param {string} applicationReferenceNumber - Application reference number
- * @param {string} operation - Operation name for logging
- * @param {string} message - Log message
- */
-const logDynamicsSuccess = (
-  statusCode,
-  applicationReferenceNumber,
-  operation,
-  message
-) => {
-  logger.info(
-    {
-      http: {
-        response: {
-          status_code: statusCode
-        }
-      },
-      service: 'dynamics',
-      event: {
-        action: operation,
-        outcome: 'success',
-        reference: applicationReferenceNumber
-      }
-    },
-    `${message} for applicationReference ${applicationReferenceNumber}`
-  )
 }
 
 export const sendExemptionToDynamics = async (
@@ -375,6 +309,11 @@ export const sendMarineLicenceToDynamics = async (
 const getHandler = (queueItem) => {
   if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.WITHDRAW) {
     return sendWithdrawToDynamics
+  }
+  if (
+    queueItem.action === DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
+  ) {
+    return sendConsultationResponseToDynamics
   }
   if (queueItem.type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
     return sendMarineLicenceToDynamics

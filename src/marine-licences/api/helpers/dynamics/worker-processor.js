@@ -22,22 +22,37 @@ const markedFailedReason = 'No automatic retry; the licence is marked failed'
 
 const supportedActions = new Set([
   DYNAMICS_REQUEST_ACTIONS.SUBMIT,
-  DYNAMICS_REQUEST_ACTIONS.WITHDRAW
+  DYNAMICS_REQUEST_ACTIONS.WITHDRAW,
+  DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
 ])
+
+const isConsultationResponse = (action) =>
+  action === DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
 
 const parseDynamicsJobBody = (message, logger) =>
   parseMessageBody(message, logger, discardMalformedMessage, (body) => {
-    const { applicationReference, action } = body
+    const { applicationReference, action, organisationId, response } = body
     if (
       !isNonEmptyString(applicationReference) ||
       !supportedActions.has(action)
     ) {
+      throw new Error('applicationReference and a valid action are required')
+    }
+    if (!isConsultationResponse(action)) {
+      return { applicationReference, action }
+    }
+    if (!isNonEmptyString(organisationId) || !isNonEmptyString(response)) {
       throw new Error(
-        'applicationReference and a submit or withdraw action are required'
+        'organisationId and response are required for a consultation response'
       )
     }
-    return { applicationReference, action }
+    return { applicationReference, action, organisationId, response }
   })
+
+// Each consultee responds independently, so consultation responses are
+// tracked per organisation rather than once per licence.
+const outboundKey = ({ action, organisationId }) =>
+  organisationId ? `${action}:${organisationId}` : action
 
 const outboundField = (action) => `dynamicsOutbound.${action}`
 
@@ -79,15 +94,16 @@ const event = (action, outcome, reference, reason) => ({
   event: { action, outcome, reference, ...(reason ? { reason } : {}) }
 })
 
-const sendAndFlag = async (server, { applicationReference, action }) => {
+const sendAndFlag = async (server, job) => {
+  const { applicationReference, ...rest } = job
   const { httpTimeoutMs } = config.get('dynamics').marineLicences
   const accessToken = await getDynamicsAccessToken({ timeoutMs: httpTimeoutMs })
   await sendToDynamics(server, accessToken, {
+    ...rest,
     applicationReferenceNumber: applicationReference,
-    action,
     type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE
   })
-  await markSentToDynamics(server.db, applicationReference, action)
+  await markSentToDynamics(server.db, applicationReference, outboundKey(job))
 }
 
 const handleSendFailure = async (server, message, job, error) => {
@@ -113,7 +129,11 @@ const handleSendFailure = async (server, message, job, error) => {
   )
 
   if (isFinalAttempt) {
-    await markFailedToSendToDynamics(server.db, applicationReference, action)
+    await markFailedToSendToDynamics(
+      server.db,
+      applicationReference,
+      outboundKey(job)
+    )
     server.logger.warn(
       event(
         EVENT_ACTION.MARKED_FAILED,
@@ -144,7 +164,7 @@ const attemptDynamicsJob = async (server, job) => {
   }
 
   const outbound = licence.dynamicsOutbound ?? {}
-  if (outbound[action] === DYNAMICS_OUTBOUND_STATUS.SENT) {
+  if (outbound[outboundKey(job)] === DYNAMICS_OUTBOUND_STATUS.SENT) {
     logger.info(
       event(EVENT_ACTION.ALREADY_SENT, 'success', applicationReference),
       `Marine licence ${action} for ${applicationReference} already sent to Dynamics; discarding duplicate`
@@ -207,7 +227,7 @@ export const processDynamicsDlqJob = async (server, message) => {
     const result = await markFailedToSendToDynamics(
       db,
       applicationReference,
-      action
+      outboundKey(job)
     )
     if (result.modifiedCount > 0) {
       logger.warn(

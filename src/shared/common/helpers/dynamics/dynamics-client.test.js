@@ -779,6 +779,26 @@ describe('Dynamics Client', () => {
       })
     })
 
+    it('should send correctly call function to send a consultation response', async () => {
+      await sendToDynamics(mockServer, mockAccessToken, {
+        applicationReferenceNumber: 'MLA/2026/00001',
+        action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+        organisationId: 'test-org-id',
+        response: 'No objection'
+      })
+
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/api/data/v9.2/marine-licences',
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
+          })
+        })
+      )
+      expect(mockServer.db.collection().findOne).not.toHaveBeenCalled()
+    })
+
     it('should send correctly call function to Submit', async () => {
       mockServer.db.collection().findOne.mockResolvedValue(mockExemption)
 
