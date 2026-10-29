@@ -1,7 +1,7 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 
-export const CONSULTATION_RESPONSE_MAX_LENGTH = 1000
+const CONSULTATION_RESPONSE_MAX_LENGTH = 1000
 
 export const updateConsultationRequestSchema = joi
   .object({
