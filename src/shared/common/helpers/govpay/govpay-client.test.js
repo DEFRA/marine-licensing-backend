@@ -6,6 +6,12 @@ import { createGovPayPayment, getGovPayPayment } from './govpay-client.js'
 
 vi.mock('@hapi/wreck')
 
+const mockLoggerError = vi.hoisted(() => vi.fn())
+vi.mock('../logging/logger.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  createLogger: () => ({ error: mockLoggerError })
+}))
+
 const govPayConfig = {
   apiUrl: 'http://stub/govpay',
   apiKey: 'test-key',
@@ -35,6 +41,7 @@ describe('govpay-client', () => {
       const [url, options] = Wreck.post.mock.calls[0]
       expect(url).toBe('http://stub/govpay/v1/payments')
       expect(options.headers.authorization).toBe('Bearer test-key')
+      expect(options.headers['content-type']).toBe('application/json')
       expect(JSON.parse(options.payload)).toEqual({
         amount: 5000,
         reference: 'REF',
@@ -47,7 +54,9 @@ describe('govpay-client', () => {
 
     it('wraps a Pay error as a 502 with the Pay error code', async () => {
       const error = Boom.badRequest('bad')
-      error.data = { payload: { code: 'P0102' } }
+      error.data = {
+        payload: { code: 'P0102', description: 'Invalid attribute value' }
+      }
       Wreck.post.mockRejectedValue(error)
 
       await expect(
@@ -56,6 +65,26 @@ describe('govpay-client', () => {
         output: { statusCode: 502 },
         message: 'GOV.UK Pay create payment failed with 400 (P0102)'
       })
+    })
+
+    it("logs Pay's error description", async () => {
+      const error = Boom.badRequest('bad')
+      error.data = {
+        payload: { code: 'P0102', description: 'Invalid attribute value' }
+      }
+      Wreck.post.mockRejectedValue(error)
+
+      await expect(
+        createGovPayPayment({ amount: 1, reference: 'r', description: 'd' })
+      ).rejects.toThrow()
+
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          service: 'govpay',
+          event: { action: 'govpay-create-payment' }
+        }),
+        'GOV.UK Pay create payment failed with 400 (P0102): Invalid attribute value'
+      )
     })
 
     it('fails without calling Pay when no API key is configured', async () => {
@@ -87,6 +116,10 @@ describe('govpay-client', () => {
         output: { statusCode: 502 },
         message: 'GOV.UK Pay get payment failed'
       })
+      expect(mockLoggerError).toHaveBeenCalledWith(
+        expect.anything(),
+        'GOV.UK Pay get payment failed: ECONNREFUSED'
+      )
     })
   })
 })

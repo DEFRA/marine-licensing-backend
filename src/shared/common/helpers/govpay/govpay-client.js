@@ -1,6 +1,9 @@
 import Boom from '@hapi/boom'
 import Wreck from '@hapi/wreck'
 import { config } from '../../../../config.js'
+import { createLogger, structureErrorForECS } from '../logging/logger.js'
+
+const logger = createLogger()
 
 const getGovPayConfig = () => {
   const govPayConfig = config.get('govPay')
@@ -21,14 +24,23 @@ const requestOptions = ({ apiKey, timeoutMs }) => ({
 
 const toGovPayError = (error, operation) => {
   const statusCode = error.output?.statusCode
-  const code = error.data?.payload?.code
+  const { code, description, message } = error.data?.payload ?? {}
   const details = [
     statusCode && `with ${statusCode}`,
     code && `(${code})`
   ].filter(Boolean)
-  return Boom.badGateway(
-    [`GOV.UK Pay ${operation} failed`, ...details].join(' ')
+  const summary = [`GOV.UK Pay ${operation} failed`, ...details].join(' ')
+
+  logger.error(
+    {
+      ...structureErrorForECS(error),
+      service: 'govpay',
+      event: { action: `govpay-${operation.replaceAll(' ', '-')}` }
+    },
+    `${summary}: ${description ?? message ?? error.message}`
   )
+
+  return Boom.badGateway(summary)
 }
 
 export const createGovPayPayment = async ({
@@ -39,9 +51,11 @@ export const createGovPayPayment = async ({
   metadata
 }) => {
   const govPayConfig = getGovPayConfig()
+  const options = requestOptions(govPayConfig)
   try {
     const { payload } = await Wreck.post(`${govPayConfig.apiUrl}/v1/payments`, {
-      ...requestOptions(govPayConfig),
+      ...options,
+      headers: { ...options.headers, 'content-type': 'application/json' },
       payload: JSON.stringify({
         amount,
         reference,
