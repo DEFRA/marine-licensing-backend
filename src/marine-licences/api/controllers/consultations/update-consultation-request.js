@@ -6,6 +6,54 @@ import { getConsulteeOrganisationIdFromAuthToken } from '../../../../shared/help
 import { updateConsultationRequestSchema } from '../../../models/consultation-request.js'
 import { MAS_CONSULTATION_STATUS } from '../../../constants/marine-licence.js'
 
+const updateConsultee = async (
+  request,
+  { organisationId, consultationRequestIndex, marineLicenceId }
+) => {
+  const { payload, db } = request
+  const { id, response, updatedAt, updatedBy } = payload
+
+  const marineLicences = db.collection(collectionMarineLicences)
+
+  const consulteeToUpdate = `consultationRequests.${consultationRequestIndex}.consultees`
+
+  const { matchedCount } = await marineLicences.updateOne(
+    {
+      _id: marineLicenceId,
+      [consulteeToUpdate]: {
+        $elemMatch: {
+          organisationId,
+          consultationStatus: MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+        }
+      }
+    },
+    {
+      $set: {
+        [`${consulteeToUpdate}.$[consultee].response`]: response,
+        [`${consulteeToUpdate}.$[consultee].consultationStatus`]:
+          MAS_CONSULTATION_STATUS.RESPONDED,
+        updatedAt,
+        updatedBy
+      }
+    },
+    {
+      arrayFilters: [
+        {
+          'consultee.organisationId': organisationId,
+          'consultee.consultationStatus':
+            MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+        }
+      ]
+    }
+  )
+
+  if (matchedCount === 0) {
+    throw Boom.conflict(
+      `Consultation in Marine Licence ${id} does not need a response`
+    )
+  }
+}
+
 export const updateConsultationRequestController = {
   options: {
     payload: {
@@ -20,15 +68,15 @@ export const updateConsultationRequestController = {
   handler: async (request, h) => {
     try {
       const { payload, db, auth } = request
-      const { id, response, updatedAt, updatedBy } = payload
+      const { id } = payload
       const organisationId = getConsulteeOrganisationIdFromAuthToken(auth)
 
-      const _id = ObjectId.createFromHexString(id)
+      const marineLicenceId = ObjectId.createFromHexString(id)
       const marineLicences = db.collection(collectionMarineLicences)
 
       const marineLicence = await marineLicences.findOne(
         {
-          _id,
+          _id: marineLicenceId,
           'consultationRequests.consultees.organisationId': organisationId
         },
         { projection: { consultationRequests: 1 } }
@@ -55,43 +103,11 @@ export const updateConsultationRequestController = {
         )
       }
 
-      const consulteeToUpdate = `consultationRequests.${consultationRequestIndex}.consultees`
-
-      const { matchedCount } = await marineLicences.updateOne(
-        {
-          _id,
-          [consulteeToUpdate]: {
-            $elemMatch: {
-              organisationId,
-              consultationStatus: MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
-            }
-          }
-        },
-        {
-          $set: {
-            [`${consulteeToUpdate}.$[consultee].response`]: response,
-            [`${consulteeToUpdate}.$[consultee].consultationStatus`]:
-              MAS_CONSULTATION_STATUS.RESPONDED,
-            updatedAt,
-            updatedBy
-          }
-        },
-        {
-          arrayFilters: [
-            {
-              'consultee.organisationId': organisationId,
-              'consultee.consultationStatus':
-                MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
-            }
-          ]
-        }
-      )
-
-      if (matchedCount === 0) {
-        throw Boom.conflict(
-          `Consultation in Marine Licence ${id} does not need a response`
-        )
-      }
+      await updateConsultee(request, {
+        organisationId,
+        consultationRequestIndex,
+        marineLicenceId
+      })
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {
