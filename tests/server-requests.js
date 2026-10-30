@@ -84,12 +84,22 @@ export const makePostRequest = async ({
   }
 }
 
-export const makePatchRequest = async ({ url, server, contactId, payload }) => {
+export const makePatchRequest = async ({
+  url,
+  server,
+  contactId,
+  payload,
+  relationships,
+  roles,
+  currentRelationshipId
+}) => {
   const response = await server.inject({
     auth: {
       strategy: 'jwt',
       credentials: { contactId },
-      artifacts: { decoded: {} }
+      artifacts: {
+        decoded: { relationships, roles, currentRelationshipId }
+      }
     },
     method: 'PATCH',
     url,

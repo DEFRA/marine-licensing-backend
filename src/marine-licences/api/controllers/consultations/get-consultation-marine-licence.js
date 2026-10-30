@@ -1,8 +1,8 @@
 import { StatusCodes } from 'http-status-codes'
-import { getConsulteeOrganisationIdFromAuthToken } from '../../../shared/helpers/is-consultee-user.js'
-import { getMarineLicence } from '../../models/get-marine-licence.js'
-import { MarineLicenceService } from '../services/marine-licence.service.js'
-import { buildConsultationMarineLicenceResponse } from '../helpers/build-consultation-marine-licence-response.js'
+import { getConsulteeOrganisationIdFromAuthToken } from '../../../../shared/helpers/is-consultee-user.js'
+import { getMarineLicence } from '../../../models/get-marine-licence.js'
+import { MarineLicenceService } from '../../services/marine-licence.service.js'
+import { buildConsultationMarineLicenceResponse } from '../../helpers/build-consultation-marine-licence-response.js'
 
 export const getConsultationMarineLicenceController = {
   options: {
