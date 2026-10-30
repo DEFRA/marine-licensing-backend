@@ -365,6 +365,12 @@ const config = convict({
         format: String,
         default: '1e55f0f7-c077-4e78-a124-b899cbcbdaa6',
         env: 'NOTIFY_MARINE_LICENCE_WITHHOLDING_TEMPLATE_ID'
+      },
+      notifyResubmitSiteNoticeEvidenceId: {
+        doc: 'Notify template ID for an email asking the applicant to resubmit site notice evidence',
+        format: String,
+        default: 'f9f8a410-b25f-4938-9754-a58c6a693833',
+        env: 'NOTIFY_MARINE_LICENCE_RESUBMIT_SITE_NOTICE_EVIDENCE_TEMPLATE_ID'
       }
     }
   },

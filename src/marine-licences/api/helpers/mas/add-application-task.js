@@ -5,11 +5,25 @@ import {
   APPLICATION_TASK_TYPE,
   MARINE_LICENCE_STATUS,
   MARINE_LICENCE_SUBMITTED_STATUSES,
-  MAS_EVENT_ACTION
+  MAS_EVENT_ACTION,
+  REPEATABLE_APPLICATION_TASK_TYPES
 } from '../../../constants/marine-licence.js'
 
-// The filter is what enforces "at most one task per type": a concurrent second
-// message cannot match it, so the invariant holds without a transaction.
+const isRepeatable = (type) => REPEATABLE_APPLICATION_TASK_TYPES.includes(type)
+
+// A repeatable type matching on sourceMessageId as well is what keeps a redelivered
+// message from adding a second task once the applicant has resolved the first.
+const noBlockingTaskOfType = (type, sourceMessageId) =>
+  isRepeatable(type)
+    ? {
+        applicationTasks: { $not: { $elemMatch: { type, resolvedAt: null } } },
+        'applicationTasks.sourceMessageId': { $ne: sourceMessageId }
+      }
+    : { applicationTasks: { $not: { $elemMatch: { type } } } }
+
+// The filter is what enforces "at most one task per type" (one outstanding task, for a
+// repeatable type): a concurrent second message cannot match it, so the invariant
+// holds without a transaction.
 //
 // Only a submitted application moves to ACTION_REQUIRED: one withdrawn, rejected or
 // transferred before the task arrived keeps its status, or it would become withdrawable
@@ -58,7 +72,7 @@ const pushFirstTaskOfType = (
   return db.collection(collectionMarineLicences).findOneAndUpdate(
     {
       applicationReference,
-      applicationTasks: { $not: { $elemMatch: { type: task.type } } }
+      ...noBlockingTaskOfType(task.type, task.sourceMessageId)
     },
     [{ $set: update }],
     { returnDocument: 'after' }
@@ -106,13 +120,18 @@ const logDuplicate = (logger, { applicationReference, type, existing }) =>
         reference: applicationReference
       }
     },
-    `Refused a second ${type} application task for applicationReference ${applicationReference}; MAS sends one per application and task ${existing.taskId} already exists`
+    `Refused a second ${type} application task for applicationReference ${applicationReference}; ${
+      isRepeatable(type)
+        ? `task ${existing.taskId} is still outstanding`
+        : `MAS sends one per application and task ${existing.taskId} already exists`
+    }`
   )
 
 // Resolves why the conditional push matched nothing: the licence is missing, the same
 // queue message has already been processed, or MAS has broken its one-per-application
-// contract. A duplicate leaves the stored task exactly as it is, so an applicant who
-// has already read a notification keeps that acknowledgement.
+// (one-outstanding, for a repeatable type) contract. A duplicate leaves the stored task
+// exactly as it is, so an applicant who has already read a notification keeps that
+// acknowledgement.
 const explainMissedPush = async (
   db,
   logger,
@@ -125,13 +144,23 @@ const explainMissedPush = async (
     return null
   }
 
-  const existing = (marineLicence.applicationTasks ?? []).find(
-    (task) => task.type === type
-  )
+  const tasks = marineLicence.applicationTasks ?? []
 
-  if (existing?.sourceMessageId === sourceMessageId) {
+  if (tasks.some((task) => task.sourceMessageId === sourceMessageId)) {
     logRedelivery(logger, { applicationReference, type, sourceMessageId })
     return null
+  }
+
+  const existing = tasks.find(
+    (task) => task.type === type && !(isRepeatable(type) && task.resolvedAt)
+  )
+
+  // The blocking task of a repeatable type was resolved after the push missed it, so
+  // a retry will add this one.
+  if (!existing) {
+    throw new Error(
+      `The outstanding ${type} application task for applicationReference ${applicationReference} was resolved while another was being added; the queue will retry`
+    )
   }
 
   logDuplicate(logger, { applicationReference, type, existing })
@@ -141,8 +170,9 @@ const explainMissedPush = async (
 // Generic for every application task type: the caller supplies only the type and its
 // opaque `data`.
 //
-// MAS sends at most one task of a given type per application, so a second one is a
-// broken contract rather than a correction and is refused, not applied.
+// MAS sends at most one task of a given type per application (or, for a repeatable
+// type, one at a time), so a second one is a broken contract rather than a correction
+// and is refused, not applied.
 export const addApplicationTask = async (
   db,
   logger,

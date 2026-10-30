@@ -3,6 +3,8 @@ import { updateProjectNameController } from './controllers/update-project-name.j
 import { getMarineLicenceController } from './controllers/get-marine-licence.js'
 import { getMarineLicenceByApplicationReferenceController } from './controllers/get-marine-licence-by-application-reference.js'
 import { getConsultationsController } from './controllers/get-consultations.js'
+import { getConsultationController } from './controllers/get-consultation.js'
+import { getConsultationMarineLicenceController } from './controllers/get-consultation-marine-licence.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
 import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
@@ -34,6 +36,7 @@ import { redactTextController } from './controllers/redact-text.js'
 import { updateSiteNoticeEvidenceController } from './controllers/site-notice/update-site-notice-evidence.js'
 import { addSiteNoticeEvidenceController } from './controllers/site-notice/add-site-notice-evidence.js'
 import { deleteSiteNoticeEvidenceController } from './controllers/site-notice/delete-site-notice-evidence.js'
+import { updateSiteNoticeResubmissionController } from './controllers/site-notice/update-site-notice-resubmission.js'
 /**
  * Frontend / applicant & caseworker UI routes (JWT auth required by default).
  */
@@ -57,6 +60,16 @@ export const marineLicenceFrontendRoutes = [
     method: 'GET',
     path: '/marine-licence/consultations',
     ...getConsultationsController
+  },
+  {
+    method: 'GET',
+    path: '/marine-licence/consultation/{id}',
+    ...getConsultationController
+  },
+  {
+    method: 'GET',
+    path: '/marine-licence/consultation/{id}/details',
+    ...getConsultationMarineLicenceController
   },
   {
     method: 'POST',
@@ -222,5 +235,10 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/delete-site-notice-evidence',
     ...deleteSiteNoticeEvidenceController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/update-site-notice-resubmission',
+    ...updateSiteNoticeResubmissionController
   }
 ]

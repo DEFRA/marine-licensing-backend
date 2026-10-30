@@ -2,14 +2,14 @@ import { vi } from 'vitest'
 import { updatePublicNotice } from './update-public-notice.js'
 import { addApplicationTask } from './add-application-task.js'
 import { mockMasPublicNoticeSqsMessage } from './test-fixtures.js'
-import { sendPublicNoticeEmail } from './send-public-notice-email.js'
+import { sendPublicNoticeEmail } from './send-application-task-email.js'
 import { APPLICATION_TASK_TYPE } from '../../../constants/marine-licence.js'
 import { randomUUID } from 'node:crypto'
 
 vi.mock('./add-application-task.js', () => ({
   addApplicationTask: vi.fn()
 }))
-vi.mock('./send-public-notice-email.js', () => ({
+vi.mock('./send-application-task-email.js', () => ({
   sendPublicNoticeEmail: vi.fn()
 }))
 
