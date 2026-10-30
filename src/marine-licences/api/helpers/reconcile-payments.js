@@ -38,18 +38,20 @@ export const reconcilePayments = async (server, now = new Date()) => {
   const olderThan = new Date(
     now.getTime() - reconcileAfterMinutes * MS_PER_MINUTE
   )
-  const toReconcile = await findPaymentsToReconcile(server.db, {
+  const toReconcile = findPaymentsToReconcile(server.db, {
     olderThan,
     limit: BATCH_LIMIT
   })
 
+  let checked = 0
   const counts = { submitted: 0, failed: 0, unfinished: 0, errored: 0 }
   // Sequential on purpose: each payment takes the application lock and may call Pay
-  for (const payment of toReconcile) {
+  for await (const payment of toReconcile) {
+    checked++
     counts[await resolveOne(server, payment)]++
   }
 
   return {
-    summary: `${toReconcile.length} payments checked — ${counts.submitted} submitted; ${counts.failed} failed; ${counts.unfinished} still unfinished; ${counts.errored} errored`
+    summary: `${checked} payments checked — ${counts.submitted} submitted; ${counts.failed} failed; ${counts.unfinished} still unfinished; ${counts.errored} errored`
   }
 }

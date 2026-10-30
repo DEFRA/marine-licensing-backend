@@ -23,21 +23,22 @@ const LOCK_RETRY_DELAY_MS = 200
 
 const lockKey = (applicationId) => `marine-licence-payment:${applicationId}`
 
-const withApplicationLock = async (locker, applicationId, fn) => {
-  for (let attempt = 1; attempt <= LOCK_ATTEMPTS; attempt++) {
-    const lock = await locker.lock(lockKey(applicationId))
-    if (lock) {
-      try {
-        return await fn()
-      } finally {
-        await lock.free()
-      }
+const withApplicationLock = async (locker, applicationId, fn, attempt = 1) => {
+  const lock = await locker.lock(lockKey(applicationId))
+  if (lock) {
+    try {
+      return await fn()
+    } finally {
+      await lock.free()
     }
-    await sleep(LOCK_RETRY_DELAY_MS)
   }
-  throw Boom.conflict(
-    `A payment for marine licence ${applicationId} is already being processed`
-  )
+  if (attempt >= LOCK_ATTEMPTS) {
+    throw Boom.conflict(
+      `A payment for marine licence ${applicationId} is already being processed`
+    )
+  }
+  await sleep(LOCK_RETRY_DELAY_MS)
+  return withApplicationLock(locker, applicationId, fn, attempt + 1)
 }
 
 const payments = (db) => db.collection(collectionMarineLicencePayments)
@@ -225,4 +226,3 @@ export const findPaymentsToReconcile = (db, { olderThan, limit }) =>
     })
     .sort({ createdAt: 1 })
     .limit(limit)
-    .toArray()
