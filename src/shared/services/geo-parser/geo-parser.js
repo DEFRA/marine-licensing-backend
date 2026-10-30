@@ -55,6 +55,12 @@ function findInvalidGeometryType(geometry, depth = 0) {
   return null
 }
 
+// node --watch posts its own messages (e.g. 'watch:import') to a worker's parent
+const isWorkerResult = (message) =>
+  message !== null &&
+  typeof message === 'object' &&
+  ('geoJSON' in message || 'error' in message)
+
 export class GeoParser {
   processingTimeout = 30_000 // 30 seconds
   memoryLimit = 524_288_000 // 500MB in bytes
@@ -137,6 +143,10 @@ export class GeoParser {
       }, this.processingTimeout)
 
       worker.on('message', (result) => {
+        if (!isWorkerResult(result)) {
+          return
+        }
+
         clearTimeout(timeout)
 
         if (result.error) {
