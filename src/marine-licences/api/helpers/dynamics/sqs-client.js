@@ -14,10 +14,15 @@ export const DYNAMICS_RECEIVE_OPTIONS = {
 
 const queueConfig = () => config.get('dynamics').marineLicences
 
-export const sendDynamicsJob = async ({ applicationReference, action }) =>
+export const sendDynamicsJob = async ({
+  applicationReference,
+  action,
+  ...params
+}) =>
   sendMessage(
     queueConfig().sqsQueueName,
     JSON.stringify({
+      ...params,
       applicationReference,
       action,
       type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE

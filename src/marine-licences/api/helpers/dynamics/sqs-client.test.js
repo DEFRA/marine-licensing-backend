@@ -39,6 +39,26 @@ describe('marine licence dynamics sqs-client', () => {
     )
   })
 
+  it('sendDynamicsJob includes additional params into the message', async () => {
+    await sendDynamicsJob({
+      applicationReference: 'MLA/2026/00001',
+      action: 'send-consultation-response',
+      organisationId: 'org-1',
+      response: 'No objection'
+    })
+
+    expect(sendMessage).toHaveBeenCalledWith(
+      sqsQueueName,
+      JSON.stringify({
+        organisationId: 'org-1',
+        response: 'No objection',
+        applicationReference: 'MLA/2026/00001',
+        action: 'send-consultation-response',
+        type: 'MARINE_LICENCE'
+      })
+    )
+  })
+
   it('receiveDynamicsJobs long-polls the main queue with receive counts', async () => {
     await receiveDynamicsJobs()
 

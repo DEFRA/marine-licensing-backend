@@ -3,12 +3,24 @@ import { ObjectId } from 'mongodb'
 import { randomUUID } from 'node:crypto'
 import { updateConsultationRequestController } from './update-consultation-request.js'
 import { MAS_CONSULTATION_STATUS } from '../../../constants/marine-licence.js'
+import { config } from '../../../../config.js'
+import { addToDynamicsQueue } from '../../../../shared/common/helpers/dynamics/index.js'
+import {
+  DYNAMICS_QUEUE_TYPES,
+  DYNAMICS_REQUEST_ACTIONS
+} from '../../../../shared/common/constants/request-queue.js'
+
+vi.mock('../../../../config.js', () => ({
+  config: { get: vi.fn(() => ({ isDynamicsEnabled: false })) }
+}))
+vi.mock('../../../../shared/common/helpers/dynamics/index.js')
 
 describe('PATCH /marine-licence/update-consultation-request', () => {
   const relationshipId = randomUUID()
   const organisationId = randomUUID()
   const id = new ObjectId().toHexString()
-  const payload = { id, response: 'We have no objections' }
+  const response = 'We have no objections'
+  const payload = { id, response }
 
   const auth = {
     credentials: { contactId: 'user123' },
@@ -23,28 +35,58 @@ describe('PATCH /marine-licence/update-consultation-request', () => {
     }
   }
 
-  test('should return a conflict if the consultee responds between the read and the update', async () => {
+  const marineLicence = {
+    applicationReference: 'MLA/2026/11883',
+    consultationRequests: [
+      {
+        consultees: [
+          {
+            organisationId,
+            consultationStatus: MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+          }
+        ]
+      }
+    ]
+  }
+
+  test('should queue the consultation response for Dynamics when the integration is enabled', async () => {
     const { mockMongo, mockHandler } = global
-    const consultationStatus = MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+    config.get.mockReturnValueOnce({ isDynamicsEnabled: true })
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return {
-        findOne: vi.fn().mockResolvedValue({
-          consultationRequests: [
-            { consultees: [{ organisationId, consultationStatus }] }
-          ]
-        }),
-        updateOne: vi.fn().mockResolvedValue({ matchedCount: 0 })
+        findOne: vi.fn().mockResolvedValue(marineLicence),
+        updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 })
+      }
+    })
+    const request = { db: mockMongo, payload, auth }
+
+    await updateConsultationRequestController.handler(request, mockHandler)
+
+    expect(addToDynamicsQueue).toHaveBeenCalledWith({
+      request,
+      applicationReference: 'MLA/2026/11883',
+      action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
+      type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+      response,
+      organisationId
+    })
+  })
+
+  test('should not queue the consultation response for Dynamics when the integration is disabled', async () => {
+    const { mockMongo, mockHandler } = global
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOne: vi.fn().mockResolvedValue(marineLicence),
+        updateOne: vi.fn().mockResolvedValue({ matchedCount: 1 })
       }
     })
 
-    await expect(
-      updateConsultationRequestController.handler(
-        { db: mockMongo, payload, auth },
-        mockHandler
-      )
-    ).rejects.toThrow(
-      `Consultation in Marine Licence ${id} does not need a response`
+    await updateConsultationRequestController.handler(
+      { db: mockMongo, payload, auth },
+      mockHandler
     )
+
+    expect(addToDynamicsQueue).not.toHaveBeenCalled()
   })
 
   test('should return an error message if the database operation fails', async () => {

@@ -5,6 +5,12 @@ import { collectionMarineLicences } from '../../../../shared/common/constants/db
 import { getConsulteeOrganisationIdFromAuthToken } from '../../../../shared/helpers/is-consultee-user.js'
 import { updateConsultationRequestSchema } from '../../../models/consultation-request.js'
 import { MAS_CONSULTATION_STATUS } from '../../../constants/marine-licence.js'
+import { config } from '../../../../config.js'
+import { addToDynamicsQueue } from '../../../../shared/common/helpers/dynamics/index.js'
+import {
+  DYNAMICS_QUEUE_TYPES,
+  DYNAMICS_REQUEST_ACTIONS
+} from '../../../../shared/common/constants/request-queue.js'
 
 const updateConsultee = async (
   request,
@@ -68,7 +74,7 @@ export const updateConsultationRequestController = {
   handler: async (request, h) => {
     try {
       const { payload, db, auth } = request
-      const { id } = payload
+      const { id, response } = payload
       const organisationId = getConsulteeOrganisationIdFromAuthToken(auth)
 
       const marineLicenceId = ObjectId.createFromHexString(id)
@@ -79,7 +85,7 @@ export const updateConsultationRequestController = {
           _id: marineLicenceId,
           'consultationRequests.consultees.organisationId': organisationId
         },
-        { projection: { consultationRequests: 1 } }
+        { projection: { applicationReference: 1, consultationRequests: 1 } }
       )
 
       if (!marineLicence) {
@@ -108,6 +114,18 @@ export const updateConsultationRequestController = {
         consultationRequestIndex,
         marineLicenceId
       })
+
+      const { isDynamicsEnabled } = config.get('dynamics')
+      if (isDynamicsEnabled) {
+        await addToDynamicsQueue({
+          request,
+          applicationReference: marineLicence.applicationReference,
+          action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
+          type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+          response,
+          organisationId
+        })
+      }
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {
