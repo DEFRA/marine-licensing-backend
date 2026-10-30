@@ -208,9 +208,10 @@ a single status.
   `marine_licensing_d365_marine_licence` queue (plus `-deadletter`), processed by
   `src/shared/plugins/marine-licence-dynamics/` via
   `src/marine-licences/api/helpers/dynamics/worker-processor.js`. Per-action
-  send state lives on the licence as `dynamicsOutbound.{submit,withdraw}`, or
-  `dynamicsOutbound.send-consultation-response:<organisationId>` because each
-  consultee responds separately (`sent` / `failed`); those writes deliberately leave `updatedAt` alone (it is
+  send state (`sent` / `failed`) lives on the licence under `dynamicsOutbound`:
+  `submit`, `withdraw`, and one `send-consultation-response:<organisationId>`
+  key per consultee, because each consultee responds separately. Those writes
+  deliberately leave `updatedAt` alone (it is
   the optimistic-concurrency token) and can never overwrite `sent`. A
   withdrawal waits on the queue until its submit is `sent`, because standard
   SQS doesn't preserve order. The old `marine-licence-dynamics-queue`
