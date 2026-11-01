@@ -29,7 +29,7 @@ export const findConsultations = async (db, organisationId, filter = {}) => {
       if (!consultee) {
         throw Boom.badRequest('Consultee not found for this organisation')
       }
-      const { consultationType, consultationStatus } = consultee
+      const { consultationType, consultationStatus, response } = consultee
 
       return {
         id: _id.toString(),
@@ -37,7 +37,8 @@ export const findConsultations = async (db, organisationId, filter = {}) => {
         applicationReference,
         consultationType,
         consultationStatus,
-        consultationStartDate
+        consultationStartDate,
+        response
       }
     }
   )

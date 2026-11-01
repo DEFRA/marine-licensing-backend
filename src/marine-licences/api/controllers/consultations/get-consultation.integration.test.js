@@ -1,8 +1,8 @@
-import { setupTestServer } from '../../../../tests/test-server.js'
-import { makeGetRequest } from '../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import { setupTestServer } from '../../../../../tests/test-server.js'
+import { makeGetRequest } from '../../../../../tests/server-requests.js'
+import { createCompleteMarineLicence } from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { randomUUID } from 'node:crypto'
 
 describe('GET /marine-licence/consultation/{id} - integration tests', async () => {

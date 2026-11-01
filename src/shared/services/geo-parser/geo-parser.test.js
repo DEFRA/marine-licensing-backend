@@ -342,10 +342,10 @@ describe('GeoParser', () => {
     })
 
     it('should successfully parse file using worker thread', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'message') {
           // Simulate successful message
-          setTimeout(() => callback({ geoJSON: mockGeoJSON }), 10)
+          setTimeout(() => listener({ geoJSON: mockGeoJSON }), 10)
         }
       })
 
@@ -361,9 +361,9 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker error messages', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'message') {
-          setTimeout(() => callback({ error: 'Parse failed' }), 10)
+          setTimeout(() => listener({ error: 'Parse failed' }), 10)
         }
       })
 
@@ -373,9 +373,9 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker error event', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'error') {
-          setTimeout(() => callback(new Error('Worker error')), 10)
+          setTimeout(() => listener(new Error('Worker error')), 10)
         }
       })
 
@@ -385,11 +385,10 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker exit with non-zero code', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'exit') {
           // Worker exit event handler expects exit code (number) as first parameter
-          // eslint-disable-next-line n/no-callback-literal
-          setTimeout(() => callback(1), 10)
+          setTimeout(() => listener(1), 10)
         }
       })
 
@@ -399,11 +398,10 @@ describe('GeoParser', () => {
     })
 
     it('should handle worker exit with exit code 0', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'exit') {
           // Worker exit event handler expects exit code (number) as first parameter
-          // eslint-disable-next-line n/no-callback-literal
-          setTimeout(() => callback(0), 10)
+          setTimeout(() => listener(0), 10)
         }
       })
 
@@ -433,9 +431,9 @@ describe('GeoParser', () => {
     })
 
     it('should clear timeout when worker responds', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'message') {
-          setTimeout(() => callback({ geoJSON: mockGeoJSON }), 10)
+          setTimeout(() => listener({ geoJSON: mockGeoJSON }), 10)
         }
       })
 
@@ -445,9 +443,9 @@ describe('GeoParser', () => {
     })
 
     it('should clear timeout when worker has error', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'error') {
-          setTimeout(() => callback(new Error('Worker error')), 10)
+          setTimeout(() => listener(new Error('Worker error')), 10)
         }
       })
 
