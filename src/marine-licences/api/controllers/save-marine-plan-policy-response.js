@@ -20,7 +20,14 @@ export const saveMarinePlanPolicyResponseController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const { id, policyCode, response, updatedAt, updatedBy } = payload
+      const {
+        id,
+        policyCode,
+        response,
+        requiresDocumentation,
+        updatedAt,
+        updatedBy
+      } = payload
       const _id = ObjectId.createFromHexString(id)
       const collection = db.collection(collectionMarineLicences)
 
@@ -30,7 +37,7 @@ export const saveMarinePlanPolicyResponseController = {
             marinePlanPolicyResponses: {
               $mergeObjects: [
                 '$marinePlanPolicyResponses',
-                { [policyCode]: response }
+                { [policyCode]: { response, requiresDocumentation } }
               ]
             },
             updatedAt,
@@ -44,7 +51,7 @@ export const saveMarinePlanPolicyResponseController = {
                 $filter: {
                   input: { $objectToArray: '$marinePlanPolicyResponses' },
                   as: 'r',
-                  cond: { $ne: ['$$r.v', ''] }
+                  cond: { $ne: ['$$r.v.response', ''] }
                 }
               }
             }

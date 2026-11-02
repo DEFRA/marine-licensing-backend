@@ -1,6 +1,13 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { saveMarinePlanPolicyResponseController } from './save-marine-plan-policy-response.js'
+import {
+  POLICY_CONSIDERATION_MAX_LENGTH,
+  POLICY_CONSIDERATION_MIN_LENGTH
+} from '../../models/marine-plan-policy.js'
+
+const validResponse =
+  'Our activity complies with this policy because it avoids sensitive habitats.'
 
 describe('PATCH /marine-licence/marine-plan-policy-response', () => {
   const payloadValidator =
@@ -13,7 +20,7 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
   const buildPayload = (overrides = {}) => ({
     id: new ObjectId().toHexString(),
     policyCode: 'S-FISH-1',
-    response: 'Our activity complies because…',
+    response: validResponse,
     ...mockAuditPayload,
     ...overrides
   })
@@ -31,7 +38,7 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
     const buildValidationPayload = (overrides = {}) => ({
       id: new ObjectId().toHexString(),
       policyCode: 'S-FISH-1',
-      response: 'Our activity complies because…',
+      response: validResponse,
       ...overrides
     })
 
@@ -58,16 +65,56 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
 
     it('should reject a response over the maximum length', () => {
       const result = payloadValidator.validate(
-        buildValidationPayload({ response: 'x'.repeat(5001) })
+        buildValidationPayload({
+          response: 'x'.repeat(POLICY_CONSIDERATION_MAX_LENGTH + 1)
+        })
       )
-      expect(result.error.message).toContain('POLICY_RESPONSE_MAX_LENGTH')
+      expect(result.error.message).toContain('POLICY_CONSIDERATION_MAX_LENGTH')
+    })
+
+    it('should reject a response under the minimum length', () => {
+      const result = payloadValidator.validate(
+        buildValidationPayload({
+          response: 'x'.repeat(POLICY_CONSIDERATION_MIN_LENGTH - 1)
+        })
+      )
+      expect(result.error.message).toContain('POLICY_CONSIDERATION_MIN_LENGTH')
+    })
+
+    it('should accept a response at exactly the minimum length', () => {
+      const result = payloadValidator.validate(
+        buildValidationPayload({
+          response: 'x'.repeat(POLICY_CONSIDERATION_MIN_LENGTH)
+        })
+      )
+      expect(result.error).toBeUndefined()
+    })
+
+    it('should default requiresDocumentation to false when the checkbox is not ticked', () => {
+      const result = payloadValidator.validate(buildValidationPayload())
+      expect(result.value.requiresDocumentation).toBe(false)
+    })
+
+    it('should accept requiresDocumentation when ticked', () => {
+      const result = payloadValidator.validate(
+        buildValidationPayload({ requiresDocumentation: true })
+      )
+      expect(result.error).toBeUndefined()
+      expect(result.value.requiresDocumentation).toBe(true)
+    })
+
+    it('should reject a non-boolean requiresDocumentation', () => {
+      const result = payloadValidator.validate(
+        buildValidationPayload({ requiresDocumentation: 'maybe' })
+      )
+      expect(result.error.message).toContain('REQUIRES_DOCUMENTATION_INVALID')
     })
   })
 
   describe('handler', () => {
     it('should save a policy response using a single update operation', async () => {
       const { mockMongo, mockHandler } = global
-      const mockPayload = buildPayload()
+      const mockPayload = buildPayload({ requiresDocumentation: true })
       const mockUpdateOne = setupMocks({ matchedCount: 1 })
 
       await saveMarinePlanPolicyResponseController.handler(
@@ -84,7 +131,12 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
               marinePlanPolicyResponses: {
                 $mergeObjects: [
                   '$marinePlanPolicyResponses',
-                  { 'S-FISH-1': mockPayload.response }
+                  {
+                    'S-FISH-1': {
+                      response: mockPayload.response,
+                      requiresDocumentation: true
+                    }
+                  }
                 ]
               },
               ...mockAuditPayload
@@ -97,7 +149,7 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
                   $filter: {
                     input: { $objectToArray: '$marinePlanPolicyResponses' },
                     as: 'r',
-                    cond: { $ne: ['$$r.v', ''] }
+                    cond: { $ne: ['$$r.v.response', ''] }
                   }
                 }
               }

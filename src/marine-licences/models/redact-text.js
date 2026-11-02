@@ -54,7 +54,7 @@ export const buildFieldPath = (
     .replace('constructionDrawings', `constructionDrawings.${drawingIndex}`)
     .replace(
       'marinePlanPolicyResponses',
-      `marinePlanPolicyResponses.${policyCode}`
+      `marinePlanPolicyResponses.${policyCode}.response`
     )
 
 const indexSchema = joi.number().integer().min(0).messages({
