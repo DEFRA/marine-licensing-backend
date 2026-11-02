@@ -51,7 +51,7 @@ const parseDynamicsJobBody = (message, logger) =>
 
 // Each consultee responds independently, so consultation responses are
 // tracked per organisation rather than once per licence.
-const outboundKey = ({ action, organisationId }) =>
+export const outboundKey = ({ action, organisationId }) =>
   organisationId ? `${action}:${organisationId}` : action
 
 const outboundField = (action) => `dynamicsOutbound.${action}`
@@ -82,7 +82,7 @@ const markSentToDynamics = (db, applicationReference, action) =>
     DYNAMICS_OUTBOUND_STATUS.SENT
   )
 
-const markFailedToSendToDynamics = (db, applicationReference, action) =>
+export const markFailedToSendToDynamics = (db, applicationReference, action) =>
   setOutboundStatusUnlessSent(
     db,
     applicationReference,

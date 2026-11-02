@@ -2,7 +2,10 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { randomUUID } from 'node:crypto'
 import { updateConsultationRequestController } from './update-consultation-request.js'
-import { MAS_CONSULTATION_STATUS } from '../../../constants/marine-licence.js'
+import {
+  DYNAMICS_OUTBOUND_STATUS,
+  MAS_CONSULTATION_STATUS
+} from '../../../constants/marine-licence.js'
 import { config } from '../../../../config.js'
 import { addToDynamicsQueue } from '../../../../shared/common/helpers/dynamics/index.js'
 import {
@@ -70,6 +73,38 @@ describe('PATCH /marine-licence/update-consultation-request', () => {
       response,
       organisationId
     })
+  })
+
+  test('should log when request to Dynamics fails', async () => {
+    const { mockMongo, mockHandler } = global
+    config.get.mockReturnValueOnce({ isDynamicsEnabled: true })
+    addToDynamicsQueue.mockRejectedValueOnce(new Error('SQS unavailable'))
+    const updateOne = vi.fn().mockResolvedValue({ matchedCount: 1 })
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return { findOne: vi.fn().mockResolvedValue(marineLicence), updateOne }
+    })
+    const logger = { error: vi.fn() }
+
+    await updateConsultationRequestController.handler(
+      { db: mockMongo, payload, auth, logger },
+      mockHandler
+    )
+
+    const outboundField = `dynamicsOutbound.${DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE}:${organisationId}`
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({ reference: 'MLA/2026/11883' })
+      }),
+      expect.stringContaining('marked failed')
+    )
+    expect(updateOne).toHaveBeenLastCalledWith(
+      {
+        applicationReference: 'MLA/2026/11883',
+        [outboundField]: { $ne: DYNAMICS_OUTBOUND_STATUS.SENT }
+      },
+      { $set: { [outboundField]: DYNAMICS_OUTBOUND_STATUS.FAILED } }
+    )
+    expect(mockHandler.code).toHaveBeenCalledWith(200)
   })
 
   test('should not queue the consultation response for Dynamics when the integration is disabled', async () => {
