@@ -128,6 +128,24 @@ describe('buildMarineLicenceResponse', () => {
     expect(response.status).toBe('Active')
   })
 
+  it.each([
+    ['an applicant', requestFromApplicantUser({ userContactId: 'abc' })],
+    ['an internal (Entra ID) user', requestFromInternalUser()],
+    ['an unauthenticated (public) request', requestFromPublicUser()]
+  ])('should not include consultation requests for %s', (_, request) => {
+    const marineLicence = {
+      _id: mockId,
+      contactId: 'abc',
+      consultationRequests: [
+        { consultees: [{ organisationId: 'org-1', response: 'No objection' }] }
+      ]
+    }
+
+    const response = buildMarineLicenceResponse(marineLicence, request)
+
+    expect(response).not.toHaveProperty('consultationRequests')
+  })
+
   describe('Redactions', () => {
     const redactions = mockRedactions
 
