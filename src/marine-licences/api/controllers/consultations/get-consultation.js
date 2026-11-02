@@ -1,9 +1,9 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { getConsulteeOrganisationIdFromAuthToken } from '../../../shared/helpers/is-consultee-user.js'
-import { getMarineLicence } from '../../models/get-marine-licence.js'
-import { findConsultations } from '../helpers/find-consultations.js'
+import { getConsulteeOrganisationIdFromAuthToken } from '../../../../shared/helpers/is-consultee-user.js'
+import { getMarineLicence } from '../../../models/get-marine-licence.js'
+import { findConsultations } from '../../helpers/find-consultations.js'
 
 export const getConsultationController = {
   options: {
