@@ -15,6 +15,7 @@ import { OTHER_AUTHORITIES_DETAILS_MAX_TEXT_LENGTH } from './other-authorities.j
 import { PROJECT_BACKGROUND_MAX_TEXT_LENGTH } from './project-background.js'
 import { PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH } from './public-consultation.js'
 import { PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH } from './public-register.js'
+import { withCharacterLimit } from '../../shared/models/character-limit.js'
 import { SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH } from './special-legal-powers.js'
 
 export const nullableString = joi.string().allow('', null)
@@ -31,13 +32,14 @@ const answerWithDetails = ({
   answerKey,
   detailsKey = 'details',
   detailsMaxLength,
+  detailsSchema = limitedText(detailsMaxLength),
   question,
   label
 }) =>
   joi
     .object({
       [answerKey]: yesNoAnswer,
-      [detailsKey]: limitedText(detailsMaxLength)
+      [detailsKey]: detailsSchema
     })
     .unknown(true)
     .allow(null)
@@ -206,7 +208,12 @@ export const marineLicenceGatewayResponseSchema = joi
     publicRegister: answerWithDetails({
       answerKey: 'withholdConsent',
       detailsKey: 'reason',
-      detailsMaxLength: PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH,
+      detailsSchema: withCharacterLimit(
+        nullableString,
+        PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH
+      ).description(
+        'At most 1,000 user-perceived characters (an emoji or a line break counts as one). maxLength is the stored length in UTF-16 code units.'
+      ),
       question:
         'Do you want to request that information is withheld for either of these reasons?',
       label: 'PublicRegister'
