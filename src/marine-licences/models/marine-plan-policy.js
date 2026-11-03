@@ -1,5 +1,13 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
+import {
+  uploadedFileFieldSchema,
+  s3LocationFieldSchema
+} from '../../shared/models/site-details/file-upload.js'
+import {
+  MPP_DOCUMENT_TYPES,
+  MPP_DOCUMENT_TYPE_OTHER_MAX_LENGTH
+} from '../constants/marine-plan-policy-document.js'
 
 export const POLICY_CODE_MAX_LENGTH = 100
 export const POLICY_CONSIDERATION_MIN_LENGTH = 70
@@ -29,6 +37,46 @@ export const marinePlanPolicyResponseSchema = joi
       }),
     requiresDocumentation: joi.boolean().default(false).messages({
       'boolean.base': 'REQUIRES_DOCUMENTATION_INVALID'
+    })
+  })
+  .append(marineLicenceId)
+
+export const addMarinePlanPolicyDocumentSchema = joi
+  .object({
+    uploadedFile: uploadedFileFieldSchema,
+    s3Location: s3LocationFieldSchema
+  })
+  .append(marineLicenceId)
+
+export const marinePlanPolicyDocumentTypeSchema = joi
+  .object({
+    documentId: joi.string().uuid().required().messages({
+      'string.uuid': 'DOCUMENT_ID_INVALID',
+      'any.required': 'DOCUMENT_ID_REQUIRED'
+    }),
+    documentType: joi
+      .string()
+      .valid(...MPP_DOCUMENT_TYPES)
+      .required()
+      .messages({
+        'any.only': 'DOCUMENT_TYPE_REQUIRED',
+        'any.required': 'DOCUMENT_TYPE_REQUIRED'
+      }),
+    documentTypeOther: joi.when('documentType', {
+      is: joi.string().valid('other'),
+      then: joi
+        .string()
+        .trim()
+        .max(MPP_DOCUMENT_TYPE_OTHER_MAX_LENGTH)
+        .required()
+        .messages({
+          'string.empty': 'DOCUMENT_TYPE_OTHER_REQUIRED',
+          'any.required': 'DOCUMENT_TYPE_OTHER_REQUIRED',
+          'string.max': 'DOCUMENT_TYPE_OTHER_MAX_LENGTH'
+        }),
+      otherwise: joi.forbidden().messages({
+        'any.unknown': 'DOCUMENT_TYPE_OTHER_REQUIRED'
+      })
     })
   })
   .append(marineLicenceId)

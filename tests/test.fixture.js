@@ -109,6 +109,18 @@ export const mockMultipleSite = {
   ]
 }
 
+export const mockMarinePlanPolicyDocument = {
+  uploadedFile: {
+    filename: 'ecological-assessment.pdf'
+  },
+  s3Location: {
+    s3Bucket: 'mmo-uploads',
+    s3Key:
+      'marine-licences/697ff02d-e5e7-4e42-ba47-c36fc116af47/45265950-72fb-4bb7-ab1c-2fb722ab15ec',
+    checksumSha256: 'V3nR8yISvb6pfVp1g1eUdFo5Cer80JpGlqkGAJb/O8k='
+  }
+}
+
 export const mockWaterFrameworkDirective = {
   nauticalMile: 'yes',
   excludedActivities: 'no',
