@@ -373,11 +373,11 @@ describe('GeoParser', () => {
     })
 
     it('should ignore messages that are not the worker result, such as node --watch import reports', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'message') {
           setTimeout(() => {
-            callback({ 'watch:import': ['file:///src/worker.js'] })
-            callback({ geoJSON: mockGeoJSON })
+            listener({ 'watch:import': ['file:///src/worker.js'] })
+            listener({ geoJSON: mockGeoJSON })
           }, 10)
         }
       })
@@ -388,11 +388,11 @@ describe('GeoParser', () => {
     })
 
     it('should still reject with the worker error when it follows a non-result message', async () => {
-      mockWorker.on.mockImplementation(function (event, callback) {
+      mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'message') {
           setTimeout(() => {
-            callback({ 'watch:import': ['file:///src/worker.js'] })
-            callback({ error: 'Parse failed' })
+            listener({ 'watch:import': ['file:///src/worker.js'] })
+            listener({ error: 'Parse failed' })
           }, 10)
         }
       })
