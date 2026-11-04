@@ -32,7 +32,18 @@ const queueName = 'marine_licensing_d365_marine_licence'
 const dlqName = 'marine_licensing_d365_marine_licence-deadletter'
 const applicationReference = 'MLA/2026/00001'
 const receiptHandle = 'receipt-1'
-const { SUBMIT, WITHDRAW } = DYNAMICS_REQUEST_ACTIONS
+const { SUBMIT, WITHDRAW, SEND_CONSULTATION_RESPONSE } =
+  DYNAMICS_REQUEST_ACTIONS
+const organisationId = '11111111-1111-1111-1111-111111111111'
+const otherOrganisationId = '22222222-2222-2222-2222-222222222222'
+const consultationResponseBody = {
+  applicationReference,
+  action: SEND_CONSULTATION_RESPONSE,
+  type: 'MARINE_LICENCE',
+  organisationId,
+  response: 'No objection'
+}
+const consultationOutboundField = `dynamicsOutbound.${SEND_CONSULTATION_RESPONSE}:${organisationId}`
 
 const buildMessage = (
   body = { applicationReference, action: SUBMIT, type: 'MARINE_LICENCE' },
@@ -83,7 +94,15 @@ describe('marine licence dynamics worker-processor', () => {
       ['malformed JSON', 'not json'],
       ['a non-string reference', { applicationReference: 123, action: SUBMIT }],
       ['a blank reference', { applicationReference: '  ', action: SUBMIT }],
-      ['an unsupported action', { applicationReference, action: 'update' }]
+      ['an unsupported action', { applicationReference, action: 'update' }],
+      [
+        'a consultation response without an organisationId',
+        { ...consultationResponseBody, organisationId: undefined }
+      ],
+      [
+        'a consultation response without a response',
+        { ...consultationResponseBody, response: ' ' }
+      ]
     ])('should discard a message with %s', async (_, body) => {
       const { server, mockFindOne } = setupMocks(null)
 
@@ -190,6 +209,50 @@ describe('marine licence dynamics worker-processor', () => {
         },
         { $set: { 'dynamicsOutbound.withdraw': 'sent' } }
       )
+    })
+
+    it('should send a consultation response with its organisation and flag it per organisation', async () => {
+      const { server, mockUpdateOne } = setupMocks({
+        dynamicsOutbound: {
+          [`${SEND_CONSULTATION_RESPONSE}:${otherOrganisationId}`]: 'sent'
+        }
+      })
+
+      await processDynamicsJob(server, buildMessage(consultationResponseBody))
+
+      expect(sendToDynamics).toHaveBeenCalledWith(server, 'token', {
+        applicationReferenceNumber: applicationReference,
+        action: SEND_CONSULTATION_RESPONSE,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+        organisationId,
+        response: 'No objection'
+      })
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        {
+          applicationReference,
+          [consultationOutboundField]: { $ne: 'sent' }
+        },
+        { $set: { [consultationOutboundField]: 'sent' } }
+      )
+      expect(deleteDynamicsJob).toHaveBeenCalledWith(queueName, receiptHandle)
+    })
+
+    it('should skip a consultation response already sent for that organisation', async () => {
+      const { server, mockUpdateOne } = setupMocks({
+        dynamicsOutbound: {
+          [`${SEND_CONSULTATION_RESPONSE}:${organisationId}`]: 'sent'
+        }
+      })
+
+      await processDynamicsJob(server, buildMessage(consultationResponseBody))
+
+      expectEvent(
+        server.logger.info,
+        MARINE_LICENCE_DYNAMICS_EVENT_ACTION.ALREADY_SENT
+      )
+      expect(sendToDynamics).not.toHaveBeenCalled()
+      expect(mockUpdateOne).not.toHaveBeenCalled()
+      expect(deleteDynamicsJob).toHaveBeenCalledWith(queueName, receiptHandle)
     })
 
     it('should leave the message for retry without marking it when a non-final attempt fails', async () => {
@@ -318,6 +381,24 @@ describe('marine licence dynamics worker-processor', () => {
       expectEvent(
         server.logger.warn,
         MARINE_LICENCE_DYNAMICS_EVENT_ACTION.MARKED_FAILED
+      )
+      expect(deleteDynamicsJob).toHaveBeenCalledWith(dlqName, receiptHandle)
+    })
+
+    it('should mark a dead-lettered consultation response failed for its organisation', async () => {
+      const { server, mockUpdateOne } = setupMocks(null)
+
+      await processDynamicsDlqJob(
+        server,
+        buildMessage(consultationResponseBody)
+      )
+
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        {
+          applicationReference,
+          [consultationOutboundField]: { $ne: 'sent' }
+        },
+        { $set: { [consultationOutboundField]: 'failed' } }
       )
       expect(deleteDynamicsJob).toHaveBeenCalledWith(dlqName, receiptHandle)
     })
