@@ -204,12 +204,14 @@ a single status.
   interval (**not** exponential backoff) and then move to
   `exemption-dynamics-queue-failed`. Intervals, counts and cadence are
   convict-configured (`dynamics` section of `src/config.js`).
-- **Marine licences — SQS:** submit and withdraw go to the
+- **Marine licences — SQS:** submit, withdraw and send-consultation-response go to the
   `marine_licensing_d365_marine_licence` queue (plus `-deadletter`), processed by
   `src/shared/plugins/marine-licence-dynamics/` via
   `src/marine-licences/api/helpers/dynamics/worker-processor.js`. Per-action
-  send state lives on the licence as `dynamicsOutbound.{submit,withdraw}`
-  (`sent` / `failed`); those writes deliberately leave `updatedAt` alone (it is
+  send state (`sent` / `failed`) lives on the licence under `dynamicsOutbound`:
+  `submit`, `withdraw`, and one `send-consultation-response:<organisationId>`
+  key per consultee, because each consultee responds separately. Those writes
+  deliberately leave `updatedAt` alone (it is
   the optimistic-concurrency token) and can never overwrite `sent`. A
   withdrawal waits on the queue until its submit is `sent`, because standard
   SQS doesn't preserve order. The old `marine-licence-dynamics-queue`

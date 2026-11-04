@@ -8,7 +8,8 @@ export const REQUEST_QUEUE_STATUS = {
 export const DYNAMICS_REQUEST_ACTIONS = {
   SUBMIT: 'submit',
   WITHDRAW: 'withdraw',
-  UPDATE: 'update'
+  UPDATE: 'update',
+  SEND_CONSULTATION_RESPONSE: 'send-consultation-response'
 }
 
 export const DYNAMICS_QUEUE_TYPES = {
