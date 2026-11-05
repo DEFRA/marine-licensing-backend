@@ -372,6 +372,36 @@ describe('GeoParser', () => {
       )
     })
 
+    it('should ignore messages that are not the worker result, such as node --watch import reports', async () => {
+      mockWorker.on.mockImplementation(function (event, listener) {
+        if (event === 'message') {
+          setTimeout(() => {
+            listener({ 'watch:import': ['file:///src/worker.js'] })
+            listener({ geoJSON: mockGeoJSON })
+          }, 10)
+        }
+      })
+
+      const result = await geoParser.parseFile(filePath, fileType)
+
+      expect(result).toEqual(mockGeoJSON)
+    })
+
+    it('should still reject with the worker error when it follows a non-result message', async () => {
+      mockWorker.on.mockImplementation(function (event, listener) {
+        if (event === 'message') {
+          setTimeout(() => {
+            listener({ 'watch:import': ['file:///src/worker.js'] })
+            listener({ error: 'Parse failed' })
+          }, 10)
+        }
+      })
+
+      await expect(geoParser.parseFile(filePath, fileType)).rejects.toThrow(
+        'Parse failed'
+      )
+    })
+
     it('should handle worker error event', async () => {
       mockWorker.on.mockImplementation(function (event, listener) {
         if (event === 'error') {
