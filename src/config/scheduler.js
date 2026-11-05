@@ -32,6 +32,10 @@
 // backward-looking (see the scheduled job contract), so a single missed fire is
 // normally picked up by the next run. If that is not acceptable for a particular
 // job, give it an hour outside 01:00-01:59 — 00:05 is a safe default.
+import { convictValidateCronExpression } from '../shared/common/helpers/convict/validate-scheduler.js'
+
+const CRON_EXPRESSION_FORMAT = convictValidateCronExpression.name
+
 export const schedulerSchema = {
   isEnabled: {
     doc: 'Master switch for scheduling. When false no job is scheduled, but every job body remains invokable via its server method.',
@@ -49,7 +53,7 @@ export const schedulerSchema = {
       },
       schedule: {
         doc: "Cron schedule for the heartbeat job, interpreted in Europe/London. Runs after the exemption status job so its breakdown reflects that day's transitions rather than racing them. See the cron format reference and the British Summer Time note at the top of this file.",
-        format: 'cron-expression',
+        format: CRON_EXPRESSION_FORMAT,
         default: '15 0 * * *',
         env: 'SCHEDULER_HEARTBEAT_SCHEDULE'
       }
@@ -63,9 +67,23 @@ export const schedulerSchema = {
       },
       schedule: {
         doc: 'Cron schedule for the exemption status job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
-        format: 'cron-expression',
+        format: CRON_EXPRESSION_FORMAT,
         default: '5 0 * * *',
         env: 'SCHEDULER_EXEMPTION_STATUS_SCHEDULE'
+      }
+    },
+    'payment-reconciliation': {
+      isEnabled: {
+        doc: 'Enable the GOV.UK Pay reconciliation job. It also does nothing while GOVPAY_ENABLED is false.',
+        format: Boolean,
+        default: true,
+        env: 'SCHEDULER_PAYMENT_RECONCILIATION_ENABLED'
+      },
+      schedule: {
+        doc: 'Cron schedule for the GOV.UK Pay reconciliation job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
+        format: CRON_EXPRESSION_FORMAT,
+        default: '*/15 * * * *',
+        env: 'SCHEDULER_PAYMENT_RECONCILIATION_SCHEDULE'
       }
     }
   }

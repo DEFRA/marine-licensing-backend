@@ -767,7 +767,6 @@ describe('POST /marine-licence/submit', () => {
       await flushPromises()
 
       expect(addToDynamicsQueue).toHaveBeenCalledWith({
-        request: mockRequest,
         applicationReference: 'MLA/2025/10001',
         action: DYNAMICS_REQUEST_ACTIONS.SUBMIT,
         type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE

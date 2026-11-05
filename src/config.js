@@ -13,6 +13,7 @@ import { dynamicsSchema } from './config/dynamics.js'
 import { masSchema } from './config/mas.js'
 import { publicRegisterSchema } from './config/public-register.js'
 import { schedulerSchema } from './config/scheduler.js'
+import { govPaySchema } from './config/govpay.js'
 import { configDotenv } from 'dotenv'
 
 export {
@@ -371,6 +372,7 @@ const config = convict({
   mas: masSchema,
   publicRegister: publicRegisterSchema,
   scheduler: schedulerSchema,
+  govPay: govPaySchema,
   iat: {
     inFlightTtlMs: {
       doc: 'TTL in milliseconds for in-flight iat-contexts documents. Mongo TTL index purges abandoned IAT journeys after this period.',
