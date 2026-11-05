@@ -49,4 +49,38 @@ describe('PATCH /marine-licence/marine-plan-policy-response - integration tests'
     })
     expect(licence.marinePlanPolicyResponseCount).toBe(2)
   })
+
+  test.each([`$${response}`, `$$${response}`])(
+    'stores a response starting with $ verbatim: %s',
+    async (dollarResponse) => {
+      const marineLicenceId = new ObjectId()
+      await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .insertOne(
+          createCompleteMarineLicence({ _id: marineLicenceId, contactId })
+        )
+
+      const { statusCode } = await makePatchRequest({
+        server: getServer(),
+        url: '/marine-licence/marine-plan-policy-response',
+        contactId,
+        payload: {
+          id: marineLicenceId.toString(),
+          policyCode: 'NEW-1',
+          response: dollarResponse
+        }
+      })
+
+      expect(statusCode).toBe(200)
+
+      const licence = await globalThis.mockMongo
+        .collection(collectionMarineLicences)
+        .findOne({ _id: marineLicenceId })
+
+      expect(licence.marinePlanPolicyResponses['NEW-1']).toEqual({
+        response: dollarResponse,
+        requiresDocumentation: false
+      })
+    }
+  )
 })

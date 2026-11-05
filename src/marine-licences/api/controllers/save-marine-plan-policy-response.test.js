@@ -133,8 +133,10 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
                   '$marinePlanPolicyResponses',
                   {
                     'S-FISH-1': {
-                      response: mockPayload.response,
-                      requiresDocumentation: true
+                      $literal: {
+                        response: mockPayload.response,
+                        requiresDocumentation: true
+                      }
                     }
                   }
                 ]

@@ -37,7 +37,11 @@ export const saveMarinePlanPolicyResponseController = {
             marinePlanPolicyResponses: {
               $mergeObjects: [
                 '$marinePlanPolicyResponses',
-                { [policyCode]: { response, requiresDocumentation } }
+                {
+                  [policyCode]: {
+                    $literal: { response, requiresDocumentation }
+                  }
+                }
               ]
             },
             updatedAt,
