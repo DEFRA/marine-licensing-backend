@@ -195,9 +195,9 @@ export const mockMarinePlanPolicies = [
 ]
 
 export const mockMarinePlanPolicyResponses = {
-  'E-AGG-3': 'test',
-  'E-MPA-1': 'test',
-  'E-BIO-1': 'test'
+  'E-AGG-3': { response: 'test', requiresDocumentation: true },
+  'E-MPA-1': { response: 'test', requiresDocumentation: false },
+  'E-BIO-1': { response: 'test', requiresDocumentation: false }
 }
 
 export const mockRejectedMarineLicenceFields = {

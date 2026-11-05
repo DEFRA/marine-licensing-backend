@@ -147,7 +147,8 @@ describe('POST /marine-licence/redact-text - integration tests', async () => {
       .findOne({ _id: marineLicenceId })
 
     expect(
-      licence.redactions.marinePlanPolicyResponses['E-AGG-3'].redactedText
+      licence.redactions.marinePlanPolicyResponses['E-AGG-3'].response
+        .redactedText
     ).toBe(mockRedactions.preferredDates.redactedText)
   })
 

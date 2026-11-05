@@ -60,8 +60,14 @@ describe('buildMarineLicenceResponse', () => {
       ],
       marinePlanPoliciesCount: 2,
       marinePlanPolicyResponses: {
-        'OLD-1': 'a stale answer from a previous site',
-        'NEW-1': 'answer for the current set'
+        'OLD-1': {
+          response: 'a stale answer from a previous site',
+          requiresDocumentation: false
+        },
+        'NEW-1': {
+          response: 'answer for the current set',
+          requiresDocumentation: true
+        }
       },
       marinePlanPolicyResponseCount: 2
     }
@@ -72,7 +78,10 @@ describe('buildMarineLicenceResponse', () => {
     )
 
     expect(response.marinePlanPolicyResponses).toEqual({
-      'NEW-1': 'answer for the current set'
+      'NEW-1': {
+        response: 'answer for the current set',
+        requiresDocumentation: true
+      }
     })
     expect(response.marinePlanPolicyResponseCount).toBe(1)
     expect(response.taskList.marinePlanPolicies).toBe('IN_PROGRESS')

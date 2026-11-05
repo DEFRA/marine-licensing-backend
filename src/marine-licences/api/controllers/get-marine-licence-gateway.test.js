@@ -340,10 +340,16 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           }
         ],
         marinePlanPolicyResponses: {
-          'SW-CC-1':
-            'This project will not affect any habitats that provide flood defence services.',
-          'SW-AQ-2': '',
-          'OLD-1': 'stale answer from a previous policy set'
+          'SW-CC-1': {
+            response:
+              'This project will not affect any habitats that provide flood defence services.',
+            requiresDocumentation: true
+          },
+          'SW-AQ-2': { response: '', requiresDocumentation: false },
+          'OLD-1': {
+            response: 'stale answer from a previous policy set',
+            requiresDocumentation: false
+          }
         }
       })
 
