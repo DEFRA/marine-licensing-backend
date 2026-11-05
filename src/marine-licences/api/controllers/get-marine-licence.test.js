@@ -188,8 +188,14 @@ describe('GET /marine-licence', () => {
         ],
         marinePlanPoliciesCount: 2,
         marinePlanPolicyResponses: {
-          'OLD-1': 'a stale answer from a previous site',
-          'NEW-1': 'answer for the current set'
+          'OLD-1': {
+            response: 'a stale answer from a previous site',
+            requiresDocumentation: false
+          },
+          'NEW-1': {
+            response: 'answer for the current set',
+            requiresDocumentation: true
+          }
         },
         marinePlanPolicyResponseCount: 2
       })
@@ -207,7 +213,10 @@ describe('GET /marine-licence', () => {
           message: 'success',
           value: expect.objectContaining({
             marinePlanPolicyResponses: {
-              'NEW-1': 'answer for the current set'
+              'NEW-1': {
+                response: 'answer for the current set',
+                requiresDocumentation: true
+              }
             },
             marinePlanPolicyResponseCount: 1,
             taskList: expect.objectContaining({
