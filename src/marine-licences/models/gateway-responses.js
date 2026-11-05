@@ -9,7 +9,7 @@ import { WORKING_HOURS_MAX_LENGTH } from './activity-details/working-hours.js'
 import { HARBOUR_AUTHORITY_DETAILS_MAX_TEXT_LENGTH } from './harbour-authority.js'
 import {
   POLICY_CODE_MAX_LENGTH,
-  POLICY_RESPONSE_MAX_LENGTH
+  POLICY_CONSIDERATION_MAX_LENGTH
 } from './marine-plan-policy.js'
 import { OTHER_AUTHORITIES_DETAILS_MAX_TEXT_LENGTH } from './other-authorities.js'
 import { PROJECT_BACKGROUND_MAX_TEXT_LENGTH } from './project-background.js'
@@ -170,7 +170,7 @@ const gatewayMarinePlanPolicySchema = joi
     policyInformation: nullableString
       .required()
       .description('The policy wording, as sanitised HTML.'),
-    applicantAnswer: limitedText(POLICY_RESPONSE_MAX_LENGTH).required()
+    applicantAnswer: limitedText(POLICY_CONSIDERATION_MAX_LENGTH).required()
   })
   .label('MarinePlanPolicy')
 

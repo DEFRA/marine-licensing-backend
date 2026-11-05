@@ -2,7 +2,8 @@ import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 
 export const POLICY_CODE_MAX_LENGTH = 100
-export const POLICY_RESPONSE_MAX_LENGTH = 5000
+export const POLICY_CONSIDERATION_MIN_LENGTH = 70
+export const POLICY_CONSIDERATION_MAX_LENGTH = 5000
 
 export const calculateMarinePlanPoliciesSchema = joi
   .object()
@@ -18,11 +19,16 @@ export const marinePlanPolicyResponseSchema = joi
     response: joi
       .string()
       .allow('')
-      .max(POLICY_RESPONSE_MAX_LENGTH)
+      .min(POLICY_CONSIDERATION_MIN_LENGTH)
+      .max(POLICY_CONSIDERATION_MAX_LENGTH)
       .required()
       .messages({
-        'string.max': 'POLICY_RESPONSE_MAX_LENGTH',
+        'string.min': 'POLICY_CONSIDERATION_MIN_LENGTH',
+        'string.max': 'POLICY_CONSIDERATION_MAX_LENGTH',
         'any.required': 'POLICY_RESPONSE_REQUIRED'
-      })
+      }),
+    requiresDocumentation: joi.boolean().default(false).messages({
+      'boolean.base': 'REQUIRES_DOCUMENTATION_INVALID'
+    })
   })
   .append(marineLicenceId)

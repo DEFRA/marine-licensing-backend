@@ -17,8 +17,11 @@ describe('formatMarinePlanPoliciesForGateway', () => {
 
     expect(
       formatMarinePlanPoliciesForGateway(policies, {
-        'SW-CC-1': 'No impact on flood defence habitats.',
-        'SW-AQ-2': ''
+        'SW-CC-1': {
+          response: 'No impact on flood defence habitats.',
+          requiresDocumentation: true
+        },
+        'SW-AQ-2': { response: '', requiresDocumentation: false }
       })
     ).toEqual([
       {
