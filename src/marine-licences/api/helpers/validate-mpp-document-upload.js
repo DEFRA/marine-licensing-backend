@@ -10,9 +10,7 @@ import {
 const logger = createLogger()
 const logSystem = 'MarinePlanPolicy:Document Upload Validation'
 
-export const validateMppDocumentUpload = async (marineLicence) => {
-  const { s3Bucket, s3Key } = marineLicence.s3Location
-
+export const validateMppDocumentUpload = async ({ s3Bucket, s3Key }) => {
   const allowedBucket = config.get('cdp.uploadBucket')
   if (s3Bucket !== allowedBucket) {
     logger.warn(`${logSystem}: S3 bucket validation failed`)

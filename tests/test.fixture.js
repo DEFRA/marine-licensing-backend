@@ -111,7 +111,7 @@ export const mockMultipleSite = {
 
 export const mockMarinePlanPolicyDocument = {
   uploadedFile: {
-    filename: 'ecological-assessment.pdf'
+    filename: 'ecological-assessment.docx'
   },
   s3Location: {
     s3Bucket: 'mmo-uploads',

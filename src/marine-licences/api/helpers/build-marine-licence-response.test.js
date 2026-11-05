@@ -43,6 +43,11 @@ describe('buildMarineLicenceResponse', () => {
       marinePlanPolicies: [],
       marinePlanPolicyResponses: {},
       marinePlanPolicyResponseCount: 0,
+      marinePlanPolicySupportingDocuments: {
+        documents: [],
+        required: [],
+        status: 'COMPLETED'
+      },
       taskList: expect.any(Object),
       siteDetailsDataComplete: false
     })
@@ -85,6 +90,44 @@ describe('buildMarineLicenceResponse', () => {
     })
     expect(response.marinePlanPolicyResponseCount).toBe(1)
     expect(response.taskList.marinePlanPolicies).toBe('IN_PROGRESS')
+  })
+
+  it('should group supporting documents with the policies still requiring one and their status', () => {
+    const marinePlanPolicyDocuments = [
+      { documentId: 'doc-1', policyLinks: [{ policyCode: 'C' }] }
+    ]
+    const marineLicence = {
+      _id: mockId,
+      projectName: 'Test project',
+      contactId: 'abc',
+      marinePlanPolicies: [
+        { policyCode: 'A', sector: 'sector-a' },
+        { policyCode: 'B', sector: 'sector-a' },
+        { policyCode: 'C', sector: 'sector-a' }
+      ],
+      marinePlanPolicyResponses: {
+        // Stored out of page order; the required list follows marinePlanPolicies
+        B: { response: '', requiresDocumentation: true },
+        // No longer a current policy, so dropped
+        D: { response: 'stale', requiresDocumentation: true },
+        // Flagged, but a document links to it
+        C: { response: 'answered', requiresDocumentation: true },
+        A: { response: 'answered', requiresDocumentation: false }
+      },
+      marinePlanPolicyDocuments
+    }
+
+    const response = buildMarineLicenceResponse(
+      marineLicence,
+      requestFromApplicantUser({ userContactId: 'abc' })
+    )
+
+    expect(response.marinePlanPolicySupportingDocuments).toEqual({
+      documents: marinePlanPolicyDocuments,
+      required: ['B'],
+      status: 'INCOMPLETE'
+    })
+    expect(response).not.toHaveProperty('marinePlanPolicyDocuments')
   })
 
   it('should report siteDetailsDataComplete as true when site data is valid regardless of siteDetailsConfirmed', () => {

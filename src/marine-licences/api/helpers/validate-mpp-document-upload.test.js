@@ -36,15 +36,12 @@ describe('validateMppDocumentUpload', () => {
   })
 
   test('should throw forbidden error when s3Bucket does not match config', async () => {
-    const invalidDocument = {
-      ...mockMarinePlanPolicyDocument,
-      s3Location: {
-        ...mockMarinePlanPolicyDocument.s3Location,
-        s3Bucket: 'wrong-bucket'
-      }
+    const invalidLocation = {
+      ...mockMarinePlanPolicyDocument.s3Location,
+      s3Bucket: 'wrong-bucket'
     }
 
-    await expect(validateMppDocumentUpload(invalidDocument)).rejects.toThrow(
+    await expect(validateMppDocumentUpload(invalidLocation)).rejects.toThrow(
       Boom.forbidden('Invalid S3 bucket')
     )
   })
@@ -52,16 +49,13 @@ describe('validateMppDocumentUpload', () => {
   test('should validate against configured bucket name', async () => {
     config.get.mockReturnValue('different-bucket')
 
-    const validDocument = {
-      ...mockMarinePlanPolicyDocument,
-      s3Location: {
-        ...mockMarinePlanPolicyDocument.s3Location,
-        s3Bucket: 'different-bucket'
-      }
+    const validLocation = {
+      ...mockMarinePlanPolicyDocument.s3Location,
+      s3Bucket: 'different-bucket'
     }
 
     await expect(
-      validateMppDocumentUpload(validDocument)
+      validateMppDocumentUpload(validLocation)
     ).resolves.toBeUndefined()
   })
 
@@ -71,7 +65,7 @@ describe('validateMppDocumentUpload', () => {
     )
 
     await expect(
-      validateMppDocumentUpload(mockMarinePlanPolicyDocument)
+      validateMppDocumentUpload(mockMarinePlanPolicyDocument.s3Location)
     ).rejects.toThrow(Boom.entityTooLarge('File too large'))
   })
 
@@ -81,7 +75,7 @@ describe('validateMppDocumentUpload', () => {
     })
 
     await expect(
-      validateMppDocumentUpload(mockMarinePlanPolicyDocument)
+      validateMppDocumentUpload(mockMarinePlanPolicyDocument.s3Location)
     ).rejects.toThrow(
       Boom.unsupportedMediaType(
         'File must be a PDF or document (.doc, .docx, .odt)'
@@ -98,7 +92,7 @@ describe('validateMppDocumentUpload', () => {
     blobService.validateFileSize.mockResolvedValue({ contentType })
 
     await expect(
-      validateMppDocumentUpload(mockMarinePlanPolicyDocument)
+      validateMppDocumentUpload(mockMarinePlanPolicyDocument.s3Location)
     ).resolves.toBeUndefined()
   })
 })

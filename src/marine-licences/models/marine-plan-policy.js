@@ -74,9 +74,7 @@ export const marinePlanPolicyDocumentTypeSchema = joi
           'any.required': 'DOCUMENT_TYPE_OTHER_REQUIRED',
           'string.max': 'DOCUMENT_TYPE_OTHER_MAX_LENGTH'
         }),
-      otherwise: joi.forbidden().messages({
-        'any.unknown': 'DOCUMENT_TYPE_OTHER_REQUIRED'
-      })
+      otherwise: joi.any().strip()
     })
   })
   .append(marineLicenceId)

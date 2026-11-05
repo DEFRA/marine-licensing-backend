@@ -5,8 +5,12 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { mockMarinePlanPolicyDocument } from '../../../../../tests/test.fixture.js'
 
-vi.mock('../../helpers/validate-mpp-document-upload.js', () => ({
-  validateMppDocumentUpload: vi.fn()
+vi.mock('../../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    validateFileSize: vi.fn().mockResolvedValue({
+      contentType: 'application/pdf'
+    })
+  }
 }))
 
 describe('POST /marine-licence/marine-plan-policy-document - integration tests', async () => {

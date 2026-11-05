@@ -10,7 +10,7 @@ const uuid = '123e4567-e89b-12d3-a456-426614174000'
 
 const buildAddPayload = (overrides = {}) => ({
   id: marineLicenceId,
-  uploadedFile: { filename: 'doc.pdf' },
+  uploadedFile: { filename: 'doc.docx' },
   s3Location: { s3Bucket: 'b', s3Key: 'k', checksumSha256: 'c' },
   ...overrides
 })
@@ -95,15 +95,19 @@ describe('marinePlanPolicyDocumentTypeSchema', () => {
     ).toBeUndefined()
   })
 
-  test('forbids other text when the document type is not other', () => {
-    const result = marinePlanPolicyDocumentTypeSchema.validate(
-      buildTypePayload({
-        documentType: MPP_DOCUMENT_TYPES[0],
-        documentTypeOther: 'should not be allowed'
-      })
-    )
-    expect(result.error).toBeDefined()
-  })
+  test.each(['ignored text', ''])(
+    'strips other text (%j) when the document type is not other',
+    (documentTypeOther) => {
+      const result = marinePlanPolicyDocumentTypeSchema.validate(
+        buildTypePayload({
+          documentType: MPP_DOCUMENT_TYPES[0],
+          documentTypeOther
+        })
+      )
+      expect(result.error).toBeUndefined()
+      expect(result.value).not.toHaveProperty('documentTypeOther')
+    }
+  )
 
   test('rejects an invalid id', () => {
     const result = marinePlanPolicyDocumentTypeSchema.validate(
