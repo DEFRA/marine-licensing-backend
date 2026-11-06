@@ -464,6 +464,31 @@ describe('BlobService', () => {
         blobService.validateFileSize(s3Bucket, s3Key)
       ).rejects.toThrow(error)
     })
+
+    it('should use a custom maxFileSize when one is provided', async () => {
+      const mockMetadata = {
+        size: 12_000_000,
+        lastModified: new Date(),
+        contentType: 'application/pdf'
+      }
+      const getMetadata = vi
+        .spyOn(blobService, 'getMetadata')
+        .mockResolvedValue(mockMetadata)
+
+      const result = await blobService.validateFileSize(
+        s3Bucket,
+        s3Key,
+        13_000_000
+      )
+      expect(result).toEqual(mockMetadata)
+      expect(getMetadata).toHaveBeenCalledWith(s3Bucket, s3Key)
+
+      await expect(
+        blobService.validateFileSize(s3Bucket, s3Key, 11_000_000)
+      ).rejects.toThrow(
+        'File size (12000000 bytes) exceeds maximum allowed size (11000000 bytes)'
+      )
+    })
   })
 
   describe('createTempDirectory', () => {
