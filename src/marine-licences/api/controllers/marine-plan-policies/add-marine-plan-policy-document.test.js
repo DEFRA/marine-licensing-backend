@@ -68,6 +68,20 @@ describe('POST /marine-licence/marine-plan-policy-document', () => {
       ).rejects.toThrow('Invalid S3 bucket')
     })
 
+    test('should throw 404 when the marine licence is not matched', async () => {
+      const { mockMongo, mockHandler } = global
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        updateOne: vi.fn().mockResolvedValue({ matchedCount: 0 })
+      }))
+
+      await expect(() =>
+        addMarinePlanPolicyDocumentController.handler(
+          { db: mockMongo, payload: buildPayload() },
+          mockHandler
+        )
+      ).rejects.toThrow('Marine licence not found')
+    })
+
     test('should throw 500 when the database operation fails', async () => {
       const { mockMongo, mockHandler } = global
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
