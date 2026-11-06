@@ -253,7 +253,7 @@ describe('redactText', () => {
       [
         'marinePlanPolicyResponses',
         { policyCode: 'E-AGG-3' },
-        'marinePlanPolicyResponses.E-AGG-3'
+        'marinePlanPolicyResponses.E-AGG-3.response'
       ]
     ])('should build %s into %s', (fieldKey, params, expected) => {
       expect(buildFieldPath(fieldKey, params)).toBe(expected)
