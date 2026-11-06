@@ -46,7 +46,7 @@ describe('buildMarineLicenceResponse', () => {
       marinePlanPolicySupportingDocuments: {
         documents: [],
         required: [],
-        status: 'COMPLETED'
+        status: 'NOT_REQUIRED'
       },
       taskList: expect.any(Object),
       siteDetailsDataComplete: false

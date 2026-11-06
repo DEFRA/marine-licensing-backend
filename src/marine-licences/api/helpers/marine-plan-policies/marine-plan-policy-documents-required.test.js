@@ -79,15 +79,34 @@ describe('buildMarinePlanPolicyDocumentsRequired', () => {
 })
 
 describe('getMarinePlanPolicyDocumentStatus', () => {
-  test('returns INCOMPLETE when any policy still requires a document', () => {
-    expect(getMarinePlanPolicyDocumentStatus(['A'])).toBe('INCOMPLETE')
+  test('returns NOT_REQUIRED when no policy is flagged', () => {
+    expect(
+      getMarinePlanPolicyDocumentStatus(
+        { A: policyResponseObject(mockPolicyCode, false) },
+        []
+      )
+    ).toBe('NOT_REQUIRED')
   })
 
-  test('returns COMPLETED when no policy requires a document', () => {
-    expect(getMarinePlanPolicyDocumentStatus([])).toBe('COMPLETED')
+  test('returns INCOMPLETE when a flagged policy still requires a document', () => {
+    expect(
+      getMarinePlanPolicyDocumentStatus(
+        { A: policyResponseObject(mockPolicyCode, true) },
+        ['A']
+      )
+    ).toBe('INCOMPLETE')
   })
 
-  test('defaults to COMPLETED when called with no arguments', () => {
-    expect(getMarinePlanPolicyDocumentStatus()).toBe('COMPLETED')
+  test('returns COMPLETED when every flagged policy has a document', () => {
+    expect(
+      getMarinePlanPolicyDocumentStatus(
+        { A: policyResponseObject(mockPolicyCode, true) },
+        []
+      )
+    ).toBe('COMPLETED')
+  })
+
+  test('defaults to NOT_REQUIRED when called with no arguments', () => {
+    expect(getMarinePlanPolicyDocumentStatus()).toBe('NOT_REQUIRED')
   })
 })

@@ -70,7 +70,10 @@ export const buildMarineLicenceResponse = (
     marinePlanPolicySupportingDocuments: {
       documents,
       required,
-      status: getMarinePlanPolicyDocumentStatus(required)
+      status: getMarinePlanPolicyDocumentStatus(
+        marinePlanPolicyResponses,
+        required
+      )
     },
     taskList,
     siteDetailsDataComplete:

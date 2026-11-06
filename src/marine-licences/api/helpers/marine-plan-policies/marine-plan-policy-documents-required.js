@@ -1,6 +1,7 @@
 import {
   COMPLETED,
-  INCOMPLETE
+  INCOMPLETE,
+  NOT_REQUIRED
 } from '../../../../shared/helpers/task-list-utils.js'
 
 export const buildMarinePlanPolicyDocumentsRequired = (
@@ -23,5 +24,17 @@ export const buildMarinePlanPolicyDocumentsRequired = (
     )
 }
 
-export const getMarinePlanPolicyDocumentStatus = (documentsRequired = []) =>
-  documentsRequired.length > 0 ? INCOMPLETE : COMPLETED
+export const getMarinePlanPolicyDocumentStatus = (
+  responses = {},
+  documentsRequired = []
+) => {
+  if (
+    !Object.values(responses).some(
+      ({ requiresDocumentation }) => requiresDocumentation === true
+    )
+  ) {
+    return NOT_REQUIRED
+  }
+
+  return documentsRequired.length > 0 ? INCOMPLETE : COMPLETED
+}
