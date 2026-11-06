@@ -67,5 +67,21 @@ describe('POST /marine-licence/marine-plan-policy-document', () => {
         )
       ).rejects.toThrow('Invalid S3 bucket')
     })
+
+    test('should throw 500 when the database operation fails', async () => {
+      const { mockMongo, mockHandler } = global
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        updateOne: vi.fn().mockRejectedValueOnce(new Error('Database exploded'))
+      }))
+
+      await expect(() =>
+        addMarinePlanPolicyDocumentController.handler(
+          { db: mockMongo, payload: buildPayload() },
+          mockHandler
+        )
+      ).rejects.toThrow(
+        'Error adding marine plan policy document: Database exploded'
+      )
+    })
   })
 })

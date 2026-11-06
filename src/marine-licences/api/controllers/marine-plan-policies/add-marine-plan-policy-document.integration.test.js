@@ -1,9 +1,11 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
 import { makePostRequest } from '../../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../../tests/test.fixture.js'
+import {
+  createCompleteMarineLicence,
+  mockMarinePlanPolicyDocument
+} from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
-import { mockMarinePlanPolicyDocument } from '../../../../../tests/test.fixture.js'
 
 vi.mock('../../../../shared/services/data-service/blob-service.js', () => ({
   blobService: {

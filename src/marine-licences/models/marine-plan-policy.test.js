@@ -55,14 +55,6 @@ describe('marinePlanPolicyDocumentTypeSchema', () => {
     ).toBeUndefined()
   })
 
-  test('accepts valid document type', () => {
-    expect(
-      marinePlanPolicyDocumentTypeSchema.validate(
-        buildTypePayload({ documentType: MPP_DOCUMENT_TYPES[0] })
-      ).error
-    ).toBeUndefined()
-  })
-
   test('rejects an unknown document type', () => {
     const result = marinePlanPolicyDocumentTypeSchema.validate(
       buildTypePayload({ documentType: 'not-a-real-type' })
@@ -113,6 +105,6 @@ describe('marinePlanPolicyDocumentTypeSchema', () => {
     const result = marinePlanPolicyDocumentTypeSchema.validate(
       buildTypePayload({ documentId: 'not-a-uuid' })
     )
-    expect(result.error.message).toContain('valid GUID')
+    expect(result.error.message).toBe('DOCUMENT_ID_INVALID')
   })
 })
