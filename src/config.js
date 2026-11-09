@@ -15,6 +15,7 @@ import { publicRegisterSchema } from './config/public-register.js'
 import { schedulerSchema } from './config/scheduler.js'
 import { govPaySchema } from './config/govpay.js'
 import { configDotenv } from 'dotenv'
+import { JOURNEY_TEST_CONTACT_ID } from './shared/common/constants/journey-test-cleanup.js'
 
 export {
   isCdpProductionLikeEnvironment,
@@ -88,6 +89,12 @@ const config = convict({
     ],
     default: 'local',
     env: 'ENVIRONMENT'
+  },
+  journeyTestContactId: {
+    doc: 'Dynamics contactId for the CDP test journey-test Defra ID account (Government Gateway ID 948491506851). Required for scoped cleanup on test; unused on other environments.',
+    format: String,
+    default: JOURNEY_TEST_CONTACT_ID,
+    env: 'JOURNEY_TEST_CONTACT_ID'
   },
   defraId: {
     jwksUri: {
