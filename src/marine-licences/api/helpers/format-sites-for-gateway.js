@@ -260,11 +260,8 @@ const mintConstructionDrawingPresignedUrl = async (
   drawing,
   getPresignedUrl
 ) => {
-  const s3Bucket = drawing.s3Location?.s3Bucket
-  const s3Key = drawing.s3Location?.s3Key
-  if (!s3Bucket || !s3Key || !getPresignedUrl) {
-    return null
-  }
+  const s3Bucket = drawing.s3Location.s3Bucket
+  const s3Key = drawing.s3Location.s3Key
 
   try {
     return await getPresignedUrl(
@@ -274,10 +271,9 @@ const mintConstructionDrawingPresignedUrl = async (
     )
   } catch (error) {
     // Prefer a useful MAS payload over failing the whole response.
-    const filename = drawing.filename ?? 'unknown'
     logger.error(
       structureErrorForECS(error),
-      `MarineLicence:MAS: Failed to generate construction drawing presigned URL for ${s3Bucket} (filename: ${filename})`
+      `MarineLicence:MAS: Failed to generate construction drawing presigned URL for ${s3Bucket} (filename: ${drawing.filename})`
     )
     return null
   }

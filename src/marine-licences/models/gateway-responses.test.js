@@ -90,6 +90,73 @@ describe('marineLicenceGatewayResponseSchema', () => {
       }).error
     ).toBeUndefined()
   })
+
+  test('accepts a site with an empty constructionDrawings array', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [{ ...validResponse.sites[0], constructionDrawings: [] }]
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('accepts a construction drawing with a null presignedFileUrl', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [
+          {
+            ...validResponse.sites[0],
+            constructionDrawings: [
+              {
+                drawingIndex: 0,
+                filename: 'tech-drawing.pdf',
+                presignedFileUrl: null
+              }
+            ]
+          }
+        ]
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('rejects a construction drawing without a filename', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [
+          {
+            ...validResponse.sites[0],
+            constructionDrawings: [
+              {
+                drawingIndex: 0,
+                presignedFileUrl: 'https://s3.example.com/tech-drawing.pdf'
+              }
+            ]
+          }
+        ]
+      }).error
+    ).toBeDefined()
+  })
+
+  test('rejects a construction drawing without a drawingIndex', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [
+          {
+            ...validResponse.sites[0],
+            constructionDrawings: [
+              {
+                filename: 'tech-drawing.pdf',
+                presignedFileUrl: 'https://s3.example.com/tech-drawing.pdf'
+              }
+            ]
+          }
+        ]
+      }).error
+    ).toBeDefined()
+  })
 })
 
 describe('wfdDocumentDownloadUrlResponseSchema', () => {
