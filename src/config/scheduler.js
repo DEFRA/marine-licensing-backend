@@ -1,3 +1,5 @@
+import { convictValidateCronExpression } from '../shared/common/helpers/convict/validate-scheduler.js'
+
 // Cron expression reference, for editing these schedules by hand.
 //
 //   ┌──────────── minute        0-59
@@ -32,7 +34,6 @@
 // backward-looking (see the scheduled job contract), so a single missed fire is
 // normally picked up by the next run. If that is not acceptable for a particular
 // job, give it an hour outside 01:00-01:59 — 00:05 is a safe default.
-import { convictValidateCronExpression } from '../shared/common/helpers/convict/validate-scheduler.js'
 
 const CRON_EXPRESSION_FORMAT = convictValidateCronExpression.name
 

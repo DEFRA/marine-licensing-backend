@@ -50,7 +50,7 @@ const runPostSubmitBackgroundWork = ({
   isDynamicsEnabled
 }) => {
   // Each geo operation catches its own errors so a failure in one does
-  // not block the other or the Dynamics queue insert — geo areas can be
+  // not block the other or the Dynamics queue insert
   Promise.all([
     updateCoastalOperationsAreas(marineLicence, db, {
       updatedAt,
@@ -94,7 +94,6 @@ export const submitMarineLicenceApplication = async ({
   db,
   locker,
   logger,
-  id,
   marineLicence,
   userName,
   userEmail,
@@ -103,6 +102,7 @@ export const submitMarineLicenceApplication = async ({
 }) => {
   const { isDynamicsEnabled } = config.get('dynamics')
   const frontEndBaseUrl = config.get('frontEndBaseUrl')
+  const id = marineLicence._id.toHexString()
 
   const applicationReference = await generateApplicationReference(
     db,

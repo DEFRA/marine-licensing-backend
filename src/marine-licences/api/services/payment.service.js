@@ -14,7 +14,8 @@ import {
 import {
   PAYMENT_DESCRIPTION,
   PAYMENT_RETURN_PATH,
-  PAYMENT_STATUS
+  PAYMENT_STATUS,
+  PAYMENT_SUBMISSION_ERROR
 } from '../../constants/payment.js'
 import { submitMarineLicenceApplication } from './submit-marine-licence-application.js'
 
@@ -44,7 +45,9 @@ const withApplicationLock = async (locker, applicationId, fn, attempt = 1) => {
 const payments = (db) => db.collection(collectionMarineLicencePayments)
 
 const returnUrlFor = (returnId) =>
-  `${config.get('govPay').returnBaseUrl}${PAYMENT_RETURN_PATH}/${returnId}`
+  `${config.get('frontEndBaseUrl')}${PAYMENT_RETURN_PATH}/${returnId}`
+
+const nextUrlOf = (govPayment) => govPayment._links?.next_url?.href ?? null
 
 const recordGovPayState = async (db, payment, govPayment) => {
   const { status, finished, code } = govPayment.state
@@ -60,6 +63,8 @@ const recordGovPayState = async (db, payment, govPayment) => {
   return { ...payment, ...update }
 }
 
+// The local row is written before the Pay payment exists, so a Pay payment
+// is never left without a record carrying its returnId
 const startNewPayment = async ({
   db,
   applicationId,
@@ -69,34 +74,51 @@ const startNewPayment = async ({
 }) => {
   const { amountPence } = config.get('govPay')
   const returnId = randomUUID()
-
-  const govPayment = await createGovPayPayment({
-    amount: amountPence,
-    reference: applicationId,
-    description: PAYMENT_DESCRIPTION,
-    returnUrl: returnUrlFor(returnId),
-    metadata: { applicationId }
-  })
-
   const now = new Date()
-  await payments(db).insertOne({
+
+  const { insertedId } = await payments(db).insertOne({
     returnId,
     applicationId,
     contactId,
     userName,
     userEmail,
-    paymentId: govPayment.payment_id,
+    paymentId: null,
     amount: amountPence,
-    reference: applicationId,
-    status: govPayment.state.status,
-    finished: govPayment.state.finished,
+    status: null,
+    finished: false,
     code: null,
     createdAt: now,
     updatedAt: now,
     lastCheckedAt: now
   })
 
-  return govPayment._links.next_url.href
+  let govPayment
+  try {
+    govPayment = await createGovPayPayment({
+      amount: amountPence,
+      reference: applicationId,
+      description: PAYMENT_DESCRIPTION,
+      returnUrl: returnUrlFor(returnId),
+      metadata: { returnId }
+    })
+  } catch (error) {
+    await payments(db).deleteOne({ _id: insertedId })
+    throw error
+  }
+
+  await payments(db).updateOne(
+    { _id: insertedId },
+    {
+      $set: {
+        paymentId: govPayment.payment_id,
+        status: govPayment.state.status,
+        finished: govPayment.state.finished,
+        updatedAt: new Date()
+      }
+    }
+  )
+
+  return nextUrlOf(govPayment)
 }
 
 // Pay's next_url works once, so a payment the user comes back to is resumed with
@@ -105,8 +127,10 @@ const resumeUnfinishedPayment = async (db, payment) => {
   const govPayment = await getGovPayPayment(payment.paymentId)
   const updated = await recordGovPayState(db, payment, govPayment)
 
+  // Past the card page (e.g. authorising) Pay gives no next_url; the return
+  // page reports the payment as still in progress
   if (!updated.finished) {
-    return govPayment._links.next_url.href
+    return nextUrlOf(govPayment) ?? returnUrlFor(payment.returnId)
   }
   if (updated.status === PAYMENT_STATUS.SUCCESS) {
     return returnUrlFor(payment.returnId)
@@ -123,8 +147,17 @@ export const createOrResumePayment = async ({
   userEmail
 }) =>
   withApplicationLock(locker, applicationId, async () => {
+    // A paid payment whose submission failed must be resolved, not paid again
+    const paid = await payments(db).findOne({
+      applicationId,
+      status: PAYMENT_STATUS.SUCCESS
+    })
+    if (paid) {
+      return returnUrlFor(paid.returnId)
+    }
+
     const unfinished = await payments(db).findOne(
-      { applicationId, finished: false },
+      { applicationId, finished: false, paymentId: { $ne: null } },
       { sort: { createdAt: -1 } }
     )
 
@@ -145,6 +178,25 @@ const submitPaidApplication = async ({ db, locker, logger, payment }) =>
       .findOne({ _id: ObjectId.createFromHexString(payment.applicationId) })
 
     if (!marineLicence) {
+      await payments(db).updateOne(
+        { _id: payment._id },
+        {
+          $set: {
+            submissionError: PAYMENT_SUBMISSION_ERROR.LICENCE_NOT_FOUND,
+            updatedAt: new Date()
+          }
+        }
+      )
+      logger.warn(
+        {
+          event: {
+            action: 'marine_licence_payment_submitted',
+            outcome: 'failure',
+            reason: PAYMENT_SUBMISSION_ERROR.LICENCE_NOT_FOUND
+          }
+        },
+        `Payment ${payment.paymentId} succeeded but marine licence ${payment.applicationId} no longer exists; refund required`
+      )
       throw Boom.notFound('Marine licence not found for payment')
     }
 
@@ -156,7 +208,6 @@ const submitPaidApplication = async ({ db, locker, logger, payment }) =>
       db,
       locker,
       logger,
-      id: payment.applicationId,
       marineLicence,
       userName: payment.userName,
       userEmail: payment.userEmail,
@@ -220,8 +271,16 @@ export const findPaymentsToReconcile = (db, { olderThan, limit }) =>
   payments(db)
     .find({
       $or: [
-        { finished: false, createdAt: { $lt: olderThan } },
-        { status: PAYMENT_STATUS.SUCCESS, applicationReference: null }
+        {
+          finished: false,
+          paymentId: { $ne: null },
+          createdAt: { $lt: olderThan }
+        },
+        {
+          status: PAYMENT_STATUS.SUCCESS,
+          applicationReference: null,
+          submissionError: null
+        }
       ]
     })
     .sort({ createdAt: 1 })

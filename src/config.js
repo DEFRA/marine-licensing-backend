@@ -7,6 +7,7 @@ import {
   requiredFromEnvInCdp
 } from './shared/common/helpers/convict/required-from-env-in-cdp.js'
 import { convictValidateCronExpression } from './shared/common/helpers/convict/validate-scheduler.js'
+import { convictPositiveInteger } from './shared/common/helpers/convict/positive-integer.js'
 import { exploreMarinePlanningSchema } from './config/explore-marine-planning.js'
 import { marinePlanPoliciesSchema } from './config/marine-plan-policies.js'
 import { dynamicsSchema } from './config/dynamics.js'
@@ -24,6 +25,7 @@ export {
 convict.addFormat(convictValidateMongoUri)
 convict.addFormat(convictRequiredFromEnvInCdp)
 convict.addFormat(convictValidateCronExpression)
+convict.addFormat(convictPositiveInteger)
 convict.addFormats(convictFormatWithValidator)
 
 const isProduction = process.env.NODE_ENV === 'production'

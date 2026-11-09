@@ -1,7 +1,7 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { config } from '../../../config.js'
-import { paymentReturnParams } from '../../models/payment.js'
+import { paymentReturnParams } from '../../models/payment-return-params.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import {
   findPaymentByReturnId,

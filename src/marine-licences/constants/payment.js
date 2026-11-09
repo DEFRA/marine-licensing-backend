@@ -1,12 +1,9 @@
 export const PAYMENT_STATUS = {
-  CREATED: 'created',
-  STARTED: 'started',
-  SUBMITTED: 'submitted',
-  CAPTURABLE: 'capturable',
-  SUCCESS: 'success',
-  FAILED: 'failed',
-  CANCELLED: 'cancelled',
-  ERROR: 'error'
+  SUCCESS: 'success'
+}
+
+export const PAYMENT_SUBMISSION_ERROR = {
+  LICENCE_NOT_FOUND: 'LICENCE_NOT_FOUND'
 }
 
 export const PAYMENT_DESCRIPTION = 'Marine licence application fee'

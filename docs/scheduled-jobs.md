@@ -59,6 +59,25 @@ The job is idempotent in the sense the scheduler requires — a re-run writes no
 but it does not repair a failed EMP push, and none of this runs unless
 `isEmpEnabled` is on.
 
+### The payment-reconciliation job calls GOV.UK Pay
+
+Every 15 minutes the job picks up to 100 marine licence payments that either
+are still unfinished past `GOVPAY_RECONCILE_AFTER_MINUTES` (Pay expires them at
+90 minutes) or succeeded without the licence being submitted, asks Pay for their
+state, and submits the licence for any that succeeded. It does nothing unless
+`GOVPAY_ENABLED` is on.
+
+Each payment is resolved under a per-licence lock and the submit is skipped once
+the licence has an `applicationReference`, so a re-run, an overlapping fire on
+another instance, or a user returning from Pay at the same moment cannot submit
+twice. Its runtime is bounded by Pay's latency (up to `GOVPAY_TIMEOUT_MS` per
+payment), so a slow Pay can push a run past its interval; the lock is what makes
+that overlap safe.
+
+A paid payment whose licence no longer exists is marked
+`submissionError: LICENCE_NOT_FOUND` and logged as a `warn` for a manual
+refund, then left out of later runs.
+
 ## Shutdown
 
 `onPreStop` calls node-cron's `shutdown()`, which stops the timers and then waits
@@ -87,13 +106,15 @@ its own guard; the scheduler does not provide one.
 Everything lives in the `scheduler` config, `src/config/scheduler.js`, which is
 canonical — the values below are a snapshot for orientation:
 
-| Key                               | Default      | Environment variable                  |
-| --------------------------------- | ------------ | ------------------------------------- |
-| `isEnabled`                       | `true`       | `SCHEDULER_ENABLED`                   |
-| `jobs.heartbeat.isEnabled`        | `true`       | `SCHEDULER_HEARTBEAT_ENABLED`         |
-| `jobs.heartbeat.schedule`         | `15 0 * * *` | `SCHEDULER_HEARTBEAT_SCHEDULE`        |
-| `jobs.exemption-status.isEnabled` | `true`       | `SCHEDULER_EXEMPTION_STATUS_ENABLED`  |
-| `jobs.exemption-status.schedule`  | `5 0 * * *`  | `SCHEDULER_EXEMPTION_STATUS_SCHEDULE` |
+| Key                                     | Default        | Environment variable                        |
+| --------------------------------------- | -------------- | ------------------------------------------- |
+| `isEnabled`                             | `true`         | `SCHEDULER_ENABLED`                         |
+| `jobs.heartbeat.isEnabled`              | `true`         | `SCHEDULER_HEARTBEAT_ENABLED`               |
+| `jobs.heartbeat.schedule`               | `15 0 * * *`   | `SCHEDULER_HEARTBEAT_SCHEDULE`              |
+| `jobs.exemption-status.isEnabled`       | `true`         | `SCHEDULER_EXEMPTION_STATUS_ENABLED`        |
+| `jobs.exemption-status.schedule`        | `5 0 * * *`    | `SCHEDULER_EXEMPTION_STATUS_SCHEDULE`       |
+| `jobs.payment-reconciliation.isEnabled` | `true`         | `SCHEDULER_PAYMENT_RECONCILIATION_ENABLED`  |
+| `jobs.payment-reconciliation.schedule`  | `*/15 * * * *` | `SCHEDULER_PAYMENT_RECONCILIATION_SCHEDULE` |
 
 `isEnabled` is the master switch: when false nothing is scheduled, but every job
 body stays invokable via its server method. Each job adds its own

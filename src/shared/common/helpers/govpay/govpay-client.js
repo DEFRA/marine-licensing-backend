@@ -34,8 +34,7 @@ const toGovPayError = (error, operation) => {
   logger.error(
     {
       ...structureErrorForECS(error),
-      service: 'govpay',
-      event: { action: `govpay-${operation.replaceAll(' ', '-')}` }
+      event: { action: `govpay_${operation.replaceAll(' ', '_')}` }
     },
     `${summary}: ${description ?? message ?? error.message}`
   )

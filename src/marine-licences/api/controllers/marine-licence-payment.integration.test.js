@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest'
+import Boom from '@hapi/boom'
 import { ObjectId } from 'mongodb'
 import { config } from '../../../config.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
@@ -55,6 +56,17 @@ describe('marine licence payment routes', async () => {
       url: `/marine-licence/payment/${returnId}`,
       auth: requestAuth
     })
+
+  const returnUrl = (returnId) =>
+    `http://localhost:3000/marine-licence/payment/return/${returnId}`
+
+  const markStoredPaymentPaid = () =>
+    db
+      .collection(collectionMarineLicencePayments)
+      .updateOne(
+        { applicationId: marineLicenceId.toHexString() },
+        { $set: { status: 'success', finished: true } }
+      )
 
   const storedPayment = () =>
     db
@@ -113,7 +125,7 @@ describe('marine licence payment routes', async () => {
         expect.objectContaining({
           amount: 5000,
           returnUrl: `http://localhost:3000/marine-licence/payment/return/${payment.returnId}`,
-          metadata: { applicationId: marineLicenceId.toHexString() }
+          metadata: { returnId: payment.returnId }
         })
       )
     })
@@ -161,6 +173,44 @@ describe('marine licence payment routes', async () => {
       expect(
         await db.collection(collectionMarineLicencePayments).countDocuments()
       ).toBe(2)
+    })
+
+    it('sends the user to the return page rather than charging again when a paid licence was not submitted', async () => {
+      await createPaymentRequest()
+      await markStoredPaymentPaid()
+      const { returnId } = await storedPayment()
+
+      const response = await createPaymentRequest()
+
+      expect(JSON.parse(response.payload).value.nextUrl).toBe(
+        returnUrl(returnId)
+      )
+      expect(createGovPayPayment).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends the user to the return page when Pay gives no next_url for an unfinished payment', async () => {
+      await createPaymentRequest()
+      const { returnId } = await storedPayment()
+      getGovPayPayment.mockResolvedValue(
+        govPayResponse('pay-1', { status: 'submitted', finished: false })
+      )
+
+      const response = await createPaymentRequest()
+
+      expect(response.statusCode).toBe(200)
+      expect(JSON.parse(response.payload).value.nextUrl).toBe(
+        returnUrl(returnId)
+      )
+      expect(createGovPayPayment).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes the local record when Pay rejects the payment', async () => {
+      createGovPayPayment.mockRejectedValue(Boom.badGateway('Pay failed'))
+
+      const response = await createPaymentRequest()
+
+      expect(response.statusCode).toBe(502)
+      expect(await storedPayment()).toBeNull()
     })
 
     it('returns 404 when GOV.UK Pay is disabled', async () => {
@@ -361,6 +411,21 @@ describe('marine licence payment routes', async () => {
       expect(getGovPayPayment).not.toHaveBeenCalled()
     })
 
+    it('marks a paid payment whose licence was deleted and skips it on later runs', async () => {
+      await createPaymentRequest()
+      await markStoredPaymentPaid()
+      await db
+        .collection(collectionMarineLicences)
+        .deleteOne({ _id: marineLicenceId })
+
+      const first = await reconcilePayments(getServer())
+      const second = await reconcilePayments(getServer())
+
+      expect(first.summary).toContain('1 errored')
+      expect((await storedPayment()).submissionError).toBe('LICENCE_NOT_FOUND')
+      expect(second.summary).toMatch(/^0 payments checked/)
+    })
+
     it('counts a Pay error without stopping the run', async () => {
       await createPaymentRequest()
       await ageStoredPayment(91)
@@ -377,6 +442,27 @@ describe('marine licence payment routes', async () => {
       const { summary } = await reconcilePayments(getServer())
 
       expect(summary).toBe('GOV.UK Pay disabled; nothing reconciled')
+    })
+  })
+
+  describe('POST /marine-licence/submit', () => {
+    it('refuses a direct submit while GOV.UK Pay is enabled', async () => {
+      const response = await getServer().inject({
+        method: 'POST',
+        url: '/marine-licence/submit',
+        payload: {
+          id: marineLicenceId.toHexString(),
+          userEmail: 'test@example.com',
+          userName: 'Test User'
+        },
+        auth
+      })
+
+      expect(response.statusCode).toBe(403)
+      const licence = await db
+        .collection(collectionMarineLicences)
+        .findOne({ _id: marineLicenceId })
+      expect(licence.status).toBe(MARINE_LICENCE_STATUS.DRAFT)
     })
   })
 })

@@ -80,8 +80,7 @@ describe('govpay-client', () => {
 
       expect(mockLoggerError).toHaveBeenCalledWith(
         expect.objectContaining({
-          service: 'govpay',
-          event: { action: 'govpay-create-payment' }
+          event: { action: 'govpay_create_payment' }
         }),
         'GOV.UK Pay create payment failed with 400 (P0102): Invalid attribute value'
       )

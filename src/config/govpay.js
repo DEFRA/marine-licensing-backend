@@ -1,3 +1,5 @@
+import { convictPositiveInteger } from '../shared/common/helpers/convict/positive-integer.js'
+
 export const govPaySchema = {
   isEnabled: {
     doc: 'Enable the GOV.UK Pay payment routes and reconciliation',
@@ -19,15 +21,9 @@ export const govPaySchema = {
     default: null,
     env: 'GOVPAY_API_KEY'
   },
-  returnBaseUrl: {
-    doc: 'Public frontend base URL that GOV.UK Pay sends the user back to',
-    format: String,
-    default: 'http://localhost:3000',
-    env: 'GOVPAY_RETURN_BASE_URL'
-  },
   amountPence: {
     doc: 'Marine licence application fee, in pence',
-    format: 'nat',
+    format: convictPositiveInteger.name,
     default: 5000,
     env: 'GOVPAY_AMOUNT_PENCE'
   },
