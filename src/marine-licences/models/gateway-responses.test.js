@@ -42,6 +42,13 @@ const validResponse = {
           completionDate: { hasSpecificDate: null, reason: null },
           workingHours: null
         }
+      ],
+      constructionDrawings: [
+        {
+          drawingIndex: 0,
+          filename: 'tech-drawing.pdf',
+          presignedFileUrl: 'https://s3.example.com/tech-drawing.pdf'
+        }
       ]
     }
   ],
@@ -68,6 +75,20 @@ describe('marineLicenceGatewayResponseSchema', () => {
     expect(
       marineLicenceGatewayResponseSchema.validate(withoutSites).error
     ).toBeDefined()
+  })
+
+  test('accepts a site without constructionDrawings', () => {
+    const {
+      constructionDrawings: _constructionDrawings,
+      ...siteWithoutDrawings
+    } = validResponse.sites[0]
+
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [siteWithoutDrawings]
+      }).error
+    ).toBeUndefined()
   })
 })
 

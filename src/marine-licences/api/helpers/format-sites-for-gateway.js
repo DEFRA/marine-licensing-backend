@@ -249,7 +249,75 @@ const formatUploadedFile = (site, presignedFileUrl = null) => {
   }
 }
 
-const formatSiteForGateway = (site, siteIndex, presignedFileUrl = null) => ({
+const hasCompleteConstructionDrawing = (drawing) =>
+  Boolean(
+    drawing?.filename &&
+    drawing?.s3Location?.s3Bucket &&
+    drawing?.s3Location?.s3Key
+  )
+
+const mintConstructionDrawingPresignedUrl = async (
+  drawing,
+  getPresignedUrl
+) => {
+  const s3Bucket = drawing.s3Location?.s3Bucket
+  const s3Key = drawing.s3Location?.s3Key
+  if (!s3Bucket || !s3Key || !getPresignedUrl) {
+    return null
+  }
+
+  try {
+    return await getPresignedUrl(
+      s3Bucket,
+      s3Key,
+      SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS
+    )
+  } catch (error) {
+    // Prefer a useful MAS payload over failing the whole response.
+    const filename = drawing.filename ?? 'unknown'
+    logger.error(
+      structureErrorForECS(error),
+      `MarineLicence:MAS: Failed to generate construction drawing presigned URL for ${s3Bucket} (filename: ${filename})`
+    )
+    return null
+  }
+}
+
+const formatConstructionDrawingsForGateway = async (
+  constructionDrawings,
+  getPresignedUrl
+) => {
+  if (!Array.isArray(constructionDrawings)) {
+    return []
+  }
+
+  const drawings = await Promise.all(
+    constructionDrawings.map(async (drawing, drawingIndex) => {
+      if (!hasCompleteConstructionDrawing(drawing)) {
+        return null
+      }
+
+      const presignedFileUrl = await mintConstructionDrawingPresignedUrl(
+        drawing,
+        getPresignedUrl
+      )
+
+      return {
+        drawingIndex,
+        filename: drawing.filename,
+        presignedFileUrl
+      }
+    })
+  )
+
+  return drawings.filter(Boolean)
+}
+
+const formatSiteForGateway = (
+  site,
+  siteIndex,
+  { presignedFileUrl = null, constructionDrawings = [] } = {}
+) => ({
   siteIndex,
   siteName: site.siteName ?? null,
   locationMethod: LOCATION_METHOD_LABELS[site.coordinatesType] ?? null,
@@ -267,12 +335,13 @@ const formatSiteForGateway = (site, siteIndex, presignedFileUrl = null) => ({
       ? Number(site.circleWidth)
       : null,
   geometry: buildSiteGeometry(site, siteIndex),
-  activities: (site.activityDetails ?? []).map(formatActivityForGateway)
+  activities: (site.activityDetails ?? []).map(formatActivityForGateway),
+  constructionDrawings
 })
 
 /**
  * Maps stored siteDetails into the Dynamics MAS sites payload (labels only).
- * Mints short-lived S3 URLs for file-upload sites via getPresignedUrl.
+ * Mints short-lived S3 URLs for file-upload sites and construction drawings via getPresignedUrl.
  *
  * @param {Array} siteDetails
  * @param {{ getPresignedUrl?: Function }} [options] inject for tests; defaults to blobService
@@ -289,11 +358,17 @@ export const formatSitesForGateway = async (siteDetails = [], options = {}) => {
 
   return Promise.all(
     siteDetails.map(async (site, siteIndex) => {
-      const presignedFileUrl = await mintSitePresignedFileUrl(
-        site,
-        getPresignedUrl
-      )
-      return formatSiteForGateway(site, siteIndex, presignedFileUrl)
+      const [presignedFileUrl, constructionDrawings] = await Promise.all([
+        mintSitePresignedFileUrl(site, getPresignedUrl),
+        formatConstructionDrawingsForGateway(
+          site.constructionDrawings,
+          getPresignedUrl
+        )
+      ])
+      return formatSiteForGateway(site, siteIndex, {
+        presignedFileUrl,
+        constructionDrawings
+      })
     })
   )
 }
