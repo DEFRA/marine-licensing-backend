@@ -352,6 +352,30 @@ describe('formatSitesForGateway', () => {
     vi.restoreAllMocks()
   })
 
+  test('treats falsy non-array activity selections as empty and null otherActivity', async () => {
+    const result = await formatSitesForGateway([
+      {
+        coordinatesType: 'coordinates',
+        activityDetails: [
+          {
+            activities: {
+              selections: null
+            }
+          },
+          {
+            activities: {
+              selections: 'other'
+            }
+          }
+        ]
+      }
+    ])
+
+    expect(result[0].activities[0].subActivities).toEqual([])
+    expect(result[0].activities[0].otherActivity).toBeNull()
+    expect(result[0].activities[1].otherActivity).toBeNull()
+  })
+
   test('maps OSGB36 multiple-entry coordinate labels', async () => {
     const result = await formatSitesForGateway([
       {
@@ -441,6 +465,211 @@ describe('formatSitesForGateway', () => {
     expect(await formatSitesForGateway(null)).toEqual([])
   })
 
+  test('mints presigned URLs for construction drawings', async () => {
+    const getPresignedUrl = vi
+      .fn()
+      .mockImplementation(
+        async (_bucket, s3Key) => `https://s3.example.com/${s3Key}`
+      )
+
+    const result = await formatSitesForGateway(
+      [
+        {
+          coordinatesType: 'file',
+          fileUploadType: 'shapefile',
+          uploadedFile: { filename: 'site.zip' },
+          s3Location: {
+            s3Bucket: 'mmo-uploads',
+            s3Key: 'marine-licences/site.zip'
+          },
+          constructionDrawings: [
+            {
+              filename: 'drawing-0.pdf',
+              s3Location: {
+                s3Bucket: 'mmo-uploads',
+                s3Key: 'marine-licences/drawing-0.pdf',
+                checksumSha256: 'a'
+              }
+            },
+            {
+              filename: 'drawing-1.png',
+              s3Location: {
+                s3Bucket: 'mmo-uploads',
+                s3Key: 'marine-licences/drawing-1.png',
+                checksumSha256: 'b'
+              }
+            }
+          ],
+          activityDetails: []
+        }
+      ],
+      { getPresignedUrl }
+    )
+
+    expect(result[0].constructionDrawings).toEqual([
+      {
+        drawingIndex: 0,
+        filename: 'drawing-0.pdf',
+        presignedFileUrl: 'https://s3.example.com/marine-licences/drawing-0.pdf'
+      },
+      {
+        drawingIndex: 1,
+        filename: 'drawing-1.png',
+        presignedFileUrl: 'https://s3.example.com/marine-licences/drawing-1.png'
+      }
+    ])
+    expect(getPresignedUrl).toHaveBeenCalledWith(
+      'mmo-uploads',
+      'marine-licences/drawing-0.pdf',
+      SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS
+    )
+    expect(getPresignedUrl).toHaveBeenCalledWith(
+      'mmo-uploads',
+      'marine-licences/drawing-1.png',
+      SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS
+    )
+  })
+
+  test('returns empty constructionDrawings when none are present', async () => {
+    const result = await formatSitesForGateway([
+      {
+        coordinatesType: 'coordinates',
+        activityDetails: []
+      }
+    ])
+
+    expect(result[0].constructionDrawings).toEqual([])
+  })
+
+  test('returns empty constructionDrawings when the field is not an array', async () => {
+    const result = await formatSitesForGateway([
+      {
+        coordinatesType: 'coordinates',
+        constructionDrawings: null,
+        activityDetails: []
+      }
+    ])
+
+    expect(result[0].constructionDrawings).toEqual([])
+  })
+
+  test('skips incomplete construction drawing placeholders', async () => {
+    const getPresignedUrl = vi
+      .fn()
+      .mockResolvedValue('https://s3.example.com/complete.pdf')
+
+    const result = await formatSitesForGateway(
+      [
+        {
+          coordinatesType: 'coordinates',
+          constructionDrawings: [
+            {},
+            {
+              filename: 'complete.pdf',
+              s3Location: {
+                s3Bucket: 'mmo-uploads',
+                s3Key: 'marine-licences/complete.pdf',
+                checksumSha256: 'abc'
+              }
+            },
+            { filename: 'missing-location.pdf' },
+            {
+              filename: 'missing-key.pdf',
+              s3Location: { s3Bucket: 'mmo-uploads' }
+            },
+            {
+              s3Location: {
+                s3Bucket: 'mmo-uploads',
+                s3Key: 'marine-licences/missing-name.pdf'
+              }
+            }
+          ],
+          activityDetails: []
+        }
+      ],
+      { getPresignedUrl }
+    )
+
+    expect(result[0].constructionDrawings).toEqual([
+      {
+        drawingIndex: 1,
+        filename: 'complete.pdf',
+        presignedFileUrl: 'https://s3.example.com/complete.pdf'
+      }
+    ])
+    expect(getPresignedUrl).toHaveBeenCalledTimes(1)
+  })
+
+  test('returns null construction drawing URL when minting fails', async () => {
+    const getPresignedUrl = vi
+      .fn()
+      .mockRejectedValue(new Error('S3 unavailable'))
+
+    const result = await formatSitesForGateway(
+      [
+        {
+          coordinatesType: 'coordinates',
+          constructionDrawings: [
+            {
+              filename: 'drawing.pdf',
+              s3Location: {
+                s3Bucket: 'mmo-uploads',
+                s3Key: 'marine-licences/drawing.pdf',
+                checksumSha256: 'abc'
+              }
+            }
+          ],
+          activityDetails: []
+        }
+      ],
+      { getPresignedUrl }
+    )
+
+    expect(result[0].constructionDrawings).toEqual([
+      {
+        drawingIndex: 0,
+        filename: 'drawing.pdf',
+        presignedFileUrl: null
+      }
+    ])
+  })
+
+  test('mints construction drawing URLs via default blobService', async () => {
+    blobService.getPresignedUrl.mockResolvedValue(
+      'https://s3.example.com/from-default-drawing'
+    )
+
+    const result = await formatSitesForGateway([
+      {
+        coordinatesType: 'coordinates',
+        constructionDrawings: [
+          {
+            filename: 'default-drawing.pdf',
+            s3Location: {
+              s3Bucket: 'mmo-uploads',
+              s3Key: 'marine-licences/default-drawing.pdf',
+              checksumSha256: 'abc'
+            }
+          }
+        ],
+        activityDetails: []
+      }
+    ])
+
+    expect(blobService.getPresignedUrl).toHaveBeenCalledWith(
+      'mmo-uploads',
+      'marine-licences/default-drawing.pdf',
+      SITE_FILE_PRESIGNED_URL_EXPIRES_IN_SECONDS
+    )
+    expect(result[0].constructionDrawings).toEqual([
+      {
+        drawingIndex: 0,
+        filename: 'default-drawing.pdf',
+        presignedFileUrl: 'https://s3.example.com/from-default-drawing'
+      }
+    ])
+  })
+
   test('uses default blobService when getPresignedUrl is not injected', async () => {
     blobService.getPresignedUrl.mockResolvedValue(
       'https://s3.example.com/from-default'
@@ -500,6 +729,59 @@ describe('buildSiteGeometry', () => {
       siteIndex: 1,
       siteName: 'Manual site'
     })
+  })
+
+  test('builds geometry with null siteName when the site has no name', () => {
+    vi.spyOn(siteDetailsModule, 'getSiteCoordinates').mockReturnValue([
+      [
+        [-1, 51],
+        [-1.1, 51],
+        [-1.1, 51.1],
+        [-1, 51.1],
+        [-1, 51]
+      ]
+    ])
+
+    const geometry = buildSiteGeometry(
+      {
+        coordinatesType: 'coordinates',
+        coordinatesEntry: 'multiple'
+      },
+      0
+    )
+
+    expect(geometry.features[0].properties.siteName).toBeNull()
+  })
+
+  test('builds file geometry with null siteName when the site has no name', () => {
+    const geometry = buildSiteGeometry(
+      {
+        coordinatesType: 'file',
+        geoJSON: {
+          type: 'FeatureCollection',
+          features: [
+            {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [0, 0],
+                    [1, 0],
+                    [1, 1],
+                    [0, 0]
+                  ]
+                ]
+              }
+            }
+          ]
+        }
+      },
+      0
+    )
+
+    expect(geometry.features[0].properties.siteName).toBeNull()
   })
 
   test('returns null when site is missing', () => {

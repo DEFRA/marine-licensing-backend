@@ -46,6 +46,27 @@ describe('PATCH /marine-licence/public-register', () => {
     }
   )
 
+  it.each([
+    ['1,000 emoji', '👍🏽'.repeat(1000)],
+    ['999 characters with CRLF line breaks', 'a\r\n'.repeat(499) + 'a'],
+    ['1,000 characters with trailing whitespace', 'a'.repeat(1000) + '  \r\n']
+  ])('should accept a reason of %s', (_description, reason) => {
+    const result = payloadValidator.validate({
+      id: new ObjectId().toHexString(),
+      withholdConsent: 'yes',
+      reason
+    })
+    expect(result.error).toBeUndefined()
+  })
+
+  it('should fail if the reason is stored in more than 10,000 code units', () => {
+    const result = payloadValidator.validate({
+      withholdConsent: 'yes',
+      reason: ('a' + '\u0301'.repeat(20)).repeat(500)
+    })
+    expect(result.error.message).toContain('PUBLIC_REGISTER_REASON_MAX_LENGTH')
+  })
+
   it('should fail if a reason is given when nothing is withheld', () => {
     const result = payloadValidator.validate({
       withholdConsent: 'no',
