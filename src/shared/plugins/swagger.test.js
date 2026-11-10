@@ -1,5 +1,6 @@
 import { config } from '../../config.js'
 import { COORDINATES_ZIP_FILENAME } from '../../marine-licences/constants/coordinates-csv.js'
+import { CHARACTER_LIMIT_BACKSTOP } from '../models/character-limit.js'
 
 const startServer = async () => {
   const { createServer } = await import('../../server.js')
@@ -88,7 +89,7 @@ describe('swagger plugin', () => {
     test.each([
       ['MarineLicence', 'projectName', 250],
       ['MarineLicence', 'projectBackground', 1000],
-      ['PublicRegister', 'reason', 1000],
+      ['PublicRegister', 'reason', CHARACTER_LIMIT_BACKSTOP],
       ['SpecialLegalPowers', 'details', 1000],
       ['HarbourAuthority', 'details', 1000],
       ['OtherAuthorities', 'details', 1000],
@@ -124,6 +125,7 @@ describe('swagger plugin', () => {
       ['Site', 'coordinateSystem', 'geometry is always WGS84 (EPSG:4326)'],
       ['Site', 'locationMethod', "'Manual coordinate entry'"],
       ['CompletionDate', 'hasSpecificDate', 'Not a date'],
+      ['PublicRegister', 'reason', 'user-perceived characters'],
       [
         'Site',
         'coordinatesEntry',

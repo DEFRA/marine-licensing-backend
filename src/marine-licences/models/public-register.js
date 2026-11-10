@@ -1,5 +1,6 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
+import { withCharacterLimit } from '../../shared/models/character-limit.js'
 
 export const PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH = 1000
 
@@ -12,17 +13,14 @@ export const publicRegister = joi
     }),
     reason: joi.when('withholdConsent', {
       is: 'yes',
-      then: joi
-        .string()
-        .trim()
-        .required()
-        .min(1)
-        .max(PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH)
-        .messages({
-          'string.empty': 'PUBLIC_REGISTER_REASON_REQUIRED',
-          'string.max': 'PUBLIC_REGISTER_REASON_MAX_LENGTH',
-          'any.required': 'PUBLIC_REGISTER_REASON_REQUIRED'
-        }),
+      then: withCharacterLimit(
+        joi.string().trim().required().min(1),
+        PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH
+      ).messages({
+        'string.empty': 'PUBLIC_REGISTER_REASON_REQUIRED',
+        'string.max': 'PUBLIC_REGISTER_REASON_MAX_LENGTH',
+        'any.required': 'PUBLIC_REGISTER_REASON_REQUIRED'
+      }),
       otherwise: joi.forbidden()
     })
   })
