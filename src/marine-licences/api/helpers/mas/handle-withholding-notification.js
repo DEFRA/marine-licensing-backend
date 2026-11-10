@@ -1,6 +1,7 @@
 import { config } from '../../../../config.js'
 import {
   APPLICATION_TASK_TYPE,
+  PUBLIC_REGISTER_WITHHOLD_REASON,
   WITHHOLDING_DECISION,
   WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
@@ -8,23 +9,26 @@ import { addApplicationTask } from './add-application-task.js'
 import { logDiscarded, logNoRecipient } from './mas-logging.js'
 import { sendWithholdingNotificationEmail } from './send-application-task-email.js'
 
+const { NATIONAL_SECURITY, COMMERCIAL_CONFIDENTIALITY } =
+  PUBLIC_REGISTER_WITHHOLD_REASON
+
 const BASES_BY_REQUEST = {
   [WITHHOLDING_REQUEST_RELATES_TO.BOTH]: [
-    'nationalSecurity',
-    'commercialConfidentiality'
+    NATIONAL_SECURITY,
+    COMMERCIAL_CONFIDENTIALITY
   ],
-  [WITHHOLDING_REQUEST_RELATES_TO.NATIONAL_SECURITY]: ['nationalSecurity'],
-  [WITHHOLDING_REQUEST_RELATES_TO.COMMERCIAL]: ['commercialConfidentiality']
+  [WITHHOLDING_REQUEST_RELATES_TO.NATIONAL_SECURITY]: [NATIONAL_SECURITY],
+  [WITHHOLDING_REQUEST_RELATES_TO.COMMERCIAL]: [COMMERCIAL_CONFIDENTIALITY]
 }
 
 // The message names commercial confidentiality without the second word; the stored key
 // keeps it, because that is what the applicant's page renders its heading from.
 const MESSAGE_FIELDS = {
-  nationalSecurity: {
+  [NATIONAL_SECURITY]: {
     decision: 'nationalSecurityDecision',
     applicantMessage: 'nationalSecurityApplicantMessage'
   },
-  commercialConfidentiality: {
+  [COMMERCIAL_CONFIDENTIALITY]: {
     decision: 'commercialDecision',
     applicantMessage: 'commercialApplicantMessage'
   }
