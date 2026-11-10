@@ -87,8 +87,7 @@ describe('swagger plugin', () => {
 
     test('documents the reasons for withholding information', async () => {
       const spec = await getSpec()
-      const { $ref } =
-        spec.definitions.PublicRegister.properties.withholdReason
+      const { $ref } = spec.definitions.PublicRegister.properties.withholdReason
       const reason = spec.definitions[$ref.replace('#/definitions/', '')]
 
       expect(reason.enum).toEqual([
