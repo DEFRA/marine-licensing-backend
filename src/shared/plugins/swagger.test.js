@@ -85,10 +85,21 @@ describe('swagger plugin', () => {
       expect(answer.enum).toEqual(['yes', 'no'])
     })
 
+    test('documents the reasons for withholding information', async () => {
+      const spec = await getSpec()
+      const { $ref } =
+        spec.definitions.PublicRegister.properties.withholdReason
+      const reason = spec.definitions[$ref.replace('#/definitions/', '')]
+
+      expect(reason.enum).toEqual([
+        'nationalSecurity',
+        'commercialConfidentiality'
+      ])
+    })
+
     test.each([
       ['MarineLicence', 'projectName', 250],
       ['MarineLicence', 'projectBackground', 1000],
-      ['PublicRegister', 'reason', 1000],
       ['SpecialLegalPowers', 'details', 1000],
       ['HarbourAuthority', 'details', 1000],
       ['OtherAuthorities', 'details', 1000],
@@ -141,7 +152,10 @@ describe('swagger plugin', () => {
     })
 
     test.each([
-      ['PublicRegister', 'Do you want to request that information is withheld'],
+      [
+        'PublicRegister',
+        'Do you want to ask us to withhold any information from the public register'
+      ],
       [
         'SpecialLegalPowers',
         'Does your organisation have special legal powers'

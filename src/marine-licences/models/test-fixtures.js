@@ -12,7 +12,7 @@ export const mockMarineLicence = {
   projectName: 'Test Marine Licence Project',
   publicRegister: {
     withholdConsent: 'no',
-    reason: null
+    withholdReason: null
   },
   preferredDates,
   status: MARINE_LICENCE_STATUS.DRAFT,
