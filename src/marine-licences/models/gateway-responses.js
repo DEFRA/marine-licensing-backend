@@ -157,7 +157,31 @@ const gatewaySiteSchema = joi
       .array()
       .items(gatewayActivitySchema)
       .required()
-      .label('Activities')
+      .label('Activities'),
+    constructionDrawings: joi
+      .array()
+      .items(
+        joi
+          .object({
+            drawingIndex: joi
+              .number()
+              .integer()
+              .required()
+              .description(
+                'Zero-based position of the drawing within the site.'
+              ),
+            filename: joi.string().required(),
+            presignedFileUrl: nullableString.description(
+              'Temporary S3 link to the construction drawing. Expires after 4 hours. Null if one could not be generated.'
+            )
+          })
+          .label('ConstructionDrawing')
+      )
+      .optional()
+      .description(
+        'Technical or construction drawings uploaded for the site. Omitted or empty when none were uploaded.'
+      )
+      .label('ConstructionDrawings')
   })
   .label('Site')
 
