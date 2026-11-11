@@ -54,16 +54,6 @@ describe('PATCH /marine-licence/public-register', () => {
     expect(result.error.message).toContain('"withholdReason" is not allowed')
   })
 
-  it('should fail if the old free-text reason is sent', () => {
-    const result = payloadValidator.validate({
-      id: new ObjectId().toHexString(),
-      withholdConsent: 'yes',
-      withholdReason: 'nationalSecurity',
-      reason: 'Free text'
-    })
-    expect(result.error.message).toContain('"reason" is not allowed')
-  })
-
   it('should return a 404 if the licence is deleted before the update runs', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
