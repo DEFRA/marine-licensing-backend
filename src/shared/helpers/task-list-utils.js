@@ -2,6 +2,7 @@ export const COMPLETED = 'COMPLETED'
 export const IN_PROGRESS = 'IN_PROGRESS'
 export const INCOMPLETE = 'INCOMPLETE'
 export const NOT_ACCEPTED = 'NOT_ACCEPTED'
+export const NOT_REQUIRED = 'NOT_REQUIRED'
 
 export const getStatusFromRequiredFields = (obj, requiredFields) => {
   const missingKeys = requiredFields.filter((key) => !(key in obj))
