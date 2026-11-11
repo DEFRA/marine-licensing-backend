@@ -83,7 +83,8 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
         applicationReference: 'MLA/2026/00002',
         consultationType: 'APPLICATION_NOTIFICATION',
         consultationStatus: 'NO_RESPONSE_NEEDED',
-        consultationStartDate: '2026-03-01T00:00:00.000Z'
+        consultationStartDate: '2026-03-01T00:00:00.000Z',
+        notes: `Notes for ${consulteeOrgId}`
       },
       {
         id: olderForOrg.toString(),
@@ -91,7 +92,8 @@ describe('GET /marine-licence/consultations - integration tests', async () => {
         applicationReference: 'MLA/2026/00001',
         consultationType: 'APPLICATION_NOTIFICATION',
         consultationStatus: 'NO_RESPONSE_NEEDED',
-        consultationStartDate: '2026-01-01T00:00:00.000Z'
+        consultationStartDate: '2026-01-01T00:00:00.000Z',
+        notes: `Notes for ${consulteeOrgId}`
       }
     ])
   })
