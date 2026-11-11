@@ -24,7 +24,7 @@ export const addMarinePlanPolicyDocumentController = {
       const { payload, db } = request
       const { id, uploadedFile, s3Location, updatedAt, updatedBy } = payload
 
-      await validateMppDocumentUpload(s3Location)
+      await validateMppDocumentUpload(s3Location, uploadedFile.filename)
 
       const documentId = randomUUID()
 

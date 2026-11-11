@@ -1,6 +1,7 @@
 export const MPP_DOCUMENT_CONTENT_TYPES = new Set([
   'application/pdf',
   'application/msword',
+  'application/x-cfb',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.oasis.opendocument.text'
 ])

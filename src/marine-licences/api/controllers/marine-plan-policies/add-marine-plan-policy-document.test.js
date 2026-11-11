@@ -36,7 +36,7 @@ describe('POST /marine-licence/marine-plan-policy-document', () => {
   })
 
   describe('handler', () => {
-    test('should validate the upload with the s3Location', async () => {
+    test('should validate the upload with the s3Location and filename', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = buildPayload()
       setupSuccessMocks()
@@ -47,7 +47,8 @@ describe('POST /marine-licence/marine-plan-policy-document', () => {
       )
 
       expect(validateMppDocumentUpload).toHaveBeenCalledWith(
-        mockPayload.s3Location
+        mockPayload.s3Location,
+        mockPayload.uploadedFile.filename
       )
     })
 

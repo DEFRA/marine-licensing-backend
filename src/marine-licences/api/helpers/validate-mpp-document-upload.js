@@ -10,7 +10,15 @@ import {
 const logger = createLogger()
 const logSystem = 'MarinePlanPolicy:Document Upload Validation'
 
-export const validateMppDocumentUpload = async ({ s3Bucket, s3Key }) => {
+const isAllowedContentType = (contentType, filename) =>
+  MPP_DOCUMENT_CONTENT_TYPES.has(contentType) &&
+  (contentType !== 'application/x-cfb' ||
+    filename.toLowerCase().endsWith('.doc'))
+
+export const validateMppDocumentUpload = async (
+  { s3Bucket, s3Key },
+  filename
+) => {
   const allowedBucket = config.get('cdp.uploadBucket')
   if (s3Bucket !== allowedBucket) {
     logger.warn(`${logSystem}: S3 bucket validation failed`)
@@ -24,7 +32,7 @@ export const validateMppDocumentUpload = async ({ s3Bucket, s3Key }) => {
     MPP_DOCUMENT_MAX_FILE_SIZE
   )
 
-  if (!MPP_DOCUMENT_CONTENT_TYPES.has(metadata.contentType)) {
+  if (!isAllowedContentType(metadata.contentType, filename)) {
     logger.warn(`${logSystem}: File type validation failed`)
 
     throw Boom.unsupportedMediaType(

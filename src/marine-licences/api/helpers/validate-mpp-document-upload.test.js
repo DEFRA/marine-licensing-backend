@@ -95,4 +95,34 @@ describe('validateMppDocumentUpload', () => {
       validateMppDocumentUpload(mockMarinePlanPolicyDocument.s3Location)
     ).resolves.toBeUndefined()
   })
+
+  test('should pass validation for an application/x-cfb file named .doc', async () => {
+    blobService.validateFileSize.mockResolvedValue({
+      contentType: 'application/x-cfb'
+    })
+
+    await expect(
+      validateMppDocumentUpload(
+        mockMarinePlanPolicyDocument.s3Location,
+        'Assessment.DOC'
+      )
+    ).resolves.toBeUndefined()
+  })
+
+  test('should throw unsupported media type for an application/x-cfb file not named .doc', async () => {
+    blobService.validateFileSize.mockResolvedValue({
+      contentType: 'application/x-cfb'
+    })
+
+    await expect(
+      validateMppDocumentUpload(
+        mockMarinePlanPolicyDocument.s3Location,
+        'spreadsheet.xls'
+      )
+    ).rejects.toThrow(
+      Boom.unsupportedMediaType(
+        'File must be a PDF or document (.doc, .docx, .odt)'
+      )
+    )
+  })
 })
