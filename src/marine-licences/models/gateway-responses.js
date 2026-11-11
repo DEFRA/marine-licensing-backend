@@ -16,6 +16,7 @@ import { PROJECT_BACKGROUND_MAX_TEXT_LENGTH } from './project-background.js'
 import { PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH } from './public-consultation.js'
 import { SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH } from './special-legal-powers.js'
 import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
+import { PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH } from './public-register-national-security.js'
 
 export const nullableString = joi.string().allow('', null)
 
@@ -234,12 +235,14 @@ export const marineLicenceGatewayResponseSchema = joi
           .string()
           .valid(...Object.values(PUBLIC_REGISTER_WITHHOLD_REASON))
           .allow(null)
-          .label('PublicRegisterWithholdReason')
+          .label('PublicRegisterWithholdReason'),
+        nationalSecurityApproval: yesNoAnswer,
+        reason: limitedText(PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH)
       })
       .unknown(true)
       .allow(null)
       .description(
-        'withholdConsent answers "Do you want to ask us to withhold any information from the public register?". withholdReason is given only when the answer is yes, otherwise null.'
+        'withholdConsent answers "Do you want to ask us to withhold any information from the public register?". withholdReason is given only when the answer is yes, otherwise null. When withholdReason is nationalSecurity, nationalSecurityApproval answers "Do you have approval from the Secretary of State for Defence to withhold information for national security reasons?" and reason holds what the applicant wants withheld and why (given only when that answer is yes).'
       )
       .label('PublicRegister')
       .required(),

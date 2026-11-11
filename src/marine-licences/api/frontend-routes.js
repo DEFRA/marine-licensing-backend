@@ -11,6 +11,7 @@ import { copyMarineLicenceController } from './controllers/copy-marine-licence.j
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
+import { updatePublicRegisterNationalSecurityController } from './controllers/update-public-register-national-security.js'
 import { updatePreferredDatesController } from './controllers/update-preferred-dates.js'
 import { updatePublicConsultationController } from './controllers/update-public-consultation.js'
 import { updateOtherAuthoritiesController } from './controllers/update-other-authorities.js'
@@ -151,6 +152,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/public-register',
     ...updatePublicRegisterController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/public-register/national-security',
+    ...updatePublicRegisterNationalSecurityController
   },
   {
     method: 'PATCH',
