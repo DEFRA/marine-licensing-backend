@@ -1,5 +1,6 @@
 import { config } from '../../config.js'
 import { COORDINATES_ZIP_FILENAME } from '../../marine-licences/constants/coordinates-csv.js'
+import { CHARACTER_LIMIT_BACKSTOP } from '../models/character-limit.js'
 
 const startServer = async () => {
   const { createServer } = await import('../../server.js')
@@ -88,7 +89,7 @@ describe('swagger plugin', () => {
     test.each([
       ['MarineLicence', 'projectName', 250],
       ['MarineLicence', 'projectBackground', 1000],
-      ['PublicRegister', 'reason', 1000],
+      ['PublicRegister', 'reason', CHARACTER_LIMIT_BACKSTOP],
       ['SpecialLegalPowers', 'details', 1000],
       ['HarbourAuthority', 'details', 1000],
       ['OtherAuthorities', 'details', 1000],
@@ -119,11 +120,14 @@ describe('swagger plugin', () => {
       ['Activity', 'activityIndex', 'Zero-based'],
       ['WaterFrameworkDirective', 'documentUrl', 'Not the document itself'],
       ['UploadedFile', 'presignedFileUrl', 'Expires after 4 hours'],
+      ['ConstructionDrawing', 'presignedFileUrl', 'Expires after 4 hours'],
+      ['ConstructionDrawing', 'drawingIndex', 'Zero-based'],
       ['Site', 'siteIndex', 'Zero-based'],
       ['Site', 'circleWidthMetres', 'diameter in metres'],
       ['Site', 'coordinateSystem', 'geometry is always WGS84 (EPSG:4326)'],
       ['Site', 'locationMethod', "'Manual coordinate entry'"],
       ['CompletionDate', 'hasSpecificDate', 'Not a date'],
+      ['PublicRegister', 'reason', 'user-perceived characters'],
       [
         'Site',
         'coordinatesEntry',
@@ -210,6 +214,10 @@ describe('swagger plugin', () => {
         'The marine licence is a draft'
       )
       expect(spec.definitions.MarineLicence.properties).toHaveProperty('sites')
+      expect(spec.definitions.Site.properties).toHaveProperty(
+        'constructionDrawings'
+      )
+      expect(spec.definitions).toHaveProperty('ConstructionDrawing')
     })
 
     test('documents the MAS withdrawal time as a date-time', async () => {

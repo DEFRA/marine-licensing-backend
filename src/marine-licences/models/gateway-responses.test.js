@@ -42,6 +42,13 @@ const validResponse = {
           completionDate: { hasSpecificDate: null, reason: null },
           workingHours: null
         }
+      ],
+      constructionDrawings: [
+        {
+          drawingIndex: 0,
+          filename: 'tech-drawing.pdf',
+          presignedFileUrl: 'https://s3.example.com/tech-drawing.pdf'
+        }
       ]
     }
   ],
@@ -68,6 +75,110 @@ describe('marineLicenceGatewayResponseSchema', () => {
     expect(
       marineLicenceGatewayResponseSchema.validate(withoutSites).error
     ).toBeDefined()
+  })
+
+  test('accepts a site without constructionDrawings', () => {
+    const {
+      constructionDrawings: _constructionDrawings,
+      ...siteWithoutDrawings
+    } = validResponse.sites[0]
+
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [siteWithoutDrawings]
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('accepts a site with an empty constructionDrawings array', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [{ ...validResponse.sites[0], constructionDrawings: [] }]
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('accepts a construction drawing with a null presignedFileUrl', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [
+          {
+            ...validResponse.sites[0],
+            constructionDrawings: [
+              {
+                drawingIndex: 0,
+                filename: 'tech-drawing.pdf',
+                presignedFileUrl: null
+              }
+            ]
+          }
+        ]
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('rejects a construction drawing without a filename', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [
+          {
+            ...validResponse.sites[0],
+            constructionDrawings: [
+              {
+                drawingIndex: 0,
+                presignedFileUrl: 'https://s3.example.com/tech-drawing.pdf'
+              }
+            ]
+          }
+        ]
+      }).error
+    ).toBeDefined()
+  })
+
+  test('rejects a construction drawing without a drawingIndex', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        sites: [
+          {
+            ...validResponse.sites[0],
+            constructionDrawings: [
+              {
+                filename: 'tech-drawing.pdf',
+                presignedFileUrl: 'https://s3.example.com/tech-drawing.pdf'
+              }
+            ]
+          }
+        ]
+      }).error
+    ).toBeDefined()
+  })
+
+  test('accepts a public register reason of 1,000 emoji', () => {
+    const response = {
+      ...validResponse,
+      publicRegister: { withholdConsent: 'yes', reason: '👍🏽'.repeat(1000) }
+    }
+
+    expect(
+      marineLicenceGatewayResponseSchema.validate(response).error
+    ).toBeUndefined()
+  })
+
+  test('rejects a public register reason of 1,001 characters', () => {
+    const response = {
+      ...validResponse,
+      publicRegister: { withholdConsent: 'yes', reason: 'a'.repeat(1001) }
+    }
+
+    expect(
+      marineLicenceGatewayResponseSchema.validate(response).error.details[0]
+        .type
+    ).toBe('string.max')
   })
 })
 

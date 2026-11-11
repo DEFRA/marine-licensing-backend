@@ -5,6 +5,8 @@ import { geoParser } from '../api/geo-parser/index.js'
 import { marineLicences } from '../../marine-licences/api/index.js'
 import { iatContexts } from '../../iat-contexts/api/index.js'
 import { iatOutcomeDocuments } from '../../iat-outcome-documents/api/index.js'
+import { testDataRoutes } from '../api/test-data/index.js'
+import { isCleanupEndpointEnabled } from '../api/test-data/cleanup-test-data.js'
 
 const router = {
   plugin: {
@@ -18,6 +20,7 @@ const router = {
           .concat(marineLicences)
           .concat(iatContexts)
           .concat(iatOutcomeDocuments)
+          .concat(isCleanupEndpointEnabled() ? testDataRoutes : [])
       )
     }
   }
