@@ -5,6 +5,7 @@ import {
   mockMarinePlanPolicies,
   mockMarinePlanPolicyResponses,
   mockCircleSite,
+  mockCompleteSite,
   mockFileUploadSite
 } from '../../../../tests/test.fixture.js'
 import { mockMarineLicence } from '../../models/test-fixtures.js'
@@ -57,6 +58,37 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
 
     expect(response.statusCode).toBe(200)
     expect(JSON.parse(response.payload).sites).toHaveLength(2)
+    expect(JSON.parse(response.payload).sites[0].constructionDrawings).toEqual(
+      []
+    )
+  })
+
+  test('returns construction drawings with presigned URLs on sites', async () => {
+    const publicId = new ObjectId()
+    blobService.getPresignedUrl.mockImplementation(
+      async (_bucket, s3Key) => `https://s3.example.com/${s3Key}`
+    )
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: publicId,
+      status: MARINE_LICENCE_STATUS.SUBMITTED,
+      siteDetails: [mockCompleteSite]
+    })
+
+    const response = await getServer().inject({
+      method: 'GET',
+      url: `/public/marine-licence/mas/${publicId}`
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(JSON.parse(response.payload).sites[0].constructionDrawings).toEqual([
+      {
+        drawingIndex: 0,
+        filename: 'tech-drawing.pdf',
+        presignedFileUrl: 'https://s3.example.com/test-key'
+      }
+    ])
   })
 
   test('returns 400 for a malformed id', async () => {
