@@ -204,9 +204,12 @@ class BlobService {
     }
   }
 
-  async validateFileSize(s3Bucket, s3Key) {
+  async validateFileSize(
+    s3Bucket,
+    s3Key,
+    maxFileSize = config.get('cdp.maxFileSize')
+  ) {
     const metadata = await this.getMetadata(s3Bucket, s3Key)
-    const maxFileSize = config.get('cdp.maxFileSize')
 
     if (metadata.size > maxFileSize) {
       const sizeError = new Error('File size exceeds maximum allowed size')
