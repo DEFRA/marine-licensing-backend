@@ -220,13 +220,23 @@ describe('GET /public/marine-licence/mas/{id}', () => {
                 activityDuration: { years: 0, months: 6 },
                 completionDate: { date: 'no' }
               }
+            ],
+            constructionDrawings: [
+              {
+                filename: 'tech-drawing.pdf',
+                s3Location: {
+                  s3Bucket: 'mmo-uploads',
+                  s3Key: 'marine-licences/tech-drawing.pdf',
+                  checksumSha256: 'def'
+                }
+              }
             ]
           }
         ]
       })
 
-      blobService.getPresignedUrl.mockResolvedValue(
-        'https://s3.example.com/pontoon.zip'
+      blobService.getPresignedUrl.mockImplementation(
+        async (_bucket, s3Key) => `https://s3.example.com/${s3Key}`
       )
 
       await getMarineLicenceGatewayController.handler(
@@ -241,11 +251,24 @@ describe('GET /public/marine-licence/mas/{id}', () => {
       expect(response.sites[0].uploadedFile).toEqual({
         filename: 'pontoon.zip',
         fileType: 'Shapefile',
-        presignedFileUrl: 'https://s3.example.com/pontoon.zip'
+        presignedFileUrl: 'https://s3.example.com/marine-licences/pontoon.zip'
       })
+      expect(response.sites[0].constructionDrawings).toEqual([
+        {
+          drawingIndex: 0,
+          filename: 'tech-drawing.pdf',
+          presignedFileUrl:
+            'https://s3.example.com/marine-licences/tech-drawing.pdf'
+        }
+      ])
       expect(blobService.getPresignedUrl).toHaveBeenCalledWith(
         'mmo-uploads',
         'marine-licences/pontoon.zip',
+        4 * 60 * 60
+      )
+      expect(blobService.getPresignedUrl).toHaveBeenCalledWith(
+        'mmo-uploads',
+        'marine-licences/tech-drawing.pdf',
         4 * 60 * 60
       )
       expect(response.sites[0].geometry).not.toBeNull()

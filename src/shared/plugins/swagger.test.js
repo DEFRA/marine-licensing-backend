@@ -120,6 +120,8 @@ describe('swagger plugin', () => {
       ['Activity', 'activityIndex', 'Zero-based'],
       ['WaterFrameworkDirective', 'documentUrl', 'Not the document itself'],
       ['UploadedFile', 'presignedFileUrl', 'Expires after 4 hours'],
+      ['ConstructionDrawing', 'presignedFileUrl', 'Expires after 4 hours'],
+      ['ConstructionDrawing', 'drawingIndex', 'Zero-based'],
       ['Site', 'siteIndex', 'Zero-based'],
       ['Site', 'circleWidthMetres', 'diameter in metres'],
       ['Site', 'coordinateSystem', 'geometry is always WGS84 (EPSG:4326)'],
@@ -212,6 +214,10 @@ describe('swagger plugin', () => {
         'The marine licence is a draft'
       )
       expect(spec.definitions.MarineLicence.properties).toHaveProperty('sites')
+      expect(spec.definitions.Site.properties).toHaveProperty(
+        'constructionDrawings'
+      )
+      expect(spec.definitions).toHaveProperty('ConstructionDrawing')
     })
 
     test('documents the MAS withdrawal time as a date-time', async () => {
