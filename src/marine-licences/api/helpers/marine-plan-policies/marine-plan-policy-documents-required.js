@@ -4,37 +4,39 @@ import {
   NOT_REQUIRED
 } from '../../../../shared/helpers/task-list-utils.js'
 
-export const buildMarinePlanPolicyDocumentsRequired = (
+export const buildMarinePlanPoliciesRequiringDocuments = (
   marinePlanPolicies = [],
-  responses = {},
-  marinePlanPolicyDocuments = []
-) => {
-  const linked = new Set(
-    marinePlanPolicyDocuments.flatMap(({ policyLinks }) =>
-      (policyLinks ?? []).map(({ policyCode }) => policyCode)
-    )
-  )
-
-  return marinePlanPolicies
+  responses = {}
+) =>
+  marinePlanPolicies
     .map(({ policyCode }) => policyCode)
     .filter(
-      (policyCode) =>
-        responses[policyCode]?.requiresDocumentation === true &&
-        !linked.has(policyCode)
+      (policyCode) => responses[policyCode]?.requiresDocumentation === true
     )
+
+export const buildMarinePlanPolicyDocumentsOutstanding = (
+  requiringDocuments = [],
+  marinePlanPolicyDocuments = []
+) => {
+  const hasLinkedDocument = new Set(
+    marinePlanPolicyDocuments
+      .flatMap((doc) => doc.policyLinks ?? [])
+      .filter(({ location }) => location?.trim())
+      .map(({ policyCode }) => policyCode)
+  )
+
+  return requiringDocuments.filter(
+    (policyCode) => !hasLinkedDocument.has(policyCode)
+  )
 }
 
 export const getMarinePlanPolicyDocumentStatus = (
-  responses = {},
-  documentsRequired = []
+  requiringDocuments = [],
+  documentsOutstanding = []
 ) => {
-  if (
-    !Object.values(responses).some(
-      ({ requiresDocumentation }) => requiresDocumentation === true
-    )
-  ) {
+  if (requiringDocuments.length === 0) {
     return NOT_REQUIRED
   }
 
-  return documentsRequired.length > 0 ? INCOMPLETE : COMPLETED
+  return documentsOutstanding.length > 0 ? INCOMPLETE : COMPLETED
 }

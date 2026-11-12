@@ -1,7 +1,8 @@
 import { MARINE_LICENCE_STATUS_LABEL } from '../../constants/marine-licence.js'
 import { filterCurrentPolicyResponses } from './marine-plan-policies/filter-current-policy-responses.js'
 import {
-  buildMarinePlanPolicyDocumentsRequired,
+  buildMarinePlanPoliciesRequiringDocuments,
+  buildMarinePlanPolicyDocumentsOutstanding,
   getMarinePlanPolicyDocumentStatus
 } from './marine-plan-policies/marine-plan-policy-documents-required.js'
 import { createTaskList, getSiteDetailsDataStatus } from './createTaskList.js'
@@ -43,9 +44,12 @@ export const buildMarineLicenceResponse = (
   )
 
   const documents = marinePlanPolicyDocuments ?? []
-  const required = buildMarinePlanPolicyDocumentsRequired(
+  const requiringDocuments = buildMarinePlanPoliciesRequiringDocuments(
     marinePlanPolicies,
-    marinePlanPolicyResponses,
+    marinePlanPolicyResponses
+  )
+  const documentsOutstanding = buildMarinePlanPolicyDocumentsOutstanding(
+    requiringDocuments,
     documents
   )
 
@@ -69,10 +73,11 @@ export const buildMarineLicenceResponse = (
     marinePlanPolicyResponseCount,
     marinePlanPolicySupportingDocuments: {
       documents,
-      required,
+      requiringDocuments,
+      documentsOutstanding,
       status: getMarinePlanPolicyDocumentStatus(
-        marinePlanPolicyResponses,
-        required
+        requiringDocuments,
+        documentsOutstanding
       )
     },
     taskList,

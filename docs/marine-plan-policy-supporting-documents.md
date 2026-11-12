@@ -42,16 +42,16 @@ re-query removes a policy, its document and links are removed.
 `GET /marine-licence/{id}` returns `marinePlanPolicySupportingDocuments`, built in
 `src/marine-licences/api/helpers/marine-plan-policies/marine-plan-policy-documents-required.js`:
 
-| Field                | Meaning                                                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `documents`          | The stored documents, unchanged.                                                                                                                                          |
-| `requiringDocuments` | Current policies with `requiresDocumentation: true`, in `marinePlanPolicies` order. The checkbox page lists these, including policies already linked to another document. |
-| `required`           | Policies requiring documents not yet covered by any document.                                                                                                             |
-| `status`             | `NOT_REQUIRED` when no policy requires documents, `INCOMPLETE` when `required` is not empty, otherwise `COMPLETED`.                                                       |
+| Field                  | Meaning                                                                                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `documents`            | The stored documents, unchanged.                                                                                                                                          |
+| `requiringDocuments`   | Current policies with `requiresDocumentation: true`, in `marinePlanPolicies` order. The checkbox page lists these, including policies already linked to another document. |
+| `documentsOutstanding` | Policies requiring documents not yet covered by any document.                                                                                                             |
+| `status`               | `NOT_REQUIRED` when no policy requires documents, `INCOMPLETE` when `documentsOutstanding` is not empty, otherwise `COMPLETED`.                                           |
 
 A link covers its policy only when its `location` is not blank. Links to policies
 that are no longer current or no longer require documents are ignored rather than rejected
 when saved, so policy codes are not checked against the licence on write.
 
-`requiringDocuments`, `required` and `status` come from one calculation, so the policy page,
+`requiringDocuments`, `documentsOutstanding` and `status` come from one calculation, so the policy page,
 the review page and the status cannot disagree.
