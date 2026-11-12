@@ -438,7 +438,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 
 - **README.md** - Setup, Docker, SonarCloud instructions
 - **docs/nearest-marine-plan-area-fallback.md** - Nearest-area policy fallback design and observability
-- **docs/marine-plan-policy-supporting-documents.md** - Supporting documents for marine plan policies: storage, derived status, and why links are filtered on read
+- **docs/marine-plan-policy-supporting-documents.md** - Supporting documents for marine plan policies: storage, derived status, and what a re-query does to links
 - **package.json** - All npm scripts and dependencies
 - **sonar-project.properties** - SonarCloud configuration
 - **Dockerfile** - Multi-stage build (development and production)

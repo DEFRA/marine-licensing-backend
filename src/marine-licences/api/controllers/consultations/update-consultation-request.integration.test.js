@@ -1,9 +1,11 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
+import {
+  findMarineLicence,
+  insertMarineLicence
+} from '../../../../../tests/test-helpers.js'
 import { makePatchRequest } from '../../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { randomUUID } from 'node:crypto'
-import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 import { MAS_CONSULTATION_STATUS } from '../../../constants/marine-licence.js'
 
 describe('PATCH /marine-licence/update-consultation-request - integration tests', async () => {
@@ -21,14 +23,6 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
     consultationStatus: 'RESPONSE_NEEDED'
   })
 
-  const seedMarineLicence = (consultationRequests) =>
-    globalThis.mockMongo.collection(collectionMarineLicences).insertOne(
-      createCompleteMarineLicence({
-        _id: marineLicenceId,
-        consultationRequests
-      })
-    )
-
   const updateConsultationRequest = ({ role = 'Consultee:3' } = {}) =>
     makePatchRequest({
       server: getServer(),
@@ -43,16 +37,19 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
     })
 
   test('sets the response on the consultee for the users organisation only', async () => {
-    await seedMarineLicence([
-      {
-        consultationStartDate: '2026-06-01T00:00:00.000Z',
-        consultees: [consultee(otherOrgId)]
-      },
-      {
-        consultationStartDate: '2026-03-01T00:00:00.000Z',
-        consultees: [consultee(otherOrgId), consultee(consulteeOrgId)]
-      }
-    ])
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      consultationRequests: [
+        {
+          consultationStartDate: '2026-06-01T00:00:00.000Z',
+          consultees: [consultee(otherOrgId)]
+        },
+        {
+          consultationStartDate: '2026-03-01T00:00:00.000Z',
+          consultees: [consultee(otherOrgId), consultee(consulteeOrgId)]
+        }
+      ]
+    })
     const requestedAt = new Date()
 
     const { statusCode, body } = await updateConsultationRequest()
@@ -60,9 +57,7 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
     expect(statusCode).toBe(200)
     expect(body).toEqual({ message: 'success' })
 
-    const updated = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    const updated = await findMarineLicence(marineLicenceId)
 
     expect(updated.consultationRequests).toEqual([
       {
@@ -89,12 +84,15 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
   })
 
   test('returns 404 when the organisation is not consulted on the licence', async () => {
-    await seedMarineLicence([
-      {
-        consultationStartDate: '2026-03-01T00:00:00.000Z',
-        consultees: [consultee(otherOrgId)]
-      }
-    ])
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      consultationRequests: [
+        {
+          consultationStartDate: '2026-03-01T00:00:00.000Z',
+          consultees: [consultee(otherOrgId)]
+        }
+      ]
+    })
 
     const { statusCode } = await updateConsultationRequest()
 
@@ -112,12 +110,15 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
         consultationStatus,
         response: 'Earlier response'
       }
-      await seedMarineLicence([
-        {
-          consultationStartDate: '2026-03-01T00:00:00.000Z',
-          consultees: [consultee(otherOrgId), existing]
-        }
-      ])
+      await insertMarineLicence({
+        _id: marineLicenceId,
+        consultationRequests: [
+          {
+            consultationStartDate: '2026-03-01T00:00:00.000Z',
+            consultees: [consultee(otherOrgId), existing]
+          }
+        ]
+      })
 
       const { statusCode, body } = await updateConsultationRequest()
 
@@ -126,21 +127,22 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
         `Consultation in Marine Licence ${marineLicenceId} does not need a response`
       )
 
-      const updated = await globalThis.mockMongo
-        .collection(collectionMarineLicences)
-        .findOne({ _id: marineLicenceId })
+      const updated = await findMarineLicence(marineLicenceId)
 
       expect(updated.consultationRequests[0].consultees[1]).toEqual(existing)
     }
   )
 
   test('returns 403 when the user does not have an approved Consultee role', async () => {
-    await seedMarineLicence([
-      {
-        consultationStartDate: '2026-03-01T00:00:00.000Z',
-        consultees: [consultee(consulteeOrgId)]
-      }
-    ])
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      consultationRequests: [
+        {
+          consultationStartDate: '2026-03-01T00:00:00.000Z',
+          consultees: [consultee(consulteeOrgId)]
+        }
+      ]
+    })
 
     const { statusCode } = await updateConsultationRequest({
       role: 'Consultee:1'
@@ -148,9 +150,7 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
 
     expect(statusCode).toBe(403)
 
-    const updated = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    const updated = await findMarineLicence(marineLicenceId)
 
     expect(updated.consultationRequests[0].consultees[0]).not.toHaveProperty(
       'response'
