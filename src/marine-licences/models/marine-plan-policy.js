@@ -5,6 +5,7 @@ import {
   s3LocationFieldSchema
 } from '../../shared/models/site-details/file-upload.js'
 import {
+  MPP_DOCUMENT_LOCATION_MAX_LENGTH,
   MPP_DOCUMENT_TYPES,
   MPP_DOCUMENT_TYPE_OTHER_MAX_LENGTH
 } from '../constants/marine-plan-policy-document.js'
@@ -48,12 +49,14 @@ export const addMarinePlanPolicyDocumentSchema = joi
   })
   .append(marineLicenceId)
 
+const documentIdFieldSchema = joi.string().guid().required().messages({
+  'string.guid': 'DOCUMENT_ID_INVALID',
+  'any.required': 'DOCUMENT_ID_REQUIRED'
+})
+
 export const marinePlanPolicyDocumentTypeSchema = joi
   .object({
-    documentId: joi.string().guid().required().messages({
-      'string.guid': 'DOCUMENT_ID_INVALID',
-      'any.required': 'DOCUMENT_ID_REQUIRED'
-    }),
+    documentId: documentIdFieldSchema,
     documentType: joi
       .string()
       .valid(...MPP_DOCUMENT_TYPES)
@@ -76,5 +79,44 @@ export const marinePlanPolicyDocumentTypeSchema = joi
         }),
       otherwise: joi.any().strip()
     })
+  })
+  .append(marineLicenceId)
+
+export const marinePlanPolicyDocumentLinksSchema = joi
+  .object({
+    documentId: documentIdFieldSchema,
+    policyLinks: joi
+      .array()
+      .items(
+        joi.object({
+          policyCode: joi
+            .string()
+            .max(POLICY_CODE_MAX_LENGTH)
+            .required()
+            .messages({
+              'string.empty': 'POLICY_CODE_REQUIRED',
+              'string.max': 'POLICY_CODE_INVALID',
+              'any.required': 'POLICY_CODE_REQUIRED'
+            }),
+          location: joi
+            .string()
+            .trim()
+            .max(MPP_DOCUMENT_LOCATION_MAX_LENGTH)
+            .required()
+            .messages({
+              'string.empty': 'DOCUMENT_LOCATION_REQUIRED',
+              'any.required': 'DOCUMENT_LOCATION_REQUIRED',
+              'string.max': 'DOCUMENT_LOCATION_MAX_LENGTH'
+            })
+        })
+      )
+      .min(1)
+      .unique('policyCode')
+      .required()
+      .messages({
+        'array.min': 'POLICY_LINKS_REQUIRED',
+        'any.required': 'POLICY_LINKS_REQUIRED',
+        'array.unique': 'POLICY_LINKS_DUPLICATE'
+      })
   })
   .append(marineLicenceId)
