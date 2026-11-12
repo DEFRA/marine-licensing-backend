@@ -55,3 +55,13 @@ when saved, so policy codes are not checked against the licence on write.
 
 `requiringDocuments`, `documentsOutstanding` and `status` come from one calculation, so the policy page,
 the review page and the status cannot disagree.
+
+## Task list and submit
+
+The marine plan policies task is `COMPLETED` only when every policy is answered
+and the supporting documents `status` is not `INCOMPLETE`; with every answer in
+but documents outstanding it stays `IN_PROGRESS`. `NOT_REQUIRED` counts as
+satisfied, because submit rejects any task that is not `COMPLETED`. The GET
+response and submit both build the status with
+`buildMarinePlanPolicySupportingDocuments`, so the task list and submit cannot
+disagree.

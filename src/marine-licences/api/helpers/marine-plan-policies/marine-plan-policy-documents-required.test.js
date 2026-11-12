@@ -1,4 +1,5 @@
 import {
+  buildMarinePlanPolicySupportingDocuments,
   buildMarinePlanPoliciesRequiringDocuments,
   buildMarinePlanPolicyDocumentsOutstanding,
   getMarinePlanPolicyDocumentStatus
@@ -134,5 +135,41 @@ describe('getMarinePlanPolicyDocumentStatus', () => {
 
   test('defaults to NOT_REQUIRED when called with no arguments', () => {
     expect(getMarinePlanPolicyDocumentStatus()).toBe(NOT_REQUIRED)
+  })
+})
+
+describe('buildMarinePlanPolicySupportingDocuments', () => {
+  test('combines the documents, the policies requiring them, what is outstanding and the status', () => {
+    const marinePlanPolicyDocuments = [
+      {
+        documentId: 'doc-1',
+        policyLinks: [{ policyCode: 'A', location: 'Section 4.2' }]
+      }
+    ]
+
+    expect(
+      buildMarinePlanPolicySupportingDocuments(
+        [{ policyCode: 'A' }, { policyCode: 'B' }],
+        {
+          A: policyResponseObject(mockPolicyCode, true),
+          B: policyResponseObject(mockPolicyCode, true)
+        },
+        marinePlanPolicyDocuments
+      )
+    ).toEqual({
+      documents: marinePlanPolicyDocuments,
+      requiringDocuments: ['A', 'B'],
+      documentsOutstanding: ['B'],
+      status: INCOMPLETE
+    })
+  })
+
+  test('defaults to no documents and NOT_REQUIRED when called with no arguments', () => {
+    expect(buildMarinePlanPolicySupportingDocuments()).toEqual({
+      documents: [],
+      requiringDocuments: [],
+      documentsOutstanding: [],
+      status: NOT_REQUIRED
+    })
   })
 })

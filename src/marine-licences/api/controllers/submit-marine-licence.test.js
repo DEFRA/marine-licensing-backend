@@ -212,7 +212,8 @@ describe('POST /marine-licence/submit', () => {
       )
 
       expect(createTaskList).toHaveBeenCalledWith(mockMarineLicence, false, {
-        marinePlanPolicyResponseCount: 0
+        marinePlanPolicyResponseCount: 0,
+        marinePlanPolicyDocumentStatus: 'NOT_REQUIRED'
       })
     })
   })

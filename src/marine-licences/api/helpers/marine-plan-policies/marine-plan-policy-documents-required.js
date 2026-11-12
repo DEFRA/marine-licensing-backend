@@ -40,3 +40,29 @@ export const getMarinePlanPolicyDocumentStatus = (
 
   return documentsOutstanding.length > 0 ? INCOMPLETE : COMPLETED
 }
+
+export const buildMarinePlanPolicySupportingDocuments = (
+  marinePlanPolicies = [],
+  responses = {},
+  marinePlanPolicyDocuments = []
+) => {
+  const documents = marinePlanPolicyDocuments ?? []
+  const requiringDocuments = buildMarinePlanPoliciesRequiringDocuments(
+    marinePlanPolicies,
+    responses
+  )
+  const documentsOutstanding = buildMarinePlanPolicyDocumentsOutstanding(
+    requiringDocuments,
+    documents
+  )
+
+  return {
+    documents,
+    requiringDocuments,
+    documentsOutstanding,
+    status: getMarinePlanPolicyDocumentStatus(
+      requiringDocuments,
+      documentsOutstanding
+    )
+  }
+}
