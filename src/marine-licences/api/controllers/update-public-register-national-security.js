@@ -4,8 +4,9 @@ import { ObjectId } from 'mongodb'
 import { publicRegisterNationalSecurity } from '../../models/public-register-national-security.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../../constants/marine-licence.js'
 
-const buildUpdate = ({
+const buildNationalSecurityUpdate = ({
   nationalSecurityApproval,
   reason,
   updatedAt,
@@ -39,14 +40,18 @@ export const updatePublicRegisterNationalSecurityController = {
   handler: async (request, h) => {
     try {
       const { payload, db } = request
-      const result = await db
-        .collection(collectionMarineLicences)
-        .updateOne(
-          { _id: ObjectId.createFromHexString(payload.id) },
-          buildUpdate(payload)
-        )
+      const result = await db.collection(collectionMarineLicences).updateOne(
+        {
+          _id: ObjectId.createFromHexString(payload.id),
+          'publicRegister.withholdReason':
+            PUBLIC_REGISTER_WITHHOLD_REASON.NATIONAL_SECURITY
+        },
+        buildNationalSecurityUpdate(payload)
+      )
       if (result.matchedCount === 0) {
-        throw Boom.notFound('Marine licence not found')
+        throw Boom.conflict(
+          'Marine licence is not withholding information for national security reasons'
+        )
       }
       return h
         .response({

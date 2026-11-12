@@ -17,6 +17,7 @@ import { PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH } from './public-consultati
 import { SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH } from './special-legal-powers.js'
 import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
 import { PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH } from './public-register-national-security.js'
+import { CHARACTER_LIMIT_BACKSTOP } from '../../shared/models/character-limit.js'
 
 export const nullableString = joi.string().allow('', null)
 
@@ -237,7 +238,11 @@ export const marineLicenceGatewayResponseSchema = joi
           .allow(null)
           .label('PublicRegisterWithholdReason'),
         nationalSecurityApproval: yesNoAnswer,
-        reason: limitedText(PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH)
+        reason: nullableString
+          .max(CHARACTER_LIMIT_BACKSTOP)
+          .description(
+            `At most ${PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH} user-perceived characters (graphemes), so may exceed that many UTF-16 code units.`
+          )
       })
       .unknown(true)
       .allow(null)

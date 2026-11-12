@@ -94,7 +94,10 @@ describe('PATCH /marine-licence/public-register/national-security', () => {
     )
 
     expect(updateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(id) },
+      {
+        _id: ObjectId.createFromHexString(id),
+        'publicRegister.withholdReason': 'nationalSecurity'
+      },
       {
         $set: {
           'publicRegister.nationalSecurityApproval': 'yes',
@@ -128,7 +131,10 @@ describe('PATCH /marine-licence/public-register/national-security', () => {
     )
 
     expect(updateOne).toHaveBeenCalledWith(
-      { _id: ObjectId.createFromHexString(id) },
+      {
+        _id: ObjectId.createFromHexString(id),
+        'publicRegister.withholdReason': 'nationalSecurity'
+      },
       {
         $set: {
           'publicRegister.nationalSecurityApproval': 'no',
@@ -140,7 +146,7 @@ describe('PATCH /marine-licence/public-register/national-security', () => {
     )
   })
 
-  it('should return a 404 if the licence does not exist', async () => {
+  it('should return a 409 if the licence is not withholding for national security', async () => {
     const { mockMongo, mockHandler } = global
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
       return { updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 }) }
@@ -151,7 +157,9 @@ describe('PATCH /marine-licence/public-register/national-security', () => {
         { db: mockMongo, payload: { id, nationalSecurityApproval: 'no' } },
         mockHandler
       )
-    ).rejects.toThrow('Marine licence not found')
+    ).rejects.toThrow(
+      'Marine licence is not withholding information for national security reasons'
+    )
   })
 
   it('should return an error message if the database operation fails', async () => {

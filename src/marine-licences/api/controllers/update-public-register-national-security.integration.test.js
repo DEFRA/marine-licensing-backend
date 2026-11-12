@@ -107,7 +107,7 @@ describe('PATCH /marine-licence/public-register/national-security - integration 
     )
   })
 
-  test('returns 403 when attempting to update another users marine licence', async () => {
+  test("returns 403 when attempting to update another user's marine licence", async () => {
     await insertLicence({
       withholdConsent: 'yes',
       withholdReason: 'nationalSecurity'
@@ -129,5 +129,31 @@ describe('PATCH /marine-licence/public-register/national-security - integration 
     expect(unchangedLicence.publicRegister.nationalSecurityApproval).toBe(
       undefined
     )
+  })
+
+  test('returns 409 when the licence is not withholding for national security', async () => {
+    await insertLicence({
+      withholdConsent: 'yes',
+      withholdReason: 'commercialConfidentiality'
+    })
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url,
+      contactId,
+      payload: {
+        id: marineLicenceId.toString(),
+        nationalSecurityApproval: 'yes',
+        reason: 'Details of the berth'
+      }
+    })
+
+    expect(statusCode).toBe(409)
+
+    const unchangedLicence = await findLicence()
+    expect(unchangedLicence.publicRegister).toEqual({
+      withholdConsent: 'yes',
+      withholdReason: 'commercialConfidentiality'
+    })
   })
 })
