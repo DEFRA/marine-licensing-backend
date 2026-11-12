@@ -1,5 +1,9 @@
 import { MARINE_LICENCE_STATUS_LABEL } from '../../constants/marine-licence.js'
 import { filterCurrentPolicyResponses } from './marine-plan-policies/filter-current-policy-responses.js'
+import {
+  buildMarinePlanPolicyDocumentsRequired,
+  getMarinePlanPolicyDocumentStatus
+} from './marine-plan-policies/marine-plan-policy-documents-required.js'
 import { createTaskList, getSiteDetailsDataStatus } from './createTaskList.js'
 import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
@@ -25,15 +29,26 @@ export const buildMarineLicenceResponse = (
     applicationTasks,
     previousStatus,
     consultationRequests,
+    marinePlanPolicies,
+    marinePlanPolicyDocuments,
     ...rest
   } = marineLicence
+
   const {
     responses: marinePlanPolicyResponses,
     count: marinePlanPolicyResponseCount
   } = filterCurrentPolicyResponses(
-    rest.marinePlanPolicies,
+    marinePlanPolicies,
     rest.marinePlanPolicyResponses
   )
+
+  const documents = marinePlanPolicyDocuments ?? []
+  const required = buildMarinePlanPolicyDocumentsRequired(
+    marinePlanPolicies,
+    marinePlanPolicyResponses,
+    documents
+  )
+
   const taskList = createTaskList(marineLicence, isCitizen, {
     marinePlanPolicyResponseCount
   })
@@ -49,9 +64,17 @@ export const buildMarineLicenceResponse = (
     }),
     status: toLabel(status),
     marinePlanPolicyJob: rest.marinePlanPolicyJob ?? null,
-    marinePlanPolicies: rest.marinePlanPolicies ?? [],
+    marinePlanPolicies: marinePlanPolicies ?? [],
     marinePlanPolicyResponses,
     marinePlanPolicyResponseCount,
+    marinePlanPolicySupportingDocuments: {
+      documents,
+      required,
+      status: getMarinePlanPolicyDocumentStatus(
+        marinePlanPolicyResponses,
+        required
+      )
+    },
     taskList,
     siteDetailsDataComplete:
       getSiteDetailsDataStatus(marineLicence.siteDetails) === COMPLETED
