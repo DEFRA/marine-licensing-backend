@@ -742,6 +742,37 @@ describe('createTaskList', () => {
     })
   })
 
+  describe('publicRegister status', () => {
+    it.each([
+      [
+        'IN_PROGRESS when withholding for national security without an answer',
+        { withholdConsent: 'yes', withholdReason: 'nationalSecurity' },
+        IN_PROGRESS
+      ],
+      [
+        'COMPLETED when withholding for national security with an answer',
+        {
+          withholdConsent: 'yes',
+          withholdReason: 'nationalSecurity',
+          nationalSecurityApproval: 'no'
+        },
+        COMPLETED
+      ],
+      [
+        'COMPLETED when withholding for commercial confidentiality',
+        { withholdConsent: 'yes', withholdReason: 'commercialConfidentiality' },
+        COMPLETED
+      ],
+      [
+        'COMPLETED when not withholding',
+        { withholdConsent: 'no', withholdReason: null },
+        COMPLETED
+      ]
+    ])('should be %s', (_description, publicRegister, expected) => {
+      expect(createTaskList({ publicRegister }).publicRegister).toBe(expected)
+    })
+  })
+
   describe('invoicing status', () => {
     const statusFor = (invoicing, isCitizen = false) =>
       createTaskList({ invoicing }, isCitizen).invoicing

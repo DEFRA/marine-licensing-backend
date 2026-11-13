@@ -86,6 +86,53 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
   })
 
+  const nationalSecurityAnswers = {
+    withholdConsent: 'yes',
+    withholdReason: 'nationalSecurity',
+    nationalSecurityApproval: 'yes',
+    reason: 'Details of the berth'
+  }
+
+  test.each([
+    [
+      'keeps the national security answers when national security is still the reason',
+      'nationalSecurity',
+      nationalSecurityAnswers
+    ],
+    [
+      'drops the national security answers when the reason changes',
+      'commercialConfidentiality',
+      { withholdConsent: 'yes', withholdReason: 'commercialConfidentiality' }
+    ]
+  ])('%s', async (_description, withholdReason, expectedPublicRegister) => {
+    await globalThis.mockMongo.collection(collectionMarineLicences).insertOne(
+      createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId,
+        publicRegister: nationalSecurityAnswers
+      })
+    )
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/public-register',
+      contactId,
+      payload: {
+        id: marineLicenceId.toString(),
+        withholdConsent: 'yes',
+        withholdReason
+      }
+    })
+
+    expect(statusCode).toBe(200)
+
+    const updatedLicence = await globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(updatedLicence.publicRegister).toEqual(expectedPublicRegister)
+  })
+
   test('returns 404 when marine licence does not exist', async () => {
     const nonExistentId = new ObjectId()
 

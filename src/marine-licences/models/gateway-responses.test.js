@@ -157,6 +157,20 @@ describe('marineLicenceGatewayResponseSchema', () => {
       }).error
     ).toBeDefined()
   })
+
+  test('accepts a national security reason of 1000 characters longer than 1000 code units', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        publicRegister: {
+          withholdConsent: 'yes',
+          withholdReason: 'nationalSecurity',
+          nationalSecurityApproval: 'yes',
+          reason: '👍🏽'.repeat(1000)
+        }
+      }).error
+    ).toBeUndefined()
+  })
 })
 
 describe('wfdDocumentDownloadUrlResponseSchema', () => {
