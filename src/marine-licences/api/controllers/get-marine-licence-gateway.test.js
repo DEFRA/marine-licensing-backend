@@ -96,7 +96,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         },
         publicRegister: {
           withholdConsent: 'yes',
-          reason: 'Commercial confidentiality'
+          withholdReason: 'commercialConfidentiality'
         },
         specialLegalPowers: {
           agree: 'yes',
@@ -137,7 +137,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         preferredLicenceDates: 'August 2026 to November 2026',
         publicRegister: {
           withholdConsent: 'yes',
-          reason: 'Commercial confidentiality'
+          withholdReason: 'commercialConfidentiality'
         },
         specialLegalPowers: {
           agree: 'yes',

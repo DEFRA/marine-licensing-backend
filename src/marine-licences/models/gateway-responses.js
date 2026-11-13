@@ -14,9 +14,8 @@ import {
 import { OTHER_AUTHORITIES_DETAILS_MAX_TEXT_LENGTH } from './other-authorities.js'
 import { PROJECT_BACKGROUND_MAX_TEXT_LENGTH } from './project-background.js'
 import { PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH } from './public-consultation.js'
-import { PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH } from './public-register.js'
-import { withCharacterLimit } from '../../shared/models/character-limit.js'
 import { SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH } from './special-legal-powers.js'
+import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
 
 export const nullableString = joi.string().allow('', null)
 
@@ -32,14 +31,13 @@ const answerWithDetails = ({
   answerKey,
   detailsKey = 'details',
   detailsMaxLength,
-  detailsSchema = limitedText(detailsMaxLength),
   question,
   label
 }) =>
   joi
     .object({
       [answerKey]: yesNoAnswer,
-      [detailsKey]: detailsSchema
+      [detailsKey]: limitedText(detailsMaxLength)
     })
     .unknown(true)
     .allow(null)
@@ -229,19 +227,22 @@ export const marineLicenceGatewayResponseSchema = joi
         'The applicant\'s preferred licence period, as "Month YYYY to Month YYYY". Null if not provided.'
       )
       .example('August 2026 to November 2026'),
-    publicRegister: answerWithDetails({
-      answerKey: 'withholdConsent',
-      detailsKey: 'reason',
-      detailsSchema: withCharacterLimit(
-        nullableString,
-        PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH
-      ).description(
-        'At most 1,000 user-perceived characters (an emoji or a line break counts as one). maxLength is the stored length in UTF-16 code units.'
-      ),
-      question:
-        'Do you want to request that information is withheld for either of these reasons?',
-      label: 'PublicRegister'
-    }).required(),
+    publicRegister: joi
+      .object({
+        withholdConsent: yesNoAnswer,
+        withholdReason: joi
+          .string()
+          .valid(...Object.values(PUBLIC_REGISTER_WITHHOLD_REASON))
+          .allow(null)
+          .label('PublicRegisterWithholdReason')
+      })
+      .unknown(true)
+      .allow(null)
+      .description(
+        'withholdConsent answers "Do you want to ask us to withhold any information from the public register?". withholdReason is given only when the answer is yes, otherwise null.'
+      )
+      .label('PublicRegister')
+      .required(),
     specialLegalPowers: answerWithDetails({
       answerKey: 'agree',
       detailsMaxLength: SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH,
