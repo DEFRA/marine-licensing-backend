@@ -56,6 +56,11 @@ describe('Get marine licence - integration tests', async () => {
       marinePlanPolicies: [],
       marinePlanPolicyResponses: {},
       marinePlanPolicyResponseCount: 0,
+      marinePlanPolicySupportingDocuments: {
+        documents: [],
+        required: [],
+        status: 'NOT_REQUIRED'
+      },
       siteDetailsDataComplete: false,
       taskList: {
         feeEstimate: 'INCOMPLETE',
@@ -135,6 +140,11 @@ describe('Get marine licence - integration tests', async () => {
       marinePlanPolicies: [],
       marinePlanPolicyResponses: {},
       marinePlanPolicyResponseCount: 0,
+      marinePlanPolicySupportingDocuments: {
+        documents: [],
+        required: [],
+        status: 'NOT_REQUIRED'
+      },
       siteDetailsDataComplete: false,
       taskList: {
         feeEstimate: 'INCOMPLETE',
