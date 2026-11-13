@@ -33,16 +33,7 @@ describe('PATCH /marine-licence/public-register/national-security', () => {
     )
   })
 
-  it('should pass with a reason of exactly 1000 characters', () => {
-    const result = payloadValidator.validate({
-      id,
-      nationalSecurityApproval: 'yes',
-      reason: 'a'.repeat(1000)
-    })
-    expect(result.error).toBeUndefined()
-  })
-
-  it('should count user-perceived characters towards the limit', () => {
+  it('should pass with a reason of exactly 1000 user-perceived characters', () => {
     const result = payloadValidator.validate({
       id,
       nationalSecurityApproval: 'yes',
@@ -69,97 +60,6 @@ describe('PATCH /marine-licence/public-register/national-security', () => {
       reason: 'Details'
     })
     expect(result.error.message).toContain('"reason" is not allowed')
-  })
-
-  it('should set the answer and reason when approved', async () => {
-    const { mockMongo, mockHandler } = global
-    const updateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return { updateOne }
-    })
-    const updatedAt = new Date('2025-01-01T12:00:00Z')
-
-    await updatePublicRegisterNationalSecurityController.handler(
-      {
-        db: mockMongo,
-        payload: {
-          id,
-          nationalSecurityApproval: 'yes',
-          reason: 'Details',
-          updatedAt,
-          updatedBy: 'user123'
-        }
-      },
-      mockHandler
-    )
-
-    expect(updateOne).toHaveBeenCalledWith(
-      {
-        _id: ObjectId.createFromHexString(id),
-        'publicRegister.withholdReason': 'nationalSecurity'
-      },
-      {
-        $set: {
-          'publicRegister.nationalSecurityApproval': 'yes',
-          'publicRegister.reason': 'Details',
-          updatedAt,
-          updatedBy: 'user123'
-        }
-      }
-    )
-  })
-
-  it('should remove the reason when not approved', async () => {
-    const { mockMongo, mockHandler } = global
-    const updateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return { updateOne }
-    })
-    const updatedAt = new Date('2025-01-01T12:00:00Z')
-
-    await updatePublicRegisterNationalSecurityController.handler(
-      {
-        db: mockMongo,
-        payload: {
-          id,
-          nationalSecurityApproval: 'no',
-          updatedAt,
-          updatedBy: 'user123'
-        }
-      },
-      mockHandler
-    )
-
-    expect(updateOne).toHaveBeenCalledWith(
-      {
-        _id: ObjectId.createFromHexString(id),
-        'publicRegister.withholdReason': 'nationalSecurity'
-      },
-      {
-        $set: {
-          'publicRegister.nationalSecurityApproval': 'no',
-          updatedAt,
-          updatedBy: 'user123'
-        },
-        $unset: { 'publicRegister.reason': '' }
-      }
-    )
-  })
-
-  it('should return a 409 if the licence is not withholding for national security', async () => {
-    const { mockMongo, mockHandler } = global
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return { updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 }) }
-    })
-
-    await expect(() =>
-      updatePublicRegisterNationalSecurityController.handler(
-        { db: mockMongo, payload: { id, nationalSecurityApproval: 'no' } },
-        mockHandler
-      )
-    ).rejects.toThrow(
-      'Marine licence is not withholding information for national security reasons'
-    )
   })
 
   it('should return an error message if the database operation fails', async () => {

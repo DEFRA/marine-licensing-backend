@@ -86,20 +86,32 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
   })
 
-  test('keeps the national security answers when national security is still the reason', async () => {
-    const marineLicence = createCompleteMarineLicence({
-      _id: marineLicenceId,
-      contactId,
-      publicRegister: {
-        withholdConsent: 'yes',
-        withholdReason: 'nationalSecurity',
-        nationalSecurityApproval: 'yes',
-        reason: 'Details of the berth'
-      }
-    })
-    await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .insertOne(marineLicence)
+  const nationalSecurityAnswers = {
+    withholdConsent: 'yes',
+    withholdReason: 'nationalSecurity',
+    nationalSecurityApproval: 'yes',
+    reason: 'Details of the berth'
+  }
+
+  test.each([
+    [
+      'keeps the national security answers when national security is still the reason',
+      'nationalSecurity',
+      nationalSecurityAnswers
+    ],
+    [
+      'drops the national security answers when the reason changes',
+      'commercialConfidentiality',
+      { withholdConsent: 'yes', withholdReason: 'commercialConfidentiality' }
+    ]
+  ])('%s', async (_description, withholdReason, expectedPublicRegister) => {
+    await globalThis.mockMongo.collection(collectionMarineLicences).insertOne(
+      createCompleteMarineLicence({
+        _id: marineLicenceId,
+        contactId,
+        publicRegister: nationalSecurityAnswers
+      })
+    )
 
     const { statusCode } = await makePatchRequest({
       server: getServer(),
@@ -108,7 +120,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       payload: {
         id: marineLicenceId.toString(),
         withholdConsent: 'yes',
-        withholdReason: 'nationalSecurity'
+        withholdReason
       }
     })
 
@@ -118,50 +130,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-    expect(updatedLicence.publicRegister).toEqual({
-      withholdConsent: 'yes',
-      withholdReason: 'nationalSecurity',
-      nationalSecurityApproval: 'yes',
-      reason: 'Details of the berth'
-    })
-  })
-
-  test('drops the national security answers when the reason changes', async () => {
-    const marineLicence = createCompleteMarineLicence({
-      _id: marineLicenceId,
-      contactId,
-      publicRegister: {
-        withholdConsent: 'yes',
-        withholdReason: 'nationalSecurity',
-        nationalSecurityApproval: 'yes',
-        reason: 'Details of the berth'
-      }
-    })
-    await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .insertOne(marineLicence)
-
-    const { statusCode } = await makePatchRequest({
-      server: getServer(),
-      url: '/marine-licence/public-register',
-      contactId,
-      payload: {
-        id: marineLicenceId.toString(),
-        withholdConsent: 'yes',
-        withholdReason: 'commercialConfidentiality'
-      }
-    })
-
-    expect(statusCode).toBe(200)
-
-    const updatedLicence = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
-
-    expect(updatedLicence.publicRegister).toEqual({
-      withholdConsent: 'yes',
-      withholdReason: 'commercialConfidentiality'
-    })
+    expect(updatedLicence.publicRegister).toEqual(expectedPublicRegister)
   })
 
   test('returns 404 when marine licence does not exist', async () => {

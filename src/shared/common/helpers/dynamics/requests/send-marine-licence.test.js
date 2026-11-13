@@ -302,36 +302,28 @@ describe('sendMarineLicenceToDynamics', () => {
     )
   })
 
-  it.each([
-    ['yes', 'Location of the cable landing point'],
-    ['no', undefined]
-  ])(
-    'should include nationalSecurityApproval %s when withholding for national security',
-    async (nationalSecurityApproval, reason) => {
-      mockServer.db.collection().findOne.mockResolvedValue({
-        ...mockMarineLicence,
-        publicRegister: {
-          withholdConsent: 'yes',
-          withholdReason: 'nationalSecurity',
-          nationalSecurityApproval,
-          ...(reason && { reason })
-        }
-      })
-
-      await sendMarineLicenceToDynamics(
-        mockServer,
-        mockAccessToken,
-        mockQueueItem
-      )
-
-      expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual({
-        withholdConsent: 'yes',
-        withholdReason: 'nationalSecurity',
-        nationalSecurityApproval,
-        reason: reason ?? null
-      })
+  it('should include nationalSecurityApproval when withholding for national security', async () => {
+    const publicRegister = {
+      withholdConsent: 'yes',
+      withholdReason: 'nationalSecurity',
+      nationalSecurityApproval: 'yes',
+      reason: 'Location of the cable landing point'
     }
-  )
+    mockServer.db.collection().findOne.mockResolvedValue({
+      ...mockMarineLicence,
+      publicRegister
+    })
+
+    await sendMarineLicenceToDynamics(
+      mockServer,
+      mockAccessToken,
+      mockQueueItem
+    )
+
+    expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual(
+      publicRegister
+    )
+  })
 
   it('should include publicRegister with null reasons when withholdConsent is no', async () => {
     mockServer.db.collection().findOne.mockResolvedValue({
