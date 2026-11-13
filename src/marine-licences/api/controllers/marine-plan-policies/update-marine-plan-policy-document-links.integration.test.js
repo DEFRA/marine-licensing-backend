@@ -39,7 +39,7 @@ describe('PATCH /marine-licence/marine-plan-policy-document-links - integration 
       ]
     })
 
-    const policyLinks = [{ policyCode: 'E-BIO-1', location: 'Pages 12 to 15' }]
+    const policyLinks = [{ policyCode: 'E-AGG-3', location: 'Pages 12 to 15' }]
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
       url,
@@ -102,6 +102,28 @@ describe('PATCH /marine-licence/marine-plan-policy-document-links - integration 
     expect(statusCode).toBe(400)
     expect(body.message).toBe('DOCUMENT_TYPE_REQUIRED')
     expect(marineLicence.marinePlanPolicyDocuments).toEqual([untypedDocument])
+  })
+
+  test('returns 400 when a policy code does not require documents on this licence', async () => {
+    await insertMarineLicence({ _id: marineLicenceId, contactId })
+
+    const { statusCode, body } = await makePatchRequest({
+      server: getServer(),
+      url,
+      contactId,
+      payload: buildPayload([
+        ...linkedPolicies,
+        { policyCode: 'E-BIO-1', location: 'Page 1' }
+      ])
+    })
+
+    const marineLicence = await findMarineLicence(marineLicenceId)
+
+    expect(statusCode).toBe(400)
+    expect(body.message).toBe('POLICY_CODE_INVALID')
+    expect(marineLicence.marinePlanPolicyDocuments).toEqual([
+      mockLinkedMarinePlanPolicyDocument
+    ])
   })
 
   test('returns 404 when the documentId does not match', async () => {

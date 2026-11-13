@@ -3,6 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
 import { marinePlanPolicyDocumentLinksSchema } from '../../../models/marine-plan-policy.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
+import { buildMarinePlanPoliciesRequiringDocuments } from '../../helpers/marine-plan-policies/marine-plan-policy-documents-required.js'
 import { authorizeOwnership } from '../../../../shared/helpers/authorize-ownership.js'
 
 export const updateMarinePlanPolicyDocumentLinksController = {
@@ -27,7 +28,13 @@ export const updateMarinePlanPolicyDocumentLinksController = {
 
       const marineLicence = await collection.findOne(
         { _id },
-        { projection: { marinePlanPolicyDocuments: 1 } }
+        {
+          projection: {
+            marinePlanPolicyDocuments: 1,
+            marinePlanPolicies: 1,
+            marinePlanPolicyResponses: 1
+          }
+        }
       )
       const document = marineLicence?.marinePlanPolicyDocuments?.find(
         (doc) => doc.documentId === documentId
@@ -39,6 +46,18 @@ export const updateMarinePlanPolicyDocumentLinksController = {
 
       if (!document.documentType) {
         throw Boom.badRequest('DOCUMENT_TYPE_REQUIRED')
+      }
+
+      const requiringDocuments = buildMarinePlanPoliciesRequiringDocuments(
+        marineLicence.marinePlanPolicies,
+        marineLicence.marinePlanPolicyResponses
+      )
+      if (
+        policyLinks.some(
+          ({ policyCode }) => !requiringDocuments.includes(policyCode)
+        )
+      ) {
+        throw Boom.badRequest('POLICY_CODE_INVALID')
       }
 
       await collection.updateOne(

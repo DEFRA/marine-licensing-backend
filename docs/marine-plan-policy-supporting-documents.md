@@ -49,9 +49,10 @@ re-query removes a policy, its document and links are removed.
 | `documentsOutstanding` | Policies requiring documents not yet covered by any document.                                                                                                             |
 | `status`               | `NOT_REQUIRED` when no policy requires documents, `INCOMPLETE` when `documentsOutstanding` is not empty, otherwise `COMPLETED`.                                           |
 
-A link covers its policy only when its `location` is not blank. Links to policies
-that are no longer current or no longer require documents are ignored rather than rejected
-when saved, so policy codes are not checked against the licence on write.
+A link covers its policy only when its `location` is not blank. Links already
+stored for policies that are no longer current or no longer require documents are
+ignored. Saving links is rejected with a 400 when the document has no
+`documentType` yet or any `policyCode` is not in `requiringDocuments`.
 
 `requiringDocuments`, `documentsOutstanding` and `status` come from one calculation, so the policy page,
 the review page and the status cannot disagree.
