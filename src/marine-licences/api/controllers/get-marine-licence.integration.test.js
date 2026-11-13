@@ -58,7 +58,8 @@ describe('Get marine licence - integration tests', async () => {
       marinePlanPolicyResponseCount: 0,
       marinePlanPolicySupportingDocuments: {
         documents: [],
-        required: [],
+        requiringDocuments: [],
+        documentsOutstanding: [],
         status: 'NOT_REQUIRED'
       },
       siteDetailsDataComplete: false,
@@ -142,7 +143,8 @@ describe('Get marine licence - integration tests', async () => {
       marinePlanPolicyResponseCount: 0,
       marinePlanPolicySupportingDocuments: {
         documents: [],
-        required: [],
+        requiringDocuments: [],
+        documentsOutstanding: [],
         status: 'NOT_REQUIRED'
       },
       siteDetailsDataComplete: false,

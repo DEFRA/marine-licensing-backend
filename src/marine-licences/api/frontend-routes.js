@@ -27,6 +27,7 @@ import { calculateMarinePlanPoliciesController } from './controllers/calculate-m
 import { saveMarinePlanPolicyResponseController } from './controllers/save-marine-plan-policy-response.js'
 import { addMarinePlanPolicyDocumentController } from './controllers/marine-plan-policies/add-marine-plan-policy-document.js'
 import { updateMarinePlanPolicyDocumentTypeController } from './controllers/marine-plan-policies/update-marine-plan-policy-document-type.js'
+import { updateMarinePlanPolicyDocumentLinksController } from './controllers/marine-plan-policies/update-marine-plan-policy-document-links.js'
 import { updateInvoicingController } from './controllers/update-invoicing.js'
 import { confirmSiteDetailsController } from './controllers/confirm-site-details.js'
 import { withdrawMarineLicenceController } from './controllers/withdraw-marine-licence.js'
@@ -208,6 +209,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/marine-plan-policy-document-type',
     ...updateMarinePlanPolicyDocumentTypeController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/marine-plan-policy-document-links',
+    ...updateMarinePlanPolicyDocumentLinksController
   },
   {
     method: 'PATCH',

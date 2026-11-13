@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb'
 import { submitMarineLicence } from '../../models/submit-marine-licence.js'
 import { createTaskList } from '../helpers/createTaskList.js'
 import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
+import { buildMarinePlanPolicySupportingDocuments } from '../helpers/marine-plan-policies/marine-plan-policy-documents-required.js'
 import { generateApplicationReference } from '../../../shared/helpers/reference-generator.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 import { getContactId } from '../../../shared/helpers/get-contact-id.js'
@@ -23,12 +24,20 @@ import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/up
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
 
 const checkForIncompleteTasks = (marineLicence, isCitizen) => {
-  const { count: marinePlanPolicyResponseCount } = filterCurrentPolicyResponses(
-    marineLicence.marinePlanPolicies,
-    marineLicence.marinePlanPolicyResponses
-  )
+  const { responses, count: marinePlanPolicyResponseCount } =
+    filterCurrentPolicyResponses(
+      marineLicence.marinePlanPolicies,
+      marineLicence.marinePlanPolicyResponses
+    )
+  const { status: marinePlanPolicyDocumentStatus } =
+    buildMarinePlanPolicySupportingDocuments(
+      marineLicence.marinePlanPolicies,
+      responses,
+      marineLicence.marinePlanPolicyDocuments
+    )
   const taskList = createTaskList(marineLicence, isCitizen, {
-    marinePlanPolicyResponseCount
+    marinePlanPolicyResponseCount,
+    marinePlanPolicyDocumentStatus
   })
   const incompleteTasks = Object.entries(taskList)
     .filter(([task]) => task !== 'waterFrameworkDirective') // Temporary until Water Framework Directive is complete

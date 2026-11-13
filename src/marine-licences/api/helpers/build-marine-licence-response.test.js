@@ -45,7 +45,8 @@ describe('buildMarineLicenceResponse', () => {
       marinePlanPolicyResponseCount: 0,
       marinePlanPolicySupportingDocuments: {
         documents: [],
-        required: [],
+        requiringDocuments: [],
+        documentsOutstanding: [],
         status: 'NOT_REQUIRED'
       },
       taskList: expect.any(Object),
@@ -94,7 +95,10 @@ describe('buildMarineLicenceResponse', () => {
 
   it('should group supporting documents with the policies still requiring one and their status', () => {
     const marinePlanPolicyDocuments = [
-      { documentId: 'doc-1', policyLinks: [{ policyCode: 'C' }] }
+      {
+        documentId: 'doc-1',
+        policyLinks: [{ policyCode: 'C', location: 'Section 4.2' }]
+      }
     ]
     const marineLicence = {
       _id: mockId,
@@ -106,11 +110,11 @@ describe('buildMarineLicenceResponse', () => {
         { policyCode: 'C', sector: 'sector-a' }
       ],
       marinePlanPolicyResponses: {
-        // Stored out of page order; the required list follows marinePlanPolicies
+        // Stored out of page order; the documentsOutstanding list follows marinePlanPolicies
         B: { response: '', requiresDocumentation: true },
         // No longer a current policy, so dropped
         D: { response: 'stale', requiresDocumentation: true },
-        // Flagged, but a document links to it
+        // Requires documents, but a document links to it
         C: { response: 'answered', requiresDocumentation: true },
         A: { response: 'answered', requiresDocumentation: false }
       },
@@ -124,7 +128,8 @@ describe('buildMarineLicenceResponse', () => {
 
     expect(response.marinePlanPolicySupportingDocuments).toEqual({
       documents: marinePlanPolicyDocuments,
-      required: ['B'],
+      requiringDocuments: ['B', 'C'],
+      documentsOutstanding: ['B'],
       status: 'INCOMPLETE'
     })
     expect(response).not.toHaveProperty('marinePlanPolicyDocuments')

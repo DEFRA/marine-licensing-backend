@@ -1,8 +1,10 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
+import {
+  findMarineLicence,
+  insertMarineLicence
+} from '../../../../../tests/test-helpers.js'
 import { makePatchRequest } from '../../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
 
 const documentId = '123e4567-e89b-12d3-a456-426614174000'
 
@@ -19,17 +21,10 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type - integration t
     ...overrides
   })
 
-  const seedMarineLicence = (overrides = {}) =>
-    globalThis.mockMongo.collection(collectionMarineLicences).insertOne(
-      createCompleteMarineLicence({
-        _id: marineLicenceId,
-        contactId,
-        ...overrides
-      })
-    )
-
   test('persists the document type on the matched document', async () => {
-    await seedMarineLicence({
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      contactId,
       marinePlanPolicyDocuments: [{ documentId }]
     })
 
@@ -43,9 +38,7 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type - integration t
     expect(statusCode).toBe(200)
     expect(body.message).toBe('success')
 
-    const updatedLicence = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    const updatedLicence = await findMarineLicence(marineLicenceId)
 
     expect(updatedLicence.marinePlanPolicyDocuments[0].documentType).toBe(
       'ecological-assessment'
@@ -53,7 +46,9 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type - integration t
   })
 
   test('sets documentTypeOther and unsets it when switching away from other', async () => {
-    await seedMarineLicence({
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      contactId,
       marinePlanPolicyDocuments: [
         { documentId, documentTypeOther: 'previously other' }
       ]
@@ -69,9 +64,7 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type - integration t
       })
     })
 
-    let updatedLicence = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    let updatedLicence = await findMarineLicence(marineLicenceId)
     expect(updatedLicence.marinePlanPolicyDocuments[0].documentType).toBe(
       'other'
     )
@@ -87,9 +80,7 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type - integration t
       payload: buildPayload()
     })
 
-    updatedLicence = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    updatedLicence = await findMarineLicence(marineLicenceId)
     expect(updatedLicence.marinePlanPolicyDocuments[0].documentType).toBe(
       'ecological-assessment'
     )
@@ -99,7 +90,9 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type - integration t
   })
 
   test('returns 404 when the documentId does not match', async () => {
-    await seedMarineLicence({
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      contactId,
       marinePlanPolicyDocuments: [{ documentId: 'non-existent-doc-id' }]
     })
 
@@ -115,7 +108,9 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type - integration t
   })
 
   test('returns 403 when attempting to update another users marine licence', async () => {
-    await seedMarineLicence({
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      contactId,
       marinePlanPolicyDocuments: [{ documentId }]
     })
 

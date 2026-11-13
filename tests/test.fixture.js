@@ -212,6 +212,13 @@ export const mockMarinePlanPolicyResponses = {
   'E-BIO-1': { response: 'test', requiresDocumentation: false }
 }
 
+export const mockLinkedMarinePlanPolicyDocument = {
+  documentId: '0b4f6a52-6f1e-4c55-9a3e-2d7c1f8e9b10',
+  ...mockMarinePlanPolicyDocument,
+  documentType: 'ecological-assessment',
+  policyLinks: [{ policyCode: 'E-AGG-3', location: 'Section 4.2' }]
+}
+
 export const mockRejectedMarineLicenceFields = {
   status: MARINE_LICENCE_STATUS.REJECTED,
   applicationReference: 'MLA/2026/10002',
@@ -280,6 +287,13 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     siteDetails: [mockCompleteSite],
     siteDetailsConfirmed: true,
     waterFrameworkDirective: mockWaterFrameworkDirective,
+    marinePlanPolicyJob: 'ready',
+    marinePlanPolicies: mockMarinePlanPolicies,
+    marinePlanPoliciesCount: mockMarinePlanPolicies.length,
+    marinePlanPolicyResponses: mockMarinePlanPolicyResponses,
+    marinePlanPolicyResponseCount: Object.keys(mockMarinePlanPolicyResponses)
+      .length,
+    marinePlanPolicyDocuments: [mockLinkedMarinePlanPolicyDocument],
     ...overrides
   }
 }
