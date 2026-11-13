@@ -29,6 +29,11 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
       })
     )
 
+  const findMarineLicence = () =>
+    globalThis.mockMongo
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
   const updateConsultationRequest = ({ role = 'Consultee:3' } = {}) =>
     makePatchRequest({
       server: getServer(),
@@ -60,9 +65,7 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
     expect(statusCode).toBe(200)
     expect(body).toEqual({ message: 'success' })
 
-    const updated = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    const updated = await findMarineLicence()
 
     expect(updated.consultationRequests).toEqual([
       {
@@ -101,38 +104,59 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
     expect(statusCode).toBe(404)
   })
 
-  test.each([
-    MAS_CONSULTATION_STATUS.NO_RESPONSE_NEEDED,
-    MAS_CONSULTATION_STATUS.RESPONDED
-  ])(
-    'returns 409 and leaves the consultee unchanged when its status is %s',
-    async (consultationStatus) => {
-      const existing = {
-        ...consultee(consulteeOrgId),
-        consultationStatus,
-        response: 'Earlier response'
-      }
-      await seedMarineLicence([
-        {
-          consultationStartDate: '2026-03-01T00:00:00.000Z',
-          consultees: [consultee(otherOrgId), existing]
-        }
-      ])
-
-      const { statusCode, body } = await updateConsultationRequest()
-
-      expect(statusCode).toBe(409)
-      expect(body.message).toBe(
-        `Consultation in Marine Licence ${marineLicenceId} does not need a response`
-      )
-
-      const updated = await globalThis.mockMongo
-        .collection(collectionMarineLicences)
-        .findOne({ _id: marineLicenceId })
-
-      expect(updated.consultationRequests[0].consultees[1]).toEqual(existing)
+  test('accepts a response when the consultee status is NO_RESPONSE_NEEDED', async () => {
+    const notified = {
+      ...consultee(consulteeOrgId),
+      consultationType: 'APPLICATION_NOTIFICATION',
+      consultationStatus: MAS_CONSULTATION_STATUS.NO_RESPONSE_NEEDED
     }
-  )
+    await seedMarineLicence([
+      {
+        consultationStartDate: '2026-03-01T00:00:00.000Z',
+        consultees: [consultee(otherOrgId), notified]
+      }
+    ])
+
+    const { statusCode } = await updateConsultationRequest()
+
+    expect(statusCode).toBe(200)
+
+    const updated = await findMarineLicence()
+
+    expect(updated.consultationRequests[0].consultees).toEqual([
+      consultee(otherOrgId),
+      {
+        ...notified,
+        consultationStatus: MAS_CONSULTATION_STATUS.RESPONDED,
+        response
+      }
+    ])
+  })
+
+  test('returns 409 and leaves the consultee unchanged when it has already responded', async () => {
+    const existing = {
+      ...consultee(consulteeOrgId),
+      consultationStatus: MAS_CONSULTATION_STATUS.RESPONDED,
+      response: 'Earlier response'
+    }
+    await seedMarineLicence([
+      {
+        consultationStartDate: '2026-03-01T00:00:00.000Z',
+        consultees: [consultee(otherOrgId), existing]
+      }
+    ])
+
+    const { statusCode, body } = await updateConsultationRequest()
+
+    expect(statusCode).toBe(409)
+    expect(body.message).toBe(
+      `Consultation in Marine Licence ${marineLicenceId} has already been responded to`
+    )
+
+    const updated = await findMarineLicence()
+
+    expect(updated.consultationRequests[0].consultees[1]).toEqual(existing)
+  })
 
   test('returns 403 when the user does not have an approved Consultee role', async () => {
     await seedMarineLicence([
@@ -148,9 +172,7 @@ describe('PATCH /marine-licence/update-consultation-request - integration tests'
 
     expect(statusCode).toBe(403)
 
-    const updated = await globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    const updated = await findMarineLicence()
 
     expect(updated.consultationRequests[0].consultees[0]).not.toHaveProperty(
       'response'
