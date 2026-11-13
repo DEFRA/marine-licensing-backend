@@ -14,7 +14,10 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     const marineLicence = createCompleteMarineLicence({
       _id: marineLicenceId,
       contactId,
-      publicRegister: { withholdConsent: 'yes', reason: 'Previous reason' }
+      publicRegister: {
+        withholdConsent: 'yes',
+        withholdReason: 'nationalSecurity'
+      }
     })
     await globalThis.mockMongo
       .collection(collectionMarineLicences)
@@ -41,7 +44,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     expect(updatedLicence.publicRegister).toEqual({
       withholdConsent: 'no',
-      reason: null
+      withholdReason: null
     })
   })
 
@@ -58,7 +61,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     const payload = {
       id: marineLicenceId.toString(),
       withholdConsent: 'yes',
-      reason: 'Reason why this should not be published'
+      withholdReason: 'commercialConfidentiality'
     }
 
     const { statusCode, body } = await makePatchRequest({
@@ -77,7 +80,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
 
     expect(updatedLicence.publicRegister).toEqual({
       withholdConsent: 'yes',
-      reason: 'Reason why this should not be published'
+      withholdReason: 'commercialConfidentiality'
     })
     expect(updatedLicence.updatedBy).toBe(contactId)
     expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
@@ -89,7 +92,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
     const payload = {
       id: nonExistentId.toString(),
       withholdConsent: 'yes',
-      reason: 'Some reason'
+      withholdReason: 'nationalSecurity'
     }
 
     const { statusCode, body } = await makePatchRequest({

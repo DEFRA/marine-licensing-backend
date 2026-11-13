@@ -110,6 +110,7 @@ describe('sendMarineLicenceToDynamics', () => {
           coastalOperationsAreas: [],
           publicRegister: {
             withholdConsent: null,
+            withholdReason: null,
             reason: null
           },
           status: 'SUBMITTED'
@@ -159,6 +160,7 @@ describe('sendMarineLicenceToDynamics', () => {
           coastalOperationsAreas: [],
           publicRegister: {
             withholdConsent: null,
+            withholdReason: null,
             reason: null
           },
           status: 'SUBMITTED'
@@ -273,6 +275,7 @@ describe('sendMarineLicenceToDynamics', () => {
       ...mockMarineLicence,
       publicRegister: {
         withholdConsent: 'yes',
+        withholdReason: 'commercialConfidentiality',
         reason:
           'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
       }
@@ -288,6 +291,7 @@ describe('sendMarineLicenceToDynamics', () => {
       expect.objectContaining({
         publicRegister: {
           withholdConsent: 'yes',
+          withholdReason: 'commercialConfidentiality',
           reason:
             'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
         }
@@ -295,7 +299,7 @@ describe('sendMarineLicenceToDynamics', () => {
     )
   })
 
-  it('should include publicRegister with null reason when withholdConsent is no', async () => {
+  it('should include publicRegister with null reasons when withholdConsent is no', async () => {
     mockServer.db.collection().findOne.mockResolvedValue({
       ...mockMarineLicence,
       publicRegister: {
@@ -311,6 +315,7 @@ describe('sendMarineLicenceToDynamics', () => {
 
     expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual({
       withholdConsent: 'no',
+      withholdReason: null,
       reason: null
     })
   })
