@@ -4,9 +4,9 @@ import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
 import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
-const url = '/marine-licence/public-register/national-security'
+const url = '/marine-licence/public-register-national-security'
 
-describe('PATCH /marine-licence/public-register/national-security - integration tests', async () => {
+describe('PATCH /marine-licence/public-register-national-security - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
   const differentContactId = '987e6543-e21b-12d3-a456-426614174000'

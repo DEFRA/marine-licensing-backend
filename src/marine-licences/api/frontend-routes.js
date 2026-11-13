@@ -157,7 +157,7 @@ export const marineLicenceFrontendRoutes = [
   },
   {
     method: 'PATCH',
-    path: '/marine-licence/public-register/national-security',
+    path: '/marine-licence/public-register-national-security',
     ...updatePublicRegisterNationalSecurityController
   },
   {

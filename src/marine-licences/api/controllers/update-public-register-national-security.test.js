@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updatePublicRegisterNationalSecurityController } from './update-public-register-national-security.js'
 
-describe('PATCH /marine-licence/public-register/national-security', () => {
+describe('PATCH /marine-licence/public-register-national-security', () => {
   const payloadValidator =
     updatePublicRegisterNationalSecurityController.options.validate.payload
   const id = new ObjectId().toHexString()
