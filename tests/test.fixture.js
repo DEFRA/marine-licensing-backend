@@ -271,7 +271,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     },
     publicRegister: {
       withholdConsent: 'yes',
-      reason: 'Test public register details'
+      withholdReason: 'nationalSecurity'
     },
     preferredDates: {
       start: { month: '01', year: '2027' },

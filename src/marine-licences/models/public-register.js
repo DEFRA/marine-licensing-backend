@@ -1,8 +1,6 @@
 import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
-import { withCharacterLimit } from '../../shared/models/character-limit.js'
-
-export const PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH = 1000
+import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
 
 export const publicRegister = joi
   .object({
@@ -11,16 +9,17 @@ export const publicRegister = joi
       'any.only': 'PUBLIC_REGISTER_WITHHOLD_CONSENT_REQUIRED',
       'any.required': 'PUBLIC_REGISTER_WITHHOLD_CONSENT_REQUIRED'
     }),
-    reason: joi.when('withholdConsent', {
+    withholdReason: joi.when('withholdConsent', {
       is: 'yes',
-      then: withCharacterLimit(
-        joi.string().trim().required().min(1),
-        PUBLIC_REGISTER_REASON_MAX_TEXT_LENGTH
-      ).messages({
-        'string.empty': 'PUBLIC_REGISTER_REASON_REQUIRED',
-        'string.max': 'PUBLIC_REGISTER_REASON_MAX_LENGTH',
-        'any.required': 'PUBLIC_REGISTER_REASON_REQUIRED'
-      }),
+      then: joi
+        .string()
+        .valid(...Object.values(PUBLIC_REGISTER_WITHHOLD_REASON))
+        .required()
+        .messages({
+          'string.empty': 'PUBLIC_REGISTER_WITHHOLD_REASON_REQUIRED',
+          'any.only': 'PUBLIC_REGISTER_WITHHOLD_REASON_REQUIRED',
+          'any.required': 'PUBLIC_REGISTER_WITHHOLD_REASON_REQUIRED'
+        }),
       otherwise: joi.forbidden()
     })
   })

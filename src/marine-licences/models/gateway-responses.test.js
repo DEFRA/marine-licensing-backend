@@ -157,29 +157,6 @@ describe('marineLicenceGatewayResponseSchema', () => {
       }).error
     ).toBeDefined()
   })
-
-  test('accepts a public register reason of 1,000 emoji', () => {
-    const response = {
-      ...validResponse,
-      publicRegister: { withholdConsent: 'yes', reason: '👍🏽'.repeat(1000) }
-    }
-
-    expect(
-      marineLicenceGatewayResponseSchema.validate(response).error
-    ).toBeUndefined()
-  })
-
-  test('rejects a public register reason of 1,001 characters', () => {
-    const response = {
-      ...validResponse,
-      publicRegister: { withholdConsent: 'yes', reason: 'a'.repeat(1001) }
-    }
-
-    expect(
-      marineLicenceGatewayResponseSchema.validate(response).error.details[0]
-        .type
-    ).toBe('string.max')
-  })
 })
 
 describe('wfdDocumentDownloadUrlResponseSchema', () => {

@@ -1,6 +1,5 @@
 import { config } from '../../config.js'
 import { COORDINATES_ZIP_FILENAME } from '../../marine-licences/constants/coordinates-csv.js'
-import { CHARACTER_LIMIT_BACKSTOP } from '../models/character-limit.js'
 
 const startServer = async () => {
   const { createServer } = await import('../../server.js')
@@ -86,10 +85,20 @@ describe('swagger plugin', () => {
       expect(answer.enum).toEqual(['yes', 'no'])
     })
 
+    test('documents the reasons for withholding information', async () => {
+      const spec = await getSpec()
+      const { $ref } = spec.definitions.PublicRegister.properties.withholdReason
+      const reason = spec.definitions[$ref.replace('#/definitions/', '')]
+
+      expect(reason.enum).toEqual([
+        'nationalSecurity',
+        'commercialConfidentiality'
+      ])
+    })
+
     test.each([
       ['MarineLicence', 'projectName', 250],
       ['MarineLicence', 'projectBackground', 1000],
-      ['PublicRegister', 'reason', CHARACTER_LIMIT_BACKSTOP],
       ['SpecialLegalPowers', 'details', 1000],
       ['HarbourAuthority', 'details', 1000],
       ['OtherAuthorities', 'details', 1000],
@@ -127,7 +136,6 @@ describe('swagger plugin', () => {
       ['Site', 'coordinateSystem', 'geometry is always WGS84 (EPSG:4326)'],
       ['Site', 'locationMethod', "'Manual coordinate entry'"],
       ['CompletionDate', 'hasSpecificDate', 'Not a date'],
-      ['PublicRegister', 'reason', 'user-perceived characters'],
       [
         'Site',
         'coordinatesEntry',
@@ -145,7 +153,10 @@ describe('swagger plugin', () => {
     })
 
     test.each([
-      ['PublicRegister', 'Do you want to request that information is withheld'],
+      [
+        'PublicRegister',
+        'Do you want to ask us to withhold any information from the public register'
+      ],
       [
         'SpecialLegalPowers',
         'Does your organisation have special legal powers'

@@ -20,6 +20,16 @@ import {
   DYNAMICS_REQUEST_ACTIONS
 } from '../../../../shared/common/constants/request-queue.js'
 
+const RESPONDABLE_STATUSES = [
+  MAS_CONSULTATION_STATUS.RESPONSE_NEEDED,
+  MAS_CONSULTATION_STATUS.NO_RESPONSE_NEEDED
+]
+
+const alreadyRespondedError = (id) =>
+  Boom.conflict(
+    `Consultation in Marine Licence ${id} has already been responded to`
+  )
+
 const updateConsultee = async (
   request,
   { organisationId, consultationRequestIndex, marineLicenceId }
@@ -37,7 +47,7 @@ const updateConsultee = async (
       [consulteeToUpdate]: {
         $elemMatch: {
           organisationId,
-          consultationStatus: MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+          consultationStatus: { $in: RESPONDABLE_STATUSES }
         }
       }
     },
@@ -54,17 +64,14 @@ const updateConsultee = async (
       arrayFilters: [
         {
           'consultee.organisationId': organisationId,
-          'consultee.consultationStatus':
-            MAS_CONSULTATION_STATUS.RESPONSE_NEEDED
+          'consultee.consultationStatus': { $in: RESPONDABLE_STATUSES }
         }
       ]
     }
   )
 
   if (matchedCount === 0) {
-    throw Boom.conflict(
-      `Consultation in Marine Licence ${id} does not need a response`
-    )
+    throw alreadyRespondedError(id)
   }
 }
 
@@ -146,10 +153,8 @@ export const updateConsultationRequestController = {
           isOrganisation
         )
 
-      if (consultationStatus !== MAS_CONSULTATION_STATUS.RESPONSE_NEEDED) {
-        throw Boom.conflict(
-          `Consultation in Marine Licence ${id} does not need a response`
-        )
+      if (!RESPONDABLE_STATUSES.includes(consultationStatus)) {
+        throw alreadyRespondedError(id)
       }
 
       await updateConsultee(request, {
