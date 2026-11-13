@@ -81,6 +81,29 @@ describe('PATCH /marine-licence/marine-plan-policy-document-links - integration 
     ])
   })
 
+  test('returns 400 when the document has no type yet', async () => {
+    const { documentType, policyLinks, ...untypedDocument } =
+      mockLinkedMarinePlanPolicyDocument
+    await insertMarineLicence({
+      _id: marineLicenceId,
+      contactId,
+      marinePlanPolicyDocuments: [untypedDocument]
+    })
+
+    const { statusCode, body } = await makePatchRequest({
+      server: getServer(),
+      url,
+      contactId,
+      payload: buildPayload(linkedPolicies)
+    })
+
+    const marineLicence = await findMarineLicence(marineLicenceId)
+
+    expect(statusCode).toBe(400)
+    expect(body.message).toBe('DOCUMENT_TYPE_REQUIRED')
+    expect(marineLicence.marinePlanPolicyDocuments).toEqual([untypedDocument])
+  })
+
   test('returns 404 when the documentId does not match', async () => {
     await insertMarineLicence({ _id: marineLicenceId, contactId })
 

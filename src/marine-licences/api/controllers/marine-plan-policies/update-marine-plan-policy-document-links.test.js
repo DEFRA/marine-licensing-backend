@@ -16,11 +16,8 @@ describe('PATCH /marine-licence/marine-plan-policy-document-links', () => {
   describe('handler', () => {
     test('should throw 500 when the database operation fails', async () => {
       const { mockMongo, mockHandler } = global
-      const mockUpdateOne = vi
-        .fn()
-        .mockRejectedValueOnce(new Error('Database error'))
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
-        updateOne: mockUpdateOne
+        findOne: vi.fn().mockRejectedValueOnce(new Error('Database error'))
       }))
 
       await expect(() =>

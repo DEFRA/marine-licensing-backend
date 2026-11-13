@@ -22,11 +22,27 @@ export const updateMarinePlanPolicyDocumentLinksController = {
       const { payload, db } = request
       const { id, documentId, policyLinks, updatedAt, updatedBy } = payload
 
-      const result = await db.collection(collectionMarineLicences).updateOne(
-        {
-          _id: ObjectId.createFromHexString(id),
-          'marinePlanPolicyDocuments.documentId': documentId
-        },
+      const _id = ObjectId.createFromHexString(id)
+      const collection = db.collection(collectionMarineLicences)
+
+      const marineLicence = await collection.findOne(
+        { _id },
+        { projection: { marinePlanPolicyDocuments: 1 } }
+      )
+      const document = marineLicence?.marinePlanPolicyDocuments?.find(
+        (doc) => doc.documentId === documentId
+      )
+
+      if (!document) {
+        throw Boom.notFound('Marine licence or document not found')
+      }
+
+      if (!document.documentType) {
+        throw Boom.badRequest('DOCUMENT_TYPE_REQUIRED')
+      }
+
+      await collection.updateOne(
+        { _id, 'marinePlanPolicyDocuments.documentId': documentId },
         {
           $set: {
             'marinePlanPolicyDocuments.$.policyLinks': policyLinks,
@@ -35,10 +51,6 @@ export const updateMarinePlanPolicyDocumentLinksController = {
           }
         }
       )
-
-      if (result.matchedCount === 0) {
-        throw Boom.notFound('Marine licence or document not found')
-      }
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {
