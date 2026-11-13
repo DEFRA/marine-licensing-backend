@@ -28,7 +28,7 @@ describe('sendConsultationResponseToDynamics', () => {
   beforeEach(() => {
     config.get.mockReturnValue({
       marineLicences: {
-        apiUrl: 'https://localhost/api/data/v9.2/marine-licences',
+        updateUrl: 'https://localhost/marine-licences/update',
         httpTimeoutMs: 120_000
       }
     })
@@ -38,7 +38,7 @@ describe('sendConsultationResponseToDynamics', () => {
     })
   })
 
-  test('should send the consultation response to the marine licence endpoint', async () => {
+  test('should send the consultation response to the marine licence update endpoint', async () => {
     const result = await sendConsultationResponseToDynamics(
       {},
       mockAccessToken,
@@ -47,7 +47,7 @@ describe('sendConsultationResponseToDynamics', () => {
 
     expect(result).toEqual({ id: 'dynamics-record-id' })
     expect(mockWreckPost).toHaveBeenCalledWith(
-      'https://localhost/api/data/v9.2/marine-licences',
+      'https://localhost/marine-licences/update',
       {
         payload: {
           action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,

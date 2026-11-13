@@ -69,6 +69,12 @@ export const dynamicsSchema = {
       default: '',
       env: 'DYNAMICS_MARINE_LICENCE_API_URL'
     },
+    updateUrl: {
+      doc: 'URL for the Dynamics API to update a Marine Licence',
+      format: requiredFromEnvInCdp,
+      default: '',
+      env: 'DYNAMICS_API_UPDATE_MARINE_LICENCE_URL'
+    },
     sqsQueueName: {
       doc: 'Name of the marine licence Dynamics SQS queue',
       format: String,
