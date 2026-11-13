@@ -111,6 +111,7 @@ describe('sendMarineLicenceToDynamics', () => {
           publicRegister: {
             withholdConsent: null,
             withholdReason: null,
+            nationalSecurityApproval: null,
             reason: null
           },
           status: 'SUBMITTED'
@@ -161,6 +162,7 @@ describe('sendMarineLicenceToDynamics', () => {
           publicRegister: {
             withholdConsent: null,
             withholdReason: null,
+            nationalSecurityApproval: null,
             reason: null
           },
           status: 'SUBMITTED'
@@ -292,12 +294,44 @@ describe('sendMarineLicenceToDynamics', () => {
         publicRegister: {
           withholdConsent: 'yes',
           withholdReason: 'commercialConfidentiality',
+          nationalSecurityApproval: null,
           reason:
             'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
         }
       })
     )
   })
+
+  it.each([
+    ['yes', 'Location of the cable landing point'],
+    ['no', undefined]
+  ])(
+    'should include nationalSecurityApproval %s when withholding for national security',
+    async (nationalSecurityApproval, reason) => {
+      mockServer.db.collection().findOne.mockResolvedValue({
+        ...mockMarineLicence,
+        publicRegister: {
+          withholdConsent: 'yes',
+          withholdReason: 'nationalSecurity',
+          nationalSecurityApproval,
+          ...(reason && { reason })
+        }
+      })
+
+      await sendMarineLicenceToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockQueueItem
+      )
+
+      expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual({
+        withholdConsent: 'yes',
+        withholdReason: 'nationalSecurity',
+        nationalSecurityApproval,
+        reason: reason ?? null
+      })
+    }
+  )
 
   it('should include publicRegister with null reasons when withholdConsent is no', async () => {
     mockServer.db.collection().findOne.mockResolvedValue({
@@ -316,6 +350,7 @@ describe('sendMarineLicenceToDynamics', () => {
     expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual({
       withholdConsent: 'no',
       withholdReason: null,
+      nationalSecurityApproval: null,
       reason: null
     })
   })
