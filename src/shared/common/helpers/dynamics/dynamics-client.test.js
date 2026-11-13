@@ -54,6 +54,7 @@ describe('Dynamics Client', () => {
           },
           marineLicences: {
             apiUrl: 'https://localhost/api/data/v9.2/marine-licences',
+            consultationResponseUrl: 'https://localhost/consultation-response',
             httpTimeoutMs: 120_000
           },
           tokenUrl: 'https://localhost/oauth2/token'
@@ -102,7 +103,7 @@ describe('Dynamics Client', () => {
       })
 
       expect(mockWreckPost).toHaveBeenCalledWith(
-        'https://localhost/api/data/v9.2/marine-licences',
+        'https://localhost/consultation-response',
         expect.objectContaining({
           payload: expect.objectContaining({
             action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
