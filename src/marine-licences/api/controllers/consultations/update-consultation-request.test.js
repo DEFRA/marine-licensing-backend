@@ -124,6 +124,27 @@ describe('PATCH /marine-licence/update-consultation-request', () => {
     expect(addToDynamicsQueue).not.toHaveBeenCalled()
   })
 
+  test('should return 409 when the consultee responds between the read and the update', async () => {
+    const { mockMongo, mockHandler } = global
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        findOne: vi.fn().mockResolvedValue(marineLicence),
+        updateOne: vi.fn().mockResolvedValue({ matchedCount: 0 })
+      }
+    })
+
+    await expect(
+      updateConsultationRequestController.handler(
+        { db: mockMongo, payload, auth },
+        mockHandler
+      )
+    ).rejects.toMatchObject({
+      output: { statusCode: 409 },
+      message: `Consultation in Marine Licence ${id} has already been responded to`
+    })
+    expect(addToDynamicsQueue).not.toHaveBeenCalled()
+  })
+
   test('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
