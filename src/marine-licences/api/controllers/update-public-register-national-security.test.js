@@ -85,6 +85,28 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
     expect(result.error.message).toContain('"reason" is not allowed')
   })
 
+  it('should return 404 if the marine licence is not found', async () => {
+    const { mockMongo, mockHandler } = global
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return {
+        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
+      }
+    })
+
+    await expect(() =>
+      updatePublicRegisterNationalSecurityController.handler(
+        {
+          db: mockMongo,
+          payload: { id, ...choice, nationalSecurityApproval: 'no' }
+        },
+        mockHandler
+      )
+    ).rejects.toMatchObject({
+      message: 'Marine licence not found',
+      output: { statusCode: 404 }
+    })
+  })
+
   it('should return an error message if the database operation fails', async () => {
     const { mockMongo, mockHandler } = global
     vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
