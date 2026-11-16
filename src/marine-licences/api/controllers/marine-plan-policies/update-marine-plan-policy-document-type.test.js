@@ -23,7 +23,7 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type', () => {
       const { mockMongo, mockHandler } = global
       const mockUpdateOne = vi
         .fn()
-        .mockRejectedValueOnce(new Error('Database exploded'))
+        .mockRejectedValueOnce(new Error('Database error'))
       vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
         updateOne: mockUpdateOne
       }))
@@ -34,7 +34,7 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type', () => {
           mockHandler
         )
       ).rejects.toThrow(
-        'Error updating marine plan policy document type: Database exploded'
+        'Error updating marine plan policy document type: Database error'
       )
     })
   })

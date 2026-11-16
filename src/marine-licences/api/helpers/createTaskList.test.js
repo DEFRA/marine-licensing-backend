@@ -740,6 +740,23 @@ describe('createTaskList', () => {
         )
       ).toBe(COMPLETED)
     })
+
+    it.each([
+      ['INCOMPLETE', IN_PROGRESS],
+      ['COMPLETED', COMPLETED],
+      ['NOT_REQUIRED', COMPLETED]
+    ])(
+      'with every policy answered and supporting documents %s, is %s',
+      (marinePlanPolicyDocumentStatus, expected) => {
+        expect(
+          createTaskList(
+            { marinePlanPolicyJob: 'ready', marinePlanPoliciesCount: 3 },
+            false,
+            { marinePlanPolicyResponseCount: 3, marinePlanPolicyDocumentStatus }
+          ).marinePlanPolicies
+        ).toBe(expected)
+      }
+    )
   })
 
   describe('invoicing status', () => {
