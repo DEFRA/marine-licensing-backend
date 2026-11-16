@@ -6,13 +6,14 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
   const payloadValidator =
     updatePublicRegisterNationalSecurityController.options.validate.payload
   const id = new ObjectId().toHexString()
+  const choice = { withholdConsent: 'yes', withholdReason: 'nationalSecurity' }
 
   it.each([
     ['the answer is missing', {}],
     ['the answer is empty', { nationalSecurityApproval: '' }],
     ['the answer is not yes or no', { nationalSecurityApproval: 'maybe' }]
   ])('should fail if %s', (_description, payload) => {
-    const result = payloadValidator.validate({ id, ...payload })
+    const result = payloadValidator.validate({ id, ...choice, ...payload })
     expect(result.error.message).toContain(
       'PUBLIC_REGISTER_NATIONAL_SECURITY_APPROVAL_REQUIRED'
     )
@@ -25,6 +26,7 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
   ])('should fail if approved and the reason is %s', (_description, reason) => {
     const result = payloadValidator.validate({
       id,
+      ...choice,
       nationalSecurityApproval: 'yes',
       reason
     })
@@ -36,6 +38,7 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
   it('should pass with a reason of exactly 1000 user-perceived characters', () => {
     const result = payloadValidator.validate({
       id,
+      ...choice,
       nationalSecurityApproval: 'yes',
       reason: '👍🏽'.repeat(1000)
     })
@@ -45,6 +48,7 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
   it('should fail with a reason of 1001 characters', () => {
     const result = payloadValidator.validate({
       id,
+      ...choice,
       nationalSecurityApproval: 'yes',
       reason: 'a'.repeat(1001)
     })
@@ -53,9 +57,28 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
     )
   })
 
+  it.each([
+    ['consent is missing', { withholdConsent: undefined }],
+    ['consent is no', { withholdConsent: 'no' }],
+    ['the withhold reason is missing', { withholdReason: undefined }],
+    [
+      'the withhold reason is not national security',
+      { withholdReason: 'commercialConfidentiality' }
+    ]
+  ])('should fail if %s', (_description, override) => {
+    const result = payloadValidator.validate({
+      id,
+      ...choice,
+      nationalSecurityApproval: 'no',
+      ...override
+    })
+    expect(result.error).toBeDefined()
+  })
+
   it('should fail if a reason is given without approval', () => {
     const result = payloadValidator.validate({
       id,
+      ...choice,
       nationalSecurityApproval: 'no',
       reason: 'Details'
     })
@@ -72,7 +95,10 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
 
     await expect(() =>
       updatePublicRegisterNationalSecurityController.handler(
-        { db: mockMongo, payload: { id, nationalSecurityApproval: 'no' } },
+        {
+          db: mockMongo,
+          payload: { id, ...choice, nationalSecurityApproval: 'no' }
+        },
         mockHandler
       )
     ).rejects.toThrow(

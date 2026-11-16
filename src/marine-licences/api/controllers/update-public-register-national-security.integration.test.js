@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
 const url = '/marine-licence/public-register-national-security'
+const choice = { withholdConsent: 'yes', withholdReason: 'nationalSecurity' }
 
 describe('PATCH /marine-licence/public-register-national-security - integration tests', async () => {
   const getServer = await setupTestServer()
@@ -26,11 +27,8 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
       .collection(collectionMarineLicences)
       .findOne({ _id: marineLicenceId })
 
-  test('saves the answer and reason alongside the withhold reason', async () => {
-    await insertLicence({
-      withholdConsent: 'yes',
-      withholdReason: 'nationalSecurity'
-    })
+  test('saves the withholding choice, answer and reason together', async () => {
+    await insertLicence({ withholdConsent: 'no', withholdReason: null })
 
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
@@ -38,6 +36,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
       contactId,
       payload: {
         id: marineLicenceId.toString(),
+        ...choice,
         nationalSecurityApproval: 'yes',
         reason: '  Details of the berth  '
       }
@@ -71,6 +70,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
       contactId,
       payload: {
         id: marineLicenceId.toString(),
+        ...choice,
         nationalSecurityApproval: 'no'
       }
     })
@@ -97,6 +97,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
       contactId,
       payload: {
         id: marineLicenceId.toString(),
+        ...choice,
         nationalSecurityApproval: 'yes'
       }
     })
@@ -119,6 +120,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
       contactId: differentContactId,
       payload: {
         id: marineLicenceId.toString(),
+        ...choice,
         nationalSecurityApproval: 'no'
       }
     })
@@ -131,10 +133,11 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
     )
   })
 
-  test('returns 409 when the licence is not withholding for national security', async () => {
+  test('replaces commercial confidentiality answers', async () => {
     await insertLicence({
       withholdConsent: 'yes',
-      withholdReason: 'commercialConfidentiality'
+      withholdReason: 'commercialConfidentiality',
+      reason: 'Pricing details'
     })
 
     const { statusCode } = await makePatchRequest({
@@ -143,17 +146,39 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
       contactId,
       payload: {
         id: marineLicenceId.toString(),
-        nationalSecurityApproval: 'yes',
-        reason: 'Details of the berth'
+        ...choice,
+        nationalSecurityApproval: 'no'
       }
     })
 
-    expect(statusCode).toBe(409)
+    expect(statusCode).toBe(200)
+
+    const updatedLicence = await findLicence()
+    expect(updatedLicence.publicRegister).toEqual({
+      ...choice,
+      nationalSecurityApproval: 'no'
+    })
+  })
+
+  test('returns 400 when the withholding choice is missing', async () => {
+    await insertLicence({ withholdConsent: 'no', withholdReason: null })
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url,
+      contactId,
+      payload: {
+        id: marineLicenceId.toString(),
+        nationalSecurityApproval: 'no'
+      }
+    })
+
+    expect(statusCode).toBe(400)
 
     const unchangedLicence = await findLicence()
     expect(unchangedLicence.publicRegister).toEqual({
-      withholdConsent: 'yes',
-      withholdReason: 'commercialConfidentiality'
+      withholdConsent: 'no',
+      withholdReason: null
     })
   })
 })
