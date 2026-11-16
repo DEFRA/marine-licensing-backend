@@ -247,7 +247,7 @@ export const marineLicenceGatewayResponseSchema = joi
       .unknown(true)
       .allow(null)
       .description(
-        'withholdConsent answers "Do you want to ask us to withhold any information from the public register?". withholdReason is given only when the answer is yes, otherwise null. When withholdReason is nationalSecurity, nationalSecurityApproval answers "Do you have approval from the Secretary of State for Defence to withhold information for national security reasons?" and reason holds what the applicant wants withheld and why (given only when that answer is yes).'
+        'withholdConsent answers "Do you want to ask us to withhold any information from the public register?". withholdReason is given only when the answer is yes, otherwise null. When withholdReason is nationalSecurity, nationalSecurityApproval answers "Do you have approval from the Secretary of State for Defence to withhold information for national security reasons?" and reason holds what the applicant wants withheld and why (given only when that answer is yes). When withholdReason is commercialConfidentiality, reason holds what the applicant wants withheld and why.'
       )
       .label('PublicRegister')
       .required(),

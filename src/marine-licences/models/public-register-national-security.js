@@ -2,16 +2,13 @@ import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 import { withCharacterLimit } from '../../shared/models/character-limit.js'
 import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
+import { withholdChoice } from './public-register-withhold-choice.js'
 
 export const PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH = 1000
 
 export const publicRegisterNationalSecurity = joi
   .object({
-    withholdConsent: joi.string().valid('yes').required(),
-    withholdReason: joi
-      .string()
-      .valid(PUBLIC_REGISTER_WITHHOLD_REASON.NATIONAL_SECURITY)
-      .required(),
+    ...withholdChoice(PUBLIC_REGISTER_WITHHOLD_REASON.NATIONAL_SECURITY),
     nationalSecurityApproval: joi
       .string()
       .valid('yes', 'no')
