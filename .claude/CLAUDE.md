@@ -138,6 +138,8 @@ export const controllerName = {
 - **Handler testing:** Pass `{ db, payload, auth }` and verify mock calls
 - **Realistic tokens in tests:** Use `createAuthWithOrg()` and `createAuthWithoutOrg()` helpers (NOT mocking helper functions)
 - **DRY test setup:** Extract repeated mock setup into `setupMocks()` helper function
+- **Seeding marine licences in integration tests:** use `insertMarineLicence(overrides)` and `findMarineLicence(_id)` from `tests/test-helpers.js` rather than a local seed helper or inline `insertOne`/`findOne`
+- **`createCompleteMarineLicence` includes marine plan policy data** and one document and its supporting documents are `COMPLETED`. Override `marinePlanPolicyDocuments` (and the policy fields) when a test needs a licence without them
 
 ### Database Operations
 
@@ -436,6 +438,7 @@ Tests are run via npm scripts (see package.json). Key patterns:
 
 - **README.md** - Setup, Docker, SonarCloud instructions
 - **docs/nearest-marine-plan-area-fallback.md** - Nearest-area policy fallback design and observability
+- **docs/marine-plan-policy-supporting-documents.md** - Supporting documents for marine plan policies: storage, derived status, and what a re-query does to links
 - **package.json** - All npm scripts and dependencies
 - **sonar-project.properties** - SonarCloud configuration
 - **Dockerfile** - Multi-stage build (development and production)
