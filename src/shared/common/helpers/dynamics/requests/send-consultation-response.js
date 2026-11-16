@@ -11,19 +11,20 @@ export const sendConsultationResponseToDynamics = async (
   queueItem
 ) => {
   const {
-    marineLicences: { apiUrl, httpTimeoutMs }
+    marineLicences: { updateUrl, httpTimeoutMs }
   } = config.get('dynamics')
-  const { action, applicationReferenceNumber, organisationId, response } =
+  const { applicationReferenceNumber, action, type, organisationId, response } =
     queueItem
 
   const payload = {
+    applicationReferenceNumber,
     action,
-    reference: applicationReferenceNumber,
+    type,
     organisationId,
     response
   }
 
-  const dynamicsResponse = await Wreck.post(apiUrl, {
+  const dynamicsResponse = await Wreck.post(updateUrl, {
     payload,
     headers: {
       Authorization: `Bearer ${accessToken}`,
