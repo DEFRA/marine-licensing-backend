@@ -328,7 +328,11 @@ const getPublicRegisterStatus = (publicRegister) => {
   return COMPLETED
 }
 
-const getMarinePlanPolicyStatus = (marineLicence, completed, documentStatus) => {
+const getMarinePlanPolicyStatus = (
+  marineLicence,
+  completed,
+  documentStatus
+) => {
   if (
     marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
   ) {
