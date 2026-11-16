@@ -10,6 +10,7 @@ import {
   DYNAMICS_REQUEST_ACTIONS,
   DYNAMICS_QUEUE_TYPES
 } from '../../constants/request-queue.js'
+import { mockMasConsultationResponseQueueItem } from '../../../../marine-licences/api/helpers/mas/test-fixtures.js'
 
 vi.mock('../../../../config.js')
 vi.mock('@hapi/wreck')
@@ -94,13 +95,11 @@ describe('Dynamics Client', () => {
     })
 
     it('should send correctly call function to send a consultation response', async () => {
-      await sendToDynamics(mockServer, mockAccessToken, {
-        applicationReferenceNumber: 'MLA/2026/00001',
-        action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
-        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
-        organisationId: 'test-org-id',
-        response: 'No objection'
-      })
+      await sendToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockMasConsultationResponseQueueItem
+      )
 
       expect(mockWreckPost).toHaveBeenCalledWith(
         'https://localhost/marine-licences/update',

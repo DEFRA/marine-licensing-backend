@@ -13,12 +13,13 @@ export const sendConsultationResponseToDynamics = async (
   const {
     marineLicences: { updateUrl, httpTimeoutMs }
   } = config.get('dynamics')
-  const { action, applicationReferenceNumber, organisationId, response } =
+  const { applicationReferenceNumber, action, type, organisationId, response } =
     queueItem
 
   const payload = {
+    applicationReferenceNumber,
     action,
-    reference: applicationReferenceNumber,
+    type,
     organisationId,
     response
   }

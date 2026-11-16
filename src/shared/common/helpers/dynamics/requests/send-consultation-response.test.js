@@ -2,10 +2,7 @@ import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 import { config } from '../../../../../config.js'
 import { sendConsultationResponseToDynamics } from './send-consultation-response.js'
-import {
-  DYNAMICS_QUEUE_TYPES,
-  DYNAMICS_REQUEST_ACTIONS
-} from '../../../constants/request-queue.js'
+import { mockMasConsultationResponseQueueItem } from '../../../../../marine-licences/api/helpers/mas/test-fixtures.js'
 
 vi.mock('@hapi/wreck')
 vi.mock('../../../../../config.js')
@@ -14,14 +11,6 @@ vi.mock('../../logging/logger.js', () => ({
 }))
 
 describe('sendConsultationResponseToDynamics', () => {
-  const mockQueueItem = {
-    applicationReferenceNumber: 'MLA/2026/00001',
-    action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
-    type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
-    organisationId: 'test-org-id',
-    response: 'No objection'
-  }
-
   const mockAccessToken = 'test-access-token'
   const mockWreckPost = vi.mocked(Wreck.post)
 
@@ -42,19 +31,14 @@ describe('sendConsultationResponseToDynamics', () => {
     const result = await sendConsultationResponseToDynamics(
       {},
       mockAccessToken,
-      mockQueueItem
+      mockMasConsultationResponseQueueItem
     )
 
     expect(result).toEqual({ id: 'dynamics-record-id' })
     expect(mockWreckPost).toHaveBeenCalledWith(
       'https://localhost/marine-licences/update',
       {
-        payload: {
-          action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
-          reference: 'MLA/2026/00001',
-          organisationId: 'test-org-id',
-          response: 'No objection'
-        },
+        payload: mockMasConsultationResponseQueueItem,
         headers: {
           Authorization: 'Bearer test-access-token',
           'Content-Type': 'application/json'
@@ -71,7 +55,11 @@ describe('sendConsultationResponseToDynamics', () => {
     })
 
     await expect(
-      sendConsultationResponseToDynamics({}, mockAccessToken, mockQueueItem)
+      sendConsultationResponseToDynamics(
+        {},
+        mockAccessToken,
+        mockMasConsultationResponseQueueItem
+      )
     ).rejects.toThrow('Dynamics API returned status 400')
   })
 })
