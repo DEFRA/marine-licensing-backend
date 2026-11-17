@@ -1,10 +1,7 @@
 import { ObjectId } from 'mongodb'
-import { updatePublicRegisterCommercialConfidentialityController } from './update-public-register-commercial-confidentiality.js'
+import { publicRegisterCommercialConfidentiality as payloadValidator } from './public-register-commercial-confidentiality.js'
 
-describe('PATCH /marine-licence/public-register-commercial-confidentiality', () => {
-  const payloadValidator =
-    updatePublicRegisterCommercialConfidentialityController.options.validate
-      .payload
+describe('publicRegisterCommercialConfidentiality', () => {
   const id = new ObjectId().toHexString()
   const choice = {
     withholdConsent: 'yes',

@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
 
-export const createUpdatePublicRegisterController = ({
+export const updatePublicRegisterWithholdingController = ({
   schema,
   errorContext
 }) => ({
