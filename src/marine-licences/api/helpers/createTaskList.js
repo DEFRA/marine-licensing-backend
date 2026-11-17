@@ -311,7 +311,7 @@ const getInvoicingStatus = (invoicing, isCitizen) => {
   return IN_PROGRESS
 }
 
-const isMissingReasonAnswers = ({
+const isWithholdFollowUpIncomplete = ({
   withholdReason,
   nationalSecurityApproval,
   reason
@@ -330,7 +330,7 @@ const getPublicRegisterStatus = (publicRegister) => {
     return INCOMPLETE
   }
 
-  return isMissingReasonAnswers(publicRegister) ? IN_PROGRESS : COMPLETED
+  return isWithholdFollowUpIncomplete(publicRegister) ? IN_PROGRESS : COMPLETED
 }
 
 const getMarinePlanPolicyStatus = (marineLicence, completed) => {

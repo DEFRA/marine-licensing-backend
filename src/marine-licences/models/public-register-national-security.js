@@ -2,9 +2,10 @@ import joi from 'joi'
 import { marineLicenceId } from './shared-models.js'
 import { withCharacterLimit } from '../../shared/models/character-limit.js'
 import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
-import { withholdChoice } from './public-register-withhold-choice.js'
-
-export const PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH = 1000
+import {
+  PUBLIC_REGISTER_REASON_MAX_LENGTH,
+  withholdChoice
+} from './public-register-withhold-choice.js'
 
 export const publicRegisterNationalSecurity = joi
   .object({
@@ -22,7 +23,7 @@ export const publicRegisterNationalSecurity = joi
       is: 'yes',
       then: withCharacterLimit(
         joi.string().trim(),
-        PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH
+        PUBLIC_REGISTER_REASON_MAX_LENGTH
       )
         .required()
         .messages({
