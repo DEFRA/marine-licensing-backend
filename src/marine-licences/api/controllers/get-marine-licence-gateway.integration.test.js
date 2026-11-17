@@ -113,7 +113,9 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
       },
       publicRegister: {
         withholdConsent: 'yes',
-        withholdReason: 'commercialConfidentiality'
+        withholdReason: 'nationalSecurity',
+        nationalSecurityApproval: 'yes',
+        reason: 'Location of the berth'
       },
       specialLegalPowers: {
         agree: 'yes',
@@ -151,7 +153,9 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
       preferredLicenceDates: 'August 2026 to November 2026',
       publicRegister: {
         withholdConsent: 'yes',
-        withholdReason: 'commercialConfidentiality'
+        withholdReason: 'nationalSecurity',
+        nationalSecurityApproval: 'yes',
+        reason: 'Location of the berth'
       },
       specialLegalPowers: {
         agree: 'yes',

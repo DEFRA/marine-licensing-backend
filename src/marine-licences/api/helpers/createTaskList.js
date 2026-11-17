@@ -9,7 +9,10 @@ import {
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
 import { INVOICE_TYPE_OPTIONS } from '../../constants/invoicing.js'
-import { MARINE_PLAN_POLICY_JOB_STATUS } from '../../constants/marine-licence.js'
+import {
+  MARINE_PLAN_POLICY_JOB_STATUS,
+  PUBLIC_REGISTER_WITHHOLD_REASON
+} from '../../constants/marine-licence.js'
 
 const ACTIVITY_DETAILS_FIELDS = [
   'activities',
@@ -309,6 +312,22 @@ const getInvoicingStatus = (invoicing, isCitizen) => {
   return IN_PROGRESS
 }
 
+const getPublicRegisterStatus = (publicRegister) => {
+  if (!publicRegister) {
+    return INCOMPLETE
+  }
+
+  if (
+    publicRegister.withholdReason ===
+      PUBLIC_REGISTER_WITHHOLD_REASON.NATIONAL_SECURITY &&
+    !publicRegister.nationalSecurityApproval
+  ) {
+    return IN_PROGRESS
+  }
+
+  return COMPLETED
+}
+
 const getMarinePlanPolicyStatus = (
   marineLicence,
   completed,
@@ -354,7 +373,7 @@ export const createTaskList = (
       getSiteDetailsStatus(value, marineLicence.siteDetailsConfirmed),
     preferredDates: (value) => (value ? COMPLETED : INCOMPLETE),
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
-    publicRegister: (value) => (value ? COMPLETED : INCOMPLETE),
+    publicRegister: (value) => getPublicRegisterStatus(value),
     waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
     invoicing: (value) => getInvoicingStatus(value, isCitizen),
     marinePlanPolicies: () =>
