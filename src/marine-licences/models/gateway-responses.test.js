@@ -53,6 +53,23 @@ const validResponse = {
       ]
     }
   ],
+  siteNoticeEvidence: [
+    {
+      locationNumber: 1,
+      locationName: 'North pier',
+      dateDisplayed: '18 October 2026',
+      closeUpPhoto: {
+        filename: 'close-up.jpg',
+        downloadUrl:
+          'https://api.example.com/public/marine-licence/507f1f77bcf86cd799439011/site-notice-evidence/1/close-up/download-url'
+      },
+      positionPhoto: {
+        filename: 'position.jpg',
+        downloadUrl:
+          'https://api.example.com/public/marine-licence/507f1f77bcf86cd799439011/site-notice-evidence/1/position/download-url'
+      }
+    }
+  ],
   marinePlanPolicies: [
     {
       policyCode: 'E-AGG-3',
@@ -76,6 +93,32 @@ describe('marineLicenceGatewayResponseSchema', () => {
     expect(
       marineLicenceGatewayResponseSchema.validate(withoutSites).error
     ).toBeDefined()
+  })
+
+  test('rejects a response without siteNoticeEvidence', () => {
+    const { siteNoticeEvidence: _siteNoticeEvidence, ...withoutEvidence } =
+      validResponse
+
+    expect(
+      marineLicenceGatewayResponseSchema.validate(withoutEvidence).error
+    ).toBeDefined()
+  })
+
+  test('accepts null site notice photos and date displayed', () => {
+    expect(
+      marineLicenceGatewayResponseSchema.validate({
+        ...validResponse,
+        siteNoticeEvidence: [
+          {
+            locationNumber: 1,
+            locationName: null,
+            dateDisplayed: null,
+            closeUpPhoto: null,
+            positionPhoto: null
+          }
+        ]
+      }).error
+    ).toBeUndefined()
   })
 
   test('accepts a site without constructionDrawings', () => {

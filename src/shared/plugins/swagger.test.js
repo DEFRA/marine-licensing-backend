@@ -225,10 +225,14 @@ describe('swagger plugin', () => {
         'The marine licence is a draft'
       )
       expect(spec.definitions.MarineLicence.properties).toHaveProperty('sites')
+      expect(spec.definitions.MarineLicence.properties).toHaveProperty(
+        'siteNoticeEvidence'
+      )
       expect(spec.definitions.Site.properties).toHaveProperty(
         'constructionDrawings'
       )
       expect(spec.definitions).toHaveProperty('ConstructionDrawing')
+      expect(spec.definitions).toHaveProperty('SiteNoticeEvidence')
     })
 
     test('documents the MAS withdrawal time as a date-time', async () => {

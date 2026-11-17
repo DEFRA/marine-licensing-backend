@@ -176,9 +176,64 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
         fileName: mockWaterFrameworkDirective.uploadedFile.filename
       },
       sites: [],
+      siteNoticeEvidence: [],
       marinePlanPolicies: [],
       withdrawnAt: null
     })
+  })
+
+  test('returns site notice evidence with durable download URLs', async () => {
+    const publicId = new ObjectId()
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: publicId,
+      status: MARINE_LICENCE_STATUS.SUBMITTED,
+      siteNoticeEvidence: [
+        {
+          locationName: 'North pier',
+          dateDisplayed: { day: '18', month: '10', year: '2026' },
+          closeUpPhoto: {
+            uploadedFile: { filename: 'close-up.jpg' },
+            s3Location: {
+              s3Bucket: 'mmo-uploads',
+              s3Key: 'site-notice/close-up',
+              checksumSha256: 'abc123'
+            }
+          },
+          positionPhoto: {
+            uploadedFile: { filename: 'position.jpg' },
+            s3Location: {
+              s3Bucket: 'mmo-uploads',
+              s3Key: 'site-notice/position',
+              checksumSha256: 'def456'
+            }
+          }
+        }
+      ]
+    })
+
+    const response = await getServer().inject({
+      method: 'GET',
+      url: `/public/marine-licence/mas/${publicId}`
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(JSON.parse(response.payload).siteNoticeEvidence).toEqual([
+      {
+        locationNumber: 1,
+        locationName: 'North pier',
+        dateDisplayed: '18 October 2026',
+        closeUpPhoto: {
+          filename: 'close-up.jpg',
+          downloadUrl: `${backendGatewayUrl}/public/marine-licence/${publicId}/site-notice-evidence/1/close-up/download-url`
+        },
+        positionPhoto: {
+          filename: 'position.jpg',
+          downloadUrl: `${backendGatewayUrl}/public/marine-licence/${publicId}/site-notice-evidence/1/position/download-url`
+        }
+      }
+    ])
   })
 
   test('returns the withdrawal date for a WITHDRAWN marine licence', async () => {

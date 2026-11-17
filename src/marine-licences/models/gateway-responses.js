@@ -16,6 +16,7 @@ import { PROJECT_BACKGROUND_MAX_TEXT_LENGTH } from './project-background.js'
 import { PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH } from './public-consultation.js'
 import { SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH } from './special-legal-powers.js'
 import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
+import { LOCATION_NAME_MAX_LENGTH } from './site-notice-evidence.js'
 
 export const nullableString = joi.string().allow('', null)
 
@@ -215,6 +216,41 @@ const gatewayWaterFrameworkDirectiveSchema = joi
   )
   .label('WaterFrameworkDirective')
 
+const gatewaySiteNoticePhotoSchema = joi
+  .object({
+    filename: nullableString.required(),
+    downloadUrl: joi
+      .string()
+      .uri()
+      .required()
+      .description(
+        "Not the photograph itself: the URL of this API's site notice photo download URL route. Call it to get a short-lived link to the photograph."
+      )
+  })
+  .label('SiteNoticePhoto')
+
+const gatewaySiteNoticeEvidenceSchema = joi
+  .object({
+    locationNumber: joi
+      .number()
+      .integer()
+      .min(1)
+      .required()
+      .description(
+        '1-based location index. Matches MAS rejectedLocations.locationNumber.'
+      ),
+    locationName: limitedText(LOCATION_NAME_MAX_LENGTH).required(),
+    dateDisplayed: nullableString
+      .required()
+      .description(
+        'Date the notice was displayed, as "D Month YYYY". Null if not provided.'
+      )
+      .example('18 October 2026'),
+    closeUpPhoto: gatewaySiteNoticePhotoSchema.allow(null).required(),
+    positionPhoto: gatewaySiteNoticePhotoSchema.allow(null).required()
+  })
+  .label('SiteNoticeEvidence')
+
 export const marineLicenceGatewayResponseSchema = joi
   .object({
     projectName: limitedText(PROJECT_NAME_MAX_LENGTH).required(),
@@ -272,6 +308,14 @@ export const marineLicenceGatewayResponseSchema = joi
     }).required(),
     waterFrameworkDirective: gatewayWaterFrameworkDirectiveSchema.required(),
     sites: joi.array().items(gatewaySiteSchema).required().label('Sites'),
+    siteNoticeEvidence: joi
+      .array()
+      .items(gatewaySiteNoticeEvidenceSchema)
+      .required()
+      .description(
+        'Applicant site notice evidence locations. Empty when none. Photo downloadUrl values are durable API routes; call them for a short-lived S3 link.'
+      )
+      .label('SiteNoticeEvidenceList'),
     marinePlanPolicies: joi
       .array()
       .items(gatewayMarinePlanPolicySchema)
