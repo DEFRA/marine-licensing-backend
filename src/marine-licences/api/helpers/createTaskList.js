@@ -334,7 +334,11 @@ const getPublicRegisterStatus = (publicRegister) => {
   return isWithholdFollowUpIncomplete(publicRegister) ? IN_PROGRESS : COMPLETED
 }
 
-const getMarinePlanPolicyStatus = (marineLicence, completed) => {
+const getMarinePlanPolicyStatus = (
+  marineLicence,
+  completed,
+  documentStatus
+) => {
   if (
     marineLicence.marinePlanPolicyJob !== MARINE_PLAN_POLICY_JOB_STATUS.READY
   ) {
