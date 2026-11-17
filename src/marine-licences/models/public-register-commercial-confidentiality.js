@@ -4,12 +4,12 @@ import { withCharacterLimit } from '../../shared/models/character-limit.js'
 import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
 import {
   PUBLIC_REGISTER_REASON_MAX_LENGTH,
-  withholdChoice
+  withholdChoiceFields
 } from './public-register-withhold-choice.js'
 
 export const publicRegisterCommercialConfidentiality = joi
   .object({
-    ...withholdChoice(
+    ...withholdChoiceFields(
       PUBLIC_REGISTER_WITHHOLD_REASON.COMMERCIAL_CONFIDENTIALITY
     ),
     reason: withCharacterLimit(

@@ -1,8 +1,8 @@
 import { publicRegisterNationalSecurity } from '../../models/public-register-national-security.js'
-import { createUpdatePublicRegisterAnswersController } from './update-public-register-answers.js'
+import { createUpdatePublicRegisterController } from '../helpers/create-update-public-register-controller.js'
 
 export const updatePublicRegisterNationalSecurityController =
-  createUpdatePublicRegisterAnswersController({
+  createUpdatePublicRegisterController({
     schema: publicRegisterNationalSecurity,
     errorContext: 'public register national security'
   })

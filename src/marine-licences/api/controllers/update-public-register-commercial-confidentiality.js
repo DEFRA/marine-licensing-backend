@@ -1,8 +1,8 @@
 import { publicRegisterCommercialConfidentiality } from '../../models/public-register-commercial-confidentiality.js'
-import { createUpdatePublicRegisterAnswersController } from './update-public-register-answers.js'
+import { createUpdatePublicRegisterController } from '../helpers/create-update-public-register-controller.js'
 
 export const updatePublicRegisterCommercialConfidentialityController =
-  createUpdatePublicRegisterAnswersController({
+  createUpdatePublicRegisterController({
     schema: publicRegisterCommercialConfidentiality,
     errorContext: 'public register commercial confidentiality'
   })
