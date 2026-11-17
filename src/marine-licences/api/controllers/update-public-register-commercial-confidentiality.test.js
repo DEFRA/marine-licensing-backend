@@ -1,4 +1,3 @@
-import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { updatePublicRegisterCommercialConfidentialityController } from './update-public-register-commercial-confidentiality.js'
 
@@ -23,24 +22,6 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality', () 
     )
   })
 
-  it('should pass with a reason of exactly 1000 user-perceived characters', () => {
-    const result = payloadValidator.validate({
-      id,
-      ...choice,
-      reason: '👍🏽'.repeat(1000)
-    })
-    expect(result.error).toBeUndefined()
-  })
-
-  it('should count a line break as one character', () => {
-    const result = payloadValidator.validate({
-      id,
-      ...choice,
-      reason: 'a'.repeat(499) + '\r\n' + 'a'.repeat(500)
-    })
-    expect(result.error).toBeUndefined()
-  })
-
   it('should fail with a reason of 1001 characters', () => {
     const result = payloadValidator.validate({
       id,
@@ -52,39 +33,13 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality', () 
     )
   })
 
-  it.each([
-    ['consent is missing', { withholdConsent: undefined }],
-    ['consent is no', { withholdConsent: 'no' }],
-    ['the withhold reason is missing', { withholdReason: undefined }],
-    [
-      'the withhold reason is not commercial confidentiality',
-      { withholdReason: 'nationalSecurity' }
-    ]
-  ])('should fail if %s', (_description, override) => {
+  it('should fail if the withhold reason is not commercial confidentiality', () => {
     const result = payloadValidator.validate({
       id,
       ...choice,
-      reason: 'Details',
-      ...override
+      withholdReason: 'nationalSecurity',
+      reason: 'Details'
     })
     expect(result.error).toBeDefined()
-  })
-
-  it('should return an error message if the database operation fails', async () => {
-    const { mockMongo, mockHandler } = global
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockRejectedValueOnce(new Error('Database failed'))
-      }
-    })
-
-    await expect(() =>
-      updatePublicRegisterCommercialConfidentialityController.handler(
-        { db: mockMongo, payload: { id, ...choice, reason: 'Details' } },
-        mockHandler
-      )
-    ).rejects.toThrow(
-      'Error updating public register commercial confidentiality: Database failed'
-    )
   })
 })

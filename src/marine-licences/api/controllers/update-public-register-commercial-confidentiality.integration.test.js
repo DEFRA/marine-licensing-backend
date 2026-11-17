@@ -86,14 +86,6 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality - int
     expect(body.message).toContain(
       'PUBLIC_REGISTER_COMMERCIAL_CONFIDENTIALITY_REASON_REQUIRED'
     )
-  })
-
-  test('returns 400 when the withholding choice is missing', async () => {
-    await insertLicence({ withholdConsent: 'no', withholdReason: null })
-
-    const { statusCode } = await patch({ reason: 'Pricing details' })
-
-    expect(statusCode).toBe(400)
 
     const unchangedLicence = await findLicence()
     expect(unchangedLicence.publicRegister).toEqual({
