@@ -6,11 +6,17 @@ import {
   WITHHOLDING_DECISION,
   WITHHOLDING_REQUEST_RELATES_TO
 } from '../../../constants/marine-licence.js'
+import {
+  DYNAMICS_QUEUE_TYPES,
+  DYNAMICS_REQUEST_ACTIONS
+} from '../../../../shared/common/constants/request-queue.js'
 
 export const mockMasApplicationReference = 'MMO-2027-00123'
 export const mockMasUserName = 'Jane Doe'
 export const mockMasUserEmail = 'jane@example.com'
 export const mockMasDate = '2026-09-22T11:14:35.102Z'
+export const mockMasConsulteeOrganisationId =
+  'c1b2c3d4-e5f6-7890-abcd-ef1234567890'
 
 export const mockMasTransferredMessageBody = {
   applicationReference: mockMasApplicationReference,
@@ -101,12 +107,20 @@ export const mockMasConsultationRequestMessageBody = {
   consultationStartDate: mockMasDate,
   consultees: [
     {
-      organisationId: 'c1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      organisationId: mockMasConsulteeOrganisationId,
       consultationType:
         MAS_CONSULTATION_APPLICATION_TYPES.APPLICATION_NOTIFICATION,
       notes: 'Test notes'
     }
   ]
+}
+
+export const mockMasConsultationResponseQueueItem = {
+  applicationReferenceNumber: mockMasApplicationReference,
+  action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
+  type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+  organisationId: mockMasConsulteeOrganisationId,
+  response: 'No objection'
 }
 
 export const mockMasResubmitSiteNoticeEvidenceMessageBody = {

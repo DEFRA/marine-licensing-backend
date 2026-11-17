@@ -4,6 +4,7 @@ import {
   IN_PROGRESS,
   INCOMPLETE,
   NOT_ACCEPTED,
+  NOT_REQUIRED,
   buildTaskList,
   getStatusFromRequiredFields
 } from '../../../shared/helpers/task-list-utils.js'
@@ -343,7 +344,7 @@ const getMarinePlanPolicyStatus = (marineLicence, completed) => {
   const total = marineLicence.marinePlanPoliciesCount ?? 0
 
   if (completed >= total) {
-    return COMPLETED
+    return documentStatus === INCOMPLETE ? IN_PROGRESS : COMPLETED
   }
 
   if (completed === 0) {
@@ -356,7 +357,10 @@ const getMarinePlanPolicyStatus = (marineLicence, completed) => {
 export const createTaskList = (
   marineLicence,
   isCitizen = false,
-  { marinePlanPolicyResponseCount = 0 } = {}
+  {
+    marinePlanPolicyResponseCount = 0,
+    marinePlanPolicyDocumentStatus = NOT_REQUIRED
+  } = {}
 ) => {
   const tasks = {
     projectName: (value) => (value ? COMPLETED : INCOMPLETE),
@@ -375,7 +379,11 @@ export const createTaskList = (
     waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
     invoicing: (value) => getInvoicingStatus(value, isCitizen),
     marinePlanPolicies: () =>
-      getMarinePlanPolicyStatus(marineLicence, marinePlanPolicyResponseCount)
+      getMarinePlanPolicyStatus(
+        marineLicence,
+        marinePlanPolicyResponseCount,
+        marinePlanPolicyDocumentStatus
+      )
   }
 
   return buildTaskList(marineLicence, tasks)

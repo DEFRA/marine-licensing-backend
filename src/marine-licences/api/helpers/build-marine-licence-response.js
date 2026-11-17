@@ -1,9 +1,6 @@
 import { MARINE_LICENCE_STATUS_LABEL } from '../../constants/marine-licence.js'
 import { filterCurrentPolicyResponses } from './marine-plan-policies/filter-current-policy-responses.js'
-import {
-  buildMarinePlanPolicyDocumentsRequired,
-  getMarinePlanPolicyDocumentStatus
-} from './marine-plan-policies/marine-plan-policy-documents-required.js'
+import { buildMarinePlanPolicySupportingDocuments } from './marine-plan-policies/marine-plan-policy-documents-required.js'
 import { createTaskList, getSiteDetailsDataStatus } from './createTaskList.js'
 import { COMPLETED } from '../../../shared/helpers/task-list-utils.js'
 import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get-organisation-from-token.js'
@@ -42,15 +39,16 @@ export const buildMarineLicenceResponse = (
     rest.marinePlanPolicyResponses
   )
 
-  const documents = marinePlanPolicyDocuments ?? []
-  const required = buildMarinePlanPolicyDocumentsRequired(
-    marinePlanPolicies,
-    marinePlanPolicyResponses,
-    documents
-  )
+  const marinePlanPolicySupportingDocuments =
+    buildMarinePlanPolicySupportingDocuments(
+      marinePlanPolicies,
+      marinePlanPolicyResponses,
+      marinePlanPolicyDocuments
+    )
 
   const taskList = createTaskList(marineLicence, isCitizen, {
-    marinePlanPolicyResponseCount
+    marinePlanPolicyResponseCount,
+    marinePlanPolicyDocumentStatus: marinePlanPolicySupportingDocuments.status
   })
 
   const toLabel = (value) => MARINE_LICENCE_STATUS_LABEL[value] || value
@@ -67,14 +65,7 @@ export const buildMarineLicenceResponse = (
     marinePlanPolicies: marinePlanPolicies ?? [],
     marinePlanPolicyResponses,
     marinePlanPolicyResponseCount,
-    marinePlanPolicySupportingDocuments: {
-      documents,
-      required,
-      status: getMarinePlanPolicyDocumentStatus(
-        marinePlanPolicyResponses,
-        required
-      )
-    },
+    marinePlanPolicySupportingDocuments,
     taskList,
     siteDetailsDataComplete:
       getSiteDetailsDataStatus(marineLicence.siteDetails) === COMPLETED

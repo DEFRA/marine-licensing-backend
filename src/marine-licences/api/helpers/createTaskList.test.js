@@ -740,6 +740,54 @@ describe('createTaskList', () => {
         )
       ).toBe(COMPLETED)
     })
+
+    it.each([
+      ['INCOMPLETE', IN_PROGRESS],
+      ['COMPLETED', COMPLETED],
+      ['NOT_REQUIRED', COMPLETED]
+    ])(
+      'with every policy answered and supporting documents %s, is %s',
+      (marinePlanPolicyDocumentStatus, expected) => {
+        expect(
+          createTaskList(
+            { marinePlanPolicyJob: 'ready', marinePlanPoliciesCount: 3 },
+            false,
+            { marinePlanPolicyResponseCount: 3, marinePlanPolicyDocumentStatus }
+          ).marinePlanPolicies
+        ).toBe(expected)
+      }
+    )
+  })
+
+  describe('publicRegister status', () => {
+    it.each([
+      [
+        'IN_PROGRESS when withholding for national security without an answer',
+        { withholdConsent: 'yes', withholdReason: 'nationalSecurity' },
+        IN_PROGRESS
+      ],
+      [
+        'COMPLETED when withholding for national security with an answer',
+        {
+          withholdConsent: 'yes',
+          withholdReason: 'nationalSecurity',
+          nationalSecurityApproval: 'no'
+        },
+        COMPLETED
+      ],
+      [
+        'COMPLETED when withholding for commercial confidentiality',
+        { withholdConsent: 'yes', withholdReason: 'commercialConfidentiality' },
+        COMPLETED
+      ],
+      [
+        'COMPLETED when not withholding',
+        { withholdConsent: 'no', withholdReason: null },
+        COMPLETED
+      ]
+    ])('should be %s', (_description, publicRegister, expected) => {
+      expect(createTaskList({ publicRegister }).publicRegister).toBe(expected)
+    })
   })
 
   describe('publicRegister status', () => {

@@ -40,6 +40,34 @@ describe('POST /marine-licence/submit', async () => {
       .insertOne(completeMarineLicence)
   })
 
+  it('should reject submission while a policy is still waiting for a supporting document', async () => {
+    await db
+      .collection(collectionMarineLicences)
+      .updateOne(
+        { _id: marineLicenceId },
+        { $set: { marinePlanPolicyDocuments: [] } }
+      )
+
+    const response = await getServer().inject({
+      method: 'POST',
+      url: '/marine-licence/submit',
+      payload: {
+        id: marineLicenceId.toHexString(),
+        userEmail: 'test@example.com',
+        userName: 'Test User'
+      },
+      auth: {
+        strategy: 'jwt',
+        credentials: mockCredentials
+      }
+    })
+
+    expect(response.statusCode).toBe(400)
+    expect(JSON.parse(response.payload).message).toBe(
+      'Marine licence is incomplete. Missing sections: marinePlanPolicies'
+    )
+  })
+
   it('should successfully submit a complete marine licence', async () => {
     const response = await getServer().inject({
       method: 'POST',
