@@ -311,3 +311,24 @@ export const wfdDocumentDownloadUrlResponseSchema = joi
       .label('WfdDocumentDownloadUrl')
   })
   .label('WfdDocumentDownloadUrlResponse')
+
+export const siteNoticePhotoDownloadUrlResponseSchema = joi
+  .object({
+    message: joi.string().valid('success').required().label('SuccessMessage'),
+    value: joi
+      .object({
+        url: joi
+          .string()
+          .uri()
+          .required()
+          .description('Temporary S3 link to the site notice photograph.'),
+        expiresIn: joi
+          .number()
+          .integer()
+          .required()
+          .description('How long the link is valid for, in seconds.')
+      })
+      .required()
+      .label('SiteNoticePhotoDownloadUrl')
+  })
+  .label('SiteNoticePhotoDownloadUrlResponse')

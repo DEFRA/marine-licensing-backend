@@ -1,5 +1,6 @@
 import {
   marineLicenceGatewayResponseSchema,
+  siteNoticePhotoDownloadUrlResponseSchema,
   wfdDocumentDownloadUrlResponseSchema
 } from './gateway-responses.js'
 
@@ -172,6 +173,26 @@ describe('wfdDocumentDownloadUrlResponseSchema', () => {
   test('rejects a response without a url', () => {
     expect(
       wfdDocumentDownloadUrlResponseSchema.validate({
+        message: 'success',
+        value: { expiresIn: 3600 }
+      }).error
+    ).toBeDefined()
+  })
+})
+
+describe('siteNoticePhotoDownloadUrlResponseSchema', () => {
+  test('accepts a download URL response', () => {
+    expect(
+      siteNoticePhotoDownloadUrlResponseSchema.validate({
+        message: 'success',
+        value: { url: 'https://s3.example.com/key', expiresIn: 3600 }
+      }).error
+    ).toBeUndefined()
+  })
+
+  test('rejects a response without a url', () => {
+    expect(
+      siteNoticePhotoDownloadUrlResponseSchema.validate({
         message: 'success',
         value: { expiresIn: 3600 }
       }).error
