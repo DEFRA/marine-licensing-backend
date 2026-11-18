@@ -7,8 +7,21 @@ import { getContactId } from '../../../shared/helpers/get-contact-id.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import {
   APPLICATION_TASK_TYPE,
+  MARINE_LICENCE_DYNAMICS_EVENT_ACTION,
   MARINE_LICENCE_STATUS
 } from '../../constants/marine-licence.js'
+import { config } from '../../../config.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
+import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
+import {
+  DYNAMICS_QUEUE_TYPES,
+  DYNAMICS_REQUEST_ACTIONS
+} from '../../../shared/common/constants/request-queue.js'
+import { buildSiteNoticeEvidenceDynamicsPayload } from '../helpers/format-site-notice-evidence-for-gateway.js'
+import {
+  markFailedToSendToDynamics,
+  outboundKey
+} from '../helpers/dynamics/worker-processor.js'
 
 const markTaskResolved = (taskId, resolvedAt, resolvedBy) => ({
   $set: {
@@ -112,6 +125,54 @@ const buildResolvePipeline = (taskId, resolvedAt, resolvedBy) => [
   { $set: { updatedAt: resolvedAt, updatedBy: resolvedBy } }
 ]
 
+const isPublicSiteNoticeTask = (marineLicence, taskId) =>
+  (marineLicence.applicationTasks ?? []).some(
+    (task) =>
+      task.taskId === taskId &&
+      task.type === APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE
+  )
+
+const queueSiteNoticeEvidenceForDynamics = async (
+  request,
+  { applicationReference, marineLicenceId, siteNoticeEvidence }
+) => {
+  const action = DYNAMICS_REQUEST_ACTIONS.SEND_SITE_NOTICE_EVIDENCE
+  const { locationCount, locations } = buildSiteNoticeEvidenceDynamicsPayload(
+    siteNoticeEvidence,
+    config.get('backendGatewayUrl'),
+    marineLicenceId
+  )
+
+  try {
+    await addToDynamicsQueue({
+      request,
+      applicationReference,
+      action,
+      type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+      locationCount,
+      locations
+    })
+  } catch (error) {
+    request.logger.error(
+      {
+        ...structureErrorForECS(error),
+        event: {
+          action: MARINE_LICENCE_DYNAMICS_EVENT_ACTION.MARKED_FAILED,
+          outcome: 'failure',
+          reference: applicationReference,
+          reason: 'Enqueue failed; no automatic retry'
+        }
+      },
+      `Failed to queue site notice evidence for ${applicationReference} to Dynamics; marked failed`
+    )
+    await markFailedToSendToDynamics(
+      request.db,
+      applicationReference,
+      outboundKey({ action })
+    )
+  }
+}
+
 export const resolveApplicationTaskController = {
   options: {
     pre: [{ method: authorizeOwnership(collectionMarineLicences) }],
@@ -146,6 +207,15 @@ export const resolveApplicationTaskController = {
 
       if (!result) {
         await explainMissedResolve(request, _id, taskId)
+      } else if (
+        isPublicSiteNoticeTask(result, taskId) &&
+        config.get('dynamics').isDynamicsEnabled
+      ) {
+        await queueSiteNoticeEvidenceForDynamics(request, {
+          applicationReference: result.applicationReference,
+          marineLicenceId: id,
+          siteNoticeEvidence: result.siteNoticeEvidence
+        })
       }
 
       return h

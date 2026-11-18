@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import { setupTestServer } from '../../../../tests/test-server.js'
 import {
   makeGetRequest,
@@ -9,6 +10,16 @@ import {
   APPLICATION_TASK_TYPE,
   MARINE_LICENCE_STATUS
 } from '../../constants/marine-licence.js'
+import { config } from '../../../config.js'
+import { addToDynamicsQueue } from '../../../shared/common/helpers/dynamics/index.js'
+import {
+  DYNAMICS_QUEUE_TYPES,
+  DYNAMICS_REQUEST_ACTIONS
+} from '../../../shared/common/constants/request-queue.js'
+
+vi.mock('../../../shared/common/helpers/dynamics/index.js', () => ({
+  addToDynamicsQueue: vi.fn()
+}))
 
 const buildTask = (
   taskId,
@@ -211,5 +222,60 @@ describe('Resolve application task - integration tests', async () => {
     )
 
     expect(statusCode).toBe(403)
+  })
+
+  test('queues site notice evidence for Dynamics when Send evidence resolves PUBLIC_SITE_NOTICE', async () => {
+    const taskId = new ObjectId().toHexString()
+    const applicationReference = 'MLA/2026/00001'
+    const id = new ObjectId()
+    const dynamicsGet = config.get.bind(config)
+
+    vi.spyOn(config, 'get').mockImplementation((key) => {
+      if (key === 'dynamics') {
+        return { ...dynamicsGet('dynamics'), isDynamicsEnabled: true }
+      }
+      return dynamicsGet(key)
+    })
+
+    await globalThis.mockMongo.collection('marine-licences').insertOne({
+      ...mockMarineLicence,
+      _id: id,
+      organisation: null,
+      applicationReference,
+      status: MARINE_LICENCE_STATUS.ACTION_REQUIRED,
+      previousStatus: MARINE_LICENCE_STATUS.SUBMITTED,
+      siteNoticeEvidence: [
+        {
+          locationName: 'North pier',
+          dateDisplayed: { day: '18', month: '10', year: '2026' }
+        }
+      ],
+      applicationTasks: [
+        buildTask(taskId, null, APPLICATION_TASK_TYPE.PUBLIC_SITE_NOTICE)
+      ]
+    })
+
+    const { statusCode } = await resolve(
+      id,
+      taskId,
+      mockMarineLicence.contactId
+    )
+
+    expect(statusCode).toBe(200)
+    expect(addToDynamicsQueue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        applicationReference,
+        action: DYNAMICS_REQUEST_ACTIONS.SEND_SITE_NOTICE_EVIDENCE,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+        locationCount: 1,
+        locations: [
+          expect.objectContaining({
+            locationNumber: 1,
+            locationName: 'North pier',
+            dateDisplayed: '18 October 2026'
+          })
+        ]
+      })
+    )
   })
 })
