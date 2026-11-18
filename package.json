@@ -12,6 +12,7 @@
     "docker:dev": "npm run dev",
     "dev": "NODE_ENV=development npm run server:watch",
     "dev:debug": "NODE_ENV=development npm run server:debug",
+    "audit": "audit-ci --config .audit-ci.jsonc",
     "format": "prettier --write \"**/*.{cjs,js,json,md}\"",
     "format:check": "prettier --check \"**/*.{cjs,js,json,md}\"",
     "git:pre-commit-hook": "npm run format:check && npm run lint",
@@ -88,6 +89,9 @@
     "fast-copy": "^4.1.1",
     "follow-redirects": "^1.16.2",
     "vite": "^8.3.4",
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.7"
+    },
     "hapi-swagger": {
       "joi": "$joi"
     },
@@ -99,6 +103,7 @@
     "@babel/core": "7.29.7",
     "@babel/preset-env": "7.29.5",
     "@vitest/coverage-v8": "5.0.5",
+    "audit-ci": "7.1.0",
     "autoprefixer": "10.6.2",
     "eslint": "9.35.0",
     "husky": "9.1.7",
