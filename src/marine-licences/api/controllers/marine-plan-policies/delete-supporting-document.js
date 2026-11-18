@@ -37,10 +37,6 @@ export const deleteSupportingDocumentController = {
         }
       )
 
-      if (!marineLicence) {
-        throw Boom.notFound(` Marine Licence not found for ${id}`)
-      }
-
       const document = marineLicence?.marinePlanPolicyDocuments?.find(
         (doc) => doc.documentId === documentId
       )
