@@ -47,26 +47,27 @@ const formatPhoto = (
 }
 
 export const formatSiteNoticeEvidenceForGateway = (
-  siteNoticeEvidence = [],
+  siteNoticeEvidence,
   backendGatewayUrl,
   marineLicenceId
 ) =>
-  siteNoticeEvidence.map((evidence = {}, index) => {
+  (siteNoticeEvidence ?? []).map((evidence, index) => {
+    const location = evidence ?? {}
     const locationNumber = index + 1
 
     return {
       locationNumber,
-      locationName: evidence.locationName ?? null,
-      dateDisplayed: formatDateDisplayed(evidence.dateDisplayed),
+      locationName: location.locationName ?? null,
+      dateDisplayed: formatDateDisplayed(location.dateDisplayed),
       closeUpPhoto: formatPhoto(
-        evidence.closeUpPhoto,
+        location.closeUpPhoto,
         backendGatewayUrl,
         marineLicenceId,
         locationNumber,
         SITE_NOTICE_PHOTO_TYPE.CLOSE_UP
       ),
       positionPhoto: formatPhoto(
-        evidence.positionPhoto,
+        location.positionPhoto,
         backendGatewayUrl,
         marineLicenceId,
         locationNumber,

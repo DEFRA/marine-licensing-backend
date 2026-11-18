@@ -59,7 +59,9 @@ const parseDynamicsJobBody = (message, logger) =>
     }
     if (isSiteNoticeEvidence(action)) {
       if (!Array.isArray(locations)) {
-        throw new Error('locations are required for send-site-notice-evidence')
+        throw new TypeError(
+          'locations are required for send-site-notice-evidence'
+        )
       }
       return {
         applicationReference,
