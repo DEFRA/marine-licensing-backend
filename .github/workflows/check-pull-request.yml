@@ -35,7 +35,15 @@ jobs:
           npm run lint
           npm test
       - name: Security audit
-        run: npm audit --audit-level=high || (echo 'Vulnerabilities found!' && exit 1)
+        run: |
+          # Temporary picomatch allowlist in .audit-ci.jsonc — revisit/remove by this date
+          EXPIRES_ON=2026-12-18
+          TODAY=$(date -u +%F)
+          if ! [[ "$TODAY" < "$EXPIRES_ON" ]]; then
+            echo "::error::Temporary npm audit allowlist for GHSA-fc5q-39xc-vjpf expired on ${EXPIRES_ON}. Revisit picomatch or extend the date with team agreement."
+            exit 1
+          fi
+          npm run audit
 
       - name: Test Docker Image Build
         run: |
