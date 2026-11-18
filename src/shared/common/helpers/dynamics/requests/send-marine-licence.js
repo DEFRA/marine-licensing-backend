@@ -76,6 +76,8 @@ export const sendMarineLicenceToDynamics = async (
     publicRegister: {
       withholdConsent: marineLicence.publicRegister?.withholdConsent ?? null,
       withholdReason: marineLicence.publicRegister?.withholdReason ?? null,
+      nationalSecurityApproval:
+        marineLicence.publicRegister?.nationalSecurityApproval ?? null,
       reason: marineLicence.publicRegister?.reason ?? null
     },
     ...(marineLicence.organisation?.id

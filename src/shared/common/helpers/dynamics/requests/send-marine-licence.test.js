@@ -111,6 +111,7 @@ describe('sendMarineLicenceToDynamics', () => {
           publicRegister: {
             withholdConsent: null,
             withholdReason: null,
+            nationalSecurityApproval: null,
             reason: null
           },
           status: 'SUBMITTED'
@@ -161,6 +162,7 @@ describe('sendMarineLicenceToDynamics', () => {
           publicRegister: {
             withholdConsent: null,
             withholdReason: null,
+            nationalSecurityApproval: null,
             reason: null
           },
           status: 'SUBMITTED'
@@ -292,10 +294,34 @@ describe('sendMarineLicenceToDynamics', () => {
         publicRegister: {
           withholdConsent: 'yes',
           withholdReason: 'commercialConfidentiality',
+          nationalSecurityApproval: null,
           reason:
             'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
         }
       })
+    )
+  })
+
+  it('should include nationalSecurityApproval when withholding for national security', async () => {
+    const publicRegister = {
+      withholdConsent: 'yes',
+      withholdReason: 'nationalSecurity',
+      nationalSecurityApproval: 'yes',
+      reason: 'Location of the cable landing point'
+    }
+    mockServer.db.collection().findOne.mockResolvedValue({
+      ...mockMarineLicence,
+      publicRegister
+    })
+
+    await sendMarineLicenceToDynamics(
+      mockServer,
+      mockAccessToken,
+      mockQueueItem
+    )
+
+    expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual(
+      publicRegister
     )
   })
 
@@ -316,6 +342,7 @@ describe('sendMarineLicenceToDynamics', () => {
     expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual({
       withholdConsent: 'no',
       withholdReason: null,
+      nationalSecurityApproval: null,
       reason: null
     })
   })
