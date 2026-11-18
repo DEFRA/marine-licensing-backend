@@ -1,8 +1,10 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import {
+  findMarineLicence,
+  insertMarineLicence
+} from '../../../../tests/test-helpers.js'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
 const url = '/marine-licence/public-register-commercial-confidentiality'
 const choice = {
@@ -17,18 +19,7 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality - int
   const marineLicenceId = new ObjectId()
 
   const insertLicence = (publicRegister) =>
-    globalThis.mockMongo.collection(collectionMarineLicences).insertOne(
-      createCompleteMarineLicence({
-        _id: marineLicenceId,
-        contactId,
-        publicRegister
-      })
-    )
-
-  const findLicence = () =>
-    globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    insertMarineLicence({ _id: marineLicenceId, contactId, publicRegister })
 
   const patch = (payload, patchContactId = contactId) =>
     makePatchRequest({
@@ -49,7 +40,7 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality - int
     expect(statusCode).toBe(200)
     expect(body).toEqual({ message: 'success' })
 
-    const updatedLicence = await findLicence()
+    const updatedLicence = await findMarineLicence(marineLicenceId)
     expect(updatedLicence.publicRegister).toEqual({
       ...choice,
       reason: 'Pricing details'
@@ -70,7 +61,7 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality - int
 
     expect(statusCode).toBe(200)
 
-    const updatedLicence = await findLicence()
+    const updatedLicence = await findMarineLicence(marineLicenceId)
     expect(updatedLicence.publicRegister).toEqual({
       ...choice,
       reason: 'Pricing details'
@@ -87,7 +78,7 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality - int
       'PUBLIC_REGISTER_COMMERCIAL_CONFIDENTIALITY_REASON_REQUIRED'
     )
 
-    const unchangedLicence = await findLicence()
+    const unchangedLicence = await findMarineLicence(marineLicenceId)
     expect(unchangedLicence.publicRegister).toEqual({
       withholdConsent: 'no',
       withholdReason: null
@@ -104,7 +95,7 @@ describe('PATCH /marine-licence/public-register-commercial-confidentiality - int
 
     expect(statusCode).toBe(403)
 
-    const unchangedLicence = await findLicence()
+    const unchangedLicence = await findMarineLicence(marineLicenceId)
     expect(unchangedLicence.publicRegister).toEqual({
       withholdConsent: 'no',
       withholdReason: null
