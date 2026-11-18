@@ -33,5 +33,22 @@ describe('PATCH /marine-licence/marine-plan-policy-document-type', () => {
         )
       ).rejects.toThrow('Error deleting document: Database error')
     })
+
+    test('should throw 500 when deleting the document fails', async () => {
+      const { mockMongo, mockHandler } = global
+      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
+        findOne: vi.fn().mockResolvedValue({
+          marinePlanPolicyDocuments: [{ documentId: uuid }]
+        }),
+        updateOne: vi.fn().mockRejectedValue(new Error('Update failed'))
+      }))
+
+      await expect(() =>
+        deleteSupportingDocumentController.handler(
+          { db: mockMongo, payload: buildPayload() },
+          mockHandler
+        )
+      ).rejects.toThrow('Error deleting document: Update failed')
+    })
   })
 })

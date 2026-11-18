@@ -4,10 +4,7 @@ import { ObjectId } from 'mongodb'
 import { deleteMarinePlanPolicyDocumentSchema } from '../../../models/marine-plan-policy.js'
 import { authorizeOwnership } from '../../../../shared/helpers/authorize-ownership.js'
 import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
-import {
-  collectS3Locations,
-  deleteOrphanedS3Objects
-} from '../../helpers/deleteS3Objects.js'
+import { deleteMarinePlanPolicyDocument } from '../../helpers/marine-plan-policies/delete-marine-plan-policy-document.js'
 
 export const deleteSupportingDocumentController = {
   options: {
@@ -52,24 +49,12 @@ export const deleteSupportingDocumentController = {
         throw Boom.notFound(`No document found for documentId ${documentId}`)
       }
 
-      await collection.updateOne(
-        { _id },
-        {
-          $pull: {
-            marinePlanPolicyDocuments: { documentId }
-          }
-        },
-        {
-          $set: {
-            updatedAt,
-            updatedBy
-          }
-        }
-      )
-
-      const s3Locations = collectS3Locations(document)
-
-      await deleteOrphanedS3Objects(db, s3Locations)
+      await deleteMarinePlanPolicyDocument({
+        db,
+        _id,
+        document,
+        auditFields: { updatedAt, updatedBy }
+      })
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {
