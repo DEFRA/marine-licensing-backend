@@ -1,0 +1,9 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  // Temporary allowlist: picomatch GHSA-fc5q-39xc-vjpf — no patched release (<=4.0.7, 2.x included).
+  // Transitive via vitest/vite and neostandard (eslint). Dev tooling only; npm audit --omit=dev is clean.
+  // Expiry enforced in check-pull-request.yml (2026-12-18).
+  // Remove this entry once picomatch ships a fix or the advisory is withdrawn.
+  "high": true,
+  "allowlist": ["GHSA-fc5q-39xc-vjpf"]
+}
