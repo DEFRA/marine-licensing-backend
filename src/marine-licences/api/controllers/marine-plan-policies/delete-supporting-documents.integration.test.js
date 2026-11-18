@@ -1,7 +1,6 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
-import { mockMarineLicence } from '../../../models/test-fixtures.js'
 import {
   createCompleteMarineLicence,
   mockLinkedMarinePlanPolicyDocument
@@ -17,12 +16,6 @@ vi.mock('../../../../shared/services/data-service/blob-service.js', () => ({
 describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
-
-  const s3Location = (s3Key) => ({
-    s3Bucket: 'mmo-uploads',
-    s3Key,
-    checksumSha256: 'abc123'
-  })
 
   test('successfully deletes a document', async () => {
     const licenceId = new ObjectId()
