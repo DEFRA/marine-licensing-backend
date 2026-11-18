@@ -41,7 +41,7 @@
     "@aws-sdk/credential-providers": "3.1166.0",
     "@aws-sdk/s3-request-presigner": "3.1166.0",
     "@defra/cdp-auditing": "0.6.2",
-    "@defra/hapi-secure-context": "0.4.1",
+    "@defra/hapi-secure-context": "0.4.2",
     "@defra/hapi-tracing": "1.30.1",
     "@elastic/ecs-pino-format": "1.5.0",
     "@esri/arcgis-rest-feature-service": "4.11.0",
