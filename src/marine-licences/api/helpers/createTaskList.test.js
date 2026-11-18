@@ -767,13 +767,13 @@ describe('createTaskList', () => {
         IN_PROGRESS
       ],
       [
-        'COMPLETED when withholding for national security with an answer',
+        'IN_PROGRESS when withholding for national security with an answer but not confirmed',
         {
           withholdConsent: 'yes',
           withholdReason: 'nationalSecurity',
           nationalSecurityApproval: 'no'
         },
-        COMPLETED
+        IN_PROGRESS
       ],
       [
         'IN_PROGRESS when withholding for commercial confidentiality without a reason',
@@ -781,13 +781,13 @@ describe('createTaskList', () => {
         IN_PROGRESS
       ],
       [
-        'COMPLETED when withholding for commercial confidentiality with a reason',
+        'IN_PROGRESS when withholding for commercial confidentiality with a reason but not confirmed',
         {
           withholdConsent: 'yes',
           withholdReason: 'commercialConfidentiality',
           reason: 'Pricing details'
         },
-        COMPLETED
+        IN_PROGRESS
       ],
       [
         'COMPLETED when not withholding',
@@ -797,6 +797,57 @@ describe('createTaskList', () => {
     ])('should be %s', (_description, publicRegister, expected) => {
       expect(createTaskList({ publicRegister }).publicRegister).toBe(expected)
     })
+
+    const nationalSecurityAnswered = {
+      withholdConsent: 'yes',
+      withholdReason: 'nationalSecurity',
+      nationalSecurityApproval: 'no'
+    }
+
+    it.each([
+      [
+        'COMPLETED when national security answers are confirmed',
+        nationalSecurityAnswered,
+        true,
+        COMPLETED
+      ],
+      [
+        'COMPLETED when commercial confidentiality answers are confirmed',
+        {
+          withholdConsent: 'yes',
+          withholdReason: 'commercialConfidentiality',
+          reason: 'Pricing details'
+        },
+        true,
+        COMPLETED
+      ],
+      [
+        'IN_PROGRESS when confirmed but the follow-up answer is missing',
+        { withholdConsent: 'yes', withholdReason: 'nationalSecurity' },
+        true,
+        IN_PROGRESS
+      ],
+      [
+        'IN_PROGRESS when answers are explicitly unconfirmed',
+        nationalSecurityAnswered,
+        false,
+        IN_PROGRESS
+      ],
+      [
+        'COMPLETED when not withholding and unconfirmed',
+        { withholdConsent: 'no', withholdReason: null },
+        false,
+        COMPLETED
+      ]
+    ])(
+      'should be %s',
+      (_description, publicRegister, publicRegisterConfirmed, expected) => {
+        expect(
+          createTaskList({ publicRegister, publicRegisterConfirmed })
+            .publicRegister
+        ).toBe(expected)
+      }
+    )
   })
 
   describe('invoicing status', () => {

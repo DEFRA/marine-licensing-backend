@@ -287,6 +287,7 @@ export const createCompleteMarineLicence = (overrides = {}) => {
     updatedAt: new Date('2026-12-01'),
     siteDetails: [mockCompleteSite],
     siteDetailsConfirmed: true,
+    publicRegisterConfirmed: true,
     waterFrameworkDirective: mockWaterFrameworkDirective,
     marinePlanPolicyJob: 'ready',
     marinePlanPolicies: mockMarinePlanPolicies,
