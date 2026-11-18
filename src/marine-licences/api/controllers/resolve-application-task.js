@@ -207,15 +207,17 @@ export const resolveApplicationTaskController = {
 
       if (!result) {
         await explainMissedResolve(request, _id, taskId)
-      } else if (
-        isPublicSiteNoticeTask(result, taskId) &&
-        config.get('dynamics').isDynamicsEnabled
-      ) {
-        await queueSiteNoticeEvidenceForDynamics(request, {
-          applicationReference: result.applicationReference,
-          marineLicenceId: id,
-          siteNoticeEvidence: result.siteNoticeEvidence
-        })
+      } else {
+        if (
+          isPublicSiteNoticeTask(result, taskId) &&
+          config.get('dynamics').isDynamicsEnabled
+        ) {
+          await queueSiteNoticeEvidenceForDynamics(request, {
+            applicationReference: result.applicationReference,
+            marineLicenceId: id,
+            siteNoticeEvidence: result.siteNoticeEvidence
+          })
+        }
       }
 
       return h
