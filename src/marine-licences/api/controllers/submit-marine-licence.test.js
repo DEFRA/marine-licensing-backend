@@ -20,6 +20,9 @@ vi.mock('../../../shared/helpers/reference-generator.js')
 vi.mock('../helpers/createTaskList.js')
 vi.mock('../../../shared/common/helpers/dynamics/dynamics-processor.js')
 vi.mock('../../../config.js')
+vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: { deleteFiles: vi.fn() }
+}))
 vi.mock('../../../shared/helpers/send-email-confirmation.js')
 vi.mock('../../../shared/common/helpers/geo/update-coastal-operations-areas.js')
 vi.mock('../../../shared/common/helpers/geo/update-marine-planning-areas.js')
@@ -183,6 +186,9 @@ describe('POST /marine-licence/submit', () => {
             status: MARINE_LICENCE_STATUS.SUBMITTED,
             updatedAt: mockAuditPayload.updatedAt,
             updatedBy: mockAuditPayload.updatedBy
+          },
+          $pull: {
+            marinePlanPolicyDocuments: { 'policyLinks.0': { $exists: false } }
           }
         }
       )

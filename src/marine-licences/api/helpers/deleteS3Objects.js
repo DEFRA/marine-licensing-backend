@@ -52,11 +52,11 @@ export const collectS3Locations = (source) => {
 
 /**
  * Removes any candidate whose s3Key is still referenced by a construction
- * drawing on any marine licence. A rejected licence can be copied into a new
- * one, which duplicates the s3Location values, so the same object can be
- * shared by more than one document. Call this _after_ the mongo mutation: the
- * current document's own reference is gone by then, so no document needs
- * excluding.
+ * drawing or a marine plan policy document on any marine licence. A rejected
+ * licence can be copied into a new one, which duplicates the s3Location
+ * values, so the same object can be shared by more than one document. Call
+ * this _after_ the mongo mutation: the current document's own reference is
+ * gone by then, so no document needs excluding.
  */
 const filterUnreferencedS3Keys = async (db, s3Locations) => {
   const s3Keys = s3Locations.map(({ s3Key }) => s3Key)
@@ -64,8 +64,20 @@ const filterUnreferencedS3Keys = async (db, s3Locations) => {
   const referencingLicences = await db
     .collection(collectionMarineLicences)
     .find(
-      { 'siteDetails.constructionDrawings.s3Location.s3Key': { $in: s3Keys } },
-      { projection: { 'siteDetails.constructionDrawings.s3Location': 1 } }
+      {
+        $or: [
+          {
+            'siteDetails.constructionDrawings.s3Location.s3Key': { $in: s3Keys }
+          },
+          { 'marinePlanPolicyDocuments.s3Location.s3Key': { $in: s3Keys } }
+        ]
+      },
+      {
+        projection: {
+          'siteDetails.constructionDrawings.s3Location': 1,
+          'marinePlanPolicyDocuments.s3Location': 1
+        }
+      }
     )
     .toArray()
 

@@ -93,6 +93,28 @@ describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests
     ])
   })
 
+  test('keeps the S3 file when a copied licence still references it', async () => {
+    const licenceId = new ObjectId()
+    const { documentId } = mockLinkedMarinePlanPolicyDocument
+
+    await globalThis.mockMongo
+      .collection('marine-licences')
+      .insertMany([
+        createCompleteMarineLicence({ _id: licenceId }),
+        createCompleteMarineLicence()
+      ])
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/delete-marine-plan-policy-document',
+      contactId,
+      payload: { id: licenceId.toString(), documentId }
+    })
+
+    expect(statusCode).toBe(200)
+    expect(blobService.deleteFiles).not.toHaveBeenCalled()
+  })
+
   test('returns 404 when licence Id is invalid', async () => {
     const licenceId = new ObjectId()
     const documentId = mockLinkedMarinePlanPolicyDocument.documentId
