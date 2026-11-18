@@ -74,3 +74,20 @@ export const formatSiteNoticeEvidenceForGateway = (
       )
     }
   })
+
+export const buildSiteNoticeEvidenceDynamicsPayload = (
+  siteNoticeEvidence,
+  backendGatewayUrl,
+  marineLicenceId
+) => {
+  const locations = formatSiteNoticeEvidenceForGateway(
+    siteNoticeEvidence,
+    backendGatewayUrl,
+    marineLicenceId
+  )
+
+  return {
+    locationCount: locations.length,
+    locations
+  }
+}

@@ -1,4 +1,7 @@
-import { formatSiteNoticeEvidenceForGateway } from './format-site-notice-evidence-for-gateway.js'
+import {
+  buildSiteNoticeEvidenceDynamicsPayload,
+  formatSiteNoticeEvidenceForGateway
+} from './format-site-notice-evidence-for-gateway.js'
 
 describe('formatSiteNoticeEvidenceForGateway', () => {
   const backendGatewayUrl = 'https://api.example.com'
@@ -109,5 +112,54 @@ describe('formatSiteNoticeEvidenceForGateway', () => {
         marineLicenceId
       )[0].dateDisplayed
     ).toBeNull()
+  })
+})
+
+describe('buildSiteNoticeEvidenceDynamicsPayload', () => {
+  const backendGatewayUrl = 'https://api.example.com'
+  const marineLicenceId = '507f1f77bcf86cd799439011'
+
+  it('includes locationCount and formatted locations', () => {
+    expect(
+      buildSiteNoticeEvidenceDynamicsPayload(
+        [
+          {
+            locationName: 'North pier',
+            dateDisplayed: { day: '18', month: '10', year: '2026' }
+          },
+          {}
+        ],
+        backendGatewayUrl,
+        marineLicenceId
+      )
+    ).toEqual({
+      locationCount: 2,
+      locations: [
+        {
+          locationNumber: 1,
+          locationName: 'North pier',
+          dateDisplayed: '18 October 2026',
+          closeUpPhoto: null,
+          positionPhoto: null
+        },
+        {
+          locationNumber: 2,
+          locationName: null,
+          dateDisplayed: null,
+          closeUpPhoto: null,
+          positionPhoto: null
+        }
+      ]
+    })
+  })
+
+  it('returns a zero count when there is no evidence', () => {
+    expect(
+      buildSiteNoticeEvidenceDynamicsPayload(
+        undefined,
+        backendGatewayUrl,
+        marineLicenceId
+      )
+    ).toEqual({ locationCount: 0, locations: [] })
   })
 })
