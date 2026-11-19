@@ -1,233 +1,112 @@
 # AGENTS.md
 
-This file provides guidance to AI coding agents when working with code in this repository.
+Guidance for AI coding agents working in **marine-licensing-backend**, a Hapi
+API for marine licensing exemptions and licences.
 
-It records conventions, invariants and gotchas — things the source cannot tell
-you. For inventories the source can tell you (directory contents, collection
-names, env vars, defaults), read the referenced file rather than trusting
-prose here: prose drifts, the source runs.
+This file records conventions, invariants and gotchas — things the source
+cannot tell you. For inventories the source can tell you (directory contents,
+npm scripts, collection names, env vars, defaults, lint config), read the
+source rather than trusting prose here: prose drifts, the source runs.
 
-## Project Overview
+## Layout
 
-**marine-licensing-backend** is a Node.js backend API for managing marine licensing exemptions and licences.
+`src/` is organised by domain (`exemptions/`, `marine-licences/`, `iat-*`);
+each has its own `api/` (controllers, helpers, services, routes), `constants/`
+and `models/` (Joi schemas). `shared/` holds cross-domain infrastructure.
+`src/server.js` assembles the server. Run `ls src/` for the current layout.
 
-### Integrations with other systems
+To add an endpoint: controller in `src/<domain>/api/controllers/`, Joi schema
+in `src/<domain>/models/`, colocated `.test.js`, and register the route in
+`src/<domain>/api/index.js`.
 
-- **Dynamics 365** (for exemption approval workflow)
-- **AWS S3** (for file storage)
-- **GOV.UK Notify** (for email notifications)
-- **MongoDB** (for primary data storage)
+## Requests and responses
 
-### Technology Stack
+- Controllers export `{ options: { validate: { params, payload } }, handler }`
+  and return `h.response({ message: 'success', value: result }).code(200)`.
+- Errors are thrown as `@hapi/boom` errors and reach the client in Boom's own
+  shape, `{ statusCode, error, message }` — they are **not** wrapped in
+  `{ message, value }`. `fail-action.js` rethrows Joi failures, adding
+  `validation.details: [{ field, message, type }]`.
+- Joi `.messages()` use semantic codes (e.g. `PROJECT_NAME_REQUIRED`), not
+  prose.
+- Audit fields are added to `request.payload` by an `onPreHandler` hook
+  (`addAuditFields` in `src/shared/common/helpers/mongodb.js`), after
+  validation: create fields on authenticated POST, update fields on
+  authenticated PUT/PATCH, nothing on GET/DELETE or unauthenticated requests.
 
-Hapi, Vitest, MongoDB, JWT auth (defraId/Entra ID), Pino logging. Versions:
-see `package.json`.
+## Auth
 
----
+- Read identity with `getContactId(auth)` and
+  `getOrganisationIdFromAuthToken(auth)` (`src/shared/helpers/`); check
+  ownership with `authorizeOwnership(collectionName)`.
+- Entra ID tokens carry organisation access in
+  `artifacts.decoded.relationships`, an array of colon-delimited strings
+  (`'relationshipId:organisationId:orgName:...'`). The exemptions list filters
+  on it.
 
-## Quick Commands
+## MongoDB
 
-All npm scripts are defined in **package.json**. View them with:
-
-```bash
-npm run
-```
-
-## Architecture Overview
-
-### Core Structure
-
-`src/` is organised by domain: each domain directory (`exemptions/`,
-`marine-licences/`, `iat-contexts/`, `iat-outcome-documents/`, `iat-shared/`)
-contains its own `api/` (controllers, helpers, services, routes),
-`constants/` and `models/` (Joi schemas). `shared/` holds cross-domain
-infrastructure (common helpers, plugins, shared routes and services).
-Configuration is a Convict schema in `src/config.js` with sub-schemas in
-`src/config/`; `src/server.js` assembles the Hapi server. Run `ls src/` for
-the current layout rather than relying on a listing here.
-
-### Request Flow
-
-1. **HTTP Request** → Hapi Server
-2. **JWT Authentication** → defraId or Entra ID validation
-3. **Authorization** → Ownership check (for protected endpoints)
-4. **Validation** → Joi schema validation
-5. **Audit Fields** → Automatically added (createdBy, createdAt, etc.)
-6. **Handler** → Controller processes request
-7. **Response** → Standard format: `{ message: 'success', value: {...} }`
-
-### Database & Collections
-
-- **Primary:** MongoDB
-- **Collection names:** the constants in
-  `src/shared/common/constants/db-collections.js` are canonical — read that
-  file, not a list here. Two things it cannot tell you:
+- Access via `request.db` / `server.db`; distributed locks via
+  `request.locker` / `server.locker` (`lock()` returns a falsy value when the
+  lock is held — always `free()` it in a `finally`).
+- Collection names: the constants in
+  `src/shared/common/constants/db-collections.js` are canonical. Two things
+  that file cannot tell you:
   - `marine-plan-areas-simple-0001` is a simplified copy of
     `marine-plan-areas`, rebuilt at every boot by a startup plugin; the
     `0001` suffix encodes the simplify tolerance, the name and tolerance
     change only together, and the source collection is never modified.
-  - `mongo-locks` and `reference-sequences` are referenced as hardcoded
-    literals rather than named constants
-    (`src/shared/common/helpers/mongodb.js`,
+  - `mongo-locks` and `reference-sequences` are hardcoded literals rather
+    than named constants (`src/shared/common/helpers/mongodb.js`,
     `src/shared/helpers/reference-generator.js`).
-- **Access:** Via `request.db` or `server.db`
-- **Locking:** Distributed locks via `request.locker` or `server.locker`
-
----
-
-## Key Conventions & Patterns
-
-### Controller Pattern
-
-```javascript
-export const controllerName = {
-  options: {
-    validate: {
-      params: joiSchema,
-      payload: joiSchema
-    }
-  },
-  handler: async (request, h) => {
-    const { db, payload, auth } = request
-    // Implementation
-    return h.response({ message: 'success', value: result }).code(200)
-  }
-}
-```
-
-### Validation & Error Handling
-
-- Use **Joi schemas** in each domain's `models/` directory for all input validation
-- Validation errors automatically formatted by `fail-action.js`
-- Use **@hapi/boom** for HTTP errors: `Boom.badRequest()`, `Boom.unauthorized()`, `Boom.conflict()`
-- Custom error messages via Joi `.messages()` with semantic codes (e.g., 'PROJECT_NAME_REQUIRED')
-
-### Authentication & Authorization
-
-- **Token Extraction:** `getContactId(auth)` and `getOrganisationIdFromAuthToken(auth)` helpers
-- **Token Structure (defraId):**
-  ```javascript
-  {
-    credentials: { contactId: 'user-id', email: 'user@example.com' },
-    artifacts: { decoded: { /* JWT claims */ } }
-  }
-  ```
-- **Token Structure (Entra ID - with relationships):**
-  ```javascript
-  {
-    credentials: { contactId: 'user-id', email: 'user@example.com' },
-    artifacts: {
-      decoded: {
-        relationships: ['relationshipId:organisationId:orgName:...']
-      }
-    }
-  }
-  ```
-- **Ownership Check:** Use `authorizeOwnership()` helper to verify user owns resource
-- **Organisation Access:** Parse relationships array for organisation filtering (used in exemptions list)
-
-### Testing Patterns
-
-- Tests colocated with source: `controller.js` + `controller.test.js`
-- **Global test setup** (`.vite/mongo-memory-server.js` and `.vite/setup-files.js`, wired via
-  `setupFiles` in `vitest.config.js`):
-  - `global.mockMongo` - In-memory MongoDB instance
-  - `global.mockHandler` - Mock Hapi response object (`.response()`, `.code()`)
-  - `fetchMock` - Mocked fetch for HTTP calls
-- **Validation testing:** Extract `controller.options.validate.payload` and call `.validate()`
-- **Handler testing:** Pass `{ db, payload, auth }` and verify mock calls
-- **Realistic tokens in tests:** Use `createAuthWithOrg()` and `createAuthWithoutOrg()` helpers (NOT mocking helper functions)
-- **DRY test setup:** Extract repeated mock setup into `setupMocks()` helper function
-- **Seeding marine licences in integration tests:** use `insertMarineLicence(overrides)` and `findMarineLicence(_id)` from `tests/test-helpers.js` rather than a local seed helper or inline `insertOne`/`findOne`
-- **`createCompleteMarineLicence` includes marine plan policy data** and one document and its supporting documents are `COMPLETED`. Override `marinePlanPolicyDocuments` (and the policy fields) when a test needs a licence without them
-
-### Database Operations
-
-- Use `request.db.collection('name')` to access MongoDB collections
-- **Audit fields** automatically added on POST (createdBy, createdAt, updatedBy, updatedAt)
-- **Multi-collection writes** that must succeed or fail together use
+- Multi-collection writes that must succeed or fail together use
   `withMongoTransaction` (`src/shared/common/helpers/mongo-transactions.js`)
   with `server.mongoClient` — pass `{ session }` to every operation in the
   callback. All environments (Docker, Vitest in-memory, CDP) run replica
   sets, so transactions work everywhere.
-- **Distributed locking** for critical sections:
-  ```javascript
-  const lock = await request.locker.lock('resource-key')
-  if (!lock) return // Lock unavailable
-  try {
-    /* do work */
-  } finally {
-    await lock.free()
-  }
-  ```
+- From the host, the composed Mongo needs `?directConnection=true`: it is a
+  single-member replica set advertising a Docker-network hostname (see README
+  "MongoDB").
 
-### Exemption Workflow
+## Configuration
 
-Status progression: **DRAFT** → **SCHEDULED** / **ACTIVE** / **EXPIRED**
-(date-derived, see `docs/scheduled-jobs.md`) → **WITHDRAWN**. The
+Convict schema in `src/config.js`, sub-schemas in `src/config/`. The `env:`
+keys and `default:` values there are canonical — do not trust env-var names
+or defaults quoted in prose anywhere, including here. Import the singleton
+(`import { config } from '../config.js'`) and `config.get('section')`.
+
+## Exemption status
+
+**DRAFT** → **SCHEDULED** / **ACTIVE** / **EXPIRED** (date-derived, see
+[docs/scheduled-jobs.md](docs/scheduled-jobs.md)) → **WITHDRAWN**. The
 `EXEMPTION_STATUS` constants in `src/exemptions/constants/exemption.js` are
 canonical; `SUBMITTED_STATUSES` groups the three that mean "submitted", and
-consumers that need "is this submitted?" test against it rather than against
-a single status.
+code that needs "is this submitted?" tests against it, not a single status.
 
-### Error Response Format
+## Integrations
 
-```javascript
-{
-  message: 'error',
-  value: {
-    statusCode: 400,
-    error: 'Bad Request',
-    message: 'Joi validation error details'
-  }
-}
-```
-
----
-
-## Configuration & Environment
-
-- **File:** `src/config.js` (Convict-based, type-safe), sub-schemas in
-  `src/config/`. The `env:` keys and `default:` values there are canonical —
-  do not trust env-var names or defaults quoted in prose anywhere, including
-  here.
-- **Access:** Import the singleton directly — `import { config } from '../config.js'` — then
-  `config.get('domain')`
-- **Structure:** Organised by domain (defraId, entraId, mongo, aws, cdp, dynamics, notify, iat, etc.)
-
----
-
-## Important Implementation Details
-
-### Dynamics 365 Integration
+### Dynamics 365
 
 - **Exemptions — Mongo queue:** submissions are queued in
   `exemption-dynamics-queue` and polled in-process; failures retry at a fixed
   interval (**not** exponential backoff) and then move to
-  `exemption-dynamics-queue-failed`. Intervals, counts and cadence are
-  convict-configured (`dynamics` section of `src/config.js`).
-- **Marine licences — SQS:** submit, withdraw and send-consultation-response go to the
-  `marine_licensing_d365_marine_licence` queue (plus `-deadletter`), processed by
-  `src/shared/plugins/marine-licence-dynamics/` via
+  `exemption-dynamics-queue-failed`. Cadence is in the `dynamics` config
+  section.
+- **Marine licences — SQS:** submit, withdraw and send-consultation-response
+  go to the `marine_licensing_d365_marine_licence` queue (plus `-deadletter`),
+  processed by `src/shared/plugins/marine-licence-dynamics/` via
   `src/marine-licences/api/helpers/dynamics/worker-processor.js`. Per-action
-  send state (`sent` / `failed`) lives on the licence under `dynamicsOutbound`:
-  `submit`, `withdraw`, and one `send-consultation-response:<organisationId>`
-  key per consultee, because each consultee responds separately. Those writes
-  deliberately leave `updatedAt` alone (it is
-  the optimistic-concurrency token) and can never overwrite `sent`. A
-  withdrawal waits on the queue until its submit is `sent`, because standard
-  SQS doesn't preserve order. The old `marine-licence-dynamics-queue`
-  collections are no longer written.
-- **Feature flag:** `DYNAMICS_ENABLED` gates both paths
+  send state (`sent` / `failed`) lives on the licence under
+  `dynamicsOutbound`: `submit`, `withdraw`, and one
+  `send-consultation-response:<organisationId>` key per consultee, because
+  each consultee responds separately. Those writes deliberately leave
+  `updatedAt` alone (it is the optimistic-concurrency token) and can never
+  overwrite `sent`. A withdrawal waits on the queue until its submit is
+  `sent`, because standard SQS doesn't preserve order. The old
+  `marine-licence-dynamics-queue` collections are no longer written.
+- `DYNAMICS_ENABLED` gates both paths.
 
-### File Upload & S3
-
-- **Service:** `src/shared/services/data-service/blob-service.js`
-- **Max file size:** convict-configured (`MAX_FILE_SIZE`)
-- **Supported formats:** KML, Shapefile (ZIP), GeoJSON
-- **Geo parsing:** `src/shared/services/geo-parser/geo-parser.js` extracts coordinates
-
-### Marine Plan Policy Queue & Nearest-Area Fallback
+### Marine plan policies
 
 Marine licence sites are queued (SQS) for marine plan policy lookup, processed
 by `src/shared/plugins/marine-plan-policies/worker.js` via
@@ -236,213 +115,99 @@ If the spatial intersect returns zero policies (or only the onshore `Land`
 placeholder), the worker assigns the nearest marine plan area's non-spatial
 policies instead — the ECS `warn` it logs is the only record of the fallback,
 plus one `info` line per site timing that site's query; nothing else is
-persisted about it. The design, the numbers behind it, and
-the observability contract are documented in
-[docs/nearest-marine-plan-area-fallback.md](docs/nearest-marine-plan-area-fallback.md)
-— that page is the canonical explainer; keep it accurate if you change the
-mechanism.
+persisted about it. Canonical explainers — keep them accurate if you change
+the mechanism:
 
-### Geospatial Data Parsing
+- [docs/nearest-marine-plan-area-fallback.md](docs/nearest-marine-plan-area-fallback.md)
+  — fallback design, numbers and observability contract
+- [docs/marine-plan-policy-supporting-documents.md](docs/marine-plan-policy-supporting-documents.md)
+  — supporting documents: storage, derived status, and what a re-query does
+  to links
 
-- **Supported formats:** KML, Shapefile (.zip), GeoJSON
-- **Coordinate systems:** Configurable (OSGB36, WGS84, etc.)
-- **Output:** Normalised coordinate points with validation
-- **Libraries:** proj4 (coordinate transformation), @tmcw/togeojson (KML→GeoJSON), shapefile (Shapefile parsing)
+### GOV.UK Notify
 
-### Logging & Observability
+Retries are fixed-interval, **not** exponential backoff (`notify` config
+section). Entry point: `src/shared/helpers/send-email-confirmation.js`.
 
-- **Logger:** Pino singleton (`src/shared/common/helpers/logging/logger.js`)
-- **HTTP request logging:** `hapi-pino` plugin (auto-enabled)
-- **Log formats:**
-  - Development: `pino-pretty` (coloured, readable)
-  - Production: `ecs` (Elastic Common Schema for CloudWatch)
-- **Request tracing:** Header `x-cdp-request-id` auto-propagated
-- **Metrics:** CloudWatch via `aws-embedded-metrics` (production only)
+### Outbound HTTP
 
-### CDP ECS Logging Rules (CRITICAL)
+When `httpProxy` is configured, `setupProxy()`
+(`src/shared/common/helpers/proxy/setup-proxy.js`) routes Node's global
+agents and global `fetch` through it, then points Wreck's agents at them —
+Wreck otherwise uses its own agents and bypasses the proxy. Any client that
+brings its own agent needs the same treatment.
 
-CDP enforces a streamlined ECS schema. The log ingestion pipeline **silently drops** any
-fields not in the allowed schema. This means custom keys passed in pino's mergingObject
-(the first argument) will be invisible in OpenSearch.
+## Scheduled jobs
 
-The subset below covers the fields this codebase uses; the CDP platform team
-publish the full streamlined schema in their documentation.
+Recurring jobs are declared in `src/shared/plugins/scheduler/scheduled-jobs.js`
+and run in-process via node-cron, on exactly one instance per scheduled fire.
+A missed fire is never retried, so every job must be idempotent and
+backward-looking; jobs share the API's event loop, and a deployment can cut
+one off mid-run. The contract and log lines are documented in
+[docs/scheduled-jobs.md](docs/scheduled-jobs.md) — the canonical explainer;
+keep it accurate if you change the mechanism.
 
-**Allowed fields that code can set (subset):**
+## Logging (CDP ECS rules — CRITICAL)
 
-- `message` — the log message string (always visible)
-- `error/*` — error message, stack_trace, type, code (use `structureErrorForECS()` helper)
-- `event/action` — specific action (e.g., "delete", "authorization_check")
-- `event/category`, `event/kind`, `event/type` — event classification
-- `event/outcome` — "success" or "failure"
-- `event/reason` — explanation for the outcome
-- `event/reference` — a reference ID tied to the event
-- `event/duration` — duration in nanoseconds
-- `http/*` — request/response fields (auto-populated from `req`/`res`)
+Use the Pino singleton (`src/shared/common/helpers/logging/logger.js`). CDP
+enforces a streamlined ECS schema and its ingestion pipeline **silently
+drops** any field not in it, so custom keys in pino's mergingObject (the first
+argument) never reach OpenSearch.
 
-**Everything else is dropped.** Custom keys like `{ userId: '...' }`, `{ tempDir: '...' }`,
-`{ migrated: [...] }` will NOT appear in CDP OpenSearch.
+Fields code can set (the subset this codebase uses; the CDP platform team
+publish the full schema):
 
-**Correct patterns:**
+- `message` — always visible
+- `error/*` — message, stack_trace, type, code (use `structureErrorForECS()`)
+- `event/action`, `event/category`, `event/kind`, `event/type`,
+  `event/outcome` (`success` / `failure`), `event/reason`, `event/reference`,
+  `event/duration` (nanoseconds)
+- `http/*` — auto-populated from `req`/`res`
 
 ```js
-// Data in message string — always visible
+// GOOD
 logger.info(`Exemption deleted: ${id}`)
-
-// ECS event fields — indexed and searchable
 logger.info(
   { event: { action: 'delete', outcome: 'success' } },
   `Exemption deleted: ${id}`
 )
-
-// Errors — use structureErrorForECS() to map to error/* fields
 logger.error(structureErrorForECS(error), 'Operation failed')
+
+// BAD — silently lost in production
+logger.info({ exemptionId: id, userId }, 'Deleted') // custom keys stripped
+logger.info(migrationStatus, 'Migration status') // array indices become top-level keys
+logger.warn({ tempDir, error }, 'Cleanup failed') // raw error, no ECS structure
 ```
 
-**Incorrect patterns (data silently lost in production):**
+Put meaningful context in the `message` string, and never log tokens,
+passwords or PII.
 
-```js
-// BAD: custom keys stripped by CDP
-logger.info({ exemptionId: id, userId }, 'Deleted')
+## Testing
 
-// BAD: array as first arg — indices spread as nonsensical top-level keys
-logger.info(migrationStatus, 'Migration status')
-
-// BAD: raw error object without ECS structure
-logger.warn({ tempDir, error }, 'Cleanup failed')
-```
-
-**Review checklist for logging:**
-
-- [ ] No custom keys in pino's mergingObject — use `message` string or ECS `event/*` fields
-- [ ] Arrays never passed as first argument to logger
-- [ ] Errors use `structureErrorForECS()` (from `logger.js`)
-- [ ] No sensitive data (tokens, passwords, PII) in log messages
-- [ ] Meaningful context is in the `message` string, not lost in custom keys
-
-### Scheduled jobs
-
-Recurring jobs are declared in
-`src/shared/plugins/scheduler/scheduled-jobs.js` and run in-process via
-node-cron, on exactly one instance per scheduled fire. A missed fire is never
-retried, so every job must be idempotent and backward-looking; jobs share the
-API's event loop, and a deployment can cut one off mid-run. The contract, the
-reasons behind it and the log lines each run emits are documented in
-[docs/scheduled-jobs.md](docs/scheduled-jobs.md) — that page is the canonical
-explainer; keep it accurate if you change the mechanism.
-
-### Email Notifications
-
-- **Service:** GOV.UK Notify API
-- **Configuration:** Template IDs for user and organisation emails
-- **Retry:** Fixed-interval retries, **not** exponential backoff
-  (convict-configured, `notify` section)
-- **Usage:** `src/shared/helpers/send-email-confirmation.js`
-
-### Proxy & Network
-
-- **Default proxy agent:** `undici` ProxyAgent (configured in `src/shared/common/helpers/proxy/setup-proxy.js`)
-- **HTTP clients:** Use `undici.fetch()` or `@hapi/wreck` for automatic proxy support
-- **Custom clients:** Pass `dispatcher: new ProxyAgent({...})` explicitly
-
----
-
-## Testing Guidelines
-
-Tests are run via npm scripts (see package.json). Key patterns:
-
-- Run all tests: `npm test`
-- Single test file: `npm test -- src/exemptions/api/controllers/create-project-name.test.js`
-- Watch mode: `npm run test:watch`
-
-### Test Structure Best Practices
-
-1. **Setup realistic data:** Use actual constants from the codebase (EXEMPTION_STATUS, EXEMPTION_STATUS_LABEL)
-2. **Mock external dependencies:** Mock S3, Notify, Dynamics APIs
-3. **Use real helpers:** Don't mock helper functions - test them with realistic tokens/inputs
-4. **Test error paths:** Include tests for unauthorized access, validation failures, database errors
-5. **Avoid duplication:** Extract repeated mock setup into helper functions (e.g., `setupMocks()`, `createAuthWithOrg()`)
-6. **Don't add `vi.clearAllMocks()`** to individual test files - it's already set in vitest config
-
-### Expected Coverage
-
-- Controllers: 100% (all handlers and error cases)
-- Helpers: 100% (all auth, validation, transformation logic)
-- Models: 100% (all validation schemas)
-- Services: High coverage (geospatial processing, S3 operations)
-
----
-
-## Common Development Tasks
-
-### Adding a New Endpoint
-
-1. Create controller: `src/<domain>/api/controllers/{action}.js`
-2. Add Joi schema: `src/<domain>/models/{entity}.js`
-3. Create test: `src/<domain>/api/controllers/{action}.test.js`
-4. Register route: `src/<domain>/api/index.js`
-5. Implement handler logic and validation
-
-### Debugging
-
-- **Dev server debugger:** `npm run dev:debug` (Node debugger on 0.0.0.0:9229)
-- **Logs:** Check Pino logs in development (pretty-printed)
-- **Request context:** Included in all logs via request tracing
-
----
-
-## Code Quality & Standards
-
-### Linting & Formatting
-
-- **ESLint:** neostandard (modern JavaScript standards)
-- **Prettier:** Auto-format on pre-commit hook
-- **Config:** `eslint.config.js`, `.prettierrc.js`
-- **Windows issue:** If Prettier breaks on line endings, run: `git config --global core.autocrlf false`
-
-### Pre-commit Hooks (Husky)
-
-- **Automatically run:** `lint` + `format:check`
-- **Manual trigger:** `npm run git:pre-commit-hook`
-- **Skip (not recommended):** `git commit --no-verify`
-
----
-
-## Troubleshooting
-
-### MongoDB Connection Issues
-
-- Check MongoDB is running: `docker compose up -d` (includes MongoDB)
-- Test connection: `mongosh "mongodb://127.0.0.1:27017/marine-licensing-backend?directConnection=true"` (the composed mongo is a single-member replica set advertising a Docker-network hostname, so host clients must skip topology discovery — see README "MongoDB")
-
-### S3/Floci Issues
-
-- Ensure Floci is running: `docker compose up -d`
-- Verify `S3_ENDPOINT` points to Floci (`http://floci:4566` in Docker, `http://localhost:4566` on the host)
-- Check bucket exists: Use AWS CLI against Floci (`--endpoint-url=http://localhost:4566`)
-
-### Authentication Failures
-
-- Verify JWKS URIs are accessible: `curl $DEFRA_ID_JWKS_URI`
-- Ensure `contactId` is present in token credentials
-
-### Tests Failing with Mocks
-
-- Don't mock helper functions - pass realistic tokens instead
-- Use `setupMocks()` pattern to avoid duplication
-- Ensure MongoDB test instance is running (handled by vitest setup)
-
----
-
-## Related Documentation
-
-- **README.md** - Setup, Docker, SonarCloud instructions
-- **docs/nearest-marine-plan-area-fallback.md** - Nearest-area policy fallback design and observability
-- **docs/marine-plan-policy-supporting-documents.md** - Supporting documents for marine plan policies: storage, derived status, and what a re-query does to links
-- **package.json** - All npm scripts and dependencies
-- **sonar-project.properties** - SonarCloud configuration
-- **Dockerfile** - Multi-stage build (development and production)
-- **.github/dependabot.yml** - Dependency updates configuration
-- After a refactor, ensure any related unit tests pass
-- When adding integration tests, not every edge case needs to be covered ie don't cover every validation scenario. Those will be covered by lower level unit tests.
-- Don't call vi.resetAllMocks() in individual test files because clearMocks is already set in vitest config
+- Tests are colocated (`thing.js` + `thing.test.js`). Single file:
+  `npm test -- path/to/file.test.js`.
+- `clearMocks` is on in `vitest.config.js` — don't call `vi.clearAllMocks()`
+  or `vi.resetAllMocks()` in test files.
+- Globals from `.vite/setup-files.js`: `mockMongo` (a real in-memory MongoDB
+  db), `mockMongoClient` (for code that starts sessions/transactions),
+  `mockHandler` (`.response()` / `.code()` spies) and `fetchMock`.
+- The test database is dropped once per file, but only the exemptions and
+  marine licences collections are emptied before each test — anything else a
+  test inserts is still there for the next test in the same file.
+- Don't mock helper functions; pass realistic inputs instead, e.g. real auth
+  objects (see `createAuthWithOrg` in
+  `src/shared/api/projects/controllers/get-projects.test.js`). Mock only
+  external services (S3, Notify, Dynamics).
+- Use real codebase constants (`EXEMPTION_STATUS`, …) rather than string
+  literals. Extract repeated mock setup into a local `setupMocks()`.
+- Seed marine licences in integration tests with `insertMarineLicence(overrides)`
+  / `findMarineLicence(_id)` from `tests/test-helpers.js`, not a local helper
+  or inline `insertOne` / `findOne`.
+- `createCompleteMarineLicence` (`tests/test.fixture.js`) includes marine plan
+  policy data, with one document and its supporting documents `COMPLETED`.
+  Override `marinePlanPolicyDocuments` (and the policy fields) when a test
+  needs a licence without them.
+- Test error paths (unauthorised, validation failure, DB error) in unit tests.
+  Integration tests needn't repeat every edge case, such as each validation
+  scenario.
+- After a refactor, run the related unit tests.
