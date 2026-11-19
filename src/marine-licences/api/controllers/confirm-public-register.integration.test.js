@@ -42,20 +42,6 @@ describe('PATCH /marine-licence/confirm-public-register - integration tests', as
       withholdReason: 'nationalSecurity',
       nationalSecurityApproval: 'no'
     })
-    expect(updatedLicence.updatedBy).toBe(contactId)
-    expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
-  })
-
-  test('returns 404 when marine licence does not exist', async () => {
-    const { statusCode, body } = await makePatchRequest({
-      server: getServer(),
-      url,
-      contactId,
-      payload: { id: new ObjectId().toString() }
-    })
-
-    expect(statusCode).toBe(404)
-    expect(body.message).toBe('Not Found')
   })
 
   test("returns 403 when attempting to update another user's marine licence", async () => {

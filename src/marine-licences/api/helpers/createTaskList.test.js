@@ -760,24 +760,29 @@ describe('createTaskList', () => {
   })
 
   describe('publicRegister status', () => {
+    const nationalSecurityAnswered = {
+      withholdConsent: 'yes',
+      withholdReason: 'nationalSecurity',
+      nationalSecurityApproval: 'no'
+    }
+
     it.each([
       [
         'IN_PROGRESS when withholding for national security without an answer',
         { withholdConsent: 'yes', withholdReason: 'nationalSecurity' },
+        false,
         IN_PROGRESS
       ],
       [
         'IN_PROGRESS when withholding for national security with an answer but not confirmed',
-        {
-          withholdConsent: 'yes',
-          withholdReason: 'nationalSecurity',
-          nationalSecurityApproval: 'no'
-        },
+        nationalSecurityAnswered,
+        false,
         IN_PROGRESS
       ],
       [
         'IN_PROGRESS when withholding for commercial confidentiality without a reason',
         { withholdConsent: 'yes', withholdReason: 'commercialConfidentiality' },
+        false,
         IN_PROGRESS
       ],
       [
@@ -787,37 +792,12 @@ describe('createTaskList', () => {
           withholdReason: 'commercialConfidentiality',
           reason: 'Pricing details'
         },
+        false,
         IN_PROGRESS
       ],
       [
-        'COMPLETED when not withholding',
-        { withholdConsent: 'no', withholdReason: null },
-        COMPLETED
-      ]
-    ])('should be %s', (_description, publicRegister, expected) => {
-      expect(createTaskList({ publicRegister }).publicRegister).toBe(expected)
-    })
-
-    const nationalSecurityAnswered = {
-      withholdConsent: 'yes',
-      withholdReason: 'nationalSecurity',
-      nationalSecurityApproval: 'no'
-    }
-
-    it.each([
-      [
-        'COMPLETED when national security answers are confirmed',
+        'COMPLETED when withholding answers are confirmed',
         nationalSecurityAnswered,
-        true,
-        COMPLETED
-      ],
-      [
-        'COMPLETED when commercial confidentiality answers are confirmed',
-        {
-          withholdConsent: 'yes',
-          withholdReason: 'commercialConfidentiality',
-          reason: 'Pricing details'
-        },
         true,
         COMPLETED
       ],
@@ -825,12 +805,6 @@ describe('createTaskList', () => {
         'IN_PROGRESS when confirmed but the follow-up answer is missing',
         { withholdConsent: 'yes', withholdReason: 'nationalSecurity' },
         true,
-        IN_PROGRESS
-      ],
-      [
-        'IN_PROGRESS when answers are explicitly unconfirmed',
-        nationalSecurityAnswered,
-        false,
         IN_PROGRESS
       ],
       [

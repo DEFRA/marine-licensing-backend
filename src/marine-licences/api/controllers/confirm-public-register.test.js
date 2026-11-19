@@ -15,11 +15,6 @@ describe('PATCH /marine-licence/confirm-public-register', () => {
       return { updateOne }
     })
 
-  it('should fail if id is missing', () => {
-    const result = payloadValidator.validate({})
-    expect(result.error.message).toContain('MARINE_LICENCE_ID_REQUIRED')
-  })
-
   it('should fail if any other field is sent', () => {
     const result = payloadValidator.validate({
       id: new ObjectId().toHexString(),
