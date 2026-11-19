@@ -1,10 +1,11 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
+import { mockLinkedMarinePlanPolicyDocument } from '../../../../../tests/test.fixture.js'
 import {
-  createCompleteMarineLicence,
-  mockLinkedMarinePlanPolicyDocument
-} from '../../../../../tests/test.fixture.js'
+  findMarineLicence,
+  insertMarineLicence
+} from '../../../../../tests/test-helpers.js'
 import { blobService } from '../../../../shared/services/data-service/blob-service.js'
 
 vi.mock('../../../../shared/services/data-service/blob-service.js', () => ({
@@ -13,7 +14,7 @@ vi.mock('../../../../shared/services/data-service/blob-service.js', () => ({
   }
 }))
 
-describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests', async () => {
+describe('PATCH /marine-licence/delete-marine-plan-policy-document - integration tests', async () => {
   const getServer = await setupTestServer()
   const contactId = '123e4567-e89b-12d3-a456-426614174000'
 
@@ -21,14 +22,7 @@ describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests
     const licenceId = new ObjectId()
     const documentId = mockLinkedMarinePlanPolicyDocument.documentId
 
-    const marineLicence = createCompleteMarineLicence({
-      _id: licenceId,
-      mockLinkedMarinePlanPolicyDocument
-    })
-
-    await globalThis.mockMongo
-      .collection('marine-licences')
-      .insertOne(marineLicence)
+    await insertMarineLicence({ _id: licenceId })
 
     const { statusCode, body } = await makePatchRequest({
       server: getServer(),
@@ -40,9 +34,7 @@ describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests
     expect(statusCode).toBe(200)
     expect(body).toEqual({ message: 'success' })
 
-    const updated = await globalThis.mockMongo
-      .collection('marine-licences')
-      .findOne({ _id: licenceId })
+    const updated = await findMarineLicence(licenceId)
 
     expect(updated.marinePlanPolicyDocuments).toEqual([])
   })
@@ -52,13 +44,7 @@ describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests
 
     const documentId = mockLinkedMarinePlanPolicyDocument.documentId
 
-    const marineLicence = createCompleteMarineLicence({
-      _id: licenceId,
-      mockLinkedMarinePlanPolicyDocument
-    })
-
-    await globalThis.mockMongo.collection('marine-licences').insertOne({
-      ...marineLicence,
+    await insertMarineLicence({
       _id: licenceId,
       contactId,
       marinePlanPolicyDocuments: [
@@ -97,11 +83,7 @@ describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests
     const licenceId = new ObjectId()
     const documentId = mockLinkedMarinePlanPolicyDocument.documentId
 
-    const marineLicence = createCompleteMarineLicence()
-
-    await globalThis.mockMongo
-      .collection('marine-licences')
-      .insertOne(marineLicence)
+    await insertMarineLicence()
 
     const { statusCode } = await makePatchRequest({
       server: getServer(),
@@ -117,7 +99,7 @@ describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests
     const licenceId = new ObjectId()
     const documentId = mockLinkedMarinePlanPolicyDocument.documentId
 
-    const marineLicence = createCompleteMarineLicence({
+    await insertMarineLicence({
       _id: licenceId,
       marinePlanPolicyDocuments: [
         {
@@ -126,10 +108,6 @@ describe('PATCH /marine-licence/delete-supporting-deocuments - integration tests
         }
       ]
     })
-
-    await globalThis.mockMongo
-      .collection('marine-licences')
-      .insertOne(marineLicence)
 
     const { statusCode } = await makePatchRequest({
       server: getServer(),
