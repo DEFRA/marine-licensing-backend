@@ -120,3 +120,9 @@ export const marinePlanPolicyDocumentLinksSchema = joi
       })
   })
   .append(marineLicenceId)
+
+export const deleteMarinePlanPolicyDocumentSchema = joi
+  .object({
+    documentId: documentIdFieldSchema
+  })
+  .append(marineLicenceId)
