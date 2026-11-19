@@ -776,8 +776,17 @@ describe('createTaskList', () => {
         COMPLETED
       ],
       [
-        'COMPLETED when withholding for commercial confidentiality',
+        'IN_PROGRESS when withholding for commercial confidentiality without a reason',
         { withholdConsent: 'yes', withholdReason: 'commercialConfidentiality' },
+        IN_PROGRESS
+      ],
+      [
+        'COMPLETED when withholding for commercial confidentiality with a reason',
+        {
+          withholdConsent: 'yes',
+          withholdReason: 'commercialConfidentiality',
+          reason: 'Pricing details'
+        },
         COMPLETED
       ],
       [
