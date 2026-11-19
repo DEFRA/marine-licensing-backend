@@ -331,7 +331,7 @@ const getPublicRegisterStatus = (publicRegister, publicRegisterConfirmed) => {
     return INCOMPLETE
   }
 
-  if (publicRegister.withholdConsent !== 'yes') {
+  if (publicRegister.withholdConsent === 'no') {
     return COMPLETED
   }
 

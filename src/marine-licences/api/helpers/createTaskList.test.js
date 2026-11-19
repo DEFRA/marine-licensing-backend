@@ -69,7 +69,7 @@ describe('createTaskList', () => {
         end: { month: '12', year: '2026' }
       },
       projectBackground: 'Some background',
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
@@ -108,7 +108,7 @@ describe('createTaskList', () => {
         end: { month: '12', year: '2026' }
       },
       projectBackground: 'Some background',
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
@@ -130,7 +130,7 @@ describe('createTaskList', () => {
         start: { month: '01', year: '2026' },
         end: { month: '12', year: '2026' }
       },
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
@@ -353,7 +353,7 @@ describe('createTaskList', () => {
         specialLegalPowers: 'Some powers',
         otherAuthorities: 'Some authorities',
         projectBackground: 'Some background',
-        publicRegister: 'Public Register Info',
+        publicRegister: { withholdConsent: 'no', withholdReason: null },
         siteDetails: [
           {
             ...mockCircleSite,
@@ -556,7 +556,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       otherAuthorities: 'Some authorities',
       preferredDates: {
         start: { month: '01', year: '2026' },
