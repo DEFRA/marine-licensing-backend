@@ -194,9 +194,14 @@ export const submitMarineLicenceController = {
         submittedAt
       })
 
+      const unlinkedMarinePlanPolicyDocuments =
+        marineLicence.marinePlanPolicyDocuments?.filter(
+          ({ policyLinks }) => !policyLinks?.length
+        )
+
       await deleteOrphanedS3Objects(
         db,
-        collectS3Locations(marineLicence.marinePlanPolicyDocuments)
+        collectS3Locations(unlinkedMarinePlanPolicyDocuments)
       )
 
       const { updatedAt, updatedBy } = payload
