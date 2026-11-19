@@ -17,7 +17,7 @@ import { PUBLIC_CONSULTATION_DETAILS_MAX_TEXT_LENGTH } from './public-consultati
 import { SPECIAL_LEGAL_POWERS_DETAILS_MAX_TEXT_LENGTH } from './special-legal-powers.js'
 import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../constants/marine-licence.js'
 import { LOCATION_NAME_MAX_LENGTH } from './site-notice-evidence.js'
-import { PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH } from './public-register-national-security.js'
+import { PUBLIC_REGISTER_REASON_MAX_LENGTH } from './public-register-withhold-choice.js'
 import { CHARACTER_LIMIT_BACKSTOP } from '../../shared/models/character-limit.js'
 
 export const nullableString = joi.string().allow('', null)
@@ -277,13 +277,13 @@ export const marineLicenceGatewayResponseSchema = joi
         reason: nullableString
           .max(CHARACTER_LIMIT_BACKSTOP)
           .description(
-            `At most ${PUBLIC_REGISTER_NATIONAL_SECURITY_REASON_MAX_LENGTH} user-perceived characters (graphemes), so may exceed that many UTF-16 code units.`
+            `At most ${PUBLIC_REGISTER_REASON_MAX_LENGTH} user-perceived characters (graphemes), so may exceed that many UTF-16 code units.`
           )
       })
       .unknown(true)
       .allow(null)
       .description(
-        'withholdConsent answers "Do you want to ask us to withhold any information from the public register?". withholdReason is given only when the answer is yes, otherwise null. When withholdReason is nationalSecurity, nationalSecurityApproval answers "Do you have approval from the Secretary of State for Defence to withhold information for national security reasons?" and reason holds what the applicant wants withheld and why (given only when that answer is yes).'
+        'withholdConsent answers "Do you want to ask us to withhold any information from the public register?". withholdReason is given only when the answer is yes, otherwise null. When withholdReason is nationalSecurity, nationalSecurityApproval answers "Do you have approval from the Secretary of State for Defence to withhold information for national security reasons?" and reason holds what the applicant wants withheld and why (given only when that answer is yes). When withholdReason is commercialConfidentiality, reason holds what the applicant wants withheld and why.'
       )
       .label('PublicRegister')
       .required(),

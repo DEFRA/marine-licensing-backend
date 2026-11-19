@@ -7,11 +7,14 @@ import { getConsultationController } from './controllers/consultations/get-consu
 import { getConsultationMarineLicenceController } from './controllers/consultations/get-consultation-marine-licence.js'
 import { updateConsultationRequestController } from './controllers/consultations/update-consultation-request.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
+import { deleteSupportingDocumentController } from './controllers/marine-plan-policies/delete-supporting-document.js'
 import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
 import { updatePublicRegisterController } from './controllers/update-public-register.js'
-import { updatePublicRegisterNationalSecurityController } from './controllers/update-public-register-national-security.js'
+import { updatePublicRegisterWithholdingController } from './controllers/update-public-register-withholding.js'
+import { publicRegisterNationalSecurity } from '../models/public-register-national-security.js'
+import { publicRegisterCommercialConfidentiality } from '../models/public-register-commercial-confidentiality.js'
 import { updatePreferredDatesController } from './controllers/update-preferred-dates.js'
 import { updatePublicConsultationController } from './controllers/update-public-consultation.js'
 import { updateOtherAuthoritiesController } from './controllers/update-other-authorities.js'
@@ -159,7 +162,18 @@ export const marineLicenceFrontendRoutes = [
   {
     method: 'PATCH',
     path: '/marine-licence/public-register-national-security',
-    ...updatePublicRegisterNationalSecurityController
+    ...updatePublicRegisterWithholdingController({
+      schema: publicRegisterNationalSecurity,
+      errorContext: 'public register national security'
+    })
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/public-register-commercial-confidentiality',
+    ...updatePublicRegisterWithholdingController({
+      schema: publicRegisterCommercialConfidentiality,
+      errorContext: 'public register commercial confidentiality'
+    })
   },
   {
     method: 'PATCH',
@@ -220,6 +234,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/marine-plan-policy-document-links',
     ...updateMarinePlanPolicyDocumentLinksController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-marine-plan-policy-document',
+    ...deleteSupportingDocumentController
   },
   {
     method: 'PATCH',
