@@ -1,10 +1,7 @@
-import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
-import { updatePublicRegisterNationalSecurityController } from './update-public-register-national-security.js'
+import { publicRegisterNationalSecurity as payloadValidator } from './public-register-national-security.js'
 
-describe('PATCH /marine-licence/public-register-national-security', () => {
-  const payloadValidator =
-    updatePublicRegisterNationalSecurityController.options.validate.payload
+describe('publicRegisterNationalSecurity', () => {
   const id = new ObjectId().toHexString()
   const choice = { withholdConsent: 'yes', withholdReason: 'nationalSecurity' }
 
@@ -83,48 +80,5 @@ describe('PATCH /marine-licence/public-register-national-security', () => {
       reason: 'Details'
     })
     expect(result.error.message).toContain('"reason" is not allowed')
-  })
-
-  it('should return 404 if the marine licence is not found', async () => {
-    const { mockMongo, mockHandler } = global
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockResolvedValueOnce({ matchedCount: 0 })
-      }
-    })
-
-    await expect(() =>
-      updatePublicRegisterNationalSecurityController.handler(
-        {
-          db: mockMongo,
-          payload: { id, ...choice, nationalSecurityApproval: 'no' }
-        },
-        mockHandler
-      )
-    ).rejects.toMatchObject({
-      message: 'Marine licence not found',
-      output: { statusCode: 404 }
-    })
-  })
-
-  it('should return an error message if the database operation fails', async () => {
-    const { mockMongo, mockHandler } = global
-    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
-      return {
-        updateOne: vi.fn().mockRejectedValueOnce(new Error('Database failed'))
-      }
-    })
-
-    await expect(() =>
-      updatePublicRegisterNationalSecurityController.handler(
-        {
-          db: mockMongo,
-          payload: { id, ...choice, nationalSecurityApproval: 'no' }
-        },
-        mockHandler
-      )
-    ).rejects.toThrow(
-      'Error updating public register national security: Database failed'
-    )
   })
 })

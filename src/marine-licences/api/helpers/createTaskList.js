@@ -312,20 +312,26 @@ const getInvoicingStatus = (invoicing, isCitizen) => {
   return IN_PROGRESS
 }
 
+const isWithholdFollowUpIncomplete = ({
+  withholdReason,
+  nationalSecurityApproval,
+  reason
+}) => {
+  if (withholdReason === PUBLIC_REGISTER_WITHHOLD_REASON.NATIONAL_SECURITY) {
+    return !nationalSecurityApproval
+  }
+  return (
+    withholdReason ===
+      PUBLIC_REGISTER_WITHHOLD_REASON.COMMERCIAL_CONFIDENTIALITY && !reason
+  )
+}
+
 const getPublicRegisterStatus = (publicRegister) => {
   if (!publicRegister) {
     return INCOMPLETE
   }
 
-  if (
-    publicRegister.withholdReason ===
-      PUBLIC_REGISTER_WITHHOLD_REASON.NATIONAL_SECURITY &&
-    !publicRegister.nationalSecurityApproval
-  ) {
-    return IN_PROGRESS
-  }
-
-  return COMPLETED
+  return isWithholdFollowUpIncomplete(publicRegister) ? IN_PROGRESS : COMPLETED
 }
 
 const getMarinePlanPolicyStatus = (
