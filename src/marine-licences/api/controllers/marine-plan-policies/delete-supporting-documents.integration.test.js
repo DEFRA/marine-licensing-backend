@@ -1,7 +1,10 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
-import { mockLinkedMarinePlanPolicyDocument } from '../../../../../tests/test.fixture.js'
+import {
+  createCompleteMarineLicence,
+  mockLinkedMarinePlanPolicyDocument
+} from '../../../../../tests/test.fixture.js'
 import {
   findMarineLicence,
   insertMarineLicence
