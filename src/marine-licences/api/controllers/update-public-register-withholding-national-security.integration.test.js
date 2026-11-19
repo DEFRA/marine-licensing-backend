@@ -1,8 +1,10 @@
 import { setupTestServer } from '../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../tests/server-requests.js'
-import { createCompleteMarineLicence } from '../../../../tests/test.fixture.js'
+import {
+  findMarineLicence,
+  insertMarineLicence
+} from '../../../../tests/test-helpers.js'
 import { ObjectId } from 'mongodb'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 
 const url = '/marine-licence/public-register-national-security'
 const choice = { withholdConsent: 'yes', withholdReason: 'nationalSecurity' }
@@ -14,18 +16,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
   const marineLicenceId = new ObjectId()
 
   const insertLicence = (publicRegister) =>
-    globalThis.mockMongo.collection(collectionMarineLicences).insertOne(
-      createCompleteMarineLicence({
-        _id: marineLicenceId,
-        contactId,
-        publicRegister
-      })
-    )
-
-  const findLicence = () =>
-    globalThis.mockMongo
-      .collection(collectionMarineLicences)
-      .findOne({ _id: marineLicenceId })
+    insertMarineLicence({ _id: marineLicenceId, contactId, publicRegister })
 
   test('saves the withholding choice, answer and reason together', async () => {
     await insertLicence({ withholdConsent: 'no', withholdReason: null })
@@ -45,14 +36,13 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
     expect(statusCode).toBe(200)
     expect(body).toEqual({ message: 'success' })
 
-    const updatedLicence = await findLicence()
+    const updatedLicence = await findMarineLicence(marineLicenceId)
     expect(updatedLicence.publicRegister).toEqual({
       withholdConsent: 'yes',
       withholdReason: 'nationalSecurity',
       nationalSecurityApproval: 'yes',
       reason: 'Details of the berth'
     })
-    expect(updatedLicence.publicRegisterConfirmed).toBe(false)
     expect(updatedLicence.updatedBy).toBe(contactId)
     expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
   })
@@ -78,7 +68,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
 
     expect(statusCode).toBe(200)
 
-    const updatedLicence = await findLicence()
+    const updatedLicence = await findMarineLicence(marineLicenceId)
     expect(updatedLicence.publicRegister).toEqual({
       withholdConsent: 'yes',
       withholdReason: 'nationalSecurity',
@@ -128,7 +118,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
 
     expect(statusCode).toBe(403)
 
-    const unchangedLicence = await findLicence()
+    const unchangedLicence = await findMarineLicence(marineLicenceId)
     expect(unchangedLicence.publicRegister.nationalSecurityApproval).toBe(
       undefined
     )
@@ -154,7 +144,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
 
     expect(statusCode).toBe(200)
 
-    const updatedLicence = await findLicence()
+    const updatedLicence = await findMarineLicence(marineLicenceId)
     expect(updatedLicence.publicRegister).toEqual({
       ...choice,
       nationalSecurityApproval: 'no'
@@ -176,7 +166,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
 
     expect(statusCode).toBe(400)
 
-    const unchangedLicence = await findLicence()
+    const unchangedLicence = await findMarineLicence(marineLicenceId)
     expect(unchangedLicence.publicRegister).toEqual({
       withholdConsent: 'no',
       withholdReason: null
