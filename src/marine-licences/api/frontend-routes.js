@@ -7,6 +7,7 @@ import { getConsultationController } from './controllers/consultations/get-consu
 import { getConsultationMarineLicenceController } from './controllers/consultations/get-consultation-marine-licence.js'
 import { updateConsultationRequestController } from './controllers/consultations/update-consultation-request.js'
 import { deleteMarineLicenceController } from './controllers/delete-marine-licence.js'
+import { deleteSupportingDocumentController } from './controllers/marine-plan-policies/delete-supporting-document.js'
 import { copyMarineLicenceController } from './controllers/copy-marine-licence.js'
 import { submitMarineLicenceController } from './controllers/submit-marine-licence.js'
 import { updateSpecialLegalPowersController } from './controllers/update-special-legal-powers.js'
@@ -239,6 +240,11 @@ export const marineLicenceFrontendRoutes = [
     method: 'PATCH',
     path: '/marine-licence/marine-plan-policy-document-links',
     ...updateMarinePlanPolicyDocumentLinksController
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/delete-marine-plan-policy-document',
+    ...deleteSupportingDocumentController
   },
   {
     method: 'PATCH',
