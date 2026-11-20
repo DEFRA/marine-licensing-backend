@@ -64,6 +64,9 @@ describe('warmUpDynamics', () => {
 
     await warmUpDynamics({ path })
 
+    expect(getDynamicsAccessToken).toHaveBeenCalledWith(
+      expect.objectContaining({ timeoutMs: 30000 })
+    )
     expect(wreckGetSpy.mock.calls[0][1]).toMatchObject({ timeout: 30000 })
   })
 

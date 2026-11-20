@@ -120,14 +120,21 @@ describe('scheduledJobs', () => {
     })
 
     it('passes the configured path to the warm-up and returns its result', async () => {
+      const key = 'scheduler.jobs.dynamics-warmup.path'
+      const originalPath = config.get(key)
+      config.set(key, '/test-warmup-path')
       vi.mocked(warmUpDynamics).mockResolvedValue({ summary: 'warm' })
 
-      const result = await dynamicsWarmup().run({})
+      try {
+        const result = await dynamicsWarmup().run({})
 
-      expect(result).toEqual({ summary: 'warm' })
-      expect(warmUpDynamics).toHaveBeenCalledWith({
-        path: config.get('scheduler.jobs.dynamics-warmup.path')
-      })
+        expect(result).toEqual({ summary: 'warm' })
+        expect(warmUpDynamics).toHaveBeenCalledWith({
+          path: '/test-warmup-path'
+        })
+      } finally {
+        config.set(key, originalPath)
+      }
     })
   })
 })

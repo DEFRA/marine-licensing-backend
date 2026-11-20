@@ -99,7 +99,7 @@ canonical — the values below are a snapshot for orientation:
 | `jobs.dynamics-warmup.path`       | `/contacts?$select=fullname&$top=1` | `SCHEDULER_DYNAMICS_WARMUP_PATH`      |
 
 `isEnabled` is the master switch: when false nothing is scheduled, but every job
-body stays invokable via its server method. Each job adds its own
+body stays invokable via its server method. Each job adds at least its own
 `isEnabled`/`schedule` pair, so a job can be switched off without touching the
 rest.
 
