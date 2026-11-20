@@ -42,7 +42,7 @@
     "@aws-sdk/s3-request-presigner": "3.1166.0",
     "@defra/cdp-auditing": "0.6.3",
     "@defra/hapi-secure-context": "0.4.2",
-    "@defra/hapi-tracing": "1.30.1",
+    "@defra/hapi-tracing": "1.30.2",
     "@elastic/ecs-pino-format": "1.5.0",
     "@esri/arcgis-rest-feature-service": "4.11.1",
     "@hapi/boom": "10.0.1",
