@@ -4,9 +4,11 @@ import { config } from '../../../config.js'
 import { collectionExemptions } from '../../common/constants/db-collections.js'
 import { londonToday } from '../../common/helpers/london-today.js'
 import { updateExemptionStatuses } from '../../../exemptions/api/helpers/update-exemption-statuses.js'
+import { warmUpDynamics } from '../../common/helpers/dynamics/warm-up-dynamics.js'
 
 vi.mock('../../common/helpers/london-today.js')
 vi.mock('../../../exemptions/api/helpers/update-exemption-statuses.js')
+vi.mock('../../common/helpers/dynamics/warm-up-dynamics.js')
 
 describe('scheduledJobs', () => {
   it('every job has a name, a server method name and a run function', () => {
@@ -105,6 +107,27 @@ describe('scheduledJobs', () => {
 
       expect(updateExemptionStatuses).toHaveBeenCalledWith(server, today)
       expect(result.summary).toContain('exemptions updated')
+    })
+  })
+
+  describe('dynamics-warmup', () => {
+    const dynamicsWarmup = () =>
+      scheduledJobs.find((job) => job.name === 'dynamics-warmup')
+
+    it('is registered', () => {
+      expect(dynamicsWarmup()).toBeDefined()
+      expect(dynamicsWarmup().methodName).toBe('runSchedulerDynamicsWarmup')
+    })
+
+    it('passes the configured path to the warm-up and returns its result', async () => {
+      vi.mocked(warmUpDynamics).mockResolvedValue({ summary: 'warm' })
+
+      const result = await dynamicsWarmup().run({})
+
+      expect(result).toEqual({ summary: 'warm' })
+      expect(warmUpDynamics).toHaveBeenCalledWith({
+        path: config.get('scheduler.jobs.dynamics-warmup.path')
+      })
     })
   })
 })

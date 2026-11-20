@@ -67,6 +67,26 @@ export const schedulerSchema = {
         default: '5 0 * * *',
         env: 'SCHEDULER_EXEMPTION_STATUS_SCHEDULE'
       }
+    },
+    'dynamics-warmup': {
+      isEnabled: {
+        doc: 'Enable the hourly Dynamics warm-up job',
+        format: Boolean,
+        default: true,
+        env: 'SCHEDULER_DYNAMICS_WARMUP_ENABLED'
+      },
+      schedule: {
+        doc: "Cron schedule for the Dynamics warm-up job, interpreted in Europe/London. Runs hourly to keep Dataverse's contact cache warm. See the cron format reference and the British Summer Time note at the top of this file.",
+        format: 'cron-expression',
+        default: '0 * * * *',
+        env: 'SCHEDULER_DYNAMICS_WARMUP_SCHEDULE'
+      },
+      path: {
+        doc: 'Path appended to DYNAMICS_API_CONTACT_DETAILS_BASE_URL: the lightweight Dataverse request used for warm-up',
+        format: String,
+        default: '/contacts?$select=fullname&$top=1',
+        env: 'SCHEDULER_DYNAMICS_WARMUP_PATH'
+      }
     }
   }
 }
