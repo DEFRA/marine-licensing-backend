@@ -54,6 +54,46 @@ describe('PATCH /marine-licence/public-register', () => {
     expect(result.error.message).toContain('"withholdReason" is not allowed')
   })
 
+  it('should save the answers and clear the confirmation', async () => {
+    const { mockMongo, mockHandler } = global
+    const id = new ObjectId().toHexString()
+    const mockPayload = {
+      id,
+      withholdConsent: 'yes',
+      withholdReason: 'nationalSecurity',
+      updatedAt: new Date('2025-01-01T12:00:00Z'),
+      updatedBy: 'user123'
+    }
+
+    const mockUpdateOne = vi.fn().mockResolvedValueOnce({ matchedCount: 1 })
+    vi.spyOn(mockMongo, 'collection').mockImplementation(function () {
+      return { updateOne: mockUpdateOne }
+    })
+
+    await updatePublicRegisterController.handler(
+      { db: mockMongo, payload: mockPayload },
+      mockHandler
+    )
+
+    expect(mockMongo.collection).toHaveBeenCalledWith('marine-licences')
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: ObjectId.createFromHexString(id) },
+      {
+        $set: {
+          publicRegister: {
+            withholdConsent: 'yes',
+            withholdReason: 'nationalSecurity'
+          },
+          publicRegisterConfirmed: false,
+          updatedAt: mockPayload.updatedAt,
+          updatedBy: mockPayload.updatedBy
+        }
+      }
+    )
+    expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
+    expect(mockHandler.code).toHaveBeenCalledWith(200)
+  })
+
   it('should return a 404 if the licence is deleted before the update runs', async () => {
     const { mockMongo, mockHandler } = global
     const mockPayload = {
