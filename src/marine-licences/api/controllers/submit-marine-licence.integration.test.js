@@ -4,9 +4,17 @@ import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
 import {
   createCompleteMarineLicence,
-  mockCredentials
+  mockCredentials,
+  mockLinkedMarinePlanPolicyDocument
 } from '../../../../tests/test.fixture.js'
 import { setupTestServer } from '../../../../tests/test-server.js'
+import { blobService } from '../../../shared/services/data-service/blob-service.js'
+
+vi.mock('../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    deleteFiles: vi.fn()
+  }
+}))
 
 describe('POST /marine-licence/submit', async () => {
   const getServer = await setupTestServer()
@@ -106,6 +114,51 @@ describe('POST /marine-licence/submit', async () => {
       mockApplicationReference
     )
     expect(updatedMarineLicence.submittedAt).toEqual(mockDate)
+  })
+
+  it('removes documents never linked to a policy, and their S3 files, on submit', async () => {
+    const unlinkedS3Location = {
+      s3Bucket: 'mmo-uploads',
+      s3Key: `marine-licences/${marineLicenceId}/abandoned-upload`
+    }
+
+    await db.collection(collectionMarineLicences).updateOne(
+      { _id: marineLicenceId },
+      {
+        $push: {
+          marinePlanPolicyDocuments: {
+            documentId: 'unlinked-doc',
+            uploadedFile: { filename: 'abandoned.docx' },
+            s3Location: unlinkedS3Location
+          }
+        }
+      }
+    )
+
+    const response = await getServer().inject({
+      method: 'POST',
+      url: '/marine-licence/submit',
+      payload: {
+        id: marineLicenceId.toHexString(),
+        userEmail: 'test@example.com',
+        userName: 'Test User'
+      },
+      auth: {
+        strategy: 'jwt',
+        credentials: mockCredentials
+      }
+    })
+
+    expect(response.statusCode).toBe(200)
+
+    const updatedMarineLicence = await db
+      .collection(collectionMarineLicences)
+      .findOne({ _id: marineLicenceId })
+
+    expect(updatedMarineLicence.marinePlanPolicyDocuments).toEqual([
+      mockLinkedMarinePlanPolicyDocument
+    ])
+    expect(blobService.deleteFiles).toHaveBeenCalledWith([unlinkedS3Location])
   })
 
   it('should return 404 if marine licence not found in database', async () => {

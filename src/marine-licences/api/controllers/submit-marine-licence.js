@@ -22,6 +22,10 @@ import { getOrganisationDetailsFromAuthToken } from '../../../shared/helpers/get
 import { updateCoastalOperationsAreas } from '../../../shared/common/helpers/geo/update-coastal-operations-areas.js'
 import { updateMarinePlanningAreas } from '../../../shared/common/helpers/geo/update-marine-planning-areas.js'
 import { structureErrorForECS } from '../../../shared/common/helpers/logging/logger.js'
+import {
+  collectS3Locations,
+  deleteOrphanedS3Objects
+} from '../helpers/deleteS3Objects.js'
 
 const checkForIncompleteTasks = (marineLicence, isCitizen) => {
   const { responses, count: marinePlanPolicyResponseCount } =
@@ -85,6 +89,9 @@ const updateMarineLicenceRecord = async ({
         status: MARINE_LICENCE_STATUS.SUBMITTED,
         updatedAt,
         updatedBy
+      },
+      $pull: {
+        marinePlanPolicyDocuments: { 'policyLinks.0': { $exists: false } }
       }
     }
   )
@@ -186,6 +193,16 @@ export const submitMarineLicenceController = {
         applicationReference,
         submittedAt
       })
+
+      const unlinkedMarinePlanPolicyDocuments =
+        marineLicence.marinePlanPolicyDocuments?.filter(
+          ({ policyLinks }) => !policyLinks?.length
+        )
+
+      await deleteOrphanedS3Objects(
+        db,
+        collectS3Locations(unlinkedMarinePlanPolicyDocuments)
+      )
 
       const { updatedAt, updatedBy } = payload
 
