@@ -157,16 +157,37 @@ describe('buildMarinePlanPolicySupportingDocuments', () => {
         marinePlanPolicyDocuments
       )
     ).toEqual({
-      documents: marinePlanPolicyDocuments,
+      linkedDocuments: marinePlanPolicyDocuments,
+      unlinkedDocuments: [],
       requiringDocuments: ['A', 'B'],
       documentsOutstanding: ['B'],
       status: INCOMPLETE
     })
   })
 
+  test('separates documents with links from documents not yet linked', () => {
+    const linked = {
+      documentId: 'doc-1',
+      policyLinks: [{ policyCode: 'A', location: 'Section 4.2' }]
+    }
+    const uploadedOnly = { documentId: 'doc-2' }
+    const noLinks = { documentId: 'doc-3', policyLinks: [] }
+
+    const { linkedDocuments, unlinkedDocuments } =
+      buildMarinePlanPolicySupportingDocuments(
+        [{ policyCode: 'A' }],
+        { A: policyResponseObject(mockPolicyCode, true) },
+        [linked, uploadedOnly, noLinks]
+      )
+
+    expect(linkedDocuments).toEqual([linked])
+    expect(unlinkedDocuments).toEqual([uploadedOnly, noLinks])
+  })
+
   test('defaults to no documents and NOT_REQUIRED when called with no arguments', () => {
     expect(buildMarinePlanPolicySupportingDocuments()).toEqual({
-      documents: [],
+      linkedDocuments: [],
+      unlinkedDocuments: [],
       requiringDocuments: [],
       documentsOutstanding: [],
       status: NOT_REQUIRED

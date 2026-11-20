@@ -44,7 +44,8 @@ describe('buildMarineLicenceResponse', () => {
       marinePlanPolicyResponses: {},
       marinePlanPolicyResponseCount: 0,
       marinePlanPolicySupportingDocuments: {
-        documents: [],
+        linkedDocuments: [],
+        unlinkedDocuments: [],
         requiringDocuments: [],
         documentsOutstanding: [],
         status: 'NOT_REQUIRED'
@@ -127,7 +128,8 @@ describe('buildMarineLicenceResponse', () => {
     )
 
     expect(response.marinePlanPolicySupportingDocuments).toEqual({
-      documents: marinePlanPolicyDocuments,
+      linkedDocuments: marinePlanPolicyDocuments,
+      unlinkedDocuments: [],
       requiringDocuments: ['B', 'C'],
       documentsOutstanding: ['B'],
       status: 'INCOMPLETE'
