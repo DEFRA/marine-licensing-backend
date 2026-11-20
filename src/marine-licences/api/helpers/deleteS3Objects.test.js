@@ -112,16 +112,28 @@ describe('deleteOrphanedS3Objects', () => {
     expect(blobService.deleteFiles).toHaveBeenCalledWith(candidates)
   })
 
-  it('queries only construction drawings for surviving references', async () => {
+  it('queries construction drawings and marine plan policy documents for surviving references', async () => {
     const db = setupDb()
 
     await deleteOrphanedS3Objects(db, [{ s3Bucket: bucket, s3Key: 'key-1' }])
 
     expect(db.collection().find).toHaveBeenCalledWith(
       {
-        'siteDetails.constructionDrawings.s3Location.s3Key': { $in: ['key-1'] }
+        $or: [
+          {
+            'siteDetails.constructionDrawings.s3Location.s3Key': {
+              $in: ['key-1']
+            }
+          },
+          { 'marinePlanPolicyDocuments.s3Location.s3Key': { $in: ['key-1'] } }
+        ]
       },
-      { projection: { 'siteDetails.constructionDrawings.s3Location': 1 } }
+      {
+        projection: {
+          'siteDetails.constructionDrawings.s3Location': 1,
+          'marinePlanPolicyDocuments.s3Location': 1
+        }
+      }
     )
   })
 

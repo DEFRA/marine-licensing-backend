@@ -44,7 +44,8 @@ re-query removes a policy, its document and links are removed.
 
 | Field                  | Meaning                                                                                                                                                                   |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `documents`            | The stored documents, unchanged.                                                                                                                                          |
+| `linkedDocuments`      | Stored documents with at least one policy link. Only the links step writes links, so these are documents whose journey is complete.                                       |
+| `unlinkedDocuments`    | Stored documents with no policy links yet: uploads still in progress, or abandoned before the links step.                                                                 |
 | `requiringDocuments`   | Current policies with `requiresDocumentation: true`, in `marinePlanPolicies` order. The checkbox page lists these, including policies already linked to another document. |
 | `documentsOutstanding` | Policies requiring documents not yet covered by any document.                                                                                                             |
 | `status`               | `NOT_REQUIRED` when no policy requires documents, `INCOMPLETE` when `documentsOutstanding` is not empty, otherwise `COMPLETED`.                                           |
@@ -58,6 +59,10 @@ ignored. Saving links is rejected with a 400 when the document has no
 the review page and the status cannot disagree.
 
 ## Task list and submit
+
+On submit, every document in `unlinkedDocuments` is removed from the licence and
+its S3 file is deleted, unless another licence still references the file (a copy
+of a rejected licence shares its documents' files).
 
 The marine plan policies task is `COMPLETED` only when every policy is answered
 and the supporting documents `status` is not `INCOMPLETE`; with every answer in

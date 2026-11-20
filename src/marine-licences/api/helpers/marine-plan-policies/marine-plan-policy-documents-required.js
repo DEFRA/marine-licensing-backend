@@ -57,7 +57,8 @@ export const buildMarinePlanPolicySupportingDocuments = (
   )
 
   return {
-    documents,
+    linkedDocuments: documents.filter((doc) => doc.policyLinks?.length > 0),
+    unlinkedDocuments: documents.filter((doc) => !doc.policyLinks?.length),
     requiringDocuments,
     documentsOutstanding,
     status: getMarinePlanPolicyDocumentStatus(
