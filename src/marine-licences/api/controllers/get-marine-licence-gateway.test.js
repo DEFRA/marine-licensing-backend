@@ -162,6 +162,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           fileName: 'wfd-assessment.docx'
         },
         sites: [],
+        siteNoticeEvidence: [],
         marinePlanPolicies: [],
         withdrawnAt: null
       })
@@ -316,9 +317,72 @@ describe('GET /public/marine-licence/mas/{id}', () => {
           fileName: null
         },
         sites: [],
+        siteNoticeEvidence: [],
         marinePlanPolicies: [],
         withdrawnAt: null
       })
+    })
+
+    it('should include site notice evidence with download URL routes', async () => {
+      const { mockHandler } = global
+
+      mockedFindOne.mockResolvedValue({
+        _id: mockId,
+        projectName: 'Test project',
+        status: MARINE_LICENCE_STATUS.SUBMITTED,
+        siteNoticeEvidence: [
+          {
+            locationName: 'North pier',
+            dateDisplayed: { day: '18', month: '10', year: '2026' },
+            closeUpPhoto: {
+              uploadedFile: { filename: 'close-up.jpg' },
+              s3Location: {
+                s3Bucket: 'mmo-uploads',
+                s3Key: 'site-notice/close-up',
+                checksumSha256: 'abc'
+              }
+            },
+            positionPhoto: {
+              uploadedFile: { filename: 'position.jpg' },
+              s3Location: {
+                s3Bucket: 'mmo-uploads',
+                s3Key: 'site-notice/position',
+                checksumSha256: 'def'
+              }
+            }
+          },
+          {}
+        ]
+      })
+
+      await getMarineLicenceGatewayController.handler(
+        mockRequest(),
+        mockHandler
+      )
+
+      const response = mockHandler.response.mock.calls[0][0]
+      expect(response.siteNoticeEvidence).toEqual([
+        {
+          locationNumber: 1,
+          locationName: 'North pier',
+          dateDisplayed: '18 October 2026',
+          closeUpPhoto: {
+            filename: 'close-up.jpg',
+            downloadUrl: `${backendGatewayUrl}/public/marine-licence/${mockId}/site-notice-evidence/1/close-up/download-url`
+          },
+          positionPhoto: {
+            filename: 'position.jpg',
+            downloadUrl: `${backendGatewayUrl}/public/marine-licence/${mockId}/site-notice-evidence/1/position/download-url`
+          }
+        },
+        {
+          locationNumber: 2,
+          locationName: null,
+          dateDisplayed: null,
+          closeUpPhoto: null,
+          positionPhoto: null
+        }
+      ])
     })
 
     it('should return the withdrawal date for a withdrawn marine licence', async () => {

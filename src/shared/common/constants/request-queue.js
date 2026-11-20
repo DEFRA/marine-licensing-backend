@@ -9,7 +9,8 @@ export const DYNAMICS_REQUEST_ACTIONS = {
   SUBMIT: 'submit',
   WITHDRAW: 'withdraw',
   UPDATE: 'update',
-  SEND_CONSULTATION_RESPONSE: 'send-consultation-response'
+  SEND_CONSULTATION_RESPONSE: 'send-consultation-response',
+  SEND_SITE_NOTICE_EVIDENCE: 'send-site-notice-evidence'
 }
 
 export const DYNAMICS_QUEUE_TYPES = {

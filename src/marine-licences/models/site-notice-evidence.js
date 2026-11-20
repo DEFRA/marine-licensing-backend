@@ -13,7 +13,7 @@ import {
   YEAR_PATTERN
 } from './date-utils.js'
 
-const LOCATION_NAME_MAX_LENGTH = 250
+export const LOCATION_NAME_MAX_LENGTH = 250
 
 const dateDisplayedSchema = joi
   .object({

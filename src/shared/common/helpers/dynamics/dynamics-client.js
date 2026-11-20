@@ -5,6 +5,7 @@ import {
 import { sendConsultationResponseToDynamics } from './requests/send-consultation-response.js'
 import { sendExemptionToDynamics } from './requests/send-exemption.js'
 import { sendMarineLicenceToDynamics } from './requests/send-marine-licence.js'
+import { sendSiteNoticeEvidenceToDynamics } from './requests/send-site-notice-evidence.js'
 import { sendUpdateExemptionToDynamics } from './requests/send-update-exemption.js'
 import { sendWithdrawToDynamics } from './requests/send-withdraw.js'
 
@@ -16,6 +17,9 @@ const getHandler = (queueItem) => {
     queueItem.action === DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
   ) {
     return sendConsultationResponseToDynamics
+  }
+  if (queueItem.action === DYNAMICS_REQUEST_ACTIONS.SEND_SITE_NOTICE_EVIDENCE) {
+    return sendSiteNoticeEvidenceToDynamics
   }
   if (queueItem.type === DYNAMICS_QUEUE_TYPES.MARINE_LICENCE) {
     return sendMarineLicenceToDynamics
