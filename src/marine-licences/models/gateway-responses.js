@@ -321,7 +321,7 @@ export const marineLicenceGatewayResponseSchema = joi
       .items(gatewaySiteNoticeEvidenceSchema)
       .required()
       .description(
-        'Applicant site notice evidence locations. Empty when none. Photo downloadUrl values are durable API routes; call them for a short-lived S3 link.'
+        "Applicant site notice evidence locations. Empty when none. Photo downloadUrl values are this API's site notice photo download URL routes; call them to get a short-lived link to the photograph."
       )
       .label('SiteNoticeEvidenceList'),
     marinePlanPolicies: joi

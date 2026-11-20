@@ -20,7 +20,7 @@ describe('formatSiteNoticeEvidenceForGateway', () => {
     expect(formatSiteNoticeEvidenceForGateway()).toEqual([])
   })
 
-  it('maps complete locations with durable download URLs', () => {
+  it('maps complete locations with download URL routes', () => {
     expect(
       formatSiteNoticeEvidenceForGateway(
         [

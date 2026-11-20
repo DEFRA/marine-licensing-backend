@@ -186,7 +186,7 @@ describe('GET /public/marine-licence/mas/{id} - integration tests', async () => 
     })
   })
 
-  test('returns site notice evidence with durable download URLs', async () => {
+  test('returns site notice evidence with download URL routes', async () => {
     const publicId = new ObjectId()
 
     await globalThis.mockMongo.collection('marine-licences').insertOne({

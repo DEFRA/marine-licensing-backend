@@ -27,7 +27,7 @@ export const getMarineLicenceGatewayController = {
     tags: ['api'],
     description: 'Get a submitted marine licence for MAS',
     notes:
-      'Returns the project, site, site notice evidence, Water Framework Directive and marine plan policy details of any marine licence that is not a draft. Site file and construction drawing URLs are presigned and expire after 4 hours. Site notice photo downloadUrl values are durable API routes; call them for a short-lived S3 link. Most fields may be null when the applicant did not provide them.',
+      "Returns the project, site, site notice evidence, Water Framework Directive and marine plan policy details of any marine licence that is not a draft. Site file and construction drawing URLs are presigned and expire after 4 hours. Site notice photo downloadUrl values are this API's site notice photo download URL routes; call them to get a short-lived link to the photograph. Most fields may be null when the applicant did not provide them.",
     validate: {
       params: getMarineLicence
     },

@@ -323,7 +323,7 @@ describe('GET /public/marine-licence/mas/{id}', () => {
       })
     })
 
-    it('should include site notice evidence with durable download URLs', async () => {
+    it('should include site notice evidence with download URL routes', async () => {
       const { mockHandler } = global
 
       mockedFindOne.mockResolvedValue({
