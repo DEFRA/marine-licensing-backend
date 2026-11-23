@@ -41,7 +41,14 @@ describe('updatePublicRegisterWithholdingController', () => {
     const { id: _id, updatedAt, updatedBy, ...publicRegister } = payload
     expect(updateOne).toHaveBeenCalledWith(
       { _id: ObjectId.createFromHexString(id) },
-      { $set: { publicRegister, updatedAt, updatedBy } }
+      {
+        $set: {
+          publicRegister,
+          publicRegisterConfirmed: false,
+          updatedAt,
+          updatedBy
+        }
+      }
     )
     expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
     expect(mockHandler.code).toHaveBeenCalledWith(200)

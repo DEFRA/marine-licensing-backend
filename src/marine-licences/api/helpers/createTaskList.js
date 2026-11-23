@@ -326,12 +326,20 @@ const isWithholdFollowUpIncomplete = ({
   )
 }
 
-const getPublicRegisterStatus = (publicRegister) => {
+const getPublicRegisterStatus = (publicRegister, publicRegisterConfirmed) => {
   if (!publicRegister) {
     return INCOMPLETE
   }
 
-  return isWithholdFollowUpIncomplete(publicRegister) ? IN_PROGRESS : COMPLETED
+  if (publicRegister.withholdConsent === 'no') {
+    return COMPLETED
+  }
+
+  if (isWithholdFollowUpIncomplete(publicRegister)) {
+    return IN_PROGRESS
+  }
+
+  return publicRegisterConfirmed ? COMPLETED : IN_PROGRESS
 }
 
 const getMarinePlanPolicyStatus = (
@@ -379,7 +387,8 @@ export const createTaskList = (
       getSiteDetailsStatus(value, marineLicence.siteDetailsConfirmed),
     preferredDates: (value) => (value ? COMPLETED : INCOMPLETE),
     publicConsultation: (value) => (value ? COMPLETED : INCOMPLETE),
-    publicRegister: (value) => getPublicRegisterStatus(value),
+    publicRegister: (value) =>
+      getPublicRegisterStatus(value, marineLicence.publicRegisterConfirmed),
     waterFrameworkDirective: (value) => getWaterFrameworkDirectiveStatus(value),
     invoicing: (value) => getInvoicingStatus(value, isCitizen),
     marinePlanPolicies: () =>

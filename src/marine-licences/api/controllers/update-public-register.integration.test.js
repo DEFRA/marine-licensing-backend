@@ -46,6 +46,7 @@ describe('PATCH /marine-licence/public-register - integration tests', async () =
       withholdConsent: 'no',
       withholdReason: null
     })
+    expect(updatedLicence.publicRegisterConfirmed).toBe(false)
   })
 
   test('successfully updates public register when information is withheld, with a reason', async () => {
