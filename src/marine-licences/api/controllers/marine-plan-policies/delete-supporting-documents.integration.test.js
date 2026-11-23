@@ -1,7 +1,10 @@
 import { setupTestServer } from '../../../../../tests/test-server.js'
 import { makePatchRequest } from '../../../../../tests/server-requests.js'
 import { ObjectId } from 'mongodb'
-import { mockLinkedMarinePlanPolicyDocument } from '../../../../../tests/test.fixture.js'
+import {
+  createCompleteMarineLicence,
+  mockLinkedMarinePlanPolicyDocument
+} from '../../../../../tests/test.fixture.js'
 import {
   findMarineLicence,
   insertMarineLicence
@@ -77,6 +80,28 @@ describe('PATCH /marine-licence/delete-marine-plan-policy-document - integration
           'marine-licences/697ff02d-e5e7-4e42-ba47-c36fc116af47/45265950-72fb-4bb7-ab1c-2fb722ab15ec'
       }
     ])
+  })
+
+  test('keeps the S3 file when a copied licence still references it', async () => {
+    const licenceId = new ObjectId()
+    const { documentId } = mockLinkedMarinePlanPolicyDocument
+
+    await globalThis.mockMongo
+      .collection('marine-licences')
+      .insertMany([
+        createCompleteMarineLicence({ _id: licenceId }),
+        createCompleteMarineLicence()
+      ])
+
+    const { statusCode } = await makePatchRequest({
+      server: getServer(),
+      url: '/marine-licence/delete-marine-plan-policy-document',
+      contactId,
+      payload: { id: licenceId.toString(), documentId }
+    })
+
+    expect(statusCode).toBe(200)
+    expect(blobService.deleteFiles).not.toHaveBeenCalled()
   })
 
   test('returns 404 when licence Id is invalid', async () => {
