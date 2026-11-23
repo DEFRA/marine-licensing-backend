@@ -1,9 +1,28 @@
 import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 import { ObjectId } from 'mongodb'
-import { marinePlanPolicyResponseSchema } from '../../models/marine-plan-policy.js'
-import { collectionMarineLicences } from '../../../shared/common/constants/db-collections.js'
-import { authorizeOwnership } from '../../../shared/helpers/authorize-ownership.js'
+import { marinePlanPolicyResponseSchema } from '../../../models/marine-plan-policy.js'
+import { collectionMarineLicences } from '../../../../shared/common/constants/db-collections.js'
+import { authorizeOwnership } from '../../../../shared/helpers/authorize-ownership.js'
+import { unlinkMarinePlanPolicyDocuments } from '../../helpers/marine-plan-policies/unlink-marine-plan-policy-documents.js'
+import {
+  collectS3Locations,
+  deleteOrphanedS3Objects
+} from '../../helpers/deleteS3Objects.js'
+
+const NO_UNLINK = { documents: [], orphanedDocuments: [], changed: false }
+
+const unlinkPolicy = async (collection, _id, policyCode) => {
+  const marineLicence = await collection.findOne(
+    { _id },
+    { projection: { marinePlanPolicyDocuments: 1 } }
+  )
+
+  return unlinkMarinePlanPolicyDocuments(
+    marineLicence?.marinePlanPolicyDocuments,
+    [policyCode]
+  )
+}
 
 export const saveMarinePlanPolicyResponseController = {
   options: {
@@ -25,11 +44,31 @@ export const saveMarinePlanPolicyResponseController = {
         policyCode,
         response,
         requiresDocumentation,
+        confirmDocumentDeletion,
         updatedAt,
         updatedBy
       } = payload
       const _id = ObjectId.createFromHexString(id)
       const collection = db.collection(collectionMarineLicences)
+
+      const { documents, orphanedDocuments, changed } = requiresDocumentation
+        ? NO_UNLINK
+        : await unlinkPolicy(collection, _id, policyCode)
+
+      if (orphanedDocuments.length > 0 && !confirmDocumentDeletion) {
+        return h
+          .response({
+            message: 'success',
+            value: {
+              confirmationRequired: true,
+              orphanedDocuments: orphanedDocuments.map((document) => ({
+                documentId: document.documentId,
+                filename: document.uploadedFile?.filename
+              }))
+            }
+          })
+          .code(StatusCodes.OK)
+      }
 
       const result = await collection.updateOne({ _id }, [
         {
@@ -44,6 +83,9 @@ export const saveMarinePlanPolicyResponseController = {
                 }
               ]
             },
+            ...(changed && {
+              marinePlanPolicyDocuments: { $literal: documents }
+            }),
             updatedAt,
             updatedBy
           }
@@ -66,6 +108,8 @@ export const saveMarinePlanPolicyResponseController = {
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
       }
+
+      await deleteOrphanedS3Objects(db, collectS3Locations(orphanedDocuments))
 
       return h.response({ message: 'success' }).code(StatusCodes.OK)
     } catch (error) {
