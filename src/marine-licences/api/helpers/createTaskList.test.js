@@ -69,7 +69,7 @@ describe('createTaskList', () => {
         end: { month: '12', year: '2026' }
       },
       projectBackground: 'Some background',
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
@@ -108,7 +108,7 @@ describe('createTaskList', () => {
         end: { month: '12', year: '2026' }
       },
       projectBackground: 'Some background',
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
@@ -130,7 +130,7 @@ describe('createTaskList', () => {
         start: { month: '01', year: '2026' },
         end: { month: '12', year: '2026' }
       },
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       publicConsultation: {
         consulted: 'yes',
         details: 'Public consultation details'
@@ -353,7 +353,7 @@ describe('createTaskList', () => {
         specialLegalPowers: 'Some powers',
         otherAuthorities: 'Some authorities',
         projectBackground: 'Some background',
-        publicRegister: 'Public Register Info',
+        publicRegister: { withholdConsent: 'no', withholdReason: null },
         siteDetails: [
           {
             ...mockCircleSite,
@@ -556,7 +556,7 @@ describe('createTaskList', () => {
     const marineLicence = {
       projectName: 'Test Project',
       specialLegalPowers: 'some powers',
-      publicRegister: 'Public Register Info',
+      publicRegister: { withholdConsent: 'no', withholdReason: null },
       otherAuthorities: 'Some authorities',
       preferredDates: {
         start: { month: '01', year: '2026' },
@@ -760,43 +760,68 @@ describe('createTaskList', () => {
   })
 
   describe('publicRegister status', () => {
+    const nationalSecurityAnswered = {
+      withholdConsent: 'yes',
+      withholdReason: 'nationalSecurity',
+      nationalSecurityApproval: 'no'
+    }
+
     it.each([
       [
         'IN_PROGRESS when withholding for national security without an answer',
         { withholdConsent: 'yes', withholdReason: 'nationalSecurity' },
+        false,
         IN_PROGRESS
       ],
       [
-        'COMPLETED when withholding for national security with an answer',
-        {
-          withholdConsent: 'yes',
-          withholdReason: 'nationalSecurity',
-          nationalSecurityApproval: 'no'
-        },
-        COMPLETED
+        'IN_PROGRESS when withholding for national security with an answer but not confirmed',
+        nationalSecurityAnswered,
+        false,
+        IN_PROGRESS
       ],
       [
         'IN_PROGRESS when withholding for commercial confidentiality without a reason',
         { withholdConsent: 'yes', withholdReason: 'commercialConfidentiality' },
+        false,
         IN_PROGRESS
       ],
       [
-        'COMPLETED when withholding for commercial confidentiality with a reason',
+        'IN_PROGRESS when withholding for commercial confidentiality with a reason but not confirmed',
         {
           withholdConsent: 'yes',
           withholdReason: 'commercialConfidentiality',
           reason: 'Pricing details'
         },
+        false,
+        IN_PROGRESS
+      ],
+      [
+        'COMPLETED when withholding answers are confirmed',
+        nationalSecurityAnswered,
+        true,
         COMPLETED
       ],
       [
-        'COMPLETED when not withholding',
+        'IN_PROGRESS when confirmed but the follow-up answer is missing',
+        { withholdConsent: 'yes', withholdReason: 'nationalSecurity' },
+        true,
+        IN_PROGRESS
+      ],
+      [
+        'COMPLETED when not withholding and unconfirmed',
         { withholdConsent: 'no', withholdReason: null },
+        false,
         COMPLETED
       ]
-    ])('should be %s', (_description, publicRegister, expected) => {
-      expect(createTaskList({ publicRegister }).publicRegister).toBe(expected)
-    })
+    ])(
+      'should be %s',
+      (_description, publicRegister, publicRegisterConfirmed, expected) => {
+        expect(
+          createTaskList({ publicRegister, publicRegisterConfirmed })
+            .publicRegister
+        ).toBe(expected)
+      }
+    )
   })
 
   describe('invoicing status', () => {
