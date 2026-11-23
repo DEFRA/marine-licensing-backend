@@ -43,6 +43,7 @@ describe('PATCH /marine-licence/public-register-national-security - integration 
       nationalSecurityApproval: 'yes',
       reason: 'Details of the berth'
     })
+    expect(updatedLicence.publicRegisterConfirmed).toBe(false)
     expect(updatedLicence.updatedBy).toBe(contactId)
     expect(updatedLicence.updatedAt).toBeInstanceOf(Date)
   })

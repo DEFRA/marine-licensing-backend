@@ -34,6 +34,7 @@ import { updateMarinePlanPolicyDocumentTypeController } from './controllers/mari
 import { updateMarinePlanPolicyDocumentLinksController } from './controllers/marine-plan-policies/update-marine-plan-policy-document-links.js'
 import { updateInvoicingController } from './controllers/update-invoicing.js'
 import { confirmSiteDetailsController } from './controllers/confirm-site-details.js'
+import { confirmPublicRegisterController } from './controllers/confirm-public-register.js'
 import { withdrawMarineLicenceController } from './controllers/withdraw-marine-licence.js'
 import { resolveApplicationTaskController } from './controllers/resolve-application-task.js'
 import { addConstructionDrawingController } from './controllers/add-construction-drawing.js'
@@ -174,6 +175,11 @@ export const marineLicenceFrontendRoutes = [
       schema: publicRegisterCommercialConfidentiality,
       errorContext: 'public register commercial confidentiality'
     })
+  },
+  {
+    method: 'PATCH',
+    path: '/marine-licence/confirm-public-register',
+    ...confirmPublicRegisterController
   },
   {
     method: 'PATCH',

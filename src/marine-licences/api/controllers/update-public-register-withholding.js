@@ -23,12 +23,17 @@ export const updatePublicRegisterWithholdingController = ({
     try {
       const { payload, db } = request
       const { id, updatedAt, updatedBy, ...publicRegister } = payload
-      const result = await db
-        .collection(collectionMarineLicences)
-        .updateOne(
-          { _id: ObjectId.createFromHexString(id) },
-          { $set: { publicRegister, updatedAt, updatedBy } }
-        )
+      const result = await db.collection(collectionMarineLicences).updateOne(
+        { _id: ObjectId.createFromHexString(id) },
+        {
+          $set: {
+            publicRegister,
+            publicRegisterConfirmed: false,
+            updatedAt,
+            updatedBy
+          }
+        }
+      )
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
       }

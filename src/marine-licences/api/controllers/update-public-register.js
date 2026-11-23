@@ -27,6 +27,7 @@ export const updatePublicRegisterController = {
         {
           $set: {
             publicRegister: { withholdConsent, withholdReason },
+            publicRegisterConfirmed: false,
             updatedAt,
             updatedBy
           }
