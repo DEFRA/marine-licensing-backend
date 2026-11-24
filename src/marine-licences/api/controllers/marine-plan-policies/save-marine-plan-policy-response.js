@@ -24,14 +24,12 @@ const unlinkPolicy = async (collection, _id, policyCode) => {
   )
 }
 
-const updateMarineLicencePolicyResponse = async (collection, _id, policyCode, {
-  response,
-  requiresDocumentation,
-  documents,
-  changed,
-  updatedAt,
-  updatedBy
-}) => {
+const updateMarineLicencePolicyResponse = async (
+  collection,
+  _id,
+  policyCode,
+  { response, requiresDocumentation, documents, changed, updatedAt, updatedBy }
+) => {
   return collection.updateOne({ _id }, [
     {
       $set: {
@@ -68,7 +66,11 @@ const updateMarineLicencePolicyResponse = async (collection, _id, policyCode, {
   ])
 }
 
-const handleOrphanedDocumentsResponse = (orphanedDocuments, confirmDocumentDeletion, h) => {
+const handleOrphanedDocumentsResponse = (
+  orphanedDocuments,
+  confirmDocumentDeletion,
+  h
+) => {
   if (orphanedDocuments.length > 0 && !confirmDocumentDeletion) {
     return h
       .response({
@@ -124,14 +126,19 @@ export const saveMarinePlanPolicyResponseController = {
       )
       if (orphanedResponse) return orphanedResponse
 
-      const result = await updateMarineLicencePolicyResponse(collection, _id, policyCode, {
-        response,
-        requiresDocumentation,
-        documents,
-        changed,
-        updatedAt,
-        updatedBy
-      })
+      const result = await updateMarineLicencePolicyResponse(
+        collection,
+        _id,
+        policyCode,
+        {
+          response,
+          requiresDocumentation,
+          documents,
+          changed,
+          updatedAt,
+          updatedBy
+        }
+      )
 
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
