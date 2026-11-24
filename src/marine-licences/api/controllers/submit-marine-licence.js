@@ -118,7 +118,12 @@ const runPostSubmitBackgroundWork = ({
   deleteOrphanedS3Objects(
     db,
     collectS3Locations(unlinkedMarinePlanPolicyDocuments)
-  )
+  ).catch((err) => {
+    request.logger.error(
+      structureErrorForECS(err),
+      `Failed to delete orphaned S3 objects for ${applicationReference}`
+    )
+  })
 
   // Each geo operation catches its own errors so a failure in one does
   // not block the other or the Dynamics queue insert — geo areas can be
