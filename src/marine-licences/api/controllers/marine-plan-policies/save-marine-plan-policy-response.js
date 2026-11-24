@@ -24,6 +24,68 @@ const unlinkPolicy = async (collection, _id, policyCode) => {
   )
 }
 
+const updateMarineLicencePolicyResponse = async (collection, _id, policyCode, {
+  response,
+  requiresDocumentation,
+  documents,
+  changed,
+  updatedAt,
+  updatedBy
+}) => {
+  return collection.updateOne({ _id }, [
+    {
+      $set: {
+        marinePlanPolicyResponses: {
+          $mergeObjects: [
+            '$marinePlanPolicyResponses',
+            {
+              [policyCode]: {
+                $literal: { response, requiresDocumentation }
+              }
+            }
+          ]
+        },
+        ...(changed && {
+          marinePlanPolicyDocuments: { $literal: documents }
+        }),
+        updatedAt,
+        updatedBy
+      }
+    },
+    {
+      $set: {
+        marinePlanPolicyResponseCount: {
+          $size: {
+            $filter: {
+              input: { $objectToArray: '$marinePlanPolicyResponses' },
+              as: 'r',
+              cond: { $ne: ['$$r.v.response', ''] }
+            }
+          }
+        }
+      }
+    }
+  ])
+}
+
+const handleOrphanedDocumentsResponse = (orphanedDocuments, confirmDocumentDeletion, h) => {
+  if (orphanedDocuments.length > 0 && !confirmDocumentDeletion) {
+    return h
+      .response({
+        message: 'success',
+        value: {
+          confirmationRequired: true,
+          orphanedDocuments: orphanedDocuments.map((document) => ({
+            documentId: document.documentId,
+            filename: document.uploadedFile?.filename
+          }))
+        }
+      })
+      .code(StatusCodes.OK)
+  }
+  return null
+}
+
 export const saveMarinePlanPolicyResponseController = {
   options: {
     payload: {
@@ -55,55 +117,21 @@ export const saveMarinePlanPolicyResponseController = {
         ? NO_UNLINK
         : await unlinkPolicy(collection, _id, policyCode)
 
-      if (orphanedDocuments.length > 0 && !confirmDocumentDeletion) {
-        return h
-          .response({
-            message: 'success',
-            value: {
-              confirmationRequired: true,
-              orphanedDocuments: orphanedDocuments.map((document) => ({
-                documentId: document.documentId,
-                filename: document.uploadedFile?.filename
-              }))
-            }
-          })
-          .code(StatusCodes.OK)
-      }
+      const orphanedResponse = handleOrphanedDocumentsResponse(
+        orphanedDocuments,
+        confirmDocumentDeletion,
+        h
+      )
+      if (orphanedResponse) return orphanedResponse
 
-      const result = await collection.updateOne({ _id }, [
-        {
-          $set: {
-            marinePlanPolicyResponses: {
-              $mergeObjects: [
-                '$marinePlanPolicyResponses',
-                {
-                  [policyCode]: {
-                    $literal: { response, requiresDocumentation }
-                  }
-                }
-              ]
-            },
-            ...(changed && {
-              marinePlanPolicyDocuments: { $literal: documents }
-            }),
-            updatedAt,
-            updatedBy
-          }
-        },
-        {
-          $set: {
-            marinePlanPolicyResponseCount: {
-              $size: {
-                $filter: {
-                  input: { $objectToArray: '$marinePlanPolicyResponses' },
-                  as: 'r',
-                  cond: { $ne: ['$$r.v.response', ''] }
-                }
-              }
-            }
-          }
-        }
-      ])
+      const result = await updateMarineLicencePolicyResponse(collection, _id, policyCode, {
+        response,
+        requiresDocumentation,
+        documents,
+        changed,
+        updatedAt,
+        updatedBy
+      })
 
       if (result.matchedCount === 0) {
         throw Boom.notFound('Marine licence not found')
