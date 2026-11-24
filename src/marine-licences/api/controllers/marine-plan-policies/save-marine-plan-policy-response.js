@@ -124,7 +124,9 @@ export const saveMarinePlanPolicyResponseController = {
         confirmDocumentDeletion,
         h
       )
-      if (orphanedResponse) return orphanedResponse
+      if (orphanedResponse) {
+        return orphanedResponse
+      }
 
       const result = await updateMarineLicencePolicyResponse(
         collection,
