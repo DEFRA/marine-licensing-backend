@@ -110,6 +110,16 @@ const runPostSubmitBackgroundWork = ({
   request,
   isDynamicsEnabled
 }) => {
+  const unlinkedMarinePlanPolicyDocuments =
+    marineLicence.marinePlanPolicyDocuments?.filter(
+      ({ policyLinks }) => !policyLinks?.length
+    )
+
+  deleteOrphanedS3Objects(
+    db,
+    collectS3Locations(unlinkedMarinePlanPolicyDocuments)
+  )
+
   // Each geo operation catches its own errors so a failure in one does
   // not block the other or the Dynamics queue insert — geo areas can be
   Promise.all([
@@ -193,16 +203,6 @@ export const submitMarineLicenceController = {
         applicationReference,
         submittedAt
       })
-
-      const unlinkedMarinePlanPolicyDocuments =
-        marineLicence.marinePlanPolicyDocuments?.filter(
-          ({ policyLinks }) => !policyLinks?.length
-        )
-
-      await deleteOrphanedS3Objects(
-        db,
-        collectS3Locations(unlinkedMarinePlanPolicyDocuments)
-      )
 
       const { updatedAt, updatedBy } = payload
 
