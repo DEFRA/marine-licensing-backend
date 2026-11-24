@@ -19,8 +19,8 @@ const unlinkPolicy = async (collection, _id, policyCode) => {
   )
 
   return unlinkMarinePlanPolicyDocuments(
-    marineLicence?.marinePlanPolicyDocuments,
-    [policyCode]
+    [policyCode],
+    marineLicence?.marinePlanPolicyDocuments
   )
 }
 

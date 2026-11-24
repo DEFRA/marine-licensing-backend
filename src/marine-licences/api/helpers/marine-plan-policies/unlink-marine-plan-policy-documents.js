@@ -1,6 +1,6 @@
 export const unlinkMarinePlanPolicyDocuments = (
-  documents = [],
-  policyCodes
+  policyCodes,
+  documents = []
 ) => {
   const codesToUnlink = new Set(policyCodes)
 

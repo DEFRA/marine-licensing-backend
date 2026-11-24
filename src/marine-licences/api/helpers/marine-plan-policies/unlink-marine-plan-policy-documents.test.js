@@ -17,8 +17,8 @@ describe('unlinkMarinePlanPolicyDocuments', () => {
 
     expect(
       unlinkMarinePlanPolicyDocuments(
-        [shared, orphan, untouched, inProgress, noLinksField],
-        ['E-AGG-3', 'E-MPA-1']
+        ['E-AGG-3', 'E-MPA-1'],
+        [shared, orphan, untouched, inProgress, noLinksField]
       )
     ).toEqual({
       documents: [
@@ -35,7 +35,7 @@ describe('unlinkMarinePlanPolicyDocuments', () => {
   test.each([[undefined], [[document('doc', [link('E-BIO-2')])]]])(
     'reports no change when nothing links to the policies: %j',
     (documents) => {
-      expect(unlinkMarinePlanPolicyDocuments(documents, ['E-AGG-3'])).toEqual({
+      expect(unlinkMarinePlanPolicyDocuments(['E-AGG-3'], documents)).toEqual({
         documents: documents ?? [],
         orphanedDocuments: [],
         changed: false
