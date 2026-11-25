@@ -2,7 +2,10 @@ import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { getSiteNoticePhotoDownloadUrlController } from './get-site-notice-photo-download-url.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-import { SITE_NOTICE_PHOTO_PRESIGNED_URL_EXPIRES_IN_SECONDS } from '../../constants/site-notice-evidence.js'
+import {
+  SITE_NOTICE_PHOTO_PRESIGNED_URL_EXPIRES_IN_SECONDS,
+  SITE_NOTICE_PHOTO_TYPE
+} from '../../constants/site-notice-evidence.js'
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 import { blobService } from '../../../shared/services/data-service/blob-service.js'
 import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
@@ -54,7 +57,11 @@ describe('GET /public/marine-licence/{id}/site-notice-evidence/{locationNumber}/
     const mockCollection = vi.fn().mockReturnValue({ findOne: mockFindOne })
 
     mockRequest = {
-      params: { id: mockId, locationNumber: 1, photoType: 'close-up' },
+      params: {
+        id: mockId,
+        locationNumber: 1,
+        photoType: SITE_NOTICE_PHOTO_TYPE.CLOSE_UP
+      },
       db: { collection: mockCollection }
     }
 
@@ -124,7 +131,7 @@ describe('GET /public/marine-licence/{id}/site-notice-evidence/{locationNumber}/
   })
 
   it('should generate a position photo presigned URL from the stored S3 location', async () => {
-    mockRequest.params.photoType = 'position'
+    mockRequest.params.photoType = SITE_NOTICE_PHOTO_TYPE.POSITION
 
     await getSiteNoticePhotoDownloadUrlController.handler(mockRequest, mockH)
 

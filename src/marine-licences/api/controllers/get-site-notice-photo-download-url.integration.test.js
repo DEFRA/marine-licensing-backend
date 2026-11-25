@@ -1,8 +1,8 @@
 import { vi } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { setupTestServer } from '../../../../tests/test-server.js'
+import { insertMarineLicence } from '../../../../tests/test-helpers.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
-import { mockMarineLicence } from '../../models/test-fixtures.js'
 import {
   SITE_NOTICE_PHOTO_TYPE,
   buildSiteNoticePhotoDownloadPath
@@ -39,35 +39,35 @@ describe('Site notice photo download URL - public integration tests', async () =
       photoType
     )
 
-  const insertSubmittedMarineLicence = async (overrides = {}) => {
-    await globalThis.mockMongo.collection('marine-licences').insertOne({
-      ...mockMarineLicence,
+  const siteNoticeEvidence = [
+    {
+      locationName: 'North pier',
+      closeUpPhoto: {
+        uploadedFile: { filename: 'close-up.jpg' },
+        s3Location: {
+          s3Bucket: 'mmo-uploads',
+          s3Key: 'site-notice/close-up',
+          checksumSha256: 'abc123'
+        }
+      },
+      positionPhoto: {
+        uploadedFile: { filename: 'position.jpg' },
+        s3Location: {
+          s3Bucket: 'mmo-uploads',
+          s3Key: 'site-notice/position',
+          checksumSha256: 'def456'
+        }
+      }
+    }
+  ]
+
+  const insertSubmittedMarineLicence = (overrides = {}) =>
+    insertMarineLicence({
       _id: marineLicenceId,
       status: MARINE_LICENCE_STATUS.SUBMITTED,
-      siteNoticeEvidence: [
-        {
-          locationName: 'North pier',
-          closeUpPhoto: {
-            uploadedFile: { filename: 'close-up.jpg' },
-            s3Location: {
-              s3Bucket: 'mmo-uploads',
-              s3Key: 'site-notice/close-up',
-              checksumSha256: 'abc123'
-            }
-          },
-          positionPhoto: {
-            uploadedFile: { filename: 'position.jpg' },
-            s3Location: {
-              s3Bucket: 'mmo-uploads',
-              s3Key: 'site-notice/position',
-              checksumSha256: 'def456'
-            }
-          }
-        }
-      ],
+      siteNoticeEvidence,
       ...overrides
     })
-  }
 
   beforeEach(() => {
     blobService.getPresignedUrl.mockResolvedValue(mockPresignedUrl)
