@@ -115,16 +115,6 @@ const runPostSubmitBackgroundWork = ({
       ({ policyLinks }) => !policyLinks?.length
     )
 
-  deleteOrphanedS3Objects(
-    db,
-    collectS3Locations(unlinkedMarinePlanPolicyDocuments)
-  ).catch((err) => {
-    request.logger.error(
-      structureErrorForECS(err),
-      `Failed to delete orphaned S3 objects for ${applicationReference}`
-    )
-  })
-
   // Each geo operation catches its own errors so a failure in one does
   // not block the other or the Dynamics queue insert — geo areas can be
   Promise.all([
@@ -147,7 +137,11 @@ const runPostSubmitBackgroundWork = ({
         structureErrorForECS(err),
         `Failed to update marine plan areas for ${applicationReference}`
       )
-    })
+    }),
+    deleteOrphanedS3Objects(
+      db,
+      collectS3Locations(unlinkedMarinePlanPolicyDocuments)
+    )
   ])
     .then(async () => {
       if (isDynamicsEnabled) {
