@@ -1,4 +1,4 @@
-import { format, isValid } from 'date-fns'
+import { format } from 'date-fns'
 import {
   SITE_NOTICE_PHOTO_TYPE,
   buildSiteNoticePhotoDownloadUrl
@@ -15,13 +15,7 @@ const formatDateDisplayed = (dateDisplayed) => {
     return null
   }
 
-  const date = toDate(dateDisplayed)
-
-  if (!isValid(date)) {
-    return null
-  }
-
-  return format(date, DATE_DISPLAYED_FORMAT)
+  return format(toDate(dateDisplayed), DATE_DISPLAYED_FORMAT)
 }
 
 const formatPhoto = (
