@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 import { config } from '../../../../../config.js'
 import { sendMarineLicenceToDynamics } from './send-marine-licence.js'
+import { PUBLIC_REGISTER_WITHHOLD_REASON } from '../../../../../marine-licences/constants/marine-licence.js'
 
 vi.mock('../../../../../config.js')
 vi.mock('@hapi/wreck')
@@ -272,40 +273,10 @@ describe('sendMarineLicenceToDynamics', () => {
     )
   })
 
-  it('should include publicRegister when present on the marine licence', async () => {
-    mockServer.db.collection().findOne.mockResolvedValue({
-      ...mockMarineLicence,
-      publicRegister: {
-        withholdConsent: 'yes',
-        withholdReason: 'commercialConfidentiality',
-        reason:
-          'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
-      }
-    })
-
-    await sendMarineLicenceToDynamics(
-      mockServer,
-      mockAccessToken,
-      mockQueueItem
-    )
-
-    expect(mockWreckPost.mock.calls[0][1].payload).toEqual(
-      expect.objectContaining({
-        publicRegister: {
-          withholdConsent: 'yes',
-          withholdReason: 'commercialConfidentiality',
-          nationalSecurityApproval: null,
-          reason:
-            'Ascisco subito adipisci statim aggredior virtus pariatur torqueo curatio.'
-        }
-      })
-    )
-  })
-
-  it('should include nationalSecurityApproval when withholding for national security', async () => {
+  it('should include the withholding information answers under publicRegister', async () => {
     const publicRegister = {
       withholdConsent: 'yes',
-      withholdReason: 'nationalSecurity',
+      withholdReason: PUBLIC_REGISTER_WITHHOLD_REASON.NATIONAL_SECURITY,
       nationalSecurityApproval: 'yes',
       reason: 'Location of the cable landing point'
     }
@@ -323,28 +294,6 @@ describe('sendMarineLicenceToDynamics', () => {
     expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual(
       publicRegister
     )
-  })
-
-  it('should include publicRegister with null reasons when withholdConsent is no', async () => {
-    mockServer.db.collection().findOne.mockResolvedValue({
-      ...mockMarineLicence,
-      publicRegister: {
-        withholdConsent: 'no'
-      }
-    })
-
-    await sendMarineLicenceToDynamics(
-      mockServer,
-      mockAccessToken,
-      mockQueueItem
-    )
-
-    expect(mockWreckPost.mock.calls[0][1].payload.publicRegister).toEqual({
-      withholdConsent: 'no',
-      withholdReason: null,
-      nationalSecurityApproval: null,
-      reason: null
-    })
   })
 
   it('should omit applicantOrganisationId when no organisation present', async () => {

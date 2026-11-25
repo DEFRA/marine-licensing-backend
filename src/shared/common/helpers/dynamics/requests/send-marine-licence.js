@@ -5,6 +5,7 @@ import { collectionMarineLicences } from '../../../constants/db-collections.js'
 import { MARINE_LICENCE_STATUS } from '../../../../../marine-licences/constants/marine-licence.js'
 import { buildCoordinatesCsvUrlById } from '../../../../../marine-licences/constants/coordinates-csv.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../../../../marine-licences/constants/water-framework-directive.js'
+import { buildPublicRegisterDynamicsPayload } from '../../../../../marine-licences/constants/public-register.js'
 import { toUrlSafeApplicationReference } from '../../../../../marine-licences/api/helpers/url-transform.js'
 import {
   logDynamicsSuccess,
@@ -73,13 +74,9 @@ export const sendMarineLicenceToDynamics = async (
     ),
     marinePlanAreas: marineLicence.marinePlanAreas ?? [],
     coastalOperationsAreas: marineLicence.coastalOperationsAreas ?? [],
-    publicRegister: {
-      withholdConsent: marineLicence.publicRegister?.withholdConsent ?? null,
-      withholdReason: marineLicence.publicRegister?.withholdReason ?? null,
-      nationalSecurityApproval:
-        marineLicence.publicRegister?.nationalSecurityApproval ?? null,
-      reason: marineLicence.publicRegister?.reason ?? null
-    },
+    publicRegister: buildPublicRegisterDynamicsPayload(
+      marineLicence.publicRegister
+    ),
     ...(marineLicence.organisation?.id
       ? { applicantOrganisationId: marineLicence.organisation.id }
       : {}),
