@@ -15,6 +15,7 @@ import {
   runNearestAreaFallback,
   shouldRunNearestAreaFallback
 } from './nearest-area-fallback.js'
+import { removeOrphanedMarinePlanPolicyDocuments } from './remove-orphaned-marine-plan-policy-documents.js'
 
 const discardMalformedMessage = 'Discarding malformed policy job message'
 
@@ -96,6 +97,13 @@ const computeAndStorePolicies = async (job, licence, db) => {
       },
       `Policy job complete for licence ${licenceId}: ${marinePlanPolicies.length} applicable policies`
     )
+    await removeOrphanedMarinePlanPolicyDocuments({
+      db,
+      _id: job._id,
+      policyJobId: job.policyJobId,
+      marinePlanPolicies,
+      logger
+    })
   } else {
     logDiscardedJob(
       logger,

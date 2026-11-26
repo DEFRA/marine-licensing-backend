@@ -34,8 +34,22 @@ full selection provided by the user.
 
 Both maps above are keyed by `policyCode`, and the set of applicable policies
 changes whenever sites change. A policy that is still applicable after a re-query
-keeps its response, `requiresDocumentation` and document links unchanged. When a
-re-query removes a policy, its document and links are removed.
+keeps its response, `requiresDocumentation` and document links unchanged.
+
+After the worker stores the new policies, links to policies no longer in the set
+are removed, using
+`src/marine-licences/api/helpers/marine-plan-policies/remove-orphaned-marine-plan-policy-documents.js`.
+Documents left with no links are removed and their S3 files deleted, unless another
+licence still references them. Documents still linked to a current policy, and
+uploads not yet linked, are kept. Responses are not changed. The write is
+conditioned on `marinePlanPolicyJobId` and on the documents being unchanged since
+they were read, so neither a site edit since the job started nor a concurrent
+upload or link save is overwritten; the stale links are then left in place.
+
+Each cleanup that changes the licence logs one `info` line with event action
+`mp-policies:documents-unlinked`, naming the removed policy codes and the deleted
+`documentId`s. The cleanup is best-effort: a failure is logged as an `error` and
+never fails or retries the policy job, which is already `READY`.
 
 ## When the applicant unticks supporting documents
 
