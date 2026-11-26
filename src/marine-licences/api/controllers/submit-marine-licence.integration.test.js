@@ -158,7 +158,9 @@ describe('POST /marine-licence/submit', async () => {
     expect(updatedMarineLicence.marinePlanPolicyDocuments).toEqual([
       mockLinkedMarinePlanPolicyDocument
     ])
-    expect(blobService.deleteFiles).toHaveBeenCalledWith([unlinkedS3Location])
+    await vi.waitFor(() =>
+      expect(blobService.deleteFiles).toHaveBeenCalledWith([unlinkedS3Location])
+    )
   })
 
   it('should return 404 if marine licence not found in database', async () => {

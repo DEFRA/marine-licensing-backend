@@ -1,7 +1,9 @@
 import {
   addMarinePlanPolicyDocumentSchema,
   marinePlanPolicyDocumentLinksSchema,
-  marinePlanPolicyDocumentTypeSchema
+  marinePlanPolicyDocumentTypeSchema,
+  marinePlanPolicyResponseSchema,
+  POLICY_CONSIDERATION_MIN_LENGTH
 } from './marine-plan-policy.js'
 import { MPP_DOCUMENT_LOCATION_MAX_LENGTH } from '../constants/marine-plan-policy-document.js'
 import {
@@ -188,5 +190,40 @@ describe('marinePlanPolicyDocumentLinksSchema', () => {
       })
     )
     expect(result.error.message).toContain('DOCUMENT_LOCATION_MAX_LENGTH')
+  })
+})
+
+describe('marinePlanPolicyResponseSchema', () => {
+  const validResponse = 'x'.repeat(POLICY_CONSIDERATION_MIN_LENGTH)
+
+  test('defaults confirmDocumentDeletion to false when it is not provided', () => {
+    const result = marinePlanPolicyResponseSchema.validate({
+      id: marineLicenceId,
+      policyCode: 'E-AGG-3',
+      response: validResponse
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.value.confirmDocumentDeletion).toBe(false)
+  })
+
+  test('accepts confirmDocumentDeletion when set to a boolean', () => {
+    const result = marinePlanPolicyResponseSchema.validate({
+      id: marineLicenceId,
+      policyCode: 'E-AGG-3',
+      response: validResponse,
+      confirmDocumentDeletion: true
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.value.confirmDocumentDeletion).toBe(true)
+  })
+
+  test('rejects a non-boolean confirmDocumentDeletion', () => {
+    const result = marinePlanPolicyResponseSchema.validate({
+      id: marineLicenceId,
+      policyCode: 'E-AGG-3',
+      response: validResponse,
+      confirmDocumentDeletion: 'maybe'
+    })
+    expect(result.error.message).toContain('CONFIRM_DOCUMENT_DELETION_INVALID')
   })
 })

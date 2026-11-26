@@ -37,6 +37,19 @@ changes whenever sites change. A policy that is still applicable after a re-quer
 keeps its response, `requiresDocumentation` and document links unchanged. When a
 re-query removes a policy, its document and links are removed.
 
+## When the applicant unticks supporting documents
+
+Saving a response with `requiresDocumentation: false` removes that policy's links
+in the same write, using the helper
+`src/marine-licences/api/helpers/marine-plan-policies/unlink-marine-plan-policy-documents.js`.
+Documents still linked to another policy are kept.
+
+If a document would be left with no links, nothing is written unless the payload
+has `confirmDocumentDeletion: true`. Without it, the response is
+`value: { confirmationRequired: true, orphanedDocuments: [{ documentId, filename }] }`
+for the frontend's confirmation page. With it, the orphaned documents are removed
+and their S3 files deleted, unless another licence still references them.
+
 ## Derived on read
 
 `GET /marine-licence/{id}` returns `marinePlanPolicySupportingDocuments`, built in
