@@ -10,7 +10,10 @@ import {
   DYNAMICS_REQUEST_ACTIONS,
   DYNAMICS_QUEUE_TYPES
 } from '../../constants/request-queue.js'
-import { mockMasConsultationResponseQueueItem } from '../../../../marine-licences/api/helpers/mas/test-fixtures.js'
+import {
+  mockMasConsultationResponseQueueItem,
+  mockMasSiteNoticeEvidenceQueueItem
+} from '../../../../marine-licences/api/helpers/mas/test-fixtures.js'
 
 vi.mock('../../../../config.js')
 vi.mock('@hapi/wreck')
@@ -106,6 +109,26 @@ describe('Dynamics Client', () => {
         expect.objectContaining({
           payload: expect.objectContaining({
             action: DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
+          })
+        })
+      )
+      expect(mockServer.db.collection().findOne).not.toHaveBeenCalled()
+    })
+
+    it('should send correctly call function to send site notice evidence', async () => {
+      await sendToDynamics(
+        mockServer,
+        mockAccessToken,
+        mockMasSiteNoticeEvidenceQueueItem
+      )
+
+      expect(mockWreckPost).toHaveBeenCalledWith(
+        'https://localhost/marine-licences/update',
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            action: DYNAMICS_REQUEST_ACTIONS.SEND_SITE_NOTICE_EVIDENCE,
+            locationCount: 1,
+            locations: mockMasSiteNoticeEvidenceQueueItem.locations
           })
         })
       )

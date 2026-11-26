@@ -123,6 +123,30 @@ export const mockMasConsultationResponseQueueItem = {
   response: 'No objection'
 }
 
+export const mockMasSiteNoticeEvidenceQueueItem = {
+  applicationReferenceNumber: mockMasApplicationReference,
+  action: DYNAMICS_REQUEST_ACTIONS.SEND_SITE_NOTICE_EVIDENCE,
+  type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+  locationCount: 1,
+  locations: [
+    {
+      locationNumber: 1,
+      locationName: 'North pier',
+      dateDisplayed: '18 October 2026',
+      closeUpPhoto: {
+        filename: 'close-up.jpg',
+        downloadUrl:
+          'http://localhost:3001/public/marine-licence/507f1f77bcf86cd799439011/site-notice-evidence/1/close-up/download-url'
+      },
+      positionPhoto: {
+        filename: 'position.jpg',
+        downloadUrl:
+          'http://localhost:3001/public/marine-licence/507f1f77bcf86cd799439011/site-notice-evidence/1/position/download-url'
+      }
+    }
+  ]
+}
+
 export const mockMasResubmitSiteNoticeEvidenceMessageBody = {
   applicationReference: mockMasApplicationReference,
   taskType: MAS_TASK_TYPE.PUBLIC_NOTICE_EVIDENCE,

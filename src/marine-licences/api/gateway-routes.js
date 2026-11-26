@@ -1,6 +1,8 @@
 import { generateCoordinatesCsvPublicController } from './controllers/generate-coordinates-csv-public.js'
 import { getMarineLicenceGatewayController } from './controllers/get-marine-licence-gateway.js'
+import { getSiteNoticePhotoDownloadUrlController } from './controllers/get-site-notice-photo-download-url.js'
 import { getWfdDocumentDownloadUrlController } from './controllers/get-wfd-document-download-url.js'
+import { buildSiteNoticePhotoDownloadPath } from '../constants/site-notice-evidence.js'
 import { buildWfdDocumentDownloadPathById } from '../constants/water-framework-directive.js'
 
 /**
@@ -22,5 +24,14 @@ export const marineLicenceGatewayRoutes = [
     method: 'GET',
     path: buildWfdDocumentDownloadPathById('{id}'),
     ...getWfdDocumentDownloadUrlController
+  },
+  {
+    method: 'GET',
+    path: buildSiteNoticePhotoDownloadPath(
+      '{id}',
+      '{locationNumber}',
+      '{photoType}'
+    ),
+    ...getSiteNoticePhotoDownloadUrlController
   }
 ]

@@ -32,8 +32,12 @@ const queueName = 'marine_licensing_d365_marine_licence'
 const dlqName = 'marine_licensing_d365_marine_licence-deadletter'
 const applicationReference = 'MLA/2026/00001'
 const receiptHandle = 'receipt-1'
-const { SUBMIT, WITHDRAW, SEND_CONSULTATION_RESPONSE } =
-  DYNAMICS_REQUEST_ACTIONS
+const {
+  SUBMIT,
+  WITHDRAW,
+  SEND_CONSULTATION_RESPONSE,
+  SEND_SITE_NOTICE_EVIDENCE
+} = DYNAMICS_REQUEST_ACTIONS
 const organisationId = '11111111-1111-1111-1111-111111111111'
 const otherOrganisationId = '22222222-2222-2222-2222-222222222222'
 const consultationResponseBody = {
@@ -44,6 +48,23 @@ const consultationResponseBody = {
   response: 'No objection'
 }
 const consultationOutboundField = `dynamicsOutbound.${SEND_CONSULTATION_RESPONSE}:${organisationId}`
+const siteNoticeLocations = [
+  {
+    locationNumber: 1,
+    locationName: 'North pier',
+    dateDisplayed: '18 October 2026',
+    closeUpPhoto: null,
+    positionPhoto: null
+  }
+]
+const siteNoticeEvidenceBody = {
+  applicationReference,
+  action: SEND_SITE_NOTICE_EVIDENCE,
+  type: 'MARINE_LICENCE',
+  locationCount: 1,
+  locations: siteNoticeLocations
+}
+const siteNoticeOutboundField = `dynamicsOutbound.${SEND_SITE_NOTICE_EVIDENCE}`
 
 const buildMessage = (
   body = { applicationReference, action: SUBMIT, type: 'MARINE_LICENCE' },
@@ -102,6 +123,10 @@ describe('marine licence dynamics worker-processor', () => {
       [
         'a consultation response without a response',
         { ...consultationResponseBody, response: ' ' }
+      ],
+      [
+        'site notice evidence without locations',
+        { ...siteNoticeEvidenceBody, locations: undefined }
       ]
     ])('should discard a message with %s', async (_, body) => {
       const { server, mockFindOne } = setupMocks(null)
@@ -233,6 +258,28 @@ describe('marine licence dynamics worker-processor', () => {
           [consultationOutboundField]: { $ne: 'sent' }
         },
         { $set: { [consultationOutboundField]: 'sent' } }
+      )
+      expect(deleteDynamicsJob).toHaveBeenCalledWith(queueName, receiptHandle)
+    })
+
+    it('should send site notice evidence with locations and flag it sent', async () => {
+      const { server, mockUpdateOne } = setupMocks({})
+
+      await processDynamicsJob(server, buildMessage(siteNoticeEvidenceBody))
+
+      expect(sendToDynamics).toHaveBeenCalledWith(server, 'token', {
+        applicationReferenceNumber: applicationReference,
+        action: SEND_SITE_NOTICE_EVIDENCE,
+        type: DYNAMICS_QUEUE_TYPES.MARINE_LICENCE,
+        locationCount: 1,
+        locations: siteNoticeLocations
+      })
+      expect(mockUpdateOne).toHaveBeenCalledWith(
+        {
+          applicationReference,
+          [siteNoticeOutboundField]: { $ne: 'sent' }
+        },
+        { $set: { [siteNoticeOutboundField]: 'sent' } }
       )
       expect(deleteDynamicsJob).toHaveBeenCalledWith(queueName, receiptHandle)
     })
