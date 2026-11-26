@@ -91,6 +91,7 @@ export const MARINE_PLAN_POLICY_EVENT_ACTION = {
   JOB_STALE: 'mp-policies:job-stale',
   JOB_FAILED: 'mp-policies:job-failed',
   JOB_COMPLETE: 'mp-policies:job-complete',
+  DOCUMENTS_UNLINKED: 'mp-policies:documents-unlinked',
   ARCGIS_QUERY: 'mp-policies:arcgis-query',
   ARCGIS_NONSPATIAL_QUERY: 'mp-policies:arcgis-nonspatial-query',
   NEAREST_AREA_FALLBACK: 'mp-policies:nearest-area-fallback',

@@ -6,6 +6,8 @@ import { getPoliciesContent } from './policy-content-client.js'
 import { computeWordingRef } from './wording-snapshots.js'
 import { deletePolicyJob } from './sqs-client.js'
 import { runNearestAreaFallback } from './nearest-area-fallback.js'
+import { blobService } from '../../../../shared/services/data-service/blob-service.js'
+import { mockLinkedMarinePlanPolicyDocument } from '../../../../../tests/test.fixture.js'
 
 vi.mock('./arcgis-client.js', () => ({
   queryArcGISPolicies: vi.fn(),
@@ -16,6 +18,11 @@ vi.mock('./policy-content-client.js', () => ({
 }))
 vi.mock('./sqs-client.js', () => ({
   deletePolicyJob: vi.fn()
+}))
+vi.mock('../../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    deleteFiles: vi.fn()
+  }
 }))
 // Keeps the real trigger predicate (shouldRunNearestAreaFallback) so the
 // wiring test exercises it against mocked ArcGIS results; only the
@@ -57,7 +64,8 @@ describe('policies-worker-processor', () => {
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
       findOne: mockFindOne,
       updateOne: mockUpdateOne,
-      bulkWrite: mockBulkWrite
+      bulkWrite: mockBulkWrite,
+      find: () => ({ toArray: async () => [] })
     }))
     const server = {
       db: mockMongo,
@@ -180,6 +188,33 @@ describe('policies-worker-processor', () => {
       await processPolicyJob(server, buildMessage())
 
       expect(deletePolicyJob).toHaveBeenCalledWith(queueName, receiptHandle)
+    })
+
+    it('should remove documents left with no links to the new policies', async () => {
+      const marinePlanPolicyDocuments = [mockLinkedMarinePlanPolicyDocument]
+      const { server, mockUpdateOne } = setupMocks(
+        buildLicence({ marinePlanPolicyDocuments })
+      )
+      vi.mocked(queryArcGISPolicies).mockResolvedValue([
+        { policyCode: 'S-FISH-1', sector: 'Fishing' }
+      ])
+      vi.mocked(getPoliciesContent).mockResolvedValue([])
+
+      await processPolicyJob(server, buildMessage())
+
+      expect(mockUpdateOne).toHaveBeenNthCalledWith(
+        3,
+        {
+          _id: ObjectId.createFromHexString(licenceId),
+          marinePlanPolicyJobId: policyJobId,
+          marinePlanPolicyDocuments
+        },
+        { $set: { marinePlanPolicyDocuments: [] } }
+      )
+      const { s3Bucket, s3Key } = mockLinkedMarinePlanPolicyDocument.s3Location
+      expect(blobService.deleteFiles).toHaveBeenCalledWith([
+        { s3Bucket, s3Key }
+      ])
     })
 
     it('should replace a zero-policy result with the nearest-area fallback policies', async () => {
