@@ -23,30 +23,54 @@ const markedFailedReason = 'No automatic retry; the licence is marked failed'
 const supportedActions = new Set([
   DYNAMICS_REQUEST_ACTIONS.SUBMIT,
   DYNAMICS_REQUEST_ACTIONS.WITHDRAW,
-  DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
+  DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE,
+  DYNAMICS_REQUEST_ACTIONS.SEND_SITE_NOTICE_EVIDENCE
 ])
 
 const isConsultationResponse = (action) =>
   action === DYNAMICS_REQUEST_ACTIONS.SEND_CONSULTATION_RESPONSE
 
+const isSiteNoticeEvidence = (action) =>
+  action === DYNAMICS_REQUEST_ACTIONS.SEND_SITE_NOTICE_EVIDENCE
+
 const parseDynamicsJobBody = (message, logger) =>
   parseMessageBody(message, logger, discardMalformedMessage, (body) => {
-    const { applicationReference, action, organisationId, response } = body
+    const {
+      applicationReference,
+      action,
+      organisationId,
+      response,
+      locationCount,
+      locations
+    } = body
     if (
       !isNonEmptyString(applicationReference) ||
       !supportedActions.has(action)
     ) {
       throw new Error('applicationReference and a valid action are required')
     }
-    if (!isConsultationResponse(action)) {
-      return { applicationReference, action }
+    if (isConsultationResponse(action)) {
+      if (!isNonEmptyString(organisationId) || !isNonEmptyString(response)) {
+        throw new Error(
+          'organisationId and response are required for a consultation response'
+        )
+      }
+      return { applicationReference, action, organisationId, response }
     }
-    if (!isNonEmptyString(organisationId) || !isNonEmptyString(response)) {
-      throw new Error(
-        'organisationId and response are required for a consultation response'
-      )
+    if (isSiteNoticeEvidence(action)) {
+      if (!Array.isArray(locations)) {
+        throw new TypeError(
+          'locations are required for send-site-notice-evidence'
+        )
+      }
+      return {
+        applicationReference,
+        action,
+        locationCount: locationCount ?? locations.length,
+        locations
+      }
     }
-    return { applicationReference, action, organisationId, response }
+    return { applicationReference, action }
   })
 
 // Each consultee responds independently, so consultation responses are

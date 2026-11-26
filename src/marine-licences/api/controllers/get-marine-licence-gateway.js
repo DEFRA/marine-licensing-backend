@@ -9,6 +9,7 @@ import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../constants/wat
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { formatPreferredDates } from '../helpers/format-preferred-dates.js'
 import { formatSitesForGateway } from '../helpers/format-sites-for-gateway.js'
+import { formatSiteNoticeEvidenceForGateway } from '../helpers/format-site-notice-evidence-for-gateway.js'
 import { formatMarinePlanPoliciesForGateway } from '../helpers/format-marine-plan-policies-for-gateway.js'
 import { filterCurrentPolicyResponses } from '../helpers/marine-plan-policies/filter-current-policy-responses.js'
 import { hydrateMarinePlanPolicies } from '../helpers/marine-plan-policies/hydrate-marine-plan-policies.js'
@@ -26,7 +27,7 @@ export const getMarineLicenceGatewayController = {
     tags: ['api'],
     description: 'Get a submitted marine licence for MAS',
     notes:
-      'Returns the project, site, Water Framework Directive and marine plan policy details of any marine licence that is not a draft. Site file and construction drawing URLs are presigned and expire after 4 hours. Most fields may be null when the applicant did not provide them.',
+      "Returns the project, site, site notice evidence, Water Framework Directive and marine plan policy details of any marine licence that is not a draft. Site file and construction drawing URLs are presigned and expire after 4 hours. Site notice photo downloadUrl values are this API's site notice photo download URL routes; call them to get a short-lived link to the photograph. Most fields may be null when the applicant did not provide them.",
     validate: {
       params: getMarineLicence
     },
@@ -69,6 +70,7 @@ export const getMarineLicenceGatewayController = {
           publicConsultation: 1,
           waterFrameworkDirective: 1,
           siteDetails: 1,
+          siteNoticeEvidence: 1,
           marinePlanPolicies: 1,
           marinePlanPolicyResponses: 1,
           status: 1,
@@ -85,7 +87,13 @@ export const getMarineLicenceGatewayController = {
       throw Boom.forbidden(notAuthorisedMessage)
     }
 
+    const backendGatewayUrl = config.get('backendGatewayUrl')
     const sites = await formatSitesForGateway(doc.siteDetails)
+    const siteNoticeEvidence = formatSiteNoticeEvidenceForGateway(
+      doc.siteNoticeEvidence,
+      backendGatewayUrl,
+      id
+    )
     await hydrateMarinePlanPolicies(request.db, doc)
     const { responses: marinePlanPolicyResponses } =
       filterCurrentPolicyResponses(
@@ -109,10 +117,11 @@ export const getMarineLicenceGatewayController = {
         publicConsultation: orNull(doc.publicConsultation),
         waterFrameworkDirective: buildWaterFrameworkDirectiveDynamicsPayload(
           doc.waterFrameworkDirective,
-          config.get('backendGatewayUrl'),
+          backendGatewayUrl,
           id
         ),
         sites,
+        siteNoticeEvidence,
         marinePlanPolicies,
         withdrawnAt: orNull(doc.withdrawnAt)
       })
