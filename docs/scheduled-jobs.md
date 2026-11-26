@@ -87,18 +87,25 @@ its own guard; the scheduler does not provide one.
 Everything lives in the `scheduler` config, `src/config/scheduler.js`, which is
 canonical — the values below are a snapshot for orientation:
 
-| Key                               | Default      | Environment variable                  |
-| --------------------------------- | ------------ | ------------------------------------- |
-| `isEnabled`                       | `true`       | `SCHEDULER_ENABLED`                   |
-| `jobs.heartbeat.isEnabled`        | `true`       | `SCHEDULER_HEARTBEAT_ENABLED`         |
-| `jobs.heartbeat.schedule`         | `15 0 * * *` | `SCHEDULER_HEARTBEAT_SCHEDULE`        |
-| `jobs.exemption-status.isEnabled` | `true`       | `SCHEDULER_EXEMPTION_STATUS_ENABLED`  |
-| `jobs.exemption-status.schedule`  | `5 0 * * *`  | `SCHEDULER_EXEMPTION_STATUS_SCHEDULE` |
+| Key                               | Default                             | Environment variable                  |
+| --------------------------------- | ----------------------------------- | ------------------------------------- |
+| `isEnabled`                       | `true`                              | `SCHEDULER_ENABLED`                   |
+| `jobs.heartbeat.isEnabled`        | `true`                              | `SCHEDULER_HEARTBEAT_ENABLED`         |
+| `jobs.heartbeat.schedule`         | `15 0 * * *`                        | `SCHEDULER_HEARTBEAT_SCHEDULE`        |
+| `jobs.exemption-status.isEnabled` | `true`                              | `SCHEDULER_EXEMPTION_STATUS_ENABLED`  |
+| `jobs.exemption-status.schedule`  | `5 0 * * *`                         | `SCHEDULER_EXEMPTION_STATUS_SCHEDULE` |
+| `jobs.dynamics-warmup.isEnabled`  | `true`                              | `SCHEDULER_DYNAMICS_WARMUP_ENABLED`   |
+| `jobs.dynamics-warmup.schedule`   | `0 * * * *`                         | `SCHEDULER_DYNAMICS_WARMUP_SCHEDULE`  |
+| `jobs.dynamics-warmup.path`       | `/contacts?$select=fullname&$top=1` | `SCHEDULER_DYNAMICS_WARMUP_PATH`      |
 
 `isEnabled` is the master switch: when false nothing is scheduled, but every job
-body stays invokable via its server method. Each job adds its own
+body stays invokable via its server method. Each job adds at least its own
 `isEnabled`/`schedule` pair, so a job can be switched off without touching the
 rest.
+
+The Dynamics warm-up job keeps Dataverse's contact cache warm on a low-traffic
+service. It skips when `DYNAMICS_ENABLED` is false, and its completion message
+carries the token and request timings.
 
 Schedules are validated at startup for syntax only. Any cadence is allowed — the
 scheduler is shared infrastructure and does not police how often a job runs.
@@ -172,4 +179,5 @@ enabled, so it can be run without waiting on or manipulating timers:
 ```js
 await server.methods.runSchedulerHeartbeat()
 await server.methods.runSchedulerExemptionStatus()
+await server.methods.runSchedulerDynamicsWarmup()
 ```
