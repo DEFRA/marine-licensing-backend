@@ -225,10 +225,14 @@ describe('swagger plugin', () => {
         'The marine licence is a draft'
       )
       expect(spec.definitions.MarineLicence.properties).toHaveProperty('sites')
+      expect(spec.definitions.MarineLicence.properties).toHaveProperty(
+        'siteNoticeEvidence'
+      )
       expect(spec.definitions.Site.properties).toHaveProperty(
         'constructionDrawings'
       )
       expect(spec.definitions).toHaveProperty('ConstructionDrawing')
+      expect(spec.definitions).toHaveProperty('SiteNoticeEvidence')
     })
 
     test('documents the MAS withdrawal time as a date-time', async () => {
@@ -275,6 +279,28 @@ describe('swagger plugin', () => {
         '500'
       ])
       expect(spec.definitions).toHaveProperty('WfdDocumentDownloadUrlResponse')
+    })
+
+    test('documents the site notice photo download URL route', async () => {
+      const spec = await getSpec()
+      const operation =
+        spec.paths[
+          '/public/marine-licence/{id}/site-notice-evidence/{locationNumber}/{photoType}/download-url'
+        ].get
+
+      expect(operation.summary).toBe(
+        'Get a download URL for a marine licence site notice photograph'
+      )
+      expect(Object.keys(operation.responses).sort()).toEqual([
+        '200',
+        '400',
+        '403',
+        '404',
+        '500'
+      ])
+      expect(spec.definitions).toHaveProperty(
+        'SiteNoticePhotoDownloadUrlResponse'
+      )
     })
 
     test('documents the coordinates download route as a ZIP file', async () => {

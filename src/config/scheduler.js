@@ -32,6 +32,8 @@
 // backward-looking (see the scheduled job contract), so a single missed fire is
 // normally picked up by the next run. If that is not acceptable for a particular
 // job, give it an hour outside 01:00-01:59 — 00:05 is a safe default.
+const CRON_EXPRESSION = 'cron-expression'
+
 export const schedulerSchema = {
   isEnabled: {
     doc: 'Master switch for scheduling. When false no job is scheduled, but every job body remains invokable via its server method.',
@@ -49,7 +51,7 @@ export const schedulerSchema = {
       },
       schedule: {
         doc: "Cron schedule for the heartbeat job, interpreted in Europe/London. Runs after the exemption status job so its breakdown reflects that day's transitions rather than racing them. See the cron format reference and the British Summer Time note at the top of this file.",
-        format: 'cron-expression',
+        format: CRON_EXPRESSION,
         default: '15 0 * * *',
         env: 'SCHEDULER_HEARTBEAT_SCHEDULE'
       }
@@ -63,9 +65,29 @@ export const schedulerSchema = {
       },
       schedule: {
         doc: 'Cron schedule for the exemption status job, interpreted in Europe/London. See the cron format reference and the British Summer Time note at the top of this file.',
-        format: 'cron-expression',
+        format: CRON_EXPRESSION,
         default: '5 0 * * *',
         env: 'SCHEDULER_EXEMPTION_STATUS_SCHEDULE'
+      }
+    },
+    'dynamics-warmup': {
+      isEnabled: {
+        doc: 'Enable the hourly Dynamics warm-up job',
+        format: Boolean,
+        default: true,
+        env: 'SCHEDULER_DYNAMICS_WARMUP_ENABLED'
+      },
+      schedule: {
+        doc: "Cron schedule for the Dynamics warm-up job, interpreted in Europe/London. Runs hourly to keep Dataverse's contact cache warm. See the cron format reference and the British Summer Time note at the top of this file.",
+        format: CRON_EXPRESSION,
+        default: '0 * * * *',
+        env: 'SCHEDULER_DYNAMICS_WARMUP_SCHEDULE'
+      },
+      path: {
+        doc: 'Path appended to DYNAMICS_API_CONTACT_DETAILS_BASE_URL: the lightweight Dataverse request used for warm-up',
+        format: String,
+        default: '/contacts?$select=fullname&$top=1',
+        env: 'SCHEDULER_DYNAMICS_WARMUP_PATH'
       }
     }
   }

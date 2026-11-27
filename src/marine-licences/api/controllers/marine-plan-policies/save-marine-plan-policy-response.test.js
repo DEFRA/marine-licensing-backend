@@ -4,10 +4,17 @@ import { saveMarinePlanPolicyResponseController } from './save-marine-plan-polic
 import {
   POLICY_CONSIDERATION_MAX_LENGTH,
   POLICY_CONSIDERATION_MIN_LENGTH
-} from '../../models/marine-plan-policy.js'
+} from '../../../models/marine-plan-policy.js'
+import { blobService } from '../../../../shared/services/data-service/blob-service.js'
+import { mockLinkedMarinePlanPolicyDocument } from '../../../../../tests/test.fixture.js'
 
-const validResponse =
-  'Our activity complies with this policy because it avoids sensitive habitats.'
+vi.mock('../../../../shared/services/data-service/blob-service.js', () => ({
+  blobService: {
+    deleteFiles: vi.fn()
+  }
+}))
+
+const validResponse = 'x'.repeat(POLICY_CONSIDERATION_MIN_LENGTH)
 
 describe('PATCH /marine-licence/marine-plan-policy-response', () => {
   const payloadValidator =
@@ -25,13 +32,25 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
     ...overrides
   })
 
-  const setupMocks = (result) => {
+  const linkedDocument = {
+    ...mockLinkedMarinePlanPolicyDocument,
+    policyLinks: [{ policyCode: 'S-FISH-1', location: 'Section 4.2' }]
+  }
+
+  const licenceWithLinkedDocument = {
+    marinePlanPolicyDocuments: [linkedDocument]
+  }
+
+  const setupMocks = (result = { matchedCount: 1 }, marineLicence = null) => {
     const { mockMongo } = global
     const mockUpdateOne = vi.fn().mockResolvedValue(result)
+    const mockFindOne = vi.fn().mockResolvedValue(marineLicence)
     vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
-      updateOne: mockUpdateOne
+      updateOne: mockUpdateOne,
+      findOne: mockFindOne,
+      find: vi.fn().mockReturnValue({ toArray: vi.fn().mockResolvedValue([]) })
     }))
-    return mockUpdateOne
+    return { mockUpdateOne, mockFindOne }
   }
 
   describe('validation', () => {
@@ -109,13 +128,29 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
       )
       expect(result.error.message).toContain('REQUIRES_DOCUMENTATION_INVALID')
     })
+
+    it('should default confirmDocumentDeletion to false when not provided', () => {
+      const result = payloadValidator.validate(
+        buildValidationPayload({ response: validResponse })
+      )
+      expect(result.value.confirmDocumentDeletion).toBe(false)
+    })
+
+    it('should reject a non-boolean confirmDocumentDeletion', () => {
+      const result = payloadValidator.validate(
+        buildValidationPayload({ confirmDocumentDeletion: 'maybe' })
+      )
+      expect(result.error.message).toContain(
+        'CONFIRM_DOCUMENT_DELETION_INVALID'
+      )
+    })
   })
 
   describe('handler', () => {
     it('should save a policy response using a single update operation', async () => {
       const { mockMongo, mockHandler } = global
       const mockPayload = buildPayload({ requiresDocumentation: true })
-      const mockUpdateOne = setupMocks({ matchedCount: 1 })
+      const { mockUpdateOne } = setupMocks({ matchedCount: 1 })
 
       await saveMarinePlanPolicyResponseController.handler(
         { db: mockMongo, payload: mockPayload },
@@ -162,13 +197,16 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
       expect(mockHandler.response).toHaveBeenCalledWith({ message: 'success' })
     })
 
-    it('should throw 404 when the marine licence does not exist', async () => {
+    it('should throw 404 when the update matches no marine licence', async () => {
       const { mockMongo, mockHandler } = global
       setupMocks({ matchedCount: 0 })
 
       await expect(() =>
         saveMarinePlanPolicyResponseController.handler(
-          { db: mockMongo, payload: buildPayload() },
+          {
+            db: mockMongo,
+            payload: buildPayload({ requiresDocumentation: true })
+          },
           mockHandler
         )
       ).rejects.toThrow('Marine licence not found')
@@ -176,19 +214,40 @@ describe('PATCH /marine-licence/marine-plan-policy-response', () => {
 
     it('should throw 500 when the database operation fails', async () => {
       const { mockMongo, mockHandler } = global
-      const mockUpdateOne = vi
-        .fn()
-        .mockRejectedValueOnce(new Error('Database exploded'))
-      vi.spyOn(mockMongo, 'collection').mockImplementation(() => ({
-        updateOne: mockUpdateOne
-      }))
+      const { mockUpdateOne } = setupMocks()
+      mockUpdateOne.mockRejectedValueOnce(new Error('Database exploded'))
 
       await expect(() =>
         saveMarinePlanPolicyResponseController.handler(
-          { db: mockMongo, payload: buildPayload() },
+          {
+            db: mockMongo,
+            payload: buildPayload({ requiresDocumentation: true })
+          },
           mockHandler
         )
       ).rejects.toThrow('Error saving policy response: Database exploded')
+    })
+
+    it('does not read or rewrite documents when requiresDocumentation is true', async () => {
+      const { mockMongo, mockHandler } = global
+      const { mockUpdateOne, mockFindOne } = setupMocks(
+        undefined,
+        licenceWithLinkedDocument
+      )
+
+      await saveMarinePlanPolicyResponseController.handler(
+        {
+          db: mockMongo,
+          payload: buildPayload({ requiresDocumentation: true })
+        },
+        mockHandler
+      )
+
+      expect(mockFindOne).not.toHaveBeenCalled()
+      expect(mockUpdateOne.mock.calls[0][1][0].$set).not.toHaveProperty(
+        'marinePlanPolicyDocuments'
+      )
+      expect(blobService.deleteFiles).not.toHaveBeenCalled()
     })
   })
 })

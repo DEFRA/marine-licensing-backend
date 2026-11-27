@@ -28,7 +28,7 @@ import { updateWaterFrameworkDirectiveController } from './controllers/update-wa
 import { updateFeeEstimateController } from './controllers/update-fee-estimate.js'
 import { updateHarbourAuthorityController } from './controllers/update-harbour-authority.js'
 import { calculateMarinePlanPoliciesController } from './controllers/calculate-marine-plan-policies.js'
-import { saveMarinePlanPolicyResponseController } from './controllers/save-marine-plan-policy-response.js'
+import { saveMarinePlanPolicyResponseController } from './controllers/marine-plan-policies/save-marine-plan-policy-response.js'
 import { addMarinePlanPolicyDocumentController } from './controllers/marine-plan-policies/add-marine-plan-policy-document.js'
 import { updateMarinePlanPolicyDocumentTypeController } from './controllers/marine-plan-policies/update-marine-plan-policy-document-type.js'
 import { updateMarinePlanPolicyDocumentLinksController } from './controllers/marine-plan-policies/update-marine-plan-policy-document-links.js'

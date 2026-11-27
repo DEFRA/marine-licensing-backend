@@ -26,7 +26,7 @@ const escapeODataString = (str) => {
   return str.trim().replaceAll("'", "''")
 }
 
-const dynamicsHeaders = (accessToken) => ({
+export const dynamicsHeaders = (accessToken) => ({
   Authorization: `Bearer ${accessToken}`,
   Accept: 'application/json',
   'OData-Version': '4.0',

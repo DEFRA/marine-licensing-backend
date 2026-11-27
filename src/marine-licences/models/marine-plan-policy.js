@@ -38,6 +38,9 @@ export const marinePlanPolicyResponseSchema = joi
       }),
     requiresDocumentation: joi.boolean().default(false).messages({
       'boolean.base': 'REQUIRES_DOCUMENTATION_INVALID'
+    }),
+    confirmDocumentDeletion: joi.boolean().default(false).messages({
+      'boolean.base': 'CONFIRM_DOCUMENT_DELETION_INVALID'
     })
   })
   .append(marineLicenceId)
