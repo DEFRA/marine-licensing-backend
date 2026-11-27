@@ -235,7 +235,8 @@ export const mockRejectedMarineLicenceFields = {
   marinePlanPoliciesCount: mockMarinePlanPolicies.length,
   marinePlanPolicyResponses: mockMarinePlanPolicyResponses,
   marinePlanPolicyResponseCount: Object.keys(mockMarinePlanPolicyResponses)
-    .length
+    .length,
+  dynamicsOutbound: { submit: 'sent' }
 }
 
 export const mockRedactions = {
