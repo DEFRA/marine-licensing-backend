@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { transformExemptionToEmpRequest } from './exemption-to-emp.js'
 import { testExemptions } from './test-exemptions.fixture.js'
 import { EXEMPTION_STATUS } from '../../../../../exemptions/constants/exemption.js'
+import { closeToCoordinates } from '../../../../../../tests/test-helpers.js'
 
 describe('transformExemptionToEmpRequest', () => {
   test.each(testExemptions)(
@@ -10,7 +11,15 @@ describe('transformExemptionToEmpRequest', () => {
       const result = transformExemptionToEmpRequest({
         exemption: dbRecord
       })
-      expect(result).toEqual(expectedFeatures)
+      expect(result).toEqual(
+        expectedFeatures.map((feature) => ({
+          ...feature,
+          geometry: {
+            ...feature.geometry,
+            rings: closeToCoordinates(feature.geometry.rings)
+          }
+        }))
+      )
     }
   )
 
