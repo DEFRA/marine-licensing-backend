@@ -6,6 +6,7 @@ import { collectionMarineLicences } from '../../../shared/common/constants/db-co
 import { notAuthorisedMessage } from '../../../shared/constants/errors.js'
 import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../constants/water-framework-directive.js'
+import { buildPublicRegisterDynamicsPayload } from '../helpers/build-public-register-dynamics-payload.js'
 import { getMarineLicence } from '../../models/get-marine-licence.js'
 import { formatPreferredDates } from '../helpers/format-preferred-dates.js'
 import { formatSitesForGateway } from '../helpers/format-sites-for-gateway.js'
@@ -20,6 +21,9 @@ import { marineLicenceGatewayResponseSchema } from '../../models/gateway-respons
 // Keeps the nullable pass-through fields below out of the handler's cyclomatic
 // complexity, which the response body would otherwise breach as it grows.
 const orNull = (value) => value ?? null
+
+const publicRegisterOrNull = (publicRegister) =>
+  publicRegister ? buildPublicRegisterDynamicsPayload(publicRegister) : null
 
 export const getMarineLicenceGatewayController = {
   options: {
@@ -110,7 +114,7 @@ export const getMarineLicenceGatewayController = {
         projectName: orNull(doc.projectName),
         projectBackground: orNull(doc.projectBackground),
         preferredLicenceDates: formatPreferredDates(doc.preferredDates),
-        publicRegister: orNull(doc.publicRegister),
+        publicRegister: publicRegisterOrNull(doc.publicRegister),
         specialLegalPowers: orNull(doc.specialLegalPowers),
         harbourAuthority: orNull(doc.harbourAuthority),
         otherAuthorities: orNull(doc.otherAuthorities),

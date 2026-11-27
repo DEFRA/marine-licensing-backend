@@ -1,6 +1,9 @@
 import { getMarineLicenceGatewayController } from './get-marine-licence-gateway.js'
 import { vi } from 'vitest'
-import { MARINE_LICENCE_STATUS } from '../../constants/marine-licence.js'
+import {
+  MARINE_LICENCE_STATUS,
+  PUBLIC_REGISTER_WITHHOLD_REASON
+} from '../../constants/marine-licence.js'
 import { preferredDates } from '../../models/test-fixtures.js'
 import { blobService } from '../../../shared/services/data-service/blob-service.js'
 import { logResponseSchemaMismatch } from '../../../shared/common/helpers/log-response-schema-mismatch.js'
@@ -96,7 +99,8 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         },
         publicRegister: {
           withholdConsent: 'yes',
-          withholdReason: 'commercialConfidentiality'
+          withholdReason:
+            PUBLIC_REGISTER_WITHHOLD_REASON.COMMERCIAL_CONFIDENTIALITY
         },
         specialLegalPowers: {
           agree: 'yes',
@@ -137,7 +141,10 @@ describe('GET /public/marine-licence/mas/{id}', () => {
         preferredLicenceDates: 'August 2026 to November 2026',
         publicRegister: {
           withholdConsent: 'yes',
-          withholdReason: 'commercialConfidentiality'
+          withholdReason:
+            PUBLIC_REGISTER_WITHHOLD_REASON.COMMERCIAL_CONFIDENTIALITY,
+          nationalSecurityApproval: null,
+          reason: null
         },
         specialLegalPowers: {
           agree: 'yes',

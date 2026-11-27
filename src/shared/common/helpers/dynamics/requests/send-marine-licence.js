@@ -5,7 +5,7 @@ import { collectionMarineLicences } from '../../../constants/db-collections.js'
 import { MARINE_LICENCE_STATUS } from '../../../../../marine-licences/constants/marine-licence.js'
 import { buildCoordinatesCsvUrlById } from '../../../../../marine-licences/constants/coordinates-csv.js'
 import { buildWaterFrameworkDirectiveDynamicsPayload } from '../../../../../marine-licences/constants/water-framework-directive.js'
-import { buildPublicRegisterDynamicsPayload } from '../../../../../marine-licences/constants/public-register.js'
+import { buildPublicRegisterDynamicsPayload } from '../../../../../marine-licences/api/helpers/build-public-register-dynamics-payload.js'
 import { toUrlSafeApplicationReference } from '../../../../../marine-licences/api/helpers/url-transform.js'
 import {
   logDynamicsSuccess,
