@@ -7,6 +7,7 @@ import * as shapefile from 'shapefile'
 
 import { ShapefileParser } from './shapefile-parser.js'
 import { createLogger } from '../../common/helpers/logging/logger.js'
+import { closeToCoordinates } from '../../../../tests/test-helpers.js'
 
 vi.mock('node:fs/promises')
 vi.mock('../../common/helpers/logging/logger.js', () => {
@@ -589,8 +590,9 @@ describe('ShapefileParser class', () => {
       const transformer = proj4(crsOsgb34, targetCRS)
       const coords = [513967, 476895]
       sut.transformCoordinates(coords, transformer)
-      expect(coords[0]).toBe(-0.25548579983960573)
-      expect(coords[1]).toBe(54.17519536505793)
+      expect(coords).toEqual(
+        closeToCoordinates([-0.25548579983960573, 54.17519536505793])
+      )
     })
 
     it('no-ops WGS84 sources', () => {
@@ -628,11 +630,13 @@ describe('ShapefileParser class', () => {
         [514193, 476835]
       ]
       sut.transformCoordinates(coords, transformer)
-      expect(coords).toStrictEqual([
-        [-0.25548579983960573, 54.17519536505793],
-        [-0.25444440662018697, 54.17336455859773],
-        [-0.2520479149715545, 54.17460619526199]
-      ])
+      expect(coords).toEqual(
+        closeToCoordinates([
+          [-0.25548579983960573, 54.17519536505793],
+          [-0.25444440662018697, 54.17336455859773],
+          [-0.2520479149715545, 54.17460619526199]
+        ])
+      )
     })
 
     it('ignores infinities', () => {

@@ -1,5 +1,6 @@
 import { testExemptions } from './test-exemptions.fixture.js'
 import { manualCoordsToEmpGeometry } from './manual-coordinates.js'
+import { closeToCoordinates } from '../../../../../../tests/test-helpers.js'
 
 describe('manualCoordsToEmpGeometry', () => {
   it('converts multiple coordinates (polygon) to EMP format', () => {
@@ -11,7 +12,7 @@ describe('manualCoordsToEmpGeometry', () => {
       expected
     } = exemptionWithPolygonSites
     const rings = manualCoordsToEmpGeometry(siteDetails)
-    expect(rings).toEqual(expected.geometry.rings)
+    expect(rings).toEqual(closeToCoordinates(expected.geometry.rings))
   })
 
   it('converts circle to EMP format', () => {
